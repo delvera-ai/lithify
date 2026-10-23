@@ -16,6 +16,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+HIDDEN_CMD = "(holdout command hidden from agents)"
 TEST_PATH = re.compile(r"(^|/)(tests?|__tests__|spec)/|(^|/)test_[^/]+\.py$|_test\.(py|go)$|\.(test|spec)\.[jt]sx?$")
 
 
@@ -86,7 +87,9 @@ def run_gates(
         except subprocess.TimeoutExpired as e:
             rc = 124
             out = f"TIMEOUT after {timeout_s}s\n" + str(e.stdout or "")[-1000:]
-        runs.append(GateRun(name, cmd, rc, time.time() - t0, out[-tail_chars:]))
+        # Gate reports are evidence for role sessions: never reveal where the holdout lives.
+        shown = HIDDEN_CMD if name == "holdout" else cmd
+        runs.append(GateRun(name, shown, rc, time.time() - t0, out[-tail_chars:]))
     deleted = [f"D {p}" for st, p in changed if st in ("D", "R") and is_test_path(p)]
     if weakened is None:
         protected = [f"{st} {p}" for st, p in changed if st == "M" and is_test_path(p)] + deleted
