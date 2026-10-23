@@ -10,3 +10,6 @@ dist/
 build/
 *.egg-info/
 .DS_Store
+
+# lithify (probe evidence; large and machine-specific)
+.lithify/runs/

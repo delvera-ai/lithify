@@ -39,8 +39,9 @@ MANAGED_MARKER = ".lithify-managed"
 INSTRUCTION_FILES = ("CLAUDE.md", "AGENTS.md")
 SKILL_TARGETS = (".claude/skills", ".agents/skills")
 CLAUDE_AGENTS = ".claude/agents"
-# Paths the harness renders into a repo. Excluded from task deliverable diffs.
-RENDERED_PATHS = ("CLAUDE.md", "AGENTS.md", ".claude", ".agents", LITHIFY_DIR)
+# Paths the harness renders into a repo. Excluded from task deliverable diffs. Only the rendered
+# subpaths: other files under .claude/ or .agents/ (settings, plugin manifests) are real sources.
+RENDERED_PATHS = ("CLAUDE.md", "AGENTS.md", *SKILL_TARGETS, CLAUDE_AGENTS, LITHIFY_DIR)
 
 _FRONTMATTER = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.S)
 

@@ -1,0 +1,6 @@
+- The project's checks run with `pytest -q`.
+- Full pre-commit check: `ruff check . && ruff format --check . && mypy && pytest -q`; `lithify demo` is the credential-free end-to-end simulation (CI runs it).
+- Module map (`src/lithify/`): `state.py` stability score and k schedule; `pipeline.py` the Propose→Probe→Compose→Select→Reflect loop; `worktree.py` probe isolation and deliverable diffs; `gates.py` deterministic gates and test-edit detection; `validate.py` zero-token harness validation; `harness.py` canonical harness and rendering into CLI paths; `library.py` improvement library and reflection parsing; `adapters/` one thin module per CLI (`mock.py` is the simulated agent); `prompts/` role prompts; `ops.py` init/sync/status/adopt/compact/report; `cli.py` argparse entry point.
+- The version string lives in four places that must match (the release workflow checks): `pyproject.toml`, `plugin.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`.
+- `.agents/plugins/marketplace.json` and `.claude-plugin/` are real plugin sources, not rendered output.
+- Tests use the mock adapter and `LITHIFY_WORK_DIR` (set by `tests/conftest.py`); no test may need credentials or a real agent CLI.

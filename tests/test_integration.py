@@ -117,3 +117,36 @@ def test_test_edit_detection_allows_appends_but_flags_rewrites(repo):
     wtm.deliverable(wt)
     assert wtm.weakened_tests(wt, ["tests/test_a.py"])
     wtm.remove(repo, wt)
+
+
+def test_deliverable_keeps_source_files_under_agent_dirs(repo):
+    """Only rendered subpaths are excluded: a repo whose real sources live under .agents/ or
+    .claude-plugin/ (lithify itself) must not have those edits silently dropped."""
+    from lithify import worktree as wtm
+    from lithify.harness import render
+
+    ops.init_project(repo, executor="mock", test_cmd="true")
+    for rel in (".agents/plugins/marketplace.json", ".claude-plugin/plugin.json", ".claude/settings.json"):
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_text('{"v": 1}\n')
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "plugin sources")
+    (repo / ".agents/plugins/marketplace.json").write_text('{"v": 2}\n')  # uncommitted, must reach the probe
+    wt = wtm.create(repo, "t", wtm.dirty_patch(repo))
+    assert (wt / ".agents/plugins/marketplace.json").read_text() == '{"v": 2}\n'
+    render(wt, harness_dir(wt))
+    wtm.seal_base(wt)
+    (wt / ".agents/plugins/marketplace.json").write_text('{"v": 3}\n')
+    (wt / ".claude-plugin/plugin.json").write_text('{"v": 3}\n')
+    (wt / ".claude/settings.json").write_text('{"v": 3}\n')
+    (wt / ".agents/skills/x").mkdir(parents=True)
+    (wt / ".agents/skills/x/SKILL.md").write_text("rendered\n")
+    (wt / ".claude/skills/x").mkdir(parents=True)
+    (wt / ".claude/skills/x/SKILL.md").write_text("rendered\n")
+    (wt / ".claude/agents").mkdir(parents=True)
+    (wt / ".claude/agents/a.md").write_text("rendered\n")
+    (wt / "CLAUDE.md").write_text("changed\n")
+    (wt / ".lithify/harness/memory.md").write_text("changed\n")
+    paths = {p for _, p in wtm.changed_files(wt)} if wtm.deliverable(wt) else set()
+    assert paths == {".agents/plugins/marketplace.json", ".claude-plugin/plugin.json", ".claude/settings.json"}
+    wtm.remove(repo, wt)

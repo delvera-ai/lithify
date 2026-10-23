@@ -29,3 +29,10 @@ claude plugin validate .   # if you have Claude Code installed
 
 Keep PRs focused, describe the user-visible change, update `CHANGELOG.md`, and make sure CI is
 green. By contributing you agree your work is licensed under Apache-2.0.
+
+## Agent instructions
+
+lithify is dogfooded on this repository. Project rules for coding agents live in
+`.lithify/harness/` and are rendered into `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and
+`.agents/skills/`; change the harness and run `lithify sync`, never the rendered copies. See
+[docs/maintainers.md](docs/maintainers.md) for repository settings.
