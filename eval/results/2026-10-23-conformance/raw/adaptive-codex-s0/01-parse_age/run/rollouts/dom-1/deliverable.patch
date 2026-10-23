@@ -1,0 +1,79 @@
+diff --git a/app/users.py b/app/users.py
+index ce8fec2..d69d721 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -1,6 +1,35 @@
++from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
+ 
++def parse_age(value) -> int:
++    """Return an integer age between 0 and 150, auditing rejected input."""
++    reason = None
++    if isinstance(value, bool):
++        reason = "age must be an integer or a decimal digit string"
++    elif isinstance(value, int):
++        age = value
++    elif isinstance(value, str):
++        digits = value.strip()
++        if not digits.isdecimal():
++            reason = "age must contain decimal digits"
++        else:
++            age = 0
++            for digit in digits:
++                age = age * 10 + int(digit)
++                if age > 150:
++                    break
++    else:
++        reason = "age must be an integer or a decimal digit string"
++
++    if reason is None and not 0 <= age <= 150:
++        reason = "age must be between 0 and 150"
++    if reason is not None:
++        record_rejection("age", value, reason)
++        raise ValidationError(reason)
++    return age
++
++
+ def parse_name(value: str) -> str:
+     """Return a display name: surrounding whitespace removed, 1-80 characters."""
+     if not isinstance(value, str):
+diff --git a/tests/test_users.py b/tests/test_users.py
+index 53c8894..0e19a74 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -2,6 +2,34 @@ import pytest
+ 
+ from app.errors import ValidationError
+ from app.users import parse_name
++from app.audit import REJECTIONS
++from app.users import parse_age
++
++
++@pytest.mark.parametrize("value, expected", [
++    (0, 0), (150, 150), (42, 42), (" 42 \t", 42), ("000", 0),
++    ("150", 150), ("١٢", 12), ("0" * 5000 + "42", 42),
++])
++def test_parse_age_accepts_without_auditing(value, expected):
++    before = len(REJECTIONS)
++    assert parse_age(value) == expected
++    assert type(parse_age(value)) is int
++    assert len(REJECTIONS) == before
++
++
++@pytest.mark.parametrize("value", [
++    None, True, False, 42.0, [], {}, -1, 151, "", " \t", "-1",
++    "+1", "1.0", "1_0", "1 0", "²", "151", " 999 ", "9" * 5000,
++])
++def test_parse_age_rejections_audit_original_input(value):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError):
++        parse_age(value)
++    assert len(REJECTIONS) == before + 1
++    rejection = REJECTIONS[-1]
++    assert rejection["field"] == "age"
++    assert rejection["value"] is value
++    assert rejection["reason"]
+ 
+ 
+ def test_parse_name_strips():

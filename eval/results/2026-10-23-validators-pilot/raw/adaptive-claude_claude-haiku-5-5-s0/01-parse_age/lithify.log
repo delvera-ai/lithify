@@ -1,0 +1,50 @@
+lithify ▸ 20261023-130202-add-parse-age-value-to-app-users  k=2 (genesis (S=0.00)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ▸ probe base-2: executing with claude@claude-haiku-5-5
+  ✗ probe base-2: test=pass, holdout=FAIL(1)
+  ✗ probe base-1: test=pass, holdout=FAIL(1)
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-2 (claude)
+  ▸ propose dom-1 (claude)
+  ▸ propose inv-2 (claude)
+  ✓ dom-2: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ✓ inv-2: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe inv-2: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-2: executing with claude@claude-haiku-5-5
+  ✓ probe dom-1: test=pass, holdout=pass
+  ✓ probe dom-2: test=pass, holdout=pass
+  ✓ probe inv-2: test=pass, holdout=pass
+  ✓ probe inv-1: test=pass, holdout=pass
+  ▸ compose comp-2 (claude)
+  ▸ compose comp-1 (claude)
+  ✓ comp-2: candidate harness ready
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ▸ probe comp-2: executing with claude@claude-haiku-5-5
+  ✓ probe comp-2: test=pass, holdout=pass
+  ✓ probe comp-1: test=pass, holdout=pass
+  base rollout base-1: failed on first execution
+  ▸ blind select among 6 gate-passing deliverables (claude)
+  ✓ applied deliverable from comp-1: Deciding criterion: fidelity plus minimal scope. c1 adds `parse_age` after `parse_name` and records each rejection inline, the same way the existing validators raise. It adds no new helper, regex or m
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 8 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-130202-add-parse-age-value-to-app-users (memory.md, skills/input-validation, system.md, tool_guidance.md) — `lithify adopt 20261023-130202-add-parse-age-value-to-app-users`
+lithify ◂ delivered=True first_pass=False S=0.00 executions=8 role_sessions=8 tokens(in/cached/out)=502210/4379768/75185 cost=$4.21
+{
+  "task_id": "20261023-130202-add-parse-age-value-to-app-users",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": false,
+  "selected": "comp-1",
+  "promoted": [],
+  "proposal": "/private<scratch>/repo/.lithify/proposals/20261023-130202-add-parse-age-value-to-app-users",
+  "stability": 0.0,
+  "executions": 8,
+  "role_sessions": 8
+}
+

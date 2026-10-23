@@ -1,0 +1,27 @@
+{
+  "task": "Add `parse_discount(value)` to app/orders.py. It accepts an int, a float, or a numeric string such as `\"12.5\"` or `\"12.5%\"` (a single trailing `%` is allowed), and returns the discount percentage as a float. Valid discounts are 0 to 100 inclusive. Reject anything else with `ValidationError`, including booleans, NaN and empty strings.",
+  "k": 1,
+  "reason": "build (S=0.63)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 33712,
+    "cached": 199151,
+    "out": 7627,
+    "cost": 0.012546210000000002,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.6865,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,1 @@
+Create app/addresses.py with `parse_postcode(value)`. It takes a string, strips surrounding whitespace, and accepts a US ZIP code: five digits, optionally followed by a hyphen and four digits (`"12345"` or `"12345-6789"`). Return the stripped string. Reject anything else with `ValidationError`, including non-strings.

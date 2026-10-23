@@ -1,0 +1,27 @@
+{
+  "task": "Add `parse_country_code(value)` to app/addresses.py. It takes a string, strips surrounding whitespace and returns it uppercased. A valid code is exactly two ASCII letters (`\"gb\"` becomes `\"GB\"`). Reject anything else with `ValidationError`, including non-strings and non-ASCII letters.",
+  "k": 1,
+  "reason": "build (S=0.73)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 26814,
+    "cached": 185040,
+    "out": 5881,
+    "cost": 0.010152500000000002,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7593,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {}
+}

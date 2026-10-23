@@ -1,0 +1,1 @@
+Add `parse_username(value)` to app/users.py. It takes a string, strips surrounding whitespace and returns it. A valid username is 3 to 20 characters of lowercase ASCII letters, digits and underscores, and starts with a letter. Reject anything else with `ValidationError`.

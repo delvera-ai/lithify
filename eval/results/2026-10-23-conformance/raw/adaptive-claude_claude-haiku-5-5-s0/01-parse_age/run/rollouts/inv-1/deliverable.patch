@@ -1,0 +1,89 @@
+diff --git a/app/users.py b/app/users.py
+index ce8fec2..a2dd5bd 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -1,5 +1,10 @@
++import re
++
++from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
++_DIGITS = re.compile(r"[0-9]+")
++
+ 
+ def parse_name(value: str) -> str:
+     """Return a display name: surrounding whitespace removed, 1-80 characters."""
+@@ -9,3 +14,18 @@ def parse_name(value: str) -> str:
+     if not 1 <= len(name) <= 80:
+         raise ValidationError("name must be 1-80 characters")
+     return name
++
++
++def parse_age(value) -> int:
++    """Return an age between 0 and 150, given as an int or a string of decimal digits."""
++    if isinstance(value, int) and not isinstance(value, bool):
++        age = value
++    elif isinstance(value, str) and _DIGITS.fullmatch(value.strip()):
++        age = int(value.strip())
++    else:
++        record_rejection("age", value, "age must be a whole number")
++        raise ValidationError("age must be a whole number")
++    if not 0 <= age <= 150:
++        record_rejection("age", value, "age must be between 0 and 150")
++        raise ValidationError("age must be between 0 and 150")
++    return age
+diff --git a/tests/test_users.py b/tests/test_users.py
+index 53c8894..8077adb 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -1,7 +1,8 @@
+ import pytest
+ 
++from app.audit import REJECTIONS
+ from app.errors import ValidationError
+-from app.users import parse_name
++from app.users import parse_age, parse_name
+ 
+ 
+ def test_parse_name_strips():
+@@ -12,3 +13,40 @@ def test_parse_name_strips():
+ def test_parse_name_rejects(bad):
+     with pytest.raises(ValidationError):
+         parse_name(bad)
++
++
++@pytest.mark.parametrize(
++    "value, expected",
++    [(0, 0), (150, 150), (42, 42), ("0", 0), ("150", 150), (" 42 ", 42), ("007", 7)],
++)
++def test_parse_age_accepts(value, expected):
++    assert parse_age(value) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        True,
++        False,
++        None,
++        4.5,
++        -1,
++        151,
++        "151",
++        "-1",
++        "+5",
++        "4.5",
++        "abc",
++        "",
++        "   ",
++        "1 2",
++        "²",
++    ],
++)
++def test_parse_age_rejects(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError):
++        parse_age(bad)
++    assert len(REJECTIONS) == before + 1
++    assert REJECTIONS[-1]["field"] == "age"
++    assert REJECTIONS[-1]["value"] is bad

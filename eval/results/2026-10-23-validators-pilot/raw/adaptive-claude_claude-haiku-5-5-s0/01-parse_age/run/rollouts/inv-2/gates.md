@@ -1,0 +1,10 @@
+GATES: PASS — test=pass, holdout=pass
+
+## test: `python -m pytest -q` -> exit 0 (0.1s)
+......                                                                   [100%]
+6 passed in 0.00s
+
+
+## holdout: `(holdout command hidden from agents)` -> exit 0 (0.0s)
+parse_age: 14/14 cases ok
+

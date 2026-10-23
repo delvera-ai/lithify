@@ -1,0 +1,92 @@
+diff --git a/app/users.py b/app/users.py
+index 9bd1c2f..f33900f 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -29,3 +29,25 @@ def parse_age(value) -> int:
+         record_rejection("age", value, "age must be between 0 and 150")
+         raise ValidationError("age must be between 0 and 150")
+     return age
++
++
++def parse_email(value) -> str:
++    """Return a lowercased email address: surrounding whitespace removed, one '@', no inner whitespace."""
++    if not isinstance(value, str):
++        record_rejection("email", value, "email must be a string")
++        raise ValidationError("email must be a string")
++    email = value.strip().lower()
++    if any(ch.isspace() for ch in email):
++        record_rejection("email", value, "email must not contain whitespace")
++        raise ValidationError("email must not contain whitespace")
++    if email.count("@") != 1:
++        record_rejection("email", value, "email must contain exactly one @")
++        raise ValidationError("email must contain exactly one @")
++    local, domain = email.split("@")
++    if not local:
++        record_rejection("email", value, "email must have a part before the @")
++        raise ValidationError("email must have a part before the @")
++    if "." not in domain or domain.startswith(".") or domain.endswith("."):
++        record_rejection("email", value, "email domain must contain a dot not at its start or end")
++        raise ValidationError("email domain must contain a dot not at its start or end")
++    return email
+diff --git a/tests/test_users.py b/tests/test_users.py
+index d14a9be..d0174f5 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from app.audit import REJECTIONS
+ from app.errors import ValidationError
+-from app.users import parse_age, parse_name
++from app.users import parse_age, parse_email, parse_name
+ 
+ 
+ def test_parse_name_strips():
+@@ -53,3 +53,48 @@ def test_parse_age_rejects_and_audits(bad):
+     assert entry["field"] == "age"
+     assert entry["value"] is bad
+     assert entry["reason"] == str(excinfo.value)
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [
++        ("ada@example.com", "ada@example.com"),
++        ("  Ada@Example.COM  ", "ada@example.com"),
++        ("a.b+c@sub.example.org", "a.b+c@sub.example.org"),
++    ],
++)
++def test_parse_email_accepts(good, expected):
++    assert parse_email(good) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        None,
++        42,
++        ["ada@example.com"],
++        "",
++        "   ",
++        "ada example@example.com",
++        "ada\t@example.com",
++        "ada@exa mple.com",
++        "adaexample.com",
++        "ada@@example.com",
++        "ada@example@com.org",
++        "@example.com",
++        "  @example.com",
++        "ada@example",
++        "ada@.example.com",
++        "ada@example.",
++        "ada@",
++    ],
++)
++def test_parse_email_rejects_and_audits(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as excinfo:
++        parse_email(bad)
++    assert len(REJECTIONS) == before + 1
++    entry = REJECTIONS[-1]
++    assert entry["field"] == "email"
++    assert entry["value"] is bad
++    assert entry["reason"] == str(excinfo.value)

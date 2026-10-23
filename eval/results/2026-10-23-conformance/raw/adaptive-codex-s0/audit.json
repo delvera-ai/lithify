@@ -1,0 +1,16 @@
+{
+  "label": "adaptive-codex-s0",
+  "scratch_kept": true,
+  "lithify_commit": "ae004cf",
+  "run_cost_usd": 0.0,
+  "invariants": [
+    {
+      "task": "parse_age",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ],
+  "commits_by_others": []
+}

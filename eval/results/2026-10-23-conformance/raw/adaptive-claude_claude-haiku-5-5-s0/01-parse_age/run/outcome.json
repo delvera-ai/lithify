@@ -1,0 +1,52 @@
+{
+  "task": "Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`.",
+  "k": 1,
+  "reason": "genesis (S=0.00)",
+  "selected": "inv-1",
+  "why": "I picked c3 because it is the most maintainable of three otherwise equivalent changes. All three meet the request, use the repo's existing `ValidationError`, and call `record_rejection` before raising, as the policy in `app/audit.py` requires. All three also reject bools and non-ASCII digits correctly; c1 does it with `isascii()`, c2 and c3 with the `[0-9]+` regex.\nc3 handles the bool exclusion and the type check in one branch, appends `parse_age` after `parse_name`, and has the shortest correct body.\nRunner-up c1 is just as correct but longer: it repeats the reject-and-record code across branches, which costs it on minimal size. c2 puts `parse_age` above the existing `parse_name` instead of appending it, and gives bools their own separate branch.",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": "/private<scratch>/repo/.lithify/proposals/20261023-124909-add-parse-age-value-to-app-users",
+  "usage": {
+    "in": 245103,
+    "cached": 1744772,
+    "out": 34155,
+    "cost": 1.85476527,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

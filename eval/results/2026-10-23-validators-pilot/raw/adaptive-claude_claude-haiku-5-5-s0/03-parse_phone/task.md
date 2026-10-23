@@ -1,0 +1,1 @@
+Add `parse_phone(value)` to app/users.py. It takes a string, removes spaces, hyphens and parentheses, and returns the result. An optional leading `+` is kept. After cleaning, the number must be 7 to 15 digits (not counting the `+`). Reject anything else with `ValidationError`, including non-strings and strings with letters.

@@ -1,0 +1,18 @@
+[
+  {"id": "parse_age", "module": "app.users", "func": "parse_age",
+   "task": "Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`."},
+  {"id": "parse_email", "module": "app.users", "func": "parse_email",
+   "task": "Add `parse_email(value)` to app/users.py. It takes a string, strips surrounding whitespace, lowercases it and returns it. Reject with `ValidationError` anything that is not a string, contains whitespace inside, does not contain exactly one `@`, has an empty part before the `@`, or whose domain (the part after the `@`) has no `.` or starts or ends with a `.`."},
+  {"id": "parse_phone", "module": "app.users", "func": "parse_phone",
+   "task": "Add `parse_phone(value)` to app/users.py. It takes a string, removes spaces, hyphens and parentheses, and returns the result. An optional leading `+` is kept. After cleaning, the number must be 7 to 15 digits (not counting the `+`). Reject anything else with `ValidationError`, including non-strings and strings with letters."},
+  {"id": "parse_username", "module": "app.users", "func": "parse_username",
+   "task": "Add `parse_username(value)` to app/users.py. It takes a string, strips surrounding whitespace and returns it. A valid username is 3 to 20 characters of lowercase ASCII letters, digits and underscores, and starts with a letter. Reject anything else with `ValidationError`."},
+  {"id": "parse_quantity_range", "module": "app.orders", "func": "parse_quantity_range",
+   "task": "Add `parse_quantity_range(value)` to app/orders.py. It takes a string like `\"2-5\"` (optional whitespace around the numbers and the hyphen) and returns a tuple `(low, high)` of ints. Both ends must be valid order quantities (1 to 999) and `low <= high`. Reject anything else with `ValidationError`, including non-strings."},
+  {"id": "parse_discount", "module": "app.orders", "func": "parse_discount",
+   "task": "Add `parse_discount(value)` to app/orders.py. It accepts an int, a float, or a numeric string such as `\"12.5\"` or `\"12.5%\"` (a single trailing `%` is allowed), and returns the discount percentage as a float. Valid discounts are 0 to 100 inclusive. Reject anything else with `ValidationError`, including booleans, NaN and empty strings."},
+  {"id": "parse_postcode", "module": "app.addresses", "func": "parse_postcode",
+   "task": "Create app/addresses.py with `parse_postcode(value)`. It takes a string, strips surrounding whitespace, and accepts a US ZIP code: five digits, optionally followed by a hyphen and four digits (`\"12345\"` or `\"12345-6789\"`). Return the stripped string. Reject anything else with `ValidationError`, including non-strings."},
+  {"id": "parse_country_code", "module": "app.addresses", "func": "parse_country_code",
+   "task": "Add `parse_country_code(value)` to app/addresses.py. It takes a string, strips surrounding whitespace and returns it uppercased. A valid code is exactly two ASCII letters (`\"gb\"` becomes `\"GB\"`). Reject anything else with `ValidationError`, including non-strings and non-ASCII letters."}
+]

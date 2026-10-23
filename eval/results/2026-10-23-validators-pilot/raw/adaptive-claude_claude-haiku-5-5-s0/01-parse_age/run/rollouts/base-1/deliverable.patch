@@ -1,0 +1,57 @@
+diff --git a/app/users.py b/app/users.py
+index ce8fec2..fe5ee52 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -9,3 +9,25 @@ def parse_name(value: str) -> str:
+     if not 1 <= len(name) <= 80:
+         raise ValidationError("name must be 1-80 characters")
+     return name
++
++
++def parse_age(value: int | str) -> int:
++    """Return an age as an int: a whole number from 0 to 150.
++
++    Accepts an int, or a string of decimal digits with optional surrounding whitespace.
++    Booleans, other types, signed or non-digit strings, and out-of-range values are rejected.
++    """
++    if isinstance(value, bool):
++        raise ValidationError("age must be an integer or a digit string")
++    if isinstance(value, int):
++        age = value
++    elif isinstance(value, str):
++        digits = value.strip()
++        if not (digits.isascii() and digits.isdigit()):
++            raise ValidationError("age must be a string of decimal digits")
++        age = int(digits)
++    else:
++        raise ValidationError("age must be an integer or a digit string")
++    if not 0 <= age <= 150:
++        raise ValidationError("age must be 0-150")
++    return age
+diff --git a/tests/test_users.py b/tests/test_users.py
+index e11ad59..d6209d5 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -1,6 +1,6 @@
+ import pytest
+ from app.errors import ValidationError
+-from app.users import parse_name
++from app.users import parse_age, parse_name
+ 
+ 
+ def test_parse_name_strips():
+@@ -11,3 +11,14 @@ def test_parse_name_strips():
+ def test_parse_name_rejects(bad):
+     with pytest.raises(ValidationError):
+         parse_name(bad)
++
++
++@pytest.mark.parametrize("good, expected", [(0, 0), (150, 150), ("42", 42), (" 7 ", 7), ("150", 150)])
++def test_parse_age_accepts(good, expected):
++    assert parse_age(good) == expected
++
++
++@pytest.mark.parametrize("bad", [-1, 151, "151", "-1", "+5", "1.5", "", "   ", "abc", "1 2", "٣", True, False, None, 4.0])
++def test_parse_age_rejects(bad):
++    with pytest.raises(ValidationError):
++        parse_age(bad)

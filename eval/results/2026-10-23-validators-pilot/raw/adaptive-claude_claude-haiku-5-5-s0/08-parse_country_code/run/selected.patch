@@ -1,0 +1,87 @@
+diff --git a/app/addresses.py b/app/addresses.py
+index dfe7683..52c558b 100644
+--- a/app/addresses.py
++++ b/app/addresses.py
+@@ -4,6 +4,7 @@ from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
+ POSTCODE_PATTERN = re.compile(r"[0-9]{5}(?:-[0-9]{4})?")
++COUNTRY_CODE_PATTERN = re.compile(r"[A-Za-z]{2}")
+ 
+ 
+ def parse_postcode(value) -> str:
+@@ -16,3 +17,15 @@ def parse_postcode(value) -> str:
+         record_rejection("postcode", value, "postcode must be 5 digits, optionally followed by a hyphen and 4 digits")
+         raise ValidationError("postcode must be 5 digits, optionally followed by a hyphen and 4 digits")
+     return postcode
++
++
++def parse_country_code(value) -> str:
++    """Return an uppercased two-letter country code: surrounding whitespace removed, exactly two ASCII letters."""
++    if not isinstance(value, str):
++        record_rejection("country code", value, "country code must be a string")
++        raise ValidationError("country code must be a string")
++    code = value.strip()
++    if not COUNTRY_CODE_PATTERN.fullmatch(code):
++        record_rejection("country code", value, "country code must be exactly two ASCII letters")
++        raise ValidationError("country code must be exactly two ASCII letters")
++    return code.upper()
+diff --git a/tests/test_addresses.py b/tests/test_addresses.py
+index 48d5722..10eae67 100644
+--- a/tests/test_addresses.py
++++ b/tests/test_addresses.py
+@@ -1,5 +1,5 @@
+ import pytest
+-from app.addresses import parse_postcode
++from app.addresses import parse_country_code, parse_postcode
+ from app.audit import REJECTIONS
+ from app.errors import ValidationError
+ 
+@@ -51,3 +51,47 @@ def test_parse_postcode_rejects_and_audits(bad):
+     assert entry["field"] == "postcode"
+     assert entry["value"] is bad
+     assert entry["reason"] == str(excinfo.value)
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [
++        ("GB", "GB"),
++        ("gb", "GB"),
++        ("Gb", "GB"),
++        (" us ", "US"),
++        ("\tde\n", "DE"),
++    ],
++)
++def test_parse_country_code_accepts(good, expected):
++    assert parse_country_code(good) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        None,
++        42,
++        ["GB"],
++        "",
++        "   ",
++        "G",
++        "GBR",
++        "G B",
++        "G1",
++        "1B",
++        "G-B",
++        "GB\n\nX",
++        "ÄB",  # non-ASCII letter
++        "ＧＢ",  # fullwidth Latin letters: letters, but not ASCII
++    ],
++)
++def test_parse_country_code_rejects_and_audits(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as excinfo:
++        parse_country_code(bad)
++    assert len(REJECTIONS) == before + 1
++    entry = REJECTIONS[-1]
++    assert entry["field"] == "country code"
++    assert entry["value"] is bad
++    assert entry["reason"] == str(excinfo.value)

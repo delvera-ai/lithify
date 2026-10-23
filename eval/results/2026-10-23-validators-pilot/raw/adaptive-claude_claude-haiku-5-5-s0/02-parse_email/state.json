@@ -1,0 +1,35 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-130202-add-parse-age-value-to-app-users",
+      "k": 2,
+      "first_pass": false,
+      "delivered": true,
+      "churn_lines": 141,
+      "executions": 8,
+      "tokens_in": 502210,
+      "tokens_cached": 4379768,
+      "tokens_out": 75185,
+      "cost_usd": 4.2105,
+      "wall_s": 382.1,
+      "always_on_tokens": 156,
+      "stability_after": 0.0
+    },
+    {
+      "task_id": "20261023-130825-add-parse-email-value-to-app-use",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 65991,
+      "tokens_cached": 476365,
+      "tokens_out": 10831,
+      "cost_usd": 0.2015,
+      "wall_s": 44.0,
+      "always_on_tokens": 482,
+      "stability_after": 0.14
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Add `parse_quantity_range(value)` to app/orders.py. It takes a string like `"2-5"` (optional whitespace around the numbers and the hyphen) and returns a tuple `(low, high)` of ints. Both ends must be valid order quantities (1 to 999) and `low <= high`. Reject anything else with `ValidationError`, including non-strings.

@@ -48,14 +48,24 @@ lithify report        # per-task cost and the stability curve
 
 The repository is simultaneously a Claude Code plugin, a Codex plugin and an Antigravity plugin.
 The plugin adds skills (`lithify-run`, `lithify-init`, `lithify-status`, `lithify-adopt`,
-`lithify-compact`) and, on Claude Code and Codex, a fail-open `SessionStart` hook that tells the
-agent the harness's stability and any proposals awaiting review. The skills call the `lithify`
-CLI, so install that first.
+`lithify-compact`) and, on Claude Code, a fail-open `SessionStart` hook that tells the agent the
+harness's stability and any proposals awaiting review. The skills call the `lithify` CLI, so
+install that first.
+
+Codex: with codex-cli 0.163.0, plugin-bundled hooks did not run in `codex exec` (even with
+`--dangerously-bypass-hook-trust`; `codex features list` reports `plugin_hooks` as removed),
+while user-level hooks do. To get the session-start hint in Codex, add it to
+`~/.codex/hooks.json` yourself and trust it with `/hooks`:
+
+```json
+{"hooks": {"SessionStart": [{"hooks": [{"type": "command",
+  "command": "command -v lithify >/dev/null 2>&1 && lithify hook session-start || true"}]}]}}
+```
 
 | CLI | Install |
 |---|---|
 | Claude Code | `/plugin marketplace add delvera-ai/lithify` then `/plugin install lithify@delvera-ai` |
-| Codex | `codex plugin marketplace add delvera-ai/lithify`, then enable `lithify` in the plugin browser |
+| Codex | `codex plugin marketplace add delvera-ai/lithify` then `codex plugin add lithify@delvera-ai` (or enable it in the plugin browser) |
 | Antigravity | `agy plugin install https://github.com/delvera-ai/lithify` |
 
 Inside any of them: *"/lithify-run add a CSV export to the reports page"*.
@@ -204,7 +214,7 @@ Antigravity CLIs; the simulated demo and test suite run in CI. Known limits:
 * Middleware hooks (component C8) are stored and validated but not yet rendered into CLIs.
 * Antigravity's headless JSON has no tool trajectory, so proposers see less evidence when agy is
   the executor; Antigravity plugin hooks are observe-only, so the session-start hint is Claude
-  Code/Codex only.
+  Code only (Codex: user-level hook, see above).
 * Untracked files are not copied into probe worktrees — commit or stage what the task needs.
 * Cost scales with `k`: a `k = 1` step is up to 4 executions and 5 role sessions. Use
   `lithify run --dry-run` to see the plan before spending anything.

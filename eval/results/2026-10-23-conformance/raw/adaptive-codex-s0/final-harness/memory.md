@@ -1,0 +1,1 @@
+- The project's checks run with `python -m pytest -q`.

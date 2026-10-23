@@ -1,0 +1,1 @@
+Add `parse_discount(value)` to app/orders.py. It accepts an int, a float, or a numeric string such as `"12.5"` or `"12.5%"` (a single trailing `%` is allowed), and returns the discount percentage as a float. Valid discounts are 0 to 100 inclusive. Reject anything else with `ValidationError`, including booleans, NaN and empty strings.

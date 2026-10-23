@@ -1,0 +1,19 @@
+--- a/skills/input-validation/SKILL.md
++++ b/skills/input-validation/SKILL.md
+@@ -0,0 +1,16 @@
++---
++name: input-validation
++description: Load when adding or changing user-input parsers, validators, or rejection paths in this repository.
++---
++
++# Input validation
++
++`app/audit.py` requires every rejected piece of user input to be recorded with `record_rejection(field, value, reason)` before raising the error. This helper owns the `REJECTIONS` audit trail. Input rejection errors use `ValidationError` from `app.errors`.
++
++Preserve the original input before stripping, converting, or otherwise normalizing it, and pass that original value to the audit helper with the field and a descriptive reason. Cover every rejection path, including type, format, and range failures. Accepted input must not produce a rejection record.
++
++`app/users.py:parse_name` and `app/orders.py:parse_quantity` omit auditing; the audit module warns that older validators predate the policy. Their missing audit calls are not a convention to copy. Apply the contract to the requested change without repairing unrelated validators.
++
++Before editing, read the target code, `app/errors.py`, `app/audit.py`, and relevant tests. Trace related validation helpers and documented rejection side effects rather than inferring the contract solely from neighboring validators.
++
++Add focused coverage for rejection side effects alongside return values and exception types: verify recording of the original input on rejection and no rejection record on acceptance. Run the project checks documented in repository memory. Compare the implementation with the source contract even when local tests pass.

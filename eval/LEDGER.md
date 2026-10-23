@@ -5,3 +5,10 @@ Caps: pilot (3B) $25; total $150. Cost is the sum of `usage.cost` from every `ou
 | date | phase | runs | cost USD | cumulative USD | notes |
 |---|---|---|---|---|---|
 | 2026-10-23 | 3A sim sweep | 90 simulated | 0.00 | 0.00 | mock agent, no credentials |
+| 2026-10-23 | 3B raw CLI captures | 3 (claude, codex, agy) | 0.0027 | 0.0027 | codex: 54,232 in (48,768 cached) / 126 out tokens, $ not reported; agy: quota error, 0 tokens |
+| 2026-10-23 | 3B conformance claude | 1 task, k=1 | 1.8548 | 1.8575 | executions $0.033, editor roles ≈ $1.82 |
+| 2026-10-23 | 3B conformance codex | 1 task, k=1 | 0.00 (est) | 1.8575 | 133,905 in / 995,584 cached / 9,937 out tokens; Codex reports no $ (ChatGPT plan) |
+| 2026-10-23 | 3B pilot sequence (adaptive, claude) | 8 tasks | 4.8639 | 6.7214 | task 1 = $4.21 |
+| 2026-10-23 | 3B install/hook checks | 1 claude + 4 codex sessions | 0.0029 | 6.7243 | codex sessions: small prompts, tokens not recorded |
+
+**Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent $6.72.
