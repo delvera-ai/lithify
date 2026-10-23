@@ -21,8 +21,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
+          activate-environment: true
       - name: Install
-        run: uv pip install --system -e . pytest pytest-cov ruff mypy
+        run: uv pip install -e . pytest pytest-cov ruff mypy
       - name: Lint
         run: ruff check . && ruff format --check .
       - name: Typecheck
@@ -44,4 +45,6 @@ jobs:
           python3 -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" \
             plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json \
             .codex-plugin/plugin.json .agents/plugins/marketplace.json hooks/hooks.json
-          npx -y @anthropic-ai/claude-code plugin validate . || echo "::warning::claude plugin validate unavailable"
+      # Pinned to the Claude Code version this was verified against; --strict fails on directory warnings.
+      - name: Claude plugin validate
+        run: npx -y @anthropic-ai/claude-code@2.1.309 plugin validate . --profile directory --strict
