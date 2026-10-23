@@ -18,3 +18,9 @@ All notable changes to this project are documented here. The format follows
   agent for tests and `lithify demo`.
 - Claude Code, Codex and Antigravity plugin manifests, five skills, and a fail-open
   `SessionStart` hook.
+
+### Fixed
+- Codex marketplace manifest lives at `.agents/plugins/marketplace.json` (was misplaced at
+  `plugins/marketplace.json`).
+- CI installs into the `setup-uv` virtual environment instead of the system interpreter, and
+  `claude plugin validate . --profile directory --strict` now fails the build instead of warning.
