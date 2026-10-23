@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like lithify to do?
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Runs, costs or failure cases that motivate it, if you have them.

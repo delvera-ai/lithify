@@ -1,0 +1,13 @@
+{
+  "name": "delvera-ai",
+  "owner": { "name": "Delvera AI", "url": "https://github.com/delvera-ai" },
+  "metadata": { "description": "Plugins from Delvera AI" },
+  "plugins": [
+    {
+      "name": "lithify",
+      "source": "./",
+      "description": "Self-hardening agent harness: Propose→Probe→Compose with dynamic k, deterministic gates and evidence-gated promotion.",
+      "category": "development"
+    }
+  ]
+}

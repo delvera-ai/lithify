@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "lithify",
+  "version": "0.1.0",
+  "description": "Self-hardening agent harness: Harness²-style Propose→Probe→Compose with dynamic k, for Claude Code, Codex and Antigravity.",
+  "author": { "name": "Delvera AI", "url": "https://github.com/delvera-ai" },
+  "homepage": "https://github.com/delvera-ai/lithify",
+  "repository": "https://github.com/delvera-ai/lithify",
+  "license": "Apache-2.0",
+  "keywords": ["harness", "self-improvement", "skills", "agents"],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json",
+      "interface": {
+        "displayName": "lithify",
+        "shortDescription": "Your agent harness hardens itself from evidence",
+        "developerName": "Delvera AI",
+        "category": "Coding",
+        "defaultPrompt": ["Use lithify to run this task and harden the project harness."]
+      }
+    }
+  }
+}

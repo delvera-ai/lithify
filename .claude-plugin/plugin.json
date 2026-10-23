@@ -1,0 +1,21 @@
+{
+  "name": "lithify",
+  "version": "0.1.0",
+  "description": "Self-hardening agent harness: Harness\u00b2-style Propose\u2192Probe\u2192Compose with dynamic k. Your project's CLAUDE.md, skills and rules improve from evidence as you work.",
+  "author": {
+    "name": "Delvera AI",
+    "url": "https://github.com/delvera-ai"
+  },
+  "homepage": "https://github.com/delvera-ai/lithify",
+  "repository": "https://github.com/delvera-ai/lithify",
+  "license": "Apache-2.0",
+  "keywords": [
+    "harness",
+    "self-improvement",
+    "skills",
+    "agents",
+    "codex",
+    "antigravity"
+  ],
+  "icon": "./assets/icon.png"
+}

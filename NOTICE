@@ -1,0 +1,15 @@
+lithify
+Copyright 2026 Delvera AI
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+lithify implements ideas from:
+
+  Xu, R., Chen, Y., CuiZhu, Z., Dalvi Mishra, B., Ming, Y., Yu, H., Han, R., Lee, C.-Y.,
+  and Pfister, T. "Harness²: Recursive Agent Harnessing for an Open World."
+  arXiv:2610.14224, 2026. https://github.com/google-research/harness2
+
+The role prompts in src/lithify/prompts/ follow the structure of that paper's stage prompts
+(Appendix H) and were rewritten for software repositories with deterministic gates. lithify
+contains no code from the Harness² repository. lithify is not affiliated with or endorsed by
+Google.

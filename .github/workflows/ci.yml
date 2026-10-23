@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: uv pip install --system -e . pytest pytest-cov ruff mypy
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Typecheck
+        run: mypy
+      - name: Test
+        run: pytest --cov=lithify --cov-report=term-missing
+      - name: Simulated end-to-end demo
+        run: lithify demo
+
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate plugin manifests
+        run: |
+          python3 -c "import json,sys; [json.load(open(p)) for p in sys.argv[1:]]" \
+            plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json \
+            .codex-plugin/plugin.json .agents/plugins/marketplace.json hooks/hooks.json
+          npx -y @anthropic-ai/claude-code plugin validate . || echo "::warning::claude plugin validate unavailable"

@@ -1,0 +1,27 @@
+name: Bug report
+description: Something in lithify behaved incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands you ran. If it involves a run, attach `.lithify/runs/<id>/outcome.json` (check it for secrets first).
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `lithify doctor`
+    validations:
+      required: true
+  - type: dropdown
+    id: executor
+    attributes:
+      label: Executor CLI
+      options: [claude, codex, agy, mock, other]

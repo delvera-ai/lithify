@@ -1,0 +1,16 @@
+{
+  "description": "lithify: surface harness stability and pending proposals at session start (fail-open; silent if lithify is not installed or the repo is not initialised)",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v lithify >/dev/null 2>&1 && lithify hook session-start || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

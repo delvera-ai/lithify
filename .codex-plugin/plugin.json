@@ -1,0 +1,13 @@
+{
+  "name": "lithify",
+  "version": "0.1.0",
+  "description": "Self-hardening agent harness: Harness²-style Propose→Probe→Compose with dynamic k.",
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "lithify",
+    "shortDescription": "Your agent harness hardens itself from evidence",
+    "developerName": "Delvera AI",
+    "category": "Coding"
+  }
+}
