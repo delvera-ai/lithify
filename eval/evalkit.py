@@ -7,6 +7,7 @@ quality metric is the same whether or not the holdout was also used as a gate.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import math
@@ -49,6 +50,8 @@ COLUMNS = [
     "stability_after",
     "promoted",
     "proposed",
+    "adopted",
+    "adopt_policy",
     "lithify_commit",
 ]
 
@@ -187,10 +190,8 @@ def spent(results_root: Path) -> float:
     for f in results_root.rglob("results.csv"):
         with open(f, encoding="utf-8") as fh:
             for row in csv.DictReader(fh):
-                try:
+                with contextlib.suppress(ValueError):
                     total += float(row.get("cost_usd") or 0)
-                except ValueError:
-                    pass
     return total
 
 

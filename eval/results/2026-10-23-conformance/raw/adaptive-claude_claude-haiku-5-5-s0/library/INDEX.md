@@ -1,0 +1,6 @@
+# lithify improvement library
+
+Each entry: what situation a lesson applies to, and the harness operation that helped.
+Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+
+- [20261023-124909-add-parse-age-value-to-app-users](20261023-124909-add-parse-age-value-to-app-users/EXPERIENCE.md) — **when** You are adding a new function to a module in this repo (for example a new `parse_*` validator in `app/`). The nearest sibling functions follow an older pattern, while a shared helper module in the same package (such as `app/audit.py`) states a policy in its docstring that the siblings do not follow, typically a side effect on the reject or error path. The agent's own tests pass whether or not that side effect happens, so only reading the helper reveals it. **then** Add an always-on rule to `system.md`: before writing a new function, open the package's shared helper modules (audit, logging, errors) as well as the siblings, because a file listing is not a read; where a helper's docstring states a policy, follow it over older sibling code. When the policy is already known, also state it as a one-line fact in `memory.md` that names the helper and marks the legacy siblings as not-to-copy. A full skill plus checker script is not needed for this.

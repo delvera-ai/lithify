@@ -1,0 +1,1 @@
+Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`.

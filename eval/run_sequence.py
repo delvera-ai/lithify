@@ -8,9 +8,11 @@ then runs through `lithify run` in order; the runner commits after each task so 
 builds on it (the pipeline itself never commits). Holdout scripts stay under eval/fixtures/
 and are never copied into the scratch repository.
 
-Eval-only choices (not product defaults): `auto_adopt = true`, so proposals the reflector marks
-`helped` are promoted without a human; every editor role runs on the executor's CLI at its
-default model; the holdout is a gate unless --no-holdout-gate. Holdout pass of the applied
+Adoption policy (--adopt): `all` (default) keeps the product default `auto_adopt = false` and
+runs `lithify adopt <task-id>` after every task, i.e. a maintainer who accepts every proposal
+unreviewed; `auto` sets `auto_adopt = true` (only `helped` components promoted, see #13);
+`none` never adopts. Other eval-only choices: every editor role runs on the executor's CLI at
+its default model; the holdout is a gate unless --no-holdout-gate. Holdout pass of the applied
 patch is always measured afterwards on the working tree.
 """
 
@@ -27,9 +29,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from evalkit import git, lithify, lithify_commit, run_task, sh, spent, write_rows  # noqa: E402
+from evalkit import copy_redacted, git, lithify, lithify_commit, redact, run_task, sh, spent, write_rows
 
-from lithify.config import load_config, render_config  # noqa: E402
+from lithify.config import load_config, render_config
 
 EVAL = Path(__file__).resolve().parent
 FIXTURE = EVAL / "fixtures" / "validators"
@@ -48,13 +50,29 @@ def home_writes(marker: Path) -> list[str]:
     return sorted(ln.replace(str(home), "~") for ln in out.splitlines() if ln.strip())
 
 
+def classify_home_writes(paths: list[str]) -> dict[str, int]:
+    """Summarise ~-relative paths without naming unrelated projects (the raw list stays local)."""
+    buckets = {
+        "~/.cache/lithify (probe worktrees, expected)": "~/.cache/lithify",
+        "~/.claude (agent CLI session state, expected)": "~/.claude",
+        "~/.codex (agent CLI session state, expected)": "~/.codex",
+        "this repository's eval/ (runner output, expected)": "~/Coding/delvera/foundational/lithify/eval",
+    }
+    out = dict.fromkeys(buckets, 0)
+    out["other (unattributed; reviewed by hand)"] = 0
+    for path in paths:
+        key = next((k for k, pre in buckets.items() if path.startswith(pre)), "other (unattributed; reviewed by hand)")
+        out[key] += 1
+    return out
+
+
 def configure(repo: Path, a: argparse.Namespace, holdout_cmd: str) -> None:
     cfg = load_config(repo)
     cfg.executor = a.executor
     cfg.test_cmd = TEST_CMD
     cfg.holdout_cmd = holdout_cmd if a.holdout_gate else ""
     cfg.max_k = a.max_k
-    cfg.auto_adopt = True
+    cfg.auto_adopt = a.adopt == "auto"
     cfg.skip_when_base_passes = a.strategy != "static"
     cfg.timeout_s = a.timeout
     cfg.concurrency = a.concurrency
@@ -71,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-k", type=int, default=2)
     ap.add_argument("--tasks", default="all", help="comma-separated task ids, or 'all'")
     ap.add_argument("--order-seed", type=int, default=0, help="0 = file order")
+    ap.add_argument("--adopt", choices=["all", "auto", "none"], default="all")
     ap.add_argument("--no-holdout-gate", dest="holdout_gate", action="store_false")
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--concurrency", type=int, default=4)
@@ -87,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         tasks = [t for t in tasks if t["id"] in want]
     if a.order_seed:
         random.Random(a.order_seed).shuffle(tasks)
-    out = Path(a.out)
+    out = Path(a.out).resolve()
     label = f"{a.strategy}-{a.executor.replace('@', '_')}-s{a.order_seed}"
     ev_root = out / "raw" / label
     ev_root.mkdir(parents=True, exist_ok=True)
@@ -130,6 +149,11 @@ def main(argv: list[str] | None = None) -> int:
         branches_before = git(repo, "branch", "--list").strip()
         print(f"[{label}] {pos}/{len(tasks)} {t['id']} …", flush=True)
         m = run_task(repo, task_file, a.strategy, holdout, a.timeout * 6, ev, redactions)
+        m["adopted"] = ""
+        if a.adopt == "all" and m["proposed"]:
+            r = lithify(repo, "adopt", m["task_id"])
+            (ev / "adopt.txt").write_text(r.stdout + r.stderr, encoding="utf-8")
+            m["adopted"] = m["proposed"] if r.stdout.startswith("adopted") else ""
         # Safety invariants: the pipeline never commits, branches, or leaves worktrees behind.
         inv = {
             "task": t["id"],
@@ -154,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"   k={m['k']} delivered={m['delivered']} first_pass={m['first_pass']} holdout={m['holdout_pass']} "
             f"exec={m['executions']} roles={m['role_sessions']} ${m['cost_usd']:.2f} ({m['wall_s']}s) "
-            f"promoted=[{m['promoted']}] run total ${run_cost:.2f}",
+            f"promoted=[{m['promoted']}] adopted=[{m['adopted']}] run total ${run_cost:.2f}",
             flush=True,
         )
         git(repo, "add", "-A")
@@ -171,11 +195,16 @@ def main(argv: list[str] | None = None) -> int:
         ],
     }
     if a.home_audit:
-        summary["home_writes"] = home_writes(marker)
-    (ev_root / "audit.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    shutil.copytree(repo / ".lithify" / "harness", ev_root / "final-harness", dirs_exist_ok=True)
+        writes = home_writes(marker)
+        raw = scratch.parent / f"{scratch.name}-home-writes.txt"
+        raw.write_text("\n".join(writes) + "\n", encoding="utf-8")
+        summary["home_writes"] = classify_home_writes(writes)
+        summary["home_writes_raw"] = "kept locally, not committed (names unrelated projects)"
+        print(f"home-write list (local only): {raw}")
+    (ev_root / "audit.json").write_text(redact(json.dumps(summary, indent=2), redactions), encoding="utf-8")
+    copy_redacted(repo / ".lithify" / "harness", ev_root / "final-harness", redactions)
     if (repo / ".lithify" / "library").is_dir():
-        shutil.copytree(repo / ".lithify" / "library", ev_root / "library", dirs_exist_ok=True, symlinks=False)
+        copy_redacted(repo / ".lithify" / "library", ev_root / "library", redactions)
     print(f"done: {label} ${run_cost:.2f}; evidence in {ev_root}")
     if a.keep:
         print(f"scratch repository kept at {repo}")

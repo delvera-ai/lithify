@@ -1,0 +1,38 @@
+lithify ▸ 20261023-125452-add-parse-age-value-to-app-users  k=1 (genesis (S=0.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✗ probe base-1: test=pass, holdout=FAIL(1)
+  ▸ propose inv-1 (codex)
+  ▸ propose dom-1 (codex)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe inv-1: executing with codex
+  ▸ probe dom-1: executing with codex
+  ✓ probe inv-1: test=pass, holdout=pass
+  ✓ probe dom-1: test=pass, holdout=pass
+  ▸ compose comp-1 (codex)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with codex
+  ✓ probe comp-1: test=pass, holdout=pass
+  base rollout base-1: failed on first execution
+  ▸ blind select among 3 gate-passing deliverables (codex)
+  ✓ applied deliverable from comp-1: c1 satisfies parsing, range validation, and the repository’s rejection-audit policy while preserving existing behavior.
+It also normalizes accepted int subclasses to a plain int.
+Runner-up c2 returns 
+  ▸ reflect (codex)
+  ✎ library: lesson recorded; 2 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-125452-add-parse-age-value-to-app-users (skills/input-validation) — `lithify adopt 20261023-125452-add-parse-age-value-to-app-users`
+lithify ◂ delivered=True first_pass=False S=0.00 executions=4 role_sessions=5 tokens(in/cached/out)=133905/995584/9937
+{
+  "task_id": "20261023-125452-add-parse-age-value-to-app-users",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": false,
+  "selected": "comp-1",
+  "promoted": [],
+  "proposal": "/private<scratch>/repo/.lithify/proposals/20261023-125452-add-parse-age-value-to-app-users",
+  "stability": 0.0,
+  "executions": 4,
+  "role_sessions": 5
+}
+

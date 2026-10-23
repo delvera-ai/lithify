@@ -10,6 +10,10 @@ import traceback
 sys.path.insert(0, os.getcwd())
 
 
+def _labelled(rec: dict) -> bool:
+    return all(isinstance(rec.get(k), str) and rec[k] for k in ("field", "reason"))
+
+
 def check(module: str, func: str, good: list[tuple[object, object]], bad: list[object]) -> int:
     failures: list[str] = []
     try:
@@ -46,7 +50,7 @@ def check(module: str, func: str, good: list[tuple[object, object]], bad: list[o
         recs = [r for r in audit.REJECTIONS if isinstance(r, dict)]
         if not any(r.get("value") == value or r.get("value") is value for r in recs):
             failures.append(f"{func}({value!r}) was rejected without an audit record of the rejected value")
-        elif not all(isinstance(r.get("field"), str) and r["field"] and isinstance(r.get("reason"), str) and r["reason"] for r in recs):
+        elif not all(_labelled(r) for r in recs):
             failures.append(f"{func}({value!r}) recorded a rejection without a field name or reason")
     for f in failures:
         print("FAIL " + f)

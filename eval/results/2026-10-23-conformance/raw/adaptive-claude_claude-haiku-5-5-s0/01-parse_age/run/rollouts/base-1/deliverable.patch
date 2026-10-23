@@ -1,0 +1,58 @@
+diff --git a/app/users.py b/app/users.py
+index ce8fec2..22c2a4f 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -9,3 +9,19 @@ def parse_name(value: str) -> str:
+     if not 1 <= len(name) <= 80:
+         raise ValidationError("name must be 1-80 characters")
+     return name
++
++
++def parse_age(value: int | str) -> int:
++    """Return an age from an int or a decimal digit string, 0-150 inclusive."""
++    if isinstance(value, bool):
++        raise ValidationError("age must be an integer or a digit string")
++    if isinstance(value, str):
++        digits = value.strip()
++        if not (digits.isascii() and digits.isdigit()):
++            raise ValidationError("age must be an integer or a digit string")
++        value = int(digits)
++    elif not isinstance(value, int):
++        raise ValidationError("age must be an integer or a digit string")
++    if not 0 <= value <= 150:
++        raise ValidationError("age must be 0-150")
++    return value
+diff --git a/tests/test_users.py b/tests/test_users.py
+index 53c8894..813a19a 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -1,7 +1,7 @@
+ import pytest
+ 
+ from app.errors import ValidationError
+-from app.users import parse_name
++from app.users import parse_age, parse_name
+ 
+ 
+ def test_parse_name_strips():
+@@ -12,3 +12,20 @@ def test_parse_name_strips():
+ def test_parse_name_rejects(bad):
+     with pytest.raises(ValidationError):
+         parse_name(bad)
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [(0, 0), (150, 150), (42, 42), ("0", 0), ("150", 150), (" 30 ", 30), ("007", 7)],
++)
++def test_parse_age_accepts(good, expected):
++    assert parse_age(good) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [-1, 151, True, False, 3.5, None, "", "   ", "-1", "+5", "1.5", "12a", "1 2", "151", "١٢", "²"],
++)
++def test_parse_age_rejects(bad):
++    with pytest.raises(ValidationError):
++        parse_age(bad)

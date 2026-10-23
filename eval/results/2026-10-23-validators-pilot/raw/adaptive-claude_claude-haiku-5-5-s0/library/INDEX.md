@@ -1,0 +1,6 @@
+# lithify improvement library
+
+Each entry: what situation a lesson applies to, and the harness operation that helped.
+Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+
+- [20261023-130202-add-parse-age-value-to-app-users](20261023-130202-add-parse-age-value-to-app-users/EXPERIENCE.md) — **when** A task adds a new function next to sibling functions in this repo, and a repo-wide policy lives in a separate module that the siblings don't follow yet. Here, `app/audit.py` requires `record_rejection` before every `ValidationError`, and `parse_name`/`parse_quantity` predate it. Copying the neighbours passes the visible tests but breaks the policy. **then** Put the policy in memory.md as one line: the module that owns it, the required call, and the legacy functions not to copy. Point that line at a skill that spells out what each argument must contain (e.g. `reason` equals the error message, `value` is the raw input). The skill should also require tests that check the side effect. Present any helper as optional, not as the model to follow. A generic "survey every related module" clause in system.md also finds the policy. Without the field-level spec, though, the agent got argument contents wrong and, in one rollout, skipped tests.

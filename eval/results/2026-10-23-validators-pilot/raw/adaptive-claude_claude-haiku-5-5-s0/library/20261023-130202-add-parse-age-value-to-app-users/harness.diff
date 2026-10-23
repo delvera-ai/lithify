@@ -1,0 +1,163 @@
+--- a/memory.md
++++ b/memory.md
+@@ -1 +1,2 @@
+ - The project's checks run with `python -m pytest -q`.
++- Rejected user input must be audited: call `record_rejection(field, value, reason)` from `app/audit.py` before every `raise ValidationError(...)` (`app/errors.py`). `parse_name` (`app/users.py`) and `parse_quantity` (`app/orders.py`) predate this policy; do not copy their raise-only pattern. Load the `input-validation` skill for any validator/parser change.
+
+--- a/skills/input-validation/SKILL.md
++++ b/skills/input-validation/SKILL.md
+@@ -0,0 +1,50 @@
++---
++name: input-validation
++description: Load when adding or changing any function in app/ that parses or validates user input (parse_* functions, anything that raises ValidationError), or when writing tests for one.
++---
++
++# Input validators in this repository
++
++## Modules that own the concerns
++- `app/errors.py`: `ValidationError(AppError)` is the error a validator raises for bad input.
++  Do not raise `ValueError`/`TypeError` or define new exception classes for input rejection.
++- `app/audit.py`: `record_rejection(field: str, value: object, reason: str)` appends a dict
++  (`field`, `value`, `reason`) to the module-level list `REJECTIONS`. Its docstring is the
++  policy: every rejected piece of user input is recorded **before** the error is raised.
++- Validators live in the module for their domain: `app/users.py` (user fields),
++  `app/orders.py` (order fields). Tests live in `tests/test_<module>.py`.
++
++## INVARIANT: no rejection without an audit record
++Every path that raises `ValidationError` for user input first calls `record_rejection`: type
++rejections (None, floats, bools, lists), format rejections (non-digit or empty strings), range
++rejections, and `except` branches — not just one of them.
++
++- `field`: the input's name, the same noun the error message uses (`"name"`, `"quantity"`, …).
++- `value`: the ORIGINAL argument exactly as passed in, not the stripped or converted value.
++- `reason`: the same text as the `ValidationError` message.
++
++`parse_name` and `parse_quantity` raise without recording. They are known exceptions to the
++policy (the `app/audit.py` docstring says so), not the pattern to follow; "follow the surrounding
++code" does not override this. Copy their shape and message style, not the missing call. Do not
++retrofit them unless the task asks.
++
++A module-private helper that records then raises is fine when a function has many rejection paths:
++
++```python
++from typing import NoReturn
++
++def _reject(field: str, value: object, reason: str) -> NoReturn:
++    record_rejection(field, value, reason)
++    raise ValidationError(reason)
++```
++
++## CONTRACT: a new or changed validator touches
++1. The domain module in `app/`: import `from app.audit import record_rejection` next to the
++   `ValidationError` import; record before every raise.
++2. `tests/test_<module>.py`: add the validator to the existing import line; add accept/reject
++   cases. Rejection tests also check that `app.audit.REJECTIONS` gained an entry whose `value` is
++   the original input. `REJECTIONS` is module-global and persists across tests, so compare
++   entries added by the call (or clear it in a fixture), not the total length.
++3. Check the invariant (AST-based; flags any `raise ValidationError` not directly preceded by
++   `record_rejection(...)`; `--only` keeps the legacy validators out of the output):
++   `<python from memory.md> .lithify/harness/skills/input-validation/scripts/check_audit.py app/<module>.py --only <function>`
+
+--- a/skills/input-validation/scripts/check_audit.py
++++ b/skills/input-validation/scripts/check_audit.py
+@@ -0,0 +1,80 @@
++"""List `raise ValidationError` statements not immediately preceded by `record_rejection(...)`.
++
++Usage: check_audit.py FILE [FILE ...] [--only FUNC [FUNC ...]]
++Exit status 1 if any unaudited raise is found in the selected functions.
++"""
++import argparse
++import ast
++import sys
++
++
++def _call_name(node):
++    if isinstance(node, ast.Call):
++        f = node.func
++        if isinstance(f, ast.Name):
++            return f.id
++        if isinstance(f, ast.Attribute):
++            return f.attr
++    return None
++
++
++def _is_validation_raise(stmt):
++    return isinstance(stmt, ast.Raise) and stmt.exc is not None and (
++        _call_name(stmt.exc) == "ValidationError"
++        or (isinstance(stmt.exc, ast.Name) and stmt.exc.id == "ValidationError")
++    )
++
++
++def _is_record(stmt):
++    return isinstance(stmt, ast.Expr) and _call_name(stmt.value) == "record_rejection"
++
++
++def _bodies(node):
++    for name in ("body", "orelse", "finalbody"):
++        block = getattr(node, name, None)
++        if isinstance(block, list) and block and isinstance(block[0], ast.stmt):
++            yield block
++    for h in getattr(node, "handlers", []) or []:
++        yield h.body
++    for c in getattr(node, "cases", []) or []:
++        yield c.body
++
++
++def _scan(func):
++    problems = []
++    stack = [func]
++    while stack:
++        node = stack.pop()
++        for block in _bodies(node):
++            for i, stmt in enumerate(block):
++                if _is_validation_raise(stmt) and not (i > 0 and _is_record(block[i - 1])):
++                    problems.append(stmt.lineno)
++                if not isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
++                    stack.append(stmt)
++    return sorted(problems)
++
++
++def main(argv=None):
++    ap = argparse.ArgumentParser()
++    ap.add_argument("files", nargs="+")
++    ap.add_argument("--only", nargs="+", default=None, help="function names to check")
++    args = ap.parse_args(argv)
++    bad = 0
++    for path in args.files:
++        with open(path, encoding="utf-8") as fh:
++            tree = ast.parse(fh.read(), filename=path)
++        for node in ast.walk(tree):
++            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
++                continue
++            if args.only and node.name not in args.only:
++                continue
++            for line in _scan(node):
++                print(f"{path}:{line}: {node.name}: ValidationError raised without a preceding record_rejection(...)")
++                bad += 1
++    if bad == 0:
++        print("ok: every checked ValidationError raise is preceded by record_rejection(...)")
++    return 1 if bad else 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+
+--- a/system.md
++++ b/system.md
+@@ -1,3 +1,6 @@
+ You are a careful engineer working in this repository. Make the smallest change that fully
+ satisfies the task, following the patterns the surrounding code already uses. Read the relevant
+-code before editing it, and finish only after the project's checks pass.
++code before editing it. `app/` is small, so read every module in it that shares a concern with
++the change (and README.md), not just the target file. Finish only after the project's checks pass
++and you have called the changed code directly on each input kind the task names and read the
++output. Tests you wrote yourself only prove your own reading of the task.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -0,0 +1,5 @@
++- The shell is zsh on macOS. Quote globs (`grep -rn PAT --include='*.py' app tests`); an unquoted
++  glob aborts with "no matches found". Scope searches to `app tests`, not `.`.
++- `sed` is BSD sed: `sed -i 's/…/' f` fails ("undefined label"). Use the Edit tool for in-place
++  edits. In a chained command, check each step's output; later results (e.g. test failures) may
++  only reflect an earlier failed step.

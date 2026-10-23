@@ -1,0 +1,83 @@
+diff --git a/app/addresses.py b/app/addresses.py
+new file mode 100644
+index 0000000..dfe7683
+--- /dev/null
++++ b/app/addresses.py
+@@ -0,0 +1,18 @@
++import re
++
++from app.audit import record_rejection
++from app.errors import ValidationError
++
++POSTCODE_PATTERN = re.compile(r"[0-9]{5}(?:-[0-9]{4})?")
++
++
++def parse_postcode(value) -> str:
++    """Return a US ZIP code: surrounding whitespace removed, five digits optionally followed by a hyphen and four digits."""
++    if not isinstance(value, str):
++        record_rejection("postcode", value, "postcode must be a string")
++        raise ValidationError("postcode must be a string")
++    postcode = value.strip()
++    if not POSTCODE_PATTERN.fullmatch(postcode):
++        record_rejection("postcode", value, "postcode must be 5 digits, optionally followed by a hyphen and 4 digits")
++        raise ValidationError("postcode must be 5 digits, optionally followed by a hyphen and 4 digits")
++    return postcode
+diff --git a/tests/test_addresses.py b/tests/test_addresses.py
+new file mode 100644
+index 0000000..48d5722
+--- /dev/null
++++ b/tests/test_addresses.py
+@@ -0,0 +1,53 @@
++import pytest
++from app.addresses import parse_postcode
++from app.audit import REJECTIONS
++from app.errors import ValidationError
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [
++        ("12345", "12345"),
++        ("12345-6789", "12345-6789"),
++        (" 12345 ", "12345"),
++        ("\t12345-6789\n", "12345-6789"),
++        ("00501", "00501"),
++    ],
++)
++def test_parse_postcode_accepts(good, expected):
++    assert parse_postcode(good) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        None,
++        12345,
++        ["12345"],
++        "",
++        "   ",
++        "1234",
++        "123456",
++        "12345-",
++        "12345-678",
++        "12345-67890",
++        "12345 6789",
++        "12345--6789",
++        "-6789",
++        "1234-56789",
++        "abcde",
++        "1234a",
++        "+12345",
++        "12345+",
++        "١٢٣٤٥",  # Arabic-Indic digits: decimal, but not ASCII
++    ],
++)
++def test_parse_postcode_rejects_and_audits(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as excinfo:
++        parse_postcode(bad)
++    assert len(REJECTIONS) == before + 1
++    entry = REJECTIONS[-1]
++    assert entry["field"] == "postcode"
++    assert entry["value"] is bad
++    assert entry["reason"] == str(excinfo.value)

@@ -20,6 +20,8 @@ All notable changes to this project are documented here. The format follows
   `SessionStart` hook.
 - `eval/sim_sweep.py`: simulation robustness sweep across task orders and mock noise levels
   (CI job `sim-sweep`); `LITHIFY_MOCK_SEED` varies mock noise draws between replicates.
+- `eval/`: validators fixture with out-of-repo holdouts, `run_sequence.py` live runner,
+  adapter conformance and pilot results (phase 3B).
 
 ### Fixed
 - Codex adapter: `codex-cli` 0.163.0 rejects `--full-auto`; default flags are now

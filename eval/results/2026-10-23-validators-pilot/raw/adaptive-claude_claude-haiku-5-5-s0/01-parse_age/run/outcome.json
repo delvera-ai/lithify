@@ -1,0 +1,80 @@
+{
+  "task": "Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "comp-1",
+  "why": "Deciding criterion: fidelity plus minimal scope. c1 adds `parse_age` after `parse_name` and records each rejection inline, the same way the existing validators raise. It adds no new helper, regex or module-level state. Its rejection tests check the field and value, and that the recorded reason matches the error message.\nRunner-up is c2, which is equally correct. It lost the pick because it adds a new `_reject`/`NoReturn` helper that the task didn't ask for.\nc3 and c6 record reasons that differ from the error messages raised. c4 adds no tests. c5 adds a module-level helper and a fixture that clears the global REJECTIONS list.",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": "/private<scratch>/repo/.lithify/proposals/20261023-130202-add-parse-age-value-to-app-users",
+  "usage": {
+    "in": 502210,
+    "cached": 4379768,
+    "out": 75185,
+    "cost": 4.210486830000001,
+    "exec": 8,
+    "roles": 8
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "base-2": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "inv-2": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "dom-2": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "comp-2": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "inv-2": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-2": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-2": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

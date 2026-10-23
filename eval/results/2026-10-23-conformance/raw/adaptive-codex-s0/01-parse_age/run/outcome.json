@@ -1,0 +1,52 @@
+{
+  "task": "Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`.",
+  "k": 1,
+  "reason": "genesis (S=0.00)",
+  "selected": "comp-1",
+  "why": "c1 satisfies parsing, range validation, and the repository\u2019s rejection-audit policy while preserving existing behavior.\nIt also normalizes accepted int subclasses to a plain int.\nRunner-up c2 returns int subclasses unchanged, despite promising an int result; c3 shares that weakness and leaves audit state behind in tests.",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": "/private<scratch>/repo/.lithify/proposals/20261023-125452-add-parse-age-value-to-app-users",
+  "usage": {
+    "in": 133905,
+    "cached": 995584,
+    "out": 9937,
+    "cost": 0.0,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

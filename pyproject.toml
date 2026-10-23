@@ -44,6 +44,8 @@ include = ["src/lithify", "tests", "README.md", "LICENSE", "NOTICE", "CHANGELOG.
 line-length = 130
 target-version = "py311"
 src = ["src", "tests"]
+# Captured agent output is evidence: never reformat or lint it.
+extend-exclude = ["eval/results"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]

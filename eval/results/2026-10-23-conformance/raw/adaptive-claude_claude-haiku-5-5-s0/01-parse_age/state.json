@@ -1,0 +1,20 @@
+{
+  "consecutive_failures": 1,
+  "history": [
+    {
+      "task_id": "20261023-124909-add-parse-age-value-to-app-users",
+      "k": 1,
+      "first_pass": false,
+      "delivered": true,
+      "churn_lines": 11,
+      "executions": 4,
+      "tokens_in": 245103,
+      "tokens_cached": 1744772,
+      "tokens_out": 34155,
+      "cost_usd": 1.8548,
+      "wall_s": 290.9,
+      "always_on_tokens": 156,
+      "stability_after": 0.0
+    }
+  ]
+}

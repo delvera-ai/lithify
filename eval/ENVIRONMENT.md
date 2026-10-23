@@ -5,7 +5,7 @@ Recorded 2026-10-23 on the owner's workstation.
 | component | version |
 |---|---|
 | OS | macOS (Darwin 25.6.0, arm64) |
-| Python | 3.13.7 (project venv via uv) |
+| Python | 3.14.4 in the project venv (uv default; all eval runs and the 3A sweep), 3.13.7 as system `python3` |
 | uv | 0.11.7 |
 | git | 2.54.0 |
 | gh | 2.90.0 |

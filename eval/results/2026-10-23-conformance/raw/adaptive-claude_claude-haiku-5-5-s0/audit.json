@@ -1,0 +1,16 @@
+{
+  "label": "adaptive-claude_claude-haiku-5-5-s0",
+  "scratch_kept": true,
+  "lithify_commit": "ae004cf",
+  "run_cost_usd": 1.8548,
+  "invariants": [
+    {
+      "task": "parse_age",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ],
+  "commits_by_others": []
+}

@@ -1,0 +1,1 @@
+Add `parse_country_code(value)` to app/addresses.py. It takes a string, strips surrounding whitespace and returns it uppercased. A valid code is exactly two ASCII letters (`"gb"` becomes `"GB"`). Reject anything else with `ValidationError`, including non-strings and non-ASCII letters.

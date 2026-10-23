@@ -1,0 +1,31 @@
+{
+  "task": "Add `parse_email(value)` to app/users.py. It takes a string, strips surrounding whitespace, lowercases it and returns it. Reject with `ValidationError` anything that is not a string, contains whitespace inside, does not contain exactly one `@`, has an empty part before the `@`, or whose domain (the part after the `@`) has no `.` or starts or ends with a `.`.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "What decided it was fidelity to the repo's conventions. In `app/users.py`, `parse_name` and `parse_age` both call `record_rejection(...)` and then `raise ValidationError(...)` inline. c2 does the same.\nThe runner-up, c1, is equally correct but adds a `_reject` helper and a `typing.NoReturn` import that nothing else in the module uses. That puts two styles in one file, an abstraction the task didn't ask for.\nThe tests in the two candidates are equivalent: both check that every rejection is recorded in the audit log.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 65991,
+    "cached": 476365,
+    "out": 10831,
+    "cost": 0.20150935999999997,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.14,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {}
+}

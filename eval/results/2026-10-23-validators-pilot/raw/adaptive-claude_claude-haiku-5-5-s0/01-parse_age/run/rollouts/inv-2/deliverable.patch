@@ -1,0 +1,34 @@
+diff --git a/app/users.py b/app/users.py
+index ce8fec2..5879e95 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -1,5 +1,29 @@
++import re
++
++from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
++_DIGITS = re.compile(r"[0-9]+")
++
++
++def parse_age(value) -> int:
++    """Return an age between 0 and 150, from an int or a string of decimal digits."""
++    if isinstance(value, bool) or not isinstance(value, (int, str)):
++        record_rejection("age", value, "not an int or a string")
++        raise ValidationError("age must be a whole number")
++    if isinstance(value, str):
++        text = value.strip()
++        if not _DIGITS.fullmatch(text):
++            record_rejection("age", value, "not a string of decimal digits")
++            raise ValidationError("age must be a whole number")
++        age = int(text)
++    else:
++        age = value
++    if not 0 <= age <= 150:
++        record_rejection("age", value, "outside 0-150")
++        raise ValidationError("age must be between 0 and 150")
++    return age
++
+ 
+ def parse_name(value: str) -> str:
+     """Return a display name: surrounding whitespace removed, 1-80 characters."""

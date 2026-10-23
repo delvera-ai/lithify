@@ -1,0 +1,73 @@
+{
+  "label": "adaptive-claude_claude-haiku-5-5-s0",
+  "scratch_kept": true,
+  "lithify_commit": "ae004cf",
+  "run_cost_usd": 4.8639,
+  "invariants": [
+    {
+      "task": "parse_age",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_email",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_phone",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_username",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_quantity_range",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_discount",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_postcode",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_country_code",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ],
+  "commits_by_others": [],
+  "home_writes": {
+    "~/.cache/lithify (probe worktrees, expected)": 0,
+    "~/.claude (agent CLI session state, expected)": 48,
+    "~/.codex (agent CLI session state, expected)": 73,
+    "this repository's eval/ (runner output, expected)": 122,
+    "other (unattributed; reviewed by hand)": 1112
+  },
+  "home_writes_raw": "kept locally, not committed (names unrelated projects)"
+}

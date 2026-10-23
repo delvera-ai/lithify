@@ -1,0 +1,2 @@
+- The project's checks run with `python -m pytest -q`.
+- Rejected user input must be audited: call `record_rejection(field, value, reason)` from `app/audit.py` before every `raise ValidationError(...)` (`app/errors.py`). `parse_name` (`app/users.py`) and `parse_quantity` (`app/orders.py`) predate this policy; do not copy their raise-only pattern. Load the `input-validation` skill for any validator/parser change.

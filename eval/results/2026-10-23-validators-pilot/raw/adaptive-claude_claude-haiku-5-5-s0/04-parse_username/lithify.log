@@ -1,0 +1,25 @@
+lithify ▸ 20261023-130952-add-parse-username-value-to-app  k=2 (genesis (S=0.28)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ▸ probe base-2: executing with claude@claude-haiku-5-5
+  ✓ probe base-2: test=pass, holdout=pass
+  ✓ probe base-1: test=pass, holdout=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (claude)
+  ✓ applied deliverable from base-1: Both are equal on scope, fidelity and correctness, so maintainability decided it, and here that came down to the tests.
+c1's tests cover the "lowercase" rule with an uppercase input ("Ada"). They also
+lithify ◂ delivered=True first_pass=True S=0.44 executions=2 role_sessions=1 tokens(in/cached/out)=69894/554576/9834 cost=$0.22
+{
+  "task_id": "20261023-130952-add-parse-username-value-to-app",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.4414,
+  "executions": 2,
+  "role_sessions": 1
+}
+

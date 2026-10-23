@@ -1,0 +1,86 @@
+diff --git a/app/users.py b/app/users.py
+index f33900f..a7501d3 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -51,3 +51,17 @@ def parse_email(value) -> str:
+         record_rejection("email", value, "email domain must contain a dot not at its start or end")
+         raise ValidationError("email domain must contain a dot not at its start or end")
+     return email
++
++
++def parse_phone(value) -> str:
++    """Return a phone number with spaces, hyphens and parentheses removed. An optional leading '+' is kept; 7-15 digits follow."""
++    if not isinstance(value, str):
++        record_rejection("phone", value, "phone must be a string")
++        raise ValidationError("phone must be a string")
++    phone = "".join(ch for ch in value if ch not in " -()")
++    prefix = "+" if phone.startswith("+") else ""
++    digits = phone[len(prefix):]
++    if not (digits.isascii() and digits.isdigit() and 7 <= len(digits) <= 15):
++        record_rejection("phone", value, "phone must be 7-15 digits with an optional leading +")
++        raise ValidationError("phone must be 7-15 digits with an optional leading +")
++    return prefix + digits
+diff --git a/tests/test_users.py b/tests/test_users.py
+index d0174f5..a6478f1 100644
+--- a/tests/test_users.py
++++ b/tests/test_users.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from app.audit import REJECTIONS
+ from app.errors import ValidationError
+-from app.users import parse_age, parse_email, parse_name
++from app.users import parse_age, parse_email, parse_name, parse_phone
+ 
+ 
+ def test_parse_name_strips():
+@@ -98,3 +98,50 @@ def test_parse_email_rejects_and_audits(bad):
+     assert entry["field"] == "email"
+     assert entry["value"] is bad
+     assert entry["reason"] == str(excinfo.value)
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [
++        ("+14155552671", "+14155552671"),
++        ("415-555-2671", "4155552671"),
++        ("(415) 555 2671", "4155552671"),
++        ("+1 (415) 555-2671", "+14155552671"),
++        ("1234567", "1234567"),
++        ("123456789012345", "123456789012345"),
++    ],
++)
++def test_parse_phone_accepts(good, expected):
++    assert parse_phone(good) == expected
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        None,
++        4155552671,
++        ["+14155552671"],
++        "",
++        "+",
++        "   ",
++        "123456",
++        "1234567890123456",
++        "+123456",
++        "+1234567890123456",
++        "415-555-CALL",
++        "415.555.2671",
++        "++14155552671",
++        "+1+4155552671",
++        "1415 555 2671 x12",
++        "٤١٥٥٥٥٢٦٧١",  # Arabic-Indic digits: decimal, but not ASCII
++    ],
++)
++def test_parse_phone_rejects_and_audits(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as excinfo:
++        parse_phone(bad)
++    assert len(REJECTIONS) == before + 1
++    entry = REJECTIONS[-1]
++    assert entry["field"] == "phone"
++    assert entry["value"] is bad
++    assert entry["reason"] == str(excinfo.value)

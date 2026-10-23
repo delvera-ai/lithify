@@ -1,0 +1,127 @@
+diff --git a/app/orders.py b/app/orders.py
+index bdd0976..912048d 100644
+--- a/app/orders.py
++++ b/app/orders.py
+@@ -1,6 +1,10 @@
++import re
++
+ from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
++DISCOUNT_PATTERN = re.compile(r"[0-9]+(?:\.[0-9]+)?%?")
++
+ 
+ def parse_quantity(value) -> int:
+     """Return an order quantity between 1 and 999."""
+@@ -34,3 +38,23 @@ def parse_quantity_range(value) -> tuple[int, int]:
+         record_rejection("quantity range", value, "quantity range low end must not exceed high end")
+         raise ValidationError("quantity range low end must not exceed high end")
+     return low, high
++
++
++def parse_discount(value) -> float:
++    """Return a discount percentage between 0 and 100 inclusive from an int, a float, or a numeric string such as '12.5' or '12.5%'."""
++    if isinstance(value, str):
++        text = value.strip()
++        if not DISCOUNT_PATTERN.fullmatch(text):
++            record_rejection("discount", value, "discount must look like 12.5 or 12.5%")
++            raise ValidationError("discount must look like 12.5 or 12.5%")
++        discount = float(text.removesuffix("%"))
++    elif isinstance(value, (int, float)) and not isinstance(value, bool):
++        discount = value
++    else:
++        record_rejection("discount", value, "discount must be a number or a numeric string")
++        raise ValidationError("discount must be a number or a numeric string")
++    # NaN fails this comparison too, so it is rejected here with the range check
++    if not 0 <= discount <= 100:
++        record_rejection("discount", value, "discount must be between 0 and 100")
++        raise ValidationError("discount must be between 0 and 100")
++    return float(discount)
+diff --git a/tests/test_orders.py b/tests/test_orders.py
+index 5eec91d..c9b494f 100644
+--- a/tests/test_orders.py
++++ b/tests/test_orders.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from app.audit import REJECTIONS
+ from app.errors import ValidationError
+-from app.orders import parse_quantity_range
++from app.orders import parse_discount, parse_quantity_range
+ 
+ 
+ @pytest.mark.parametrize(
+@@ -54,3 +54,74 @@ def test_parse_quantity_range_rejects_and_audits(bad):
+     assert entry["field"] == "quantity range"
+     assert entry["value"] is bad
+     assert entry["reason"] == str(excinfo.value)
++
++
++@pytest.mark.parametrize(
++    "good, expected",
++    [
++        (0, 0.0),
++        (100, 100.0),
++        (12, 12.0),
++        (12.5, 12.5),
++        (99.99, 99.99),
++        ("0", 0.0),
++        ("100", 100.0),
++        ("12.5", 12.5),
++        ("12.5%", 12.5),
++        ("100%", 100.0),
++        ("0.0%", 0.0),
++        (" 7 ", 7.0),
++        ("\t12.5%\n", 12.5),
++    ],
++)
++def test_parse_discount_accepts(good, expected):
++    result = parse_discount(good)
++    assert result == expected
++    assert type(result) is float
++
++
++@pytest.mark.parametrize(
++    "bad",
++    [
++        None,
++        True,
++        False,
++        [12],
++        (12,),
++        {"discount": 12},
++        "",
++        "   ",
++        "%",
++        "12%%",
++        "%12",
++        "12 %",
++        "1e2",
++        "1_0",
++        "12,5",
++        ".5",
++        "5.",
++        "12.5.1",
++        "-5",
++        "+5",
++        "101",
++        "100.5%",
++        "nan",
++        "inf",
++        "١٢",  # Arabic-Indic digits one and two: decimal, but not ASCII
++        -0.1,
++        100.5,
++        101,
++        float("nan"),
++        float("inf"),
++        10**400,
++    ],
++)
++def test_parse_discount_rejects_and_audits(bad):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as excinfo:
++        parse_discount(bad)
++    assert len(REJECTIONS) == before + 1
++    entry = REJECTIONS[-1]
++    assert entry["field"] == "discount"
++    assert entry["value"] is bad
++    assert entry["reason"] == str(excinfo.value)
