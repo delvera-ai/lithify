@@ -22,6 +22,10 @@ All notable changes to this project are documented here. The format follows
   (CI job `sim-sweep`); `LITHIFY_MOCK_SEED` varies mock noise draws between replicates.
 
 ### Fixed
+- Codex adapter: `codex-cli` 0.163.0 rejects `--full-auto`; default flags are now
+  `--sandbox workspace-write`.
+- Antigravity adapter: read `cache_read_tokens` and `thinking_tokens` (agy 1.4.3), and keep the
+  envelope's `error` message instead of reporting only the status.
 - `holdout_cmd` no longer reaches agents: probe and snapshot worktrees drop `.lithify/config.toml`,
   and gate reports show the holdout's result but not its command (#9).
 - Codex marketplace manifest lives at `.agents/plugins/marketplace.json` (was misplaced at
