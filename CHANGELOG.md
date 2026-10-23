@@ -27,6 +27,9 @@ All notable changes to this project are documented here. The format follows
   development-set debug run and the humanize pilot (phase 3C).
 
 ### Fixed
+- Reflector prompt: `helped` is defined operationally and one rollout is enough evidence. The old
+  rule ("prefer `confounded` when a single rollout stands behind the difference") made `helped`
+  unreachable, so `auto_adopt` never promoted anything (#13).
 - Codex adapter: `codex-cli` 0.163.0 rejects `--full-auto`; default flags are now
   `--sandbox workspace-write`.
 - Antigravity adapter: read `cache_read_tokens` and `thinking_tokens` (agy 1.4.3), and keep the
@@ -41,3 +44,6 @@ All notable changes to this project are documented here. The format follows
   rendered subpaths (`.claude/skills`, `.agents/skills`, `.claude/agents`) are excluded now.
 - CI installs into the `setup-uv` virtual environment instead of the system interpreter, and
   `claude plugin validate . --profile directory --strict` now fails the build instead of warning.
+- Agent-CLI usage, session and rate limits: the Claude adapter now reports the CLI's error text
+  instead of an empty error, and a limit notice stops the task (`LimitReached`) instead of
+  launching further sessions that fail empty and get recorded as harness failures.
