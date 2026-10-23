@@ -2,6 +2,8 @@
 
 stream-json gives the full trajectory (tool calls and results), which is the evidence
 the proposers read; the final `result` event carries usage and total_cost_usd.
+
+Format verified against Claude Code 2.1.309 (tests/fixtures/claude_2.1.309.jsonl).
 """
 
 from __future__ import annotations

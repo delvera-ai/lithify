@@ -1,4 +1,7 @@
-"""OpenAI Codex CLI: `codex exec --json` (JSONL events; usage on turn.completed)."""
+"""OpenAI Codex CLI: `codex exec --json` (JSONL events; usage on turn.completed).
+
+Format verified against codex-cli 0.163.0 (tests/fixtures/codex_0.163.0.jsonl).
+"""
 
 from __future__ import annotations
 
@@ -11,8 +14,9 @@ from .base import Adapter, RunResult, clip, jsonl
 class CodexAdapter(Adapter):
     name = "codex"
     binary = "codex"
-    # workspace-write sandbox + no approval prompts; worktrees are disposable.
-    default_args: ClassVar[list[str]] = ["--full-auto"]
+    # workspace-write sandbox; `codex exec` never prompts for approval. Worktrees are disposable.
+    # codex-cli 0.163.0 removed `--full-auto`; `--sandbox workspace-write` is its equivalent.
+    default_args: ClassVar[list[str]] = ["--sandbox", "workspace-write"]
 
     def build_cmd(self, prompt: str, cwd: Path) -> list[str]:
         return [self.binary, "exec", "--json", "--skip-git-repo-check", "-C", str(cwd), *self.args, prompt]

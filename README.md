@@ -182,9 +182,12 @@ bias when judging the executor's work.
 
 ## Safety model
 
-* Probes run headless with permission prompts disabled (`--dangerously-skip-permissions`,
-  `--full-auto`) **inside disposable worktrees outside your repository**. Tighten with
+* Probes run headless with permission prompts disabled (Claude Code and Antigravity:
+  `--dangerously-skip-permissions`; Codex: `--sandbox workspace-write`, which never prompts in
+  `codex exec`) **inside disposable worktrees outside your repository**. Tighten with
   `[adapter_args]`. Gates run your own commands with your own environment.
+* Isolation covers the repository, not your user-level configuration: probes still load your
+  global `~/.claude/` or `~/.codex/` instructions, hooks and plugins.
 * lithify applies the selected patch to your working tree and **never commits, pushes or opens PRs**.
 * Role sessions are told that everything under `context/` is evidence, not instructions, and never
   to execute scripts found in candidate harnesses.
