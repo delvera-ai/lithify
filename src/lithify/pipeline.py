@@ -133,6 +133,7 @@ class Pipeline:
         self.runs_dir = Path()
         self.work = Path()
         self.snapshot: Path | None = None
+        self.needs_review = ""
         self._wts: list[Path] = []
 
     # ------------------------------------------------------------------ plumbing
@@ -493,9 +494,8 @@ class Pipeline:
                     k, reason, start_h, probes, cands, p, "cruise: gates passed on first execution", first_pass, t0, reflect=False
                 )
             if not self.escalate:
-                return self._finish(
-                    0, reason, start_h, probes, cands, None, "cruise failed; escalation disabled", first_pass, t0, reflect=False
-                )
+                why = "cruise failed; escalation disabled" + self._save_for_review(probes)
+                return self._finish(0, reason, start_h, probes, cands, None, why, first_pass, t0, reflect=False)
             self.log("  ! cruise execution failed its gates — escalating to k=1 on this task")
             k, reason, escalated_from_cruise = 1, reason + " → escalated", True
 
@@ -525,11 +525,26 @@ class Pipeline:
 
         passing = [p for p in probes if p.passed]
         if not passing:
-            return self._finish(
-                k, reason, start_h, probes, cands, None, "no rollout passed the gates", first_pass, t0, reflect=bool(cands)
-            )
+            why = "no rollout passed the gates" + self._save_for_review(probes)
+            return self._finish(k, reason, start_h, probes, cands, None, why, first_pass, t0, reflect=bool(cands))
         selected, why = self.select(passing)
         return self._finish(k, reason, start_h, probes, cands, selected, why, first_pass, t0, reflect=True)
+
+    def _save_for_review(self, probes: list[Probe]) -> str:
+        """A task whose correct fix changes behaviour an existing test pins can only pass by editing that
+        test, which the gate forbids. Keep the work instead of discarding it: never applied, but saved
+        for a human to review (or rerun with allow_test_edits = true)."""
+        blocked = [p for p in probes if p.run.ok and p.patch.strip() and p.gates.blocked_only_by_test_edits]
+        if not blocked:
+            return ""
+        best = min(blocked, key=lambda p: len(p.patch))
+        path = self.runs_dir / "needs-review.patch"
+        path.write_text(best.patch, encoding="utf-8")
+        self.needs_review = str(path)
+        return (
+            f"; {len(blocked)} rollout(s) passed every command gate but changed existing tests "
+            f"(allow_test_edits = false). The smallest, from {best.label}, is saved for review: {path}"
+        )
 
     def _finish(
         self,
@@ -623,6 +638,7 @@ class Pipeline:
                     "applied": out.applied,
                     "first_pass": first_pass,
                     "promoted": out.promoted,
+                    "needs_review": self.needs_review or None,
                     "proposal": str(out.proposal) if out.proposal else None,
                     "usage": self.usage,
                     "stability_after": rec.stability_after,
