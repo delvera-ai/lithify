@@ -1,0 +1,1 @@
+Bug: `wait_random_exponential(min=..., max=...)` can return a wait shorter than `min`. The `min` argument should be a lower bound on every sampled wait, not only on the upper end of the sampling range.

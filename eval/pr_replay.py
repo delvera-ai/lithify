@@ -23,9 +23,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -57,9 +57,28 @@ def configure(clone: Path, a: argparse.Namespace, test_cmd: str) -> None:
     (clone / ".lithify" / "config.toml").write_text(render_config(cfg), encoding="utf-8")
 
 
-def reset_to(repo_name: str, clone: Path, base: str, keep: Path | None) -> None:
-    """Check out `base`, restore the carried lithify state, render it and commit the setup."""
-    if keep is not None:
+# Signatures of a subscription or rate limit cutting sessions short: the CLI returns the notice as
+# its whole answer, or the session fails with an empty error. Such a task measures nothing.
+LIMIT_TEXT = re.compile(r"(session|usage|rate) limit|hit your limit|limit reached|resets \d", re.I)
+LIMIT_LOG = re.compile(r"discarded \(\)|\[executor: \]")
+
+
+def limit_hit(ev: Path) -> str:
+    log = ev / "lithify.log"
+    if log.exists() and LIMIT_LOG.search(log.read_text(encoding="utf-8", errors="ignore")):
+        return "session failed with an empty error (lithify.log)"
+    for t in (ev / "run").rglob("trajectory.md") if (ev / "run").is_dir() else []:
+        head = t.read_text(encoding="utf-8", errors="ignore")[:4000]
+        if LIMIT_TEXT.search(head):
+            return f"limit notice in {t.parent.name}/trajectory.md"
+    return ""
+
+
+def reset_to(repo_name: str, clone: Path, base: str, keep: Path | None, save: bool = True) -> None:
+    """Check out `base`, restore the carried lithify state, render it and commit the setup.
+
+    With save=False the state already in `keep` is restored as is (resuming an interrupted task)."""
+    if keep is not None and save:
         shutil.rmtree(keep, ignore_errors=True)
         for name in CARRIED:
             if (clone / name).exists():
@@ -102,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--experiment", default="pr-replay")
     ap.add_argument("--label", default="")
+    ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
 
     spec = REPOS[a.repo]
@@ -122,23 +142,40 @@ def main(argv: list[str] | None = None) -> int:
     label = a.label or f"{a.repo}-{a.strategy}-{a.executor.replace('@', '_')}"
     ev_root = out / "raw" / label
     ev_root.mkdir(parents=True, exist_ok=True)
-    run_dir = Path(tempfile.mkdtemp(prefix=f"replay-{a.strategy}-", dir=work))
+    run_dir = work / f"replay-{a.experiment}-{label}"
     clone = run_dir / "repo"
-    git(work, "clone", "-q", str(work / f"{a.repo}.git"), str(clone))
+    progress_file = run_dir / "progress.json"
+    progress = {"next_pos": 1, "run_cost": 0.0, "audit": []}
+    if a.resume:
+        if not progress_file.exists():
+            print(f"nothing to resume in {run_dir}", file=sys.stderr)
+            return 1
+        progress = json.loads(progress_file.read_text())
+    else:
+        shutil.rmtree(run_dir, ignore_errors=True)
+        run_dir.mkdir(parents=True)
+        git(work, "clone", "-q", str(work / f"{a.repo}.git"), str(clone))
     py = setup_env(a.repo, clone, work)
     test_cmd = spec["test_cmd"].format(py=py)
     redactions = {str(run_dir): "<run>", str(work): "<work>", str(EVAL): "<eval>"}
 
     commit = lithify_commit()
     keep = run_dir / "carried"
-    run_cost = 0.0
-    audit: list[dict] = []
+    run_cost = float(progress["run_cost"])
+    audit: list[dict] = list(progress["audit"])
+    start = int(progress["next_pos"])
+
+    def save_progress(next_pos: int) -> None:
+        progress_file.write_text(json.dumps({"next_pos": next_pos, "run_cost": run_cost, "audit": audit}), encoding="utf-8")
+
     for pos, pr in enumerate(prs, 1):
+        if pos < start:
+            continue
         total = spent(RESULTS)
         if run_cost >= a.limit_usd or total >= TOTAL_CAP_USD:
             print(f"budget stop before #{pr['number']}: run ${run_cost:.2f}/{a.limit_usd:.2f}; all results ${total:.2f}")
             break
-        reset_to(a.repo, clone, pr["base"], keep if pos > 1 else None)
+        reset_to(a.repo, clone, pr["base"], keep if pos > 1 else None, save=not (a.resume and pos == start))
         if pos == 1:
             r = lithify(clone, "init", "--executor", a.executor, "--test-cmd", test_cmd)
             if r.returncode != 0:
@@ -161,6 +198,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[{label}] {pos}/{len(prs)} #{pr['number']} {pr['title'][:60]} …", flush=True)
         t0 = time.time()
         m = run_task(clone, task_file, a.strategy, holdout, a.timeout * 6, ev, redactions)
+        hit = limit_hit(ev)
+        if hit:
+            shutil.rmtree(ev, ignore_errors=True)
+            save_progress(pos)
+            print(f"LIMIT HIT at {pos}/{len(prs)} #{pr['number']}: {hit}; nothing recorded. Re-run with --resume.", flush=True)
+            return 75
         (ev / "applied.diff").write_text(redact(git(clone, "diff", "HEAD"), redactions), encoding="utf-8")
         m["adopted"] = ""
         if a.adopt == "all" and m["proposed"]:
@@ -197,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
             f"adopted=[{m['adopted']}] run total ${run_cost:.2f}",
             flush=True,
         )
+        save_progress(pos + 1)
 
     summary = {
         "label": label,

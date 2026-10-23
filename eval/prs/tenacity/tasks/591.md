@@ -1,0 +1,1 @@
+Bug: `tenacity.after_log` crashes with `TypeError` when `retry_state.seconds_since_start` is `None` (it is `None` when the outcome timestamp has not been set). The log message should still be emitted, showing "?" in place of the elapsed seconds.
