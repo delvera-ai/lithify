@@ -44,3 +44,6 @@ All notable changes to this project are documented here. The format follows
   rendered subpaths (`.claude/skills`, `.agents/skills`, `.claude/agents`) are excluded now.
 - CI installs into the `setup-uv` virtual environment instead of the system interpreter, and
   `claude plugin validate . --profile directory --strict` now fails the build instead of warning.
+- Agent-CLI usage, session and rate limits: the Claude adapter now reports the CLI's error text
+  instead of an empty error, and a limit notice stops the task (`LimitReached`) instead of
+  launching further sessions that fail empty and get recorded as harness failures.

@@ -56,6 +56,9 @@ class ClaudeAdapter(Adapter):
             tokens_cached=int(usage.get("cache_read_input_tokens", 0)),
             tokens_out=int(usage.get("output_tokens", 0)),
             cost_usd=float(final.get("total_cost_usd", 0.0) or 0.0),
-            error="" if final else clip(stderr or stdout, 2000),
+            # An error result (e.g. a usage-limit notice) carries its message in `result`.
+            error=clip(str(final.get("result", "")), 2000)
+            if final.get("is_error")
+            else ("" if final else clip(stderr or stdout, 2000)),
             meta={"num_turns": final.get("num_turns"), "session_id": final.get("session_id")},
         )

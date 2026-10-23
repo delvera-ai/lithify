@@ -51,3 +51,18 @@ def test_parsers_tolerate_garbage():
     for ad in (ClaudeAdapter(), CodexAdapter(), AgyAdapter()):
         r = ad.parse('not json\n{"type": "mystery"}\n{broken', "", 1)
         assert r.ok is False or r.text == ""
+
+
+def test_claude_error_result_surfaces_limit_notice():
+    """The 2.1.309 `result` event for a session-limit stop (reconstructed from a live eval trajectory:
+    final message only, zero tokens) must report the notice as the error, not an empty string."""
+    import json
+
+    from lithify.adapters.base import hit_limit
+
+    notice = "You've hit your session limit · resets 6:40pm (Africa/Johannesburg)"
+    ev = {"type": "result", "subtype": "success", "is_error": True, "result": notice, "total_cost_usd": 0, "usage": {}}
+    r = ClaudeAdapter().parse(json.dumps(ev) + "\n", "", 1)
+    assert not r.ok and r.error == notice and hit_limit(r)
+    ok = ClaudeAdapter().parse((FIX / "claude_2.1.309.jsonl").read_text(), "", 0)
+    assert not hit_limit(ok)

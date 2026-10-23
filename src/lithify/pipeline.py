@@ -31,7 +31,7 @@ from pathlib import Path
 
 from . import prompts, worktree
 from .adapters import get_adapter, split_spec
-from .adapters.base import RunResult
+from .adapters.base import LimitReached, RunResult, hit_limit
 from .config import CONFIG_FILE, LITHIFY_DIR, Config
 from .gates import GateResult, is_test_path, run_gates
 from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, promote, render
@@ -149,6 +149,12 @@ class Pipeline:
             self.usage["cost"] += r.cost_usd
             self.usage["roles" if role else "exec"] += 1
 
+    def _stop_on_limit(self, res: RunResult, what: str) -> None:
+        """A limit notice means every later session would fail too: stop the task instead of burning
+        through proposers and probes that record empty failures."""
+        if hit_limit(res):
+            raise LimitReached(f"{what} stopped by an agent CLI limit: {(res.error or res.text)[:300]}")
+
     def _adapter(self, spec: str):
         return get_adapter(spec, self.cfg.adapter_args.get(split_spec(spec)[0]))
 
@@ -178,6 +184,7 @@ class Pipeline:
         self.log(f"  ▸ probe {label}: executing with {self.cfg.executor}")
         res = self._adapter(self.cfg.executor).run(self.task, wt, self.cfg.timeout_s, role="execute")
         self._account(res, role=False)
+        self._stop_on_limit(res, f"probe {label}")
         patch = worktree.deliverable(wt)
         changed = worktree.changed_files(wt)
         cmds = self.cfg.gate_commands()
@@ -255,6 +262,7 @@ class Pipeline:
         cli = self.cfg.role_cli(role)
         res = self._adapter(cli).run(ROLE_PROMPT, ctx, self.cfg.timeout_s, role=role)
         self._account(res, role=True)
+        self._stop_on_limit(res, f"role {role}")
         (ctx / "RESPONSE.md").write_text(res.text or res.error, encoding="utf-8")
         return res
 
