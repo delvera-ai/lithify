@@ -1,0 +1,151 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index d9c0bbc..ea68550 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,5 +3,6 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-142958-bug-humanize-naturalday-and-huma](20261023-142958-bug-humanize-naturalday-and-huma/EXPERIENCE.md) — **when** A humanize task where two public functions share logic and one calls the other (here `naturaldate` → `naturalday`), and a harness skill states a rule that keeps the two consistent. **then** In the `skills/<name>` for that module, phrase a cross-function rule as a check to run on the finished diff ("for each new test input, `naturaldate(x)` and `naturalday(x)` give the same today/tomorrow/yesterday label"). Do not phrase it as a design requirement ("both must use the same notion of today / must not disagree"). The requirement wording led the agent to restructure the functions so they could not disagree, which is an unrequested refactor. The check wording keeps the existing call structure and still catches the near-miss through a test.
+ - [20261023-142559-humanize-i18n-raises-a-bare-exce](20261023-142559-humanize-i18n-raises-a-bare-exce/EXPERIENCE.md) — **when** A humanize task that narrows or changes behaviour that existing tests only check loosely. For example, `pytest.raises(Exception, match=...)` still passes after the type is narrowed to a subclass, and would pass if the change were never made. So the existing suite cannot show the new behaviour, and the agent is tempted to "tighten" those assertions. **then** In the `skills/<name>` that covers the change, write the verification step as "pin the new behaviour by adding a NEW test function beside the existing one (same setup, same `match`); do not modify any pre-existing test line, even to make it stricter." Do not phrase it as "make sure some test asserts the new type". Agents satisfy that wording by rewriting the existing assertions, which counts as editing existing tests.
+ - [20261023-142110-regression-when-gnu-is-false-hum](20261023-142110-regression-when-gnu-is-false-hum/EXPERIENCE.md) — **when** Adding parametrized cases to a humanize test where the test body changes each case's arguments before asserting again (for example, `test_naturalsize` re-runs every case negated by prefixing `-` to non-int inputs), so a case that looks valid fails on the second assertion. **then** Put the test function's argument-transformation contract in `memory.md` as one line saying which inputs are legal there. Do not put it inside a task-specific `skills/<name>` that also encodes the fix. A future task that adds cases to that test then avoids writing a case the retest will break, without loading a skill whose solution hints can pull its tests toward inputs that were never broken.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 81fb8df..5476a1b 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -30,6 +30,21 @@
+       "wall_s": 237.9,
+       "always_on_tokens": 189,
+       "stability_after": 0.3565
++    },
++    {
++      "task_id": "20261023-142958-bug-humanize-naturalday-and-huma",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 4,
++      "tokens_in": 356675,
++      "tokens_cached": 3689723,
++      "tokens_out": 73732,
++      "cost_usd": 2.7911,
++      "wall_s": 475.8,
++      "always_on_tokens": 256,
++      "stability_after": 0.5565
+     }
+   ]
+ }
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index f0b24fa..0a4cf9f 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -308,17 +308,28 @@ def _convert_aware_datetime(
+     return value
+ 
+ 
++def _today(value: dt.date | dt.datetime) -> dt.date:
++    """Return the current date, in the timezone of `value` if it is timezone-aware."""
++    import datetime as dt
++
++    if isinstance(value, dt.datetime) and value.tzinfo is not None:
++        return dt.datetime.now(value.tzinfo).date()
++    return dt.date.today()
++
++
+ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     """Return a natural day.
+ 
+     For date values that are tomorrow, today or yesterday compared to
+     present day return representing string. Otherwise, return a string
+-    formatted according to `format`.
++    formatted according to `format`. For timezone-aware datetimes, "present
++    day" is taken in the datetime's own timezone.
+ 
+     """
+     import datetime as dt
+ 
+     try:
++        today = _today(value)
+         value = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+         # Passed value wasn't date-ish
+@@ -326,7 +337,7 @@ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = value - dt.date.today()
++    delta = value - today
+ 
+     if delta.days == 0:
+         return _("today")
+@@ -345,14 +356,15 @@ def naturaldate(value: dt.date | dt.datetime) -> str:
+     import datetime as dt
+ 
+     try:
+-        value = dt.date(value.year, value.month, value.day)
++        today = _today(value)
++        day = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+         # Passed value wasn't date-ish
+         return str(value)
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = _abs_timedelta(value - dt.date.today())
++    delta = _abs_timedelta(day - today)
+     if delta.days >= 5 * 365 / 12:
+         return naturalday(value, "%b %d %Y")
+     return naturalday(value)
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 63e171a..cb80a36 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -300,6 +300,48 @@ def test_naturaldate(test_input: dt.date, expected: str) -> None:
+     assert humanize.naturaldate(test_input) == expected
+ 
+ 
++AEDT = dt.timezone(dt.timedelta(hours=11))
++PDT = dt.timezone(dt.timedelta(hours=-7))
++
++
++@freeze_time("2023-10-15 23:00:00")  # 2023-10-16 10:00 in AEDT, 2023-10-15 in UTC
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (dt.datetime(2023, 10, 16, 17, 0, tzinfo=AEDT), "today"),
++        (dt.datetime(2023, 10, 17, 17, 0, tzinfo=AEDT), "tomorrow"),
++        (dt.datetime(2023, 10, 15, 17, 0, tzinfo=AEDT), "yesterday"),
++    ],
++)
++def test_naturalday_aware_uses_datetime_timezone(
++    test_input: dt.datetime, expected: str
++) -> None:
++    assert humanize.naturalday(test_input) == expected
++    assert humanize.naturaldate(test_input) == expected
++
++
++@freeze_time("2023-10-15 02:00:00")  # 2023-10-14 19:00 in PDT, 2023-10-15 in UTC
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (dt.datetime(2023, 10, 14, 9, 0, tzinfo=PDT), "today"),
++        (dt.datetime(2023, 10, 15, 9, 0, tzinfo=PDT), "tomorrow"),
++        (dt.datetime(2023, 10, 13, 9, 0, tzinfo=PDT), "yesterday"),
++    ],
++)
++def test_naturalday_aware_uses_datetime_timezone_behind_utc(
++    test_input: dt.datetime, expected: str
++) -> None:
++    assert humanize.naturalday(test_input) == expected
++    assert humanize.naturaldate(test_input) == expected
++
++
++@freeze_time("2023-10-15 23:00:00")
++def test_naturaldate_aware_far_date_appends_year() -> None:
++    value = dt.datetime(2024, 6, 1, 12, 0, tzinfo=AEDT)
++    assert humanize.naturaldate(value) == "Jun 01 2024"
++
++
+ @pytest.mark.parametrize(
+     "seconds, expected",
+     [

@@ -1,0 +1,31 @@
+{
+  "task": "Regression: when `gnu` is False, `humanize.naturalsize(1.0)` or `naturalsize(\"1\")` returns `\"1.0 Byte\"` instead of `\"1 Byte\"`, which was the return value until 4.12. Restore the previous output for float and numeric-string inputs that are below one kilobyte.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "Both candidates make the same one-line fix in `src/humanize/filesize.py` (`f\"{int(bytes_)} Byte\"`), so scope, fidelity and correctness are equal.\nThe only difference is the tests. c1 adds the two cases the task names: `1.0` and `\"1\"` with `gnu=False`.\nThe runner-up, c2, adds those same two cases plus `[1.0]` and `[\"1\"]`. Those extra two just repeat the first pair through the default arguments, which are already `False, False`, so they test nothing new.\nThe tie-break is maintainability: the smaller change that is equally correct wins.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 62356,
+    "cached": 411075,
+    "out": 6686,
+    "cost": 0.18470743,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

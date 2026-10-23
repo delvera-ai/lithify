@@ -1,0 +1,6 @@
+# lithify improvement library
+
+Each entry: what situation a lesson applies to, and the harness operation that helped.
+Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+
+- [20261023-133822-extend-humanize-naturalsize-to-s](20261023-133822-extend-humanize-naturalsize-to-s/EXPERIENCE.md) — **when** The task in this repository changes a public function's output for inputs that existing parametrized test rows already assert. Example: extending a unit or suffix table so values that used to overflow into the old top unit now format differently. The literal old expected strings stay in the test file, and the gate checks both that the suite passes and that no pre-existing test line was changed. **then** Leave the unconditional "never edit existing tests" rule in guardrails.md as it is. Don't add a "the task supersedes this assertion" exception, and don't add a "done means exit 0" rule to system.md. Both turn the failure into an edited-existing-tests gate failure instead of fixing it. Put the domain facts in a skills/<area> skill instead (which rows the change will break, new cases go in new rows or a new function with the negation check, inputs off exact float boundaries, doctests need a separate run), and have the agent report each conflicting row as `input: old -> new`.

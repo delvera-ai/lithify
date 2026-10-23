@@ -1,0 +1,39 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 78bb26f..d07255b 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -359,11 +359,16 @@ def fractional(value: NumberOrString) -> str:
+ 
+     whole_number = int(number)
+     frac = Fraction(number - whole_number).limit_denominator(1000)
++    if abs(frac) == 1:
++        # the fractional part rounded up to a whole number (e.g. 0.9999999),
++        # so carry it into the whole part instead of printing "1/1"
++        whole_number += int(frac)
++        frac = Fraction(0)
+     numerator = frac.numerator
+     denominator = frac.denominator
+-    if whole_number and not numerator and denominator == 1:
++    if not numerator and denominator == 1:
+         # this means that an integer was passed in
+-        # (or variants of that integer like 1.0000)
++        # (or variants of that integer like 1.0000, or 0)
+         return f"{whole_number:.0f}"
+ 
+     if not whole_number:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 78639c3..f2f5bb6 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -187,6 +187,11 @@ def test_apnumber(test_input: int | str, expected: str) -> None:
+         (-1.3, "-1 3/10"),
+         (-2.5, "-2 1/2"),
+         (-0.5, "-1/2"),
++        (0, "0"),
++        (2.9999999, "3"),
++        (0.9999999, "1"),
++        (-2.9999999, "-3"),
++        (-0.9999999, "-1"),
+     ],
+ )
+ def test_fractional(test_input: float | str, expected: str) -> None:

@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.naturalsize()` does not roll over from ZB to YB where expected for large integers. For every smaller unit you never see \"1000.x\" of a unit, it rolls over to the next one, but:\n\n```python\n>>> naturalsize(1_000_000_000_000_000_000_000_000)\n'1000.0 ZB'   # expected '1.0 YB'\n>>> naturalsize(1_000_000_000_000_000_050_331_648)\n'1000.0 ZB'   # expected '1.0 YB'\n```\n\nMake large integer inputs roll over to the next unit consistently.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "The deciding criteria were scope and minimalism. c1 fixes exactly what the task asks: when the input is an integer, it picks the unit by comparing the exact integer instead of the rounded float. The formatting path is unchanged, and the fix adds only 3 lines.\nc3 brings in `Decimal` and `math` and also changes how strings and floats are handled. c4 adds a new helper that changes `bytes_` itself, including for string inputs. Both go further than the request.\nThe runner-up is c2. Its logic is the same as c1's, but it puts the new variable before the early returns and adds a doctest plus a test case that repeats an existing doctest. That's slightly more change for no extra correctness, so the smaller c1 wins.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-134509-bug-humanize-naturalsize-does-no",
+  "usage": {
+    "in": 336290,
+    "cached": 2718564,
+    "out": 72736,
+    "cost": 2.53231634,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.1527,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

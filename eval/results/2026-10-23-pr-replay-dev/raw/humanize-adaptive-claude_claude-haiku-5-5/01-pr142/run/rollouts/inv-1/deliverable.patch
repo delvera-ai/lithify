@@ -1,0 +1,77 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index ca4d468..2baebc3 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -3,9 +3,31 @@
+ from __future__ import annotations
+ 
+ suffixes = {
+-    "decimal": (" kB", " MB", " GB", " TB", " PB", " EB", " ZB", " YB"),
+-    "binary": (" KiB", " MiB", " GiB", " TiB", " PiB", " EiB", " ZiB", " YiB"),
+-    "gnu": "KMGTPEZY",
++    "decimal": (
++        " kB",
++        " MB",
++        " GB",
++        " TB",
++        " PB",
++        " EB",
++        " ZB",
++        " YB",
++        " RB",
++        " QB",
++    ),
++    "binary": (
++        " KiB",
++        " MiB",
++        " GiB",
++        " TiB",
++        " PiB",
++        " EiB",
++        " ZiB",
++        " YiB",
++        " RiB",
++        " QiB",
++    ),
++    "gnu": "KMGTPEZYRQ",
+ }
+ 
+ 
+@@ -34,7 +56,7 @@ def naturalsize(
+         >>> naturalsize(3000, True)
+         '2.9 KiB'
+         >>> naturalsize(10**28)
+-        '10000.0 YB'
++        '10.0 RB'
+         >>> naturalsize(-4096, True)
+         '-4.0 KiB'
+ 
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 0119d58..cbf7b9f 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -23,14 +23,20 @@ import humanize
+         ([3000, False, True], "2.9K"),
+         ([3000000, False, True], "2.9M"),
+         ([1024, False, True], "1.0K"),
+-        ([10**26 * 30, False, True], "2481.5Y"),
+-        ([10**26 * 30, True], "2481.5 YiB"),
+-        ([10**26 * 30], "3000.0 YB"),
++        ([10**26 * 30, False, True], "2.4R"),
++        ([10**26 * 30, True], "2.4 RiB"),
++        ([10**26 * 30], "3.0 RB"),
+         ([1, False, False], "1 Byte"),
+         ([3141592, False, False, "%.2f"], "3.14 MB"),
+         ([3000, False, True, "%.3f"], "2.930K"),
+         ([3000000000, False, True, "%.0f"], "3G"),
+-        ([10**26 * 30, True, False, "%.3f"], "2481.542 YiB"),
++        ([10**26 * 30, True, False, "%.3f"], "2.423 RiB"),
++        ([10**27], "1.0 RB"),
++        ([10**30], "1.0 QB"),
++        ([2**90, True], "1.0 RiB"),
++        ([2**100, True], "1.0 QiB"),
++        ([2**100, False, True], "1.0Q"),
++        ([10**30, False, True], "807.8R"),
+     ],
+ )
+ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> None:

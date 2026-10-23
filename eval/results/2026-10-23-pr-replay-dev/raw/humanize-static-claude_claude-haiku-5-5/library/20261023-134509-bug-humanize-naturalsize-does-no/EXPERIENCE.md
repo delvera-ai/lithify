@@ -1,0 +1,28 @@
+# 20261023-134509-bug-humanize-naturalsize-does-no
+
+**Task:** Bug: `humanize.naturalsize()` does not roll over from ZB to YB where expected for large integers. For every smaller unit you never see "1000.x" of a unit, it rolls over to the next one, but:
+
+```python
+>>> naturalsize(1_000_000_000_000_000_000_000_000)
+'1000.0 ZB'   # expected '1.0 YB'
+>>> naturalsize(1_000_000_000_000_000_050_331_648)
+'1000.0 ZB'   # expected '1.0 YB'
+```
+
+Make large integer inputs roll over to the next unit consistently.
+
+## Transferable lesson
+
+- **cue:** A bug-fix task in this repo where a humanize formatting function picks a branch or threshold from a converted copy of its input (e.g. `float(value)` compared against exact int powers in `filesize.naturalsize` or `number.intword`/`metric`), and the input arrives as several types (int, float, numeric str, Decimal, bool).
+- **lesson:** In the module's `skills/<module>-units` skill (template: `skills/humanize-filesize-units`), keep an INVARIANTS section that covers three things. First, the input contract ("whatever `float()` accepts", listing the types callers really pass). Second, which comparisons are exact and which are lossy (`float(10**24) < 10**24`). Third, one verified trap for a broad conversion, such as `Decimal(repr(Decimal))` raising, or NaN comparisons raising. Then direct that a fix adds a narrow `isinstance` branch only where precision is lost and leaves every other type on the existing path. Also require boundary rows for each mode (decimal, `binary=True`, `gnu=True`), not just the reported one.
+- **evidence:** The skills/humanize-filesize-units row (helped; dom-1 isolates it). Both carriers wrote the int-only exact comparison and covered binary and GNU boundaries. Both non-carriers rewrote input conversion for all types (base-1 with `Decimal` plus `isfinite`, inv-1 with `_to_number`) and tested decimal rows only. Selection preferred the carriers for scope.
+- **confidence:** low. Each label had a single rollout. Only dom-1 isolates the skill, since comp-1 changed four components. The skill was written from base-1's run of this same task, so its text nearly prescribes the fix, and transfer to a different conversion bug hasn't been observed.
+
+## Edit attribution
+
+| component | verdict | change | observed |
+|---|---|---|---|
+| `skills/humanize-filesize-units` | helped | Added an on-demand skill for `filesize.py`. It covers where the table, tests and docs live, and six invariants. The key ones: int unit choice must be exact because `float(10**24) < 10**24`; inputs are whatever `float()` accepts, so `isinstance` branches stay narrow (e.g. `int`) and every other type keeps the `float()` path, with the recorded trap that `Decimal(repr(Decimal))` raises; NaN/Inf must not raise; every row is also tested negated; display rounding is a separate issue (`number.intword` pattern). It also asks for boundary, just-inside and past-the-top rows in each mode (decimal, binary, GNU), computed by running the code. comp-1's copy points its doctest sentence at `verify.py`. | Both carriers called the skill as their first action and then wrote the same narrow fix, `abs(value) if isinstance(value, int) else abs_bytes`, feeding only the unit loop (dom-1 and comp-1 deliverable.patch). Neither carrier did that: |
+| `scripts/verify.py` | confounded | Added a script that runs the suite, then `--doctest-modules` on changed `src/*.py` modules, then ruff and mypy if they can be imported or are on PATH (otherwise `NOT AVAILABLE`). Each step prints its own `RESULT` line, followed by `OVERALL`. | inv-1 ran it once after its edits and reported tests PASS, doctests PASS, ruff/mypy NOT AVAILABLE, exactly as printed. That matters because inv-1 had added a `naturalsize(10**24)` doctest and has no skill telling it the default run skips doctests. comp-1 ran it twice (again after a comment edit). base-1's ruff/mypy probes were silently aborted by a zsh glob error, yet base-1 still said "aren't installed". But dom-1, without the script, also ran an explicit doctest and probed ruff and mypy itself, and reported both correctly. The script never appears without the `system.md` edit that tells the agent to run it. |
+| `system.md` | confounded | Replaced "finish only after the project's checks pass" with a "Done means" block: run `verify.py` after the last edit, read every `RESULT` line, and report each status as printed. Never call a check passed or a tool missing unless a command you ran says so. | This is the trigger for every `verify.py` call in inv-1 and comp-1 ("Now running the project's verify script"; "Now the required verification"). Both final reports quote the RESULT statuses. dom-1 reported its checks accurately without this block, and it always ships together with `verify.py`, so its own effect can't be separated. |
+| `tool_guidance.md` | confounded | Added two rules (the base file was empty). First, a zsh `(eval):1: no matches found` line means the whole command line was aborted; re-run the remaining probes separately and don't chain an existence glob before commands you need. Second, check whether a tool exists by running it alone and printing its exit status. | No rollout hit the glob error. dom-1, which lacked the rule, didn't either, and none of the post-base runs used existence globs. comp-1 ran `$PY -m ruff --version; echo "ruff exit=$?"`, copying the rule's example, but only after `verify.py` had already printed NOT AVAILABLE. The probe was redundant and the report didn't change. That one rollout also carried three other edits, and comp-1 was the slowest and most expensive candidate (72.3s, $0.0181 vs about 57s and $0.013–0.014). |

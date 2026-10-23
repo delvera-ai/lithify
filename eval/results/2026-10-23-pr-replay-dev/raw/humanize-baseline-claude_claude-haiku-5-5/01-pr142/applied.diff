@@ -1,0 +1,27 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..4cd7d9e 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+-  "consecutive_failures": 0,
+-  "history": []
++  "consecutive_failures": 1,
++  "history": [
++    {
++      "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
++      "k": 0,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 27950,
++      "tokens_cached": 269079,
++      "tokens_out": 8078,
++      "cost_usd": 0.0123,
++      "wall_s": 47.8,
++      "always_on_tokens": 189,
++      "stability_after": 0.0
++    }
++  ]
+ }

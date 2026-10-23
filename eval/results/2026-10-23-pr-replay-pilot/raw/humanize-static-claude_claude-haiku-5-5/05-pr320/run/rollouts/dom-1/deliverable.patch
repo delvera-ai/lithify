@@ -1,0 +1,47 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index f4dcb05..02aba1d 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -355,19 +355,22 @@ def fractional(value: NumberOrString) -> str:
+         return str(value)
+     from fractions import Fraction
+ 
+-    whole_number = int(number)
+-    frac = Fraction(number - whole_number).limit_denominator(1000)
++    # format the magnitude and put a single sign in front, so that e.g. -1.3 gives
++    # "-1 3/10" rather than "-1 -3/10"
++    whole_number = int(abs(number))
++    frac = Fraction(abs(number) - whole_number).limit_denominator(1000)
+     numerator = frac.numerator
+     denominator = frac.denominator
++    sign = "-" if number < 0 and (whole_number or numerator) else ""
+     if whole_number and not numerator and denominator == 1:
+         # this means that an integer was passed in
+         # (or variants of that integer like 1.0000)
+-        return f"{whole_number:.0f}"
++        return f"{sign}{whole_number:.0f}"
+ 
+     if not whole_number:
+-        return f"{numerator:.0f}/{denominator:.0f}"
++        return f"{sign}{numerator:.0f}/{denominator:.0f}"
+ 
+-    return f"{whole_number:.0f} {numerator:.0f}/{denominator:.0f}"
++    return f"{sign}{whole_number:.0f} {numerator:.0f}/{denominator:.0f}"
+ 
+ 
+ def scientific(value: NumberOrString, precision: int = 2) -> str:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cb74fcf..43239dc 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -178,6 +178,10 @@ def test_apnumber(test_input: int | str, expected: str) -> None:
+         (1.5, "1 1/2"),
+         (0.3, "3/10"),
+         (0.333, "333/1000"),
++        (-1.3, "-1 3/10"),
++        (-2.5, "-2 1/2"),
++        (-0.3, "-3/10"),
++        (-1, "-1"),
+         (math.nan, "NaN"),
+         (math.inf, "+Inf"),
+         (-math.inf, "-Inf"),

@@ -1,0 +1,60 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4cd7d9e..47141cd 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
+@@ -15,6 +15,21 @@
+       "wall_s": 47.8,
+       "always_on_tokens": 189,
+       "stability_after": 0.0
++    },
++    {
++      "task_id": "20261023-133910-bug-humanize-naturalsize-does-no",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 25917,
++      "tokens_cached": 200473,
++      "tokens_out": 8253,
++      "cost_usd": 0.0113,
++      "wall_s": 48.6,
++      "always_on_tokens": 189,
++      "stability_after": 0.2
+     }
+   ]
+ }
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index 996506e..128f9af 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -84,7 +84,8 @@ def naturalsize(
+ 
+     base = 1024 if (gnu or binary) else 1000
+     bytes_ = float(value)
+-    abs_bytes = abs(bytes_)
++    # Compare ints exactly: float() can round a large int below a unit boundary
++    abs_bytes = abs(value) if isinstance(value, int) else abs(bytes_)
+ 
+     if abs_bytes == 1 and not gnu:
+         return "%d Byte" % bytes_
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 416cbf1..4017171 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -62,6 +62,8 @@ import humanize
+         ([3000, False, True, "%.3f"], "2.930K"),
+         ([3000000000, False, True, "%.0f"], "3G"),
+         ([10**26 * 30, True, False, "%.3f"], "2.423 RiB"),
++        ([10**24], "1.0 YB"),
++        ([1_000_000_000_000_000_050_331_648], "1.0 YB"),
+     ],
+ )
+ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> None:

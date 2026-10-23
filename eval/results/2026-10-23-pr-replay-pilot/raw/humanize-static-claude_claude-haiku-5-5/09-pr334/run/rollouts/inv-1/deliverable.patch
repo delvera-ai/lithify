@@ -1,0 +1,45 @@
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 4a07d52..9e1fbae 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -149,6 +149,10 @@ def naturaldelta(
+     else:
+         try:
+             int(value)  # Explicitly don't support string such as "NaN" or "inf"
++        except (OverflowError, ValueError, TypeError):
++            # OverflowError is raised for an infinite float; return it unchanged.
++            return str(value)
++        try:
+             value = float(value)
+             delta = dt.timedelta(seconds=value)
+         except (ValueError, TypeError):
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 7699770..42bf526 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -3,6 +3,7 @@
+ from __future__ import annotations
+ 
+ import datetime as dt
++import math
+ import typing
+ 
+ import pytest
+@@ -138,6 +139,17 @@ def test_naturaldelta(test_input: float | dt.timedelta, expected: str) -> None:
+         assert humanize.naturaldelta(-test_input) == expected
+ 
+ 
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (math.inf, "inf"),  # Returns non-convertible values unchanged.
++        (-math.inf, "-inf"),
++    ],
++)
++def test_naturaldelta_infinity(test_input: float, expected: str) -> None:
++    assert humanize.naturaldelta(test_input) == expected
++
++
+ @freeze_time(FROZEN_DATE)
+ @pytest.mark.parametrize(
+     "test_input, expected",

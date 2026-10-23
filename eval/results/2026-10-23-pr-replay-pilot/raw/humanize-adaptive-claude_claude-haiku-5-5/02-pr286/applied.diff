@@ -1,0 +1,48 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d3cd6b9..08c7741 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -15,6 +15,21 @@
+       "wall_s": 35.4,
+       "always_on_tokens": 189,
+       "stability_after": 0.2
++    },
++    {
++      "task_id": "20261023-142146-humanize-i18n-raises-a-bare-exce",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 31832,
++      "tokens_cached": 194103,
++      "tokens_out": 2439,
++      "cost_usd": 0.0095,
++      "wall_s": 14.5,
++      "always_on_tokens": 189,
++      "stability_after": 0.4
+     }
+   ]
+ }
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index 1d30d50..5308a13 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -71,7 +71,7 @@ def activate(
+         dict: Translations.
+ 
+     Raises:
+-        Exception: If humanize cannot find the locale folder.
++        FileNotFoundError: If humanize cannot find the locale folder.
+     """
+     if locale is None or locale.startswith("en"):
+         _CURRENT.locale = None
+@@ -85,7 +85,7 @@ def activate(
+             "Humanize cannot determinate the default location of the 'locale' folder. "
+             "You need to pass the path explicitly."
+         )
+-        raise Exception(msg)
++        raise FileNotFoundError(msg)
+     if locale not in _TRANSLATIONS:
+         translation = gettext_module.translation("humanize", path, [locale])
+         _TRANSLATIONS[locale] = translation

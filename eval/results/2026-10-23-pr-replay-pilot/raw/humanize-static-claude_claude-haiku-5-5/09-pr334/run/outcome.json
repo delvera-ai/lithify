@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.naturaldelta()` documents that values it cannot convert are returned unchanged, and `float(\"nan\")` already is, but `float(\"inf\")` and `float(\"-inf\")` raise `OverflowError: cannot convert float infinity to integer`. Return non-finite values unchanged (`\"inf\"`, `\"-inf\"`). A finite value that is too large (e.g. `1e30`) must still raise `OverflowError`, as documented.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Deciding criterion: fit with the code and its documentation. c1 adds `OverflowError` to the existing `int(value)` check, so anything that can't be converted to an integer comes back unchanged. That is exactly what the docstring promises. `1e30` still raises because the `timedelta` step is left outside the new catch.\nc3 is the same code fix, so it lost only on its test. It adds a `math` import to the test file just to write `math.inf`, while c1 uses `float(\"inf\")` like the task does.\nc2 adds a module-level `import math`, but this codebase imports `math` inside each function. Its float-only check also doesn't follow the documented rule. c4 works but needs an extra import, a membership test and a re-raise for the same result.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-150818-bug-humanize-naturaldelta-docume",
+  "usage": {
+    "in": 360974,
+    "cached": 3197352,
+    "out": 68539,
+    "cost": 2.78110938,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7742,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

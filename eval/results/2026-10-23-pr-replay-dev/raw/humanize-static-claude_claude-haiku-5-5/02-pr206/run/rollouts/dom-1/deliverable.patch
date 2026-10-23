@@ -1,0 +1,36 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index 996506e..b557c6b 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -92,9 +92,12 @@ def naturalsize(
+     if abs_bytes < base:
+         return ("%dB" if gnu else "%d Bytes") % bytes_
+ 
++    # Compare ints exactly: float(10**24) rounds down, which would keep
++    # 10**24 in the lower unit.
++    abs_exact: float | int = abs(value) if isinstance(value, int) else abs_bytes
+     for i, s in enumerate(suffix, 2):
+         unit = base**i
+-        if abs_bytes < unit:
++        if abs_exact < unit:
+             break
+ 
+     ret: str = format % (base * bytes_ / unit) + s
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 416cbf1..5d2d9fd 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -62,6 +62,13 @@ import humanize
+         ([3000, False, True, "%.3f"], "2.930K"),
+         ([3000000000, False, True, "%.0f"], "3G"),
+         ([10**26 * 30, True, False, "%.3f"], "2.423 RiB"),
++        ([10**21], "1.0 ZB"),
++        ([10**24], "1.0 YB"),
++        ([10**24 + 50331648], "1.0 YB"),
++        ([10**27], "1.0 RB"),
++        ([1024**8, True], "1.0 YiB"),
++        ([1024**8 + 2**20, True], "1.0 YiB"),
++        ([1024**8, False, True], "1.0Y"),
+     ],
+ )
+ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> None:

@@ -1,0 +1,29 @@
+---
+name: humanize-error-contract
+description: Load when a task adds, removes or changes an exception that a humanize function raises (e.g. narrowing a bare `Exception`, adding a `ValueError`/`TypeError`), or changes an error message in src/humanize/.
+---
+
+# Changing what a humanize function raises
+
+An exception type in this library is public API. Check each of these places.
+
+1. **The raise site** (`src/humanize/*.py`). Ruff selects `EM` (flake8-errmsg), so every raise
+   builds its message in a local first and passes the variable:
+   `msg = "..."` then `raise ValueError(msg)` (see `time.py`, `number.py`, `i18n.py`).
+   Never write `raise X("literal")` or `raise X(f"...")`. Keep the message text unchanged
+   unless the task asks otherwise, because tests match on it.
+   `ruff` is not installed in the test environment or on PATH, so you have to check the EM
+   pattern by reading the code.
+2. **The docstring `Raises:` section** (Google style, `lint.pydocstyle.convention = "google"`).
+   It names the type, e.g. `FileNotFoundError: If ...`. `docs/*.md` are `::: humanize.<module>`
+   mkdocstrings stubs, so this docstring IS the published documentation. There is no separate
+   doc page to edit. It must name the same type as the `raise`.
+3. **Existing tests stay as they are.** Error tests use `pytest.raises(<Type>, match=<message>)`
+   (`tests/test_time.py`, `tests/test_i18n.py::TestActivate`). If an existing assertion uses a
+   base class (e.g. `pytest.raises(Exception, ...)`), it still passes after you narrow to a
+   subclass. Do NOT rewrite those lines, because changing a pre-existing test line counts as
+   editing an existing test even when it makes the test stricter. To pin the new type, add a
+   NEW test function next to the existing ones. Base it on the same setup and the same `match`.
+
+Release notes are drafted on GitHub Releases (`RELEASING.md`); the repo has no CHANGELOG file to
+update.

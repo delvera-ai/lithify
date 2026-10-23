@@ -1,0 +1,44 @@
+{
+  "task": "`humanize.i18n` raises a bare `Exception` when it cannot determine the default location of its locale folder. `Exception` is too broad: raise `FileNotFoundError` instead (keep the same message). This is not a breaking change, since `FileNotFoundError` is a subclass of `Exception`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The source change is identical in both, so the deciding factor is whether the new behaviour is checked. c2 adds a test that fails unless `FileNotFoundError` is raised. The existing tests in `tests/test_i18n.py` only check for `Exception`, so they would still pass if the change were reverted.\nc1, the runner-up, is a correct, smaller patch, but nothing in it checks the new exception type. c2's flaw is that its new test nearly duplicates `test_default_locale_path_null__spec__`. Changing the two existing `pytest.raises(Exception, ...)` calls would have been cleaner. That costs a little tidiness, not correctness.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-142559-humanize-i18n-raises-a-bare-exce",
+  "usage": {
+    "in": 193269,
+    "cached": 1447540,
+    "out": 21071,
+    "cost": 1.5792092800000002,
+    "exec": 3,
+    "roles": 5
+  },
+  "stability_after": 0.3565,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

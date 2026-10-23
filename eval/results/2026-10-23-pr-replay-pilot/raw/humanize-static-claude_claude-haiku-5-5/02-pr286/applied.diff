@@ -1,0 +1,78 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 0f12d19..d9c0bbc 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,4 +3,5 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-142559-humanize-i18n-raises-a-bare-exce](20261023-142559-humanize-i18n-raises-a-bare-exce/EXPERIENCE.md) — **when** A humanize task that narrows or changes behaviour that existing tests only check loosely. For example, `pytest.raises(Exception, match=...)` still passes after the type is narrowed to a subclass, and would pass if the change were never made. So the existing suite cannot show the new behaviour, and the agent is tempted to "tighten" those assertions. **then** In the `skills/<name>` that covers the change, write the verification step as "pin the new behaviour by adding a NEW test function beside the existing one (same setup, same `match`); do not modify any pre-existing test line, even to make it stricter." Do not phrase it as "make sure some test asserts the new type". Agents satisfy that wording by rewriting the existing assertions, which counts as editing existing tests.
+ - [20261023-142110-regression-when-gnu-is-false-hum](20261023-142110-regression-when-gnu-is-false-hum/EXPERIENCE.md) — **when** Adding parametrized cases to a humanize test where the test body changes each case's arguments before asserting again (for example, `test_naturalsize` re-runs every case negated by prefixing `-` to non-int inputs), so a case that looks valid fails on the second assertion. **then** Put the test function's argument-transformation contract in `memory.md` as one line saying which inputs are legal there. Do not put it inside a task-specific `skills/<name>` that also encodes the fix. A future task that adds cases to that test then avoids writing a case the retest will break, without loading a skill whose solution hints can pull its tests toward inputs that were never broken.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d963063..81fb8df 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -15,6 +15,21 @@
+       "wall_s": 287.8,
+       "always_on_tokens": 189,
+       "stability_after": 0.2
++    },
++    {
++      "task_id": "20261023-142559-humanize-i18n-raises-a-bare-exce",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 29,
++      "executions": 3,
++      "tokens_in": 193269,
++      "tokens_cached": 1447540,
++      "tokens_out": 21071,
++      "cost_usd": 1.5792,
++      "wall_s": 237.9,
++      "always_on_tokens": 189,
++      "stability_after": 0.3565
+     }
+   ]
+ }
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index 1d30d50..5308a13 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -71,7 +71,7 @@ def activate(
+         dict: Translations.
+ 
+     Raises:
+-        Exception: If humanize cannot find the locale folder.
++        FileNotFoundError: If humanize cannot find the locale folder.
+     """
+     if locale is None or locale.startswith("en"):
+         _CURRENT.locale = None
+@@ -85,7 +85,7 @@ def activate(
+             "Humanize cannot determinate the default location of the 'locale' folder. "
+             "You need to pass the path explicitly."
+         )
+-        raise Exception(msg)
++        raise FileNotFoundError(msg)
+     if locale not in _TRANSLATIONS:
+         translation = gettext_module.translation("humanize", path, [locale])
+         _TRANSLATIONS[locale] = translation
+diff --git a/tests/test_i18n.py b/tests/test_i18n.py
+index 319a55d..1d88ee6 100644
+--- a/tests/test_i18n.py
++++ b/tests/test_i18n.py
+@@ -246,6 +246,15 @@ class TestActivate:
+         with pytest.raises(Exception, match=self.expected_msg):
+             i18n.activate("ru_RU")
+ 
++    def test_default_locale_path_not_found_raises_file_not_found(
++        self, monkeypatch: pytest.MonkeyPatch
++    ) -> None:
++        i18n = importlib.import_module("humanize.i18n")
++        monkeypatch.setattr(i18n, "__spec__", None)
++
++        with pytest.raises(FileNotFoundError, match=self.expected_msg):
++            i18n.activate("ru_RU")
++
+     @freeze_time("2020-02-02")
+     def test_en_locale(self) -> None:
+         three_seconds = NOW - dt.timedelta(seconds=3)

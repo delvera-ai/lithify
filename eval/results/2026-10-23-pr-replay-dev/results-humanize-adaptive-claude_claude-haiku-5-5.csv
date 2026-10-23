@@ -1,0 +1,3 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-dev,adaptive,claude@claude-haiku-5-5,20261023-133822-extend-humanize-naturalsize-to-s,humanize#142,0,1,2,genesis (S=0.00),False,False,False,False,,8,7,544006,4819493,103584,4.1271,425.0,189,0.0,,,,all,88f3c38
+pr-replay-dev,adaptive,claude@claude-haiku-5-5,20261023-134527-bug-humanize-naturalsize-does-no,humanize#206,0,2,2,genesis (S=0.00),True,True,True,True,base-1,2,1,68819,780223,17650,0.24,82.4,189,0.2,,,,all,88f3c38

@@ -1,0 +1,27 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index f4dcb05..106c976 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -367,7 +367,8 @@ def fractional(value: NumberOrString) -> str:
+     if not whole_number:
+         return f"{numerator:.0f}/{denominator:.0f}"
+ 
+-    return f"{whole_number:.0f} {numerator:.0f}/{denominator:.0f}"
++    # the sign is already carried by the whole part, so the fraction is shown unsigned
++    return f"{whole_number:.0f} {abs(numerator):.0f}/{denominator:.0f}"
+ 
+ 
+ def scientific(value: NumberOrString, precision: int = 2) -> str:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cb74fcf..90ab2cd 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -176,6 +176,8 @@ def test_apnumber(test_input: int | str, expected: str) -> None:
+         (None, "None"),
+         (1 / 3, "1/3"),
+         (1.5, "1 1/2"),
++        (-1.3, "-1 3/10"),
++        (-2.5, "-2 1/2"),
+         (0.3, "3/10"),
+         (0.333, "333/1000"),
+         (math.nan, "NaN"),

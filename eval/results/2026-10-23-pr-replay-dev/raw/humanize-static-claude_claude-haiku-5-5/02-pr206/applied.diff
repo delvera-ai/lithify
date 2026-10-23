@@ -1,0 +1,79 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index ec3dd22..965bce2 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,4 +3,5 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-134509-bug-humanize-naturalsize-does-no](20261023-134509-bug-humanize-naturalsize-does-no/EXPERIENCE.md) — **when** A bug-fix task in this repo where a humanize formatting function picks a branch or threshold from a converted copy of its input (e.g. `float(value)` compared against exact int powers in `filesize.naturalsize` or `number.intword`/`metric`), and the input arrives as several types (int, float, numeric str, Decimal, bool). **then** In the module's `skills/<module>-units` skill (template: `skills/humanize-filesize-units`), keep an INVARIANTS section that covers three things. First, the input contract ("whatever `float()` accepts", listing the types callers really pass). Second, which comparisons are exact and which are lossy (`float(10**24) < 10**24`). Third, one verified trap for a broad conversion, such as `Decimal(repr(Decimal))` raising, or NaN comparisons raising. Then direct that a fix adds a narrow `isinstance` branch only where precision is lost and leaves every other type on the existing path. Also require boundary rows for each mode (decimal, `binary=True`, `gnu=True`), not just the reported one.
+ - [20261023-133822-extend-humanize-naturalsize-to-s](20261023-133822-extend-humanize-naturalsize-to-s/EXPERIENCE.md) — **when** A task in this repo adds entries to an ordered lookup table that drives a formatting function, such as size suffixes in `filesize.py` or the prefix string in `number.metric`. Adding a unit moves the overflow cutoff and the boundaries that existing parametrize rows and docstring examples were written against. **then** Add a `skills/<module>-units` skill for that module (`skills/humanize-filesize-units` is the template). It should name the single table and its parallel entries, and say that new entries are appended rather than changing the loop. It should list each place that must stay in step: the table, the docstring `pycon` examples (checked with an explicit `--doctest-modules` run), `README.md`, and the one parametrize table. Most importantly, it should ask for new rows per mode at the exact boundary, a value just inside it, and a value past the new top unit, computed by running the code before writing expectations. Don't spend harness edits on the edited-existing-tests gate for such tasks: the task makes those edits unavoidable. Reporting rules in `system.md` left that result unchanged.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a10d061..334e828 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
+@@ -15,6 +15,21 @@
+       "wall_s": 406.6,
+       "always_on_tokens": 189,
+       "stability_after": 0.0
++    },
++    {
++      "task_id": "20261023-134509-bug-humanize-naturalsize-does-no",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 63,
++      "executions": 4,
++      "tokens_in": 336290,
++      "tokens_cached": 2718564,
++      "tokens_out": 72736,
++      "cost_usd": 2.5323,
++      "wall_s": 420.3,
++      "always_on_tokens": 189,
++      "stability_after": 0.1527
+     }
+   ]
+ }
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index 996506e..b557c6b 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -92,9 +92,12 @@ def naturalsize(
+     if abs_bytes < base:
+         return ("%dB" if gnu else "%d Bytes") % bytes_
+ 
++    # Compare ints exactly: float(10**24) rounds down, which would keep
++    # 10**24 in the lower unit.
++    abs_exact: float | int = abs(value) if isinstance(value, int) else abs_bytes
+     for i, s in enumerate(suffix, 2):
+         unit = base**i
+-        if abs_bytes < unit:
++        if abs_exact < unit:
+             break
+ 
+     ret: str = format % (base * bytes_ / unit) + s
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 416cbf1..5d2d9fd 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -62,6 +62,13 @@ import humanize
+         ([3000, False, True, "%.3f"], "2.930K"),
+         ([3000000000, False, True, "%.0f"], "3G"),
+         ([10**26 * 30, True, False, "%.3f"], "2.423 RiB"),
++        ([10**21], "1.0 ZB"),
++        ([10**24], "1.0 YB"),
++        ([10**24 + 50331648], "1.0 YB"),
++        ([10**27], "1.0 RB"),
++        ([1024**8, True], "1.0 YiB"),
++        ([1024**8 + 2**20, True], "1.0 YiB"),
++        ([1024**8, False, True], "1.0Y"),
+     ],
+ )
+ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> None:

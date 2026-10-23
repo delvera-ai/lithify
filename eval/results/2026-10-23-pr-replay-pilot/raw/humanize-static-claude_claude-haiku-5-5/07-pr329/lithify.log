@@ -1,0 +1,34 @@
+lithify ▸ 20261023-145531-bug-humanize-naturalsize-can-sho  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ dom-1: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 3 gate-passing deliverables (claude)
+  ✓ applied deliverable from comp-1: The deciding criterion was correctness beyond the tests. c1 checks for a carry by running `float()` on the formatted string. That raises `ValueError` for any custom `format` that adds text, such as `"
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 3 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-145531-bug-humanize-naturalsize-can-sho (scripts/compare_outputs.py, skills/humanize-number-output, tool_guidance.md) — `lithify adopt 20261023-145531-bug-humanize-naturalsize-can-sho`
+lithify ◂ delivered=True first_pass=True S=0.76 executions=3 role_sessions=5 tokens(in/cached/out)=290628/2343163/49474 cost=$2.35
+{
+  "task_id": "20261023-145531-bug-humanize-naturalsize-can-sho",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "comp-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-145531-bug-humanize-naturalsize-can-sho",
+  "stability": 0.7557,
+  "executions": 3,
+  "role_sessions": 5
+}
+

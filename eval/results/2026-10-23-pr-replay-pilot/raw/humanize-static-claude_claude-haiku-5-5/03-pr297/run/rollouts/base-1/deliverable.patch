@@ -1,0 +1,114 @@
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index f0b24fa..0a4cf9f 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -308,17 +308,28 @@ def _convert_aware_datetime(
+     return value
+ 
+ 
++def _today(value: dt.date | dt.datetime) -> dt.date:
++    """Return the current date, in the timezone of `value` if it is timezone-aware."""
++    import datetime as dt
++
++    if isinstance(value, dt.datetime) and value.tzinfo is not None:
++        return dt.datetime.now(value.tzinfo).date()
++    return dt.date.today()
++
++
+ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     """Return a natural day.
+ 
+     For date values that are tomorrow, today or yesterday compared to
+     present day return representing string. Otherwise, return a string
+-    formatted according to `format`.
++    formatted according to `format`. For timezone-aware datetimes, "present
++    day" is taken in the datetime's own timezone.
+ 
+     """
+     import datetime as dt
+ 
+     try:
++        today = _today(value)
+         value = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+         # Passed value wasn't date-ish
+@@ -326,7 +337,7 @@ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = value - dt.date.today()
++    delta = value - today
+ 
+     if delta.days == 0:
+         return _("today")
+@@ -345,14 +356,15 @@ def naturaldate(value: dt.date | dt.datetime) -> str:
+     import datetime as dt
+ 
+     try:
+-        value = dt.date(value.year, value.month, value.day)
++        today = _today(value)
++        day = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+         # Passed value wasn't date-ish
+         return str(value)
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = _abs_timedelta(value - dt.date.today())
++    delta = _abs_timedelta(day - today)
+     if delta.days >= 5 * 365 / 12:
+         return naturalday(value, "%b %d %Y")
+     return naturalday(value)
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 63e171a..cb80a36 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -300,6 +300,48 @@ def test_naturaldate(test_input: dt.date, expected: str) -> None:
+     assert humanize.naturaldate(test_input) == expected
+ 
+ 
++AEDT = dt.timezone(dt.timedelta(hours=11))
++PDT = dt.timezone(dt.timedelta(hours=-7))
++
++
++@freeze_time("2023-10-15 23:00:00")  # 2023-10-16 10:00 in AEDT, 2023-10-15 in UTC
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (dt.datetime(2023, 10, 16, 17, 0, tzinfo=AEDT), "today"),
++        (dt.datetime(2023, 10, 17, 17, 0, tzinfo=AEDT), "tomorrow"),
++        (dt.datetime(2023, 10, 15, 17, 0, tzinfo=AEDT), "yesterday"),
++    ],
++)
++def test_naturalday_aware_uses_datetime_timezone(
++    test_input: dt.datetime, expected: str
++) -> None:
++    assert humanize.naturalday(test_input) == expected
++    assert humanize.naturaldate(test_input) == expected
++
++
++@freeze_time("2023-10-15 02:00:00")  # 2023-10-14 19:00 in PDT, 2023-10-15 in UTC
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (dt.datetime(2023, 10, 14, 9, 0, tzinfo=PDT), "today"),
++        (dt.datetime(2023, 10, 15, 9, 0, tzinfo=PDT), "tomorrow"),
++        (dt.datetime(2023, 10, 13, 9, 0, tzinfo=PDT), "yesterday"),
++    ],
++)
++def test_naturalday_aware_uses_datetime_timezone_behind_utc(
++    test_input: dt.datetime, expected: str
++) -> None:
++    assert humanize.naturalday(test_input) == expected
++    assert humanize.naturaldate(test_input) == expected
++
++
++@freeze_time("2023-10-15 23:00:00")
++def test_naturaldate_aware_far_date_appends_year() -> None:
++    value = dt.datetime(2024, 6, 1, 12, 0, tzinfo=AEDT)
++    assert humanize.naturaldate(value) == "Jun 01 2024"
++
++
+ @pytest.mark.parametrize(
+     "seconds, expected",
+     [

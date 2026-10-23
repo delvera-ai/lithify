@@ -1,0 +1,489 @@
+{
+  "repo": "tenacity",
+  "since": "2024-01-01",
+  "prs": [
+    {
+      "number": 437,
+      "title": "Support async actions",
+      "merged_at": "2024-03-02T07:30:37Z",
+      "merge": "bfa2c800ea17d5cbfacf51003627ada4a7c3691f",
+      "base": "b7e488379a5de01b54fc77bd598bdccecf199e47",
+      "holdout": [
+        "tests/test_utils.py"
+      ],
+      "src_files": [
+        "tenacity/_asyncio.py",
+        "tenacity/_utils.py"
+      ],
+      "src_lines": 59,
+      "issues": [
+        249
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 479,
+      "title": "fix: Avoid overwriting local contexts with retry decorator",
+      "merged_at": "2024-06-24T14:58:21Z",
+      "merge": "a15fa645326ef776dbef81ee13e3833cd14bdced",
+      "base": "ee6a8f7a76654d712fd44604d3b6d4f9af6b2249",
+      "holdout": [
+        "tests/test_issue_478.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 23,
+      "issues": [
+        478
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 425,
+      "title": "Respects `min` argument for `wait_random_exponential`",
+      "merged_at": "2024-07-29T12:10:10Z",
+      "merge": "a662bbb487cd6d34541824589f8e8c7a1f7791bb",
+      "base": "31fe2d0cf2505bffd0cf1ffda8c7e30450ce709f",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/wait.py"
+      ],
+      "src_lines": 2,
+      "issues": [],
+      "split": "dev"
+    },
+    {
+      "number": 541,
+      "title": "feat(wait): add `wait_exception` strategy",
+      "merged_at": "2025-11-05T06:58:22Z",
+      "merge": "815c34fec2c8d64fe2bc8a6bdd79bfb41f1938c6",
+      "base": "d6e57dd1bd6eb1971bbe57169f98cd9c4f7aae6c",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/wait.py"
+      ],
+      "src_lines": 41,
+      "issues": [],
+      "split": "dev"
+    },
+    {
+      "number": 551,
+      "title": "Support async sleep for sync fn-to-retry",
+      "merged_at": "2026-02-05T06:31:38Z",
+      "merge": "24415ebbca6ecafdf870af06441656dd96149d1d",
+      "base": "3bf33b44096077a0608855f6a380fd8a25fa6f26",
+      "holdout": [
+        "tests/test_asyncio.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 35,
+      "issues": [],
+      "split": "dev"
+    },
+    {
+      "number": 556,
+      "title": "Fix ordinal suffix generation for large numbers ending in 11, 12, 13",
+      "merged_at": "2026-02-17T08:31:20Z",
+      "merge": "0bdf1d9e5f42b7179e7aae52cb70d26283a4c5ed",
+      "base": "d4e868d6b8368c00b5a1fad54de36c2c8c3a0fb3",
+      "holdout": [
+        "tests/test_utils.py"
+      ],
+      "src_files": [
+        "tenacity/_utils.py"
+      ],
+      "src_lines": 4,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 591,
+      "title": "fix: guard against None seconds_since_start in after_log",
+      "merged_at": "2026-02-19T09:59:22Z",
+      "merge": "213446e8f5f73ca0d20e22ec8ee38b1f75a45434",
+      "base": "6be363b0439bd213dd5ea4cb0c0c184bf616232a",
+      "holdout": [
+        "tests/test_after.py"
+      ],
+      "src_files": [
+        "tenacity/after.py"
+      ],
+      "src_lines": 3,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 603,
+      "title": "fix: initialize delay_since_first_attempt in statistics on begin()",
+      "merged_at": "2026-02-24T07:49:12Z",
+      "merge": "42b70f90790e1a3203e3dc61ad2648579c3709db",
+      "base": "711416c56e1952acc78bdbb45d74018b0eb865da",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py"
+      ],
+      "src_lines": 1,
+      "issues": [
+        421
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 606,
+      "title": "fix: restore plain function composition with retry_base via | and &",
+      "merged_at": "2026-02-24T15:47:49Z",
+      "merge": "a02b51a20fbda8fcc9051b10bad4a728882a631c",
+      "base": "42b70f90790e1a3203e3dc61ad2648579c3709db",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/retry.py"
+      ],
+      "src_lines": 20,
+      "issues": [
+        481
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 605,
+      "title": "feat: add async context manager support to AttemptManager",
+      "merged_at": "2026-02-24T15:49:07Z",
+      "merge": "124e3a67c7a9b68f46df39d2a7b1a5e8d15270c1",
+      "base": "a02b51a20fbda8fcc9051b10bad4a728882a631c",
+      "holdout": [
+        "tests/test_asyncio.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py"
+      ],
+      "src_lines": 11,
+      "issues": [
+        469
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 604,
+      "title": "feat: add enabled parameter to disable retrying",
+      "merged_at": "2026-02-24T15:50:17Z",
+      "merge": "39eb157a686a8642646807c64d0791de35a0910a",
+      "base": "124e3a67c7a9b68f46df39d2a7b1a5e8d15270c1",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 12,
+      "issues": [
+        467
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 609,
+      "title": "refactor: flatten chained | and & into single retry_any/retry_all",
+      "merged_at": "2026-02-24T16:07:13Z",
+      "merge": "44eaefbbd0ec89fca573a1fffd55d149ac29cca9",
+      "base": "39eb157a686a8642646807c64d0791de35a0910a",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/asyncio/retry.py",
+        "tenacity/retry.py"
+      ],
+      "src_lines": 36,
+      "issues": [
+        476
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 615,
+      "title": "fix: make Retrying and retry strategies picklable for multiprocessing",
+      "merged_at": "2026-02-25T08:43:48Z",
+      "merge": "cb320c4d80d8af7e8953dbf40224172a06b9b977",
+      "base": "0a3ca8a208a9365f2cae45b83c7673e606d1b563",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/retry.py"
+      ],
+      "src_lines": 60,
+      "issues": [
+        147
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 628,
+      "title": "feat: add `min` param and `timedelta` support to `wait_exponential_jitter`",
+      "merged_at": "2026-03-11T14:20:45Z",
+      "merge": "3233040287fb03391c0ad1a5ad7404d359f8a98d",
+      "base": "21189c74a98552a3efa96e538b9ef2f25668d094",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/wait.py"
+      ],
+      "src_lines": 16,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 629,
+      "title": "feat: deprecate `initial` in favor of `multiplier` in `wait_exponential_jitter`",
+      "merged_at": "2026-03-11T15:54:31Z",
+      "merge": "1106b9a168c561a5a8b50d97ba6a997ad4483d39",
+      "base": "3233040287fb03391c0ad1a5ad7404d359f8a98d",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/wait.py"
+      ],
+      "src_lines": 23,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 640,
+      "title": "fix: reraise underlying exception when TryAgain wraps a cause",
+      "merged_at": "2026-05-22T07:06:13Z",
+      "merge": "e5179bdab9939a748dc3e88ff21309e12e5361e0",
+      "base": "8779333a4759e56427b5d7ba23cacd3fe6054d61",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py"
+      ],
+      "src_lines": 8,
+      "issues": [
+        544
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 643,
+      "title": "fix: respect enabled=False in iterator protocols (__iter__ / __aiter__)",
+      "merged_at": "2026-06-25T07:39:32Z",
+      "merge": "868c60b80cd84273bf15a8b3f5c2026776728e5f",
+      "base": "a49e9d6dd4e4611238dc277263d1975e1cada21e",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 21,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 653,
+      "title": "Keep statistics visible when @retry is further wrapped (fixes #519)",
+      "merged_at": "2026-07-11T20:26:02Z",
+      "merge": "4213bad9560479e71ce294b52501765068e38f80",
+      "base": "b2cd0274c67610d615019ab4745f521504a0576d",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 25,
+      "issues": [
+        519
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 654,
+      "title": "Avoid unnecessary exponential wait computation",
+      "merged_at": "2026-07-13T08:54:49Z",
+      "merge": "29d398bd21af492abeecd9fc9d33c48dc4d5fc08",
+      "base": "4213bad9560479e71ce294b52501765068e38f80",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/wait.py"
+      ],
+      "src_lines": 12,
+      "issues": [
+        526
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 651,
+      "title": "Accept empty message in retry_if_exception_message",
+      "merged_at": "2026-07-13T11:11:23Z",
+      "merge": "40fad186bae14796567ea6786d8701bdd9d79312",
+      "base": "29d398bd21af492abeecd9fc9d33c48dc4d5fc08",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/retry.py"
+      ],
+      "src_lines": 8,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 656,
+      "title": "Avoid underflow in exponential wait threshold",
+      "merged_at": "2026-07-15T08:27:42Z",
+      "merge": "c650fb45204635f07910948d5fc59a8c551ffdda",
+      "base": "40fad186bae14796567ea6786d8701bdd9d79312",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/wait.py"
+      ],
+      "src_lines": 4,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 660,
+      "title": "fix: stop hanging on cyclic exception __cause__ chains",
+      "merged_at": "2026-07-29T10:39:31Z",
+      "merge": "b3c5a9f9212187aaf96353378daa9a9ebd800742",
+      "base": "c650fb45204635f07910948d5fc59a8c551ffdda",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/retry.py"
+      ],
+      "src_lines": 9,
+      "issues": [
+        658
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 682,
+      "title": "refactor: mark overridden methods with @override",
+      "merged_at": "2026-08-05T16:01:16Z",
+      "merge": "a09999688c8d3bb3d4ca1716748009954cc7c4d0",
+      "base": "b189e156164c970c15a3ffc54842c878f3695289",
+      "holdout": [
+        "tests/test_after.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/_utils.py",
+        "tenacity/asyncio/__init__.py",
+        "tenacity/asyncio/retry.py",
+        "tenacity/retry.py",
+        "tenacity/stop.py",
+        "tenacity/tornadoweb.py",
+        "tenacity/wait.py"
+      ],
+      "src_lines": 88,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 694,
+      "title": "fix: restore support for falsy wait values and callable + strategy",
+      "merged_at": "2026-08-06T06:44:13Z",
+      "merge": "389aab8b2688f7a1df41c2dd7797eeb18c8baff9",
+      "base": "a09999688c8d3bb3d4ca1716748009954cc7c4d0",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py",
+        "tenacity/wait.py"
+      ],
+      "src_lines": 49,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 696,
+      "title": "fix: read the tornado global live instead of an import-time snapshot",
+      "merged_at": "2026-08-06T06:51:02Z",
+      "merge": "949dcfa6c0a4f0109dbbd019ff58208a580d185b",
+      "base": "389aab8b2688f7a1df41c2dd7797eeb18c8baff9",
+      "holdout": [
+        "tests/test_tornado.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py"
+      ],
+      "src_lines": 15,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 645,
+      "title": "Respect enabled=False on the direct-call path",
+      "merged_at": "2026-08-06T06:51:33Z",
+      "merge": "26f719dc73d3c5612b9c1b8d18a7883837790ad8",
+      "base": "949dcfa6c0a4f0109dbbd019ff58208a580d185b",
+      "holdout": [
+        "tests/test_asyncio.py",
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 10,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 741,
+      "title": "fix: only treat None and 0 as \"no wait\"",
+      "merged_at": "2026-10-07T09:44:31Z",
+      "merge": "b6201eceedfc719e996dcbc3f6c17f21011fb236",
+      "base": "4a74682e0186b5f2d25906aa190cd639c705a958",
+      "holdout": [
+        "tests/test_tenacity.py"
+      ],
+      "src_files": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "src_lines": 31,
+      "issues": [],
+      "split": "eval"
+    }
+  ]
+}

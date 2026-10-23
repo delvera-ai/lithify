@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `humanize.fractional(-1.3)` returns `\"-1 -3/10\"` with two minus signs; the same happens for any negative number whose absolute value is at least 1 (`fractional(-2.5)` gives `\"-2 -1/2\"`). Negative mixed numbers should be shown in the conventional form, e.g. `\"-1 3/10\"`.",
+  "k": 0,
+  "reason": "cruise (S=0.80)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 20122,
+    "cached": 193408,
+    "out": 3429,
+    "cost": 0.007671580000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

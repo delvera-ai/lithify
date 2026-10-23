@@ -1,0 +1,62 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 54e7049..1d05458 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -90,6 +90,21 @@
+       "wall_s": 68.6,
+       "always_on_tokens": 189,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-142505-bug-humanize-naturalsize-can-sho",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 23442,
++      "tokens_cached": 204578,
++      "tokens_out": 5007,
++      "cost_usd": 0.0092,
++      "wall_s": 46.4,
++      "always_on_tokens": 189,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index c495fed..9e83bce 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -97,6 +97,12 @@ def naturalsize(
+         return f"{int(bytes_)}B" if gnu else _("%d Bytes") % int(bytes_)
+ 
+     exp = int(min(log(abs_bytes, base), len(suffix)))
++    num = format % (bytes_ / (base**exp))
++    # Rounding can push the value up to the base (e.g. 999999 -> "1000.0"),
++    # so show it with the next suffix instead.
++    if exp < len(suffix) and abs(float(num)) >= base:
++        exp += 1
++        num = format % (bytes_ / (base**exp))
+     space = "" if gnu else " "
+-    ret: str = format % (bytes_ / (base**exp)) + space + _(suffix[exp - 1])
++    ret: str = num + space + _(suffix[exp - 1])
+     return ret
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 04774d9..a87f7cb 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -79,6 +79,13 @@ import humanize
+         ([1.123456789], "1 Bytes"),
+         ([1.123456789 * 10**3], "1.1 kB"),
+         ([1.123456789 * 10**6], "1.1 MB"),
++        ([999999], "1.0 MB"),
++        ([999999999, False, False, "%.0f"], "1 GB"),
++        ([1024**2 - 1, True], "1.0 MiB"),
++        ([1024**3 - 1, True], "1.0 GiB"),
++        ([1024**2 - 1, False, True], "1.0M"),
++        ([1024**3 - 1, False, True], "1.0G"),
++        ([10**30 * 1000 - 1], "1000.0 QB"),
+         ([1.123456789, False, True], "1B"),
+         ([1.123456789 * 10**3, False, True], "1.1K"),
+         ([1.123456789 * 10**6, False, True], "1.1M"),

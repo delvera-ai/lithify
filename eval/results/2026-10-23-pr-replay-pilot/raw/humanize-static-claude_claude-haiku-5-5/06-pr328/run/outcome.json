@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.metric()` can output a four-digit mantissa with a prefix that is too small, contradicting its docstring (the prefix is chosen so that non-significant zero digits are not needed):\n\n```python\n>>> metric(999.9, \"V\")\n'1000 V'      # expected '1.00 kV'\n>>> metric(999999, \"V\")\n'1000 kV'     # expected '1.00 MV'\n>>> metric(0.0009999, \"V\")\n'1000 \u03bcV'     # expected '1.00 mV'\n```\n\nWhen rounding reaches 1000, the result should move to the next SI prefix. Values already at the largest prefix should be unchanged.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "base-1",
+  "why": "All four fix the bug and pass the checks. In each one, the rollover only happens when the exponent mod 3 is 2, and each leaves the largest prefix (Q) alone, so the decision comes down to fidelity and how small the change is.\nc3 is the smallest: it adds four lines before the existing scaling and touches nothing else. Its rollover test uses the same `format(...)` expression that produces the output, so the check and the printed digits cannot disagree.\nc1 is nearly identical but checks with `round()` instead of the real formatting call, so the check and the output use different rounding paths.\nThe runner-up is c2. It is correct, but it moves the existing `value_` formatting line and runs the format a second time, which changes the function's structure for no gain over c3.\nc4 has the same restructuring plus a less direct exponent calculation.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 395950,
+    "cached": 3444431,
+    "out": 93188,
+    "cost": 2.9697433,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.9125,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

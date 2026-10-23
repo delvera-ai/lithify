@@ -1,0 +1,35 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
+      "k": 2,
+      "first_pass": false,
+      "delivered": false,
+      "churn_lines": 0,
+      "executions": 8,
+      "tokens_in": 544006,
+      "tokens_cached": 4819493,
+      "tokens_out": 103584,
+      "cost_usd": 4.1271,
+      "wall_s": 424.7,
+      "always_on_tokens": 189,
+      "stability_after": 0.0
+    },
+    {
+      "task_id": "20261023-134527-bug-humanize-naturalsize-does-no",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 68819,
+      "tokens_cached": 780223,
+      "tokens_out": 17650,
+      "cost_usd": 0.24,
+      "wall_s": 82.3,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    }
+  ]
+}

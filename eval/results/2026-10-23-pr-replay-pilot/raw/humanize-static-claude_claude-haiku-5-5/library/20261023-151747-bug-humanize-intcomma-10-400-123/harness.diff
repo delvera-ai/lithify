@@ -1,0 +1,44 @@
+--- a/skills/humanize-number-output/SKILL.md
++++ b/skills/humanize-number-output/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: humanize-number-output
+-description: Load when a task fixes or changes the string a number/filesize formatter returns (fractional, intword, intcomma, apnumber, ordinal, scientific, clamp, metric in src/humanize/number.py, or naturalsize in filesize.py), e.g. wrong output for negative, zero, float or string inputs.
++description: Load when a task fixes or changes the string a number/filesize formatter returns (fractional, intword, intcomma, apnumber, ordinal, scientific, clamp, metric in src/humanize/number.py, or naturalsize in filesize.py), e.g. wrong output or an exception (OverflowError on very large ints) for negative, zero, float, huge-int or string inputs.
+ ---
+ 
+ # Changing what a humanize number formatter returns
+@@ -9,9 +9,19 @@
+ 
+ 1. **Input guard stays first.** Every public function in `number.py` sends NaN/±Inf to
+    `_format_not_finite(...)` before it formats anything. All except `clamp` and `metric` also
+-   convert the input inside `try` and return `str(value)` on `TypeError`/`ValueError`. Put the
+-   fix *after* that guard and leave those paths alone. Existing `nan`/`inf`/`"ten"`/`None` cases
++   convert the input inside `try` and return `str(value)` on `TypeError`/`ValueError`. Keep the
++   NaN/±Inf and `str(value)` results as they are; existing `nan`/`inf`/`"ten"`/`None` cases
+    pin them.
++   The guard itself calls `float(value)`: `if not math.isfinite(float(value))` in `ordinal`,
++   `intword`, `apnumber` and `intcomma` (both its `str` and non-`str` branches);
++   `float(value)` first in `fractional` and `scientific`. For an `int` beyond float range
++   (about `10**309`) that raises `OverflowError`, which the `except (TypeError, ValueError)`
++   does not catch. If the task's bug is that guard, change it for the input type the task names
++   only (an `int` can't be NaN/Inf). Leave the `str` branch and the other input types going
++   through `float()`. Then run the same large input through the other functions that share the
++   guard and name any that still raise in the final message, without fixing them.
++   Also: `bool` is an `int` subclass, and `f"{value:,.{ndigits}f}"` converts an `int` to float,
++   so explicit `ndigits` still overflows on such an int.
+ 2. **Sign check.** Negative output carries exactly one leading `-` (as in `intword`'s
+    `negative_prefix` and `naturalsize`'s `abs_bytes`). Check this on the finished diff: run each
+    `return` branch of the function you touched with a negative input and confirm there is one
+@@ -20,7 +30,10 @@
+ 3. **Tests go in the existing parametrize list.** Each public function has one
+    `@pytest.mark.parametrize("test_input, expected", ...)` (or `"test_args, expected"`, where
+    the args are a list) in `tests/test_<module>.py`. Ruff `PT` requires csv names. Add the new cases to that
+-   list instead of writing a new test function.
++   list instead of writing a new test function. Inputs may be expressions (`[10**100]`);
++   `expected` is a string literal in every existing case. Don't build it with the same
++   format call the function uses (e.g. `f"{x:,}"` for `intcomma`), since that test passes for
++   any grouping. If a literal is too long, assemble it from pieces such as `"10" + ",000" * 132 + ",123"`.
+    `tests/test_filesize.py::test_naturalsize` asserts each case a second time with the first
+    argument negated (`*-1` for ints, `"-"` prefixed for strings and floats). Only positive
+    inputs belong there. Its positional args are `(value, binary, gnu, format)`. `gnu=True`

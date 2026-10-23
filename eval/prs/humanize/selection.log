@@ -1,0 +1,113 @@
+#119: needs both test and source changes (tests=0, src=0)
+#118: needs both test and source changes (tests=0, src=2)
+#120: needs both test and source changes (tests=0, src=0)
+#121: needs both test and source changes (tests=0, src=0)
+#128: needs both test and source changes (tests=0, src=0)
+#131: needs both test and source changes (tests=0, src=1)
+#133: needs both test and source changes (tests=0, src=0)
+#137: needs both test and source changes (tests=0, src=1)
+#139: needs both test and source changes (tests=0, src=0)
+#123: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#127: needs both test and source changes (tests=0, src=0)
+#141: needs both test and source changes (tests=0, src=2)
+#146: needs both test and source changes (tests=0, src=2)
+#150: needs both test and source changes (tests=0, src=0)
+#151: needs both test and source changes (tests=0, src=0)
+#149: needs both test and source changes (tests=0, src=0)
+#147: needs both test and source changes (tests=0, src=1)
+#155: needs both test and source changes (tests=0, src=0)
+#156: needs both test and source changes (tests=0, src=0)
+#157: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#159: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#160: needs both test and source changes (tests=0, src=0)
+#162: needs both test and source changes (tests=0, src=0)
+#163: needs both test and source changes (tests=0, src=0)
+#166: needs both test and source changes (tests=0, src=0)
+#170: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#172: needs both test and source changes (tests=0, src=0)
+#169: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#173: suite@base=2 holdout@base=2 holdout@merge=2 old-tests@merge=2 -> drop
+#177: needs both test and source changes (tests=1, src=0)
+#188: needs both test and source changes (tests=0, src=1)
+#192: needs both test and source changes (tests=0, src=0)
+#196: needs both test and source changes (tests=0, src=0)
+#199: needs both test and source changes (tests=0, src=0)
+#200: needs both test and source changes (tests=0, src=1)
+#201: needs both test and source changes (tests=0, src=1)
+#202: needs both test and source changes (tests=0, src=0)
+#142: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#206: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#204: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#110: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#209: needs both test and source changes (tests=0, src=0)
+#212: needs both test and source changes (tests=0, src=0)
+#213: needs both test and source changes (tests=0, src=0)
+#216: needs both test and source changes (tests=0, src=0)
+#218: needs both test and source changes (tests=0, src=1)
+#221: needs both test and source changes (tests=0, src=0)
+#223: needs both test and source changes (tests=0, src=0)
+#232: needs both test and source changes (tests=0, src=0)
+#230: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#233: needs both test and source changes (tests=0, src=0)
+#234: needs both test and source changes (tests=0, src=4)
+#235: needs both test and source changes (tests=0, src=0)
+#236: needs both test and source changes (tests=0, src=0)
+#238: needs both test and source changes (tests=0, src=2)
+#240: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#242: needs both test and source changes (tests=0, src=1)
+#244: needs both test and source changes (tests=0, src=0)
+#243: needs both test and source changes (tests=0, src=0)
+#245: needs both test and source changes (tests=0, src=0)
+#248: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#250: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#253: needs both test and source changes (tests=0, src=1)
+#254: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#261: needs both test and source changes (tests=0, src=0)
+#262: needs both test and source changes (tests=2, src=0)
+#268: needs both test and source changes (tests=0, src=1)
+#264: needs both test and source changes (tests=0, src=0)
+#273: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#275: needs both test and source changes (tests=0, src=0)
+#276: needs both test and source changes (tests=0, src=0)
+#272: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#285: needs both test and source changes (tests=0, src=0)
+#287: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#286: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#294: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#297: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#302: needs both test and source changes (tests=1, src=0)
+#301: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#307: needs both test and source changes (tests=1, src=0)
+#310: needs both test and source changes (tests=0, src=0)
+#314: needs both test and source changes (tests=1, src=0)
+#313: needs both test and source changes (tests=0, src=1)
+#315: needs both test and source changes (tests=0, src=4)
+#318: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#325: needs both test and source changes (tests=0, src=1)
+#320: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#328: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#329: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#335: needs both test and source changes (tests=0, src=4)
+#336: needs both test and source changes (tests=0, src=0)
+#304: needs both test and source changes (tests=1, src=0)
+#360: needs both test and source changes (tests=1, src=0)
+#383: needs both test and source changes (tests=0, src=0)
+#384: needs both test and source changes (tests=0, src=1)
+#385: needs both test and source changes (tests=0, src=0)
+#354: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#334: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#397: needs both test and source changes (tests=0, src=1)
+#378: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#382: needs both test and source changes (tests=1, src=0)
+#392: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#359: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#391: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#381: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#402: needs both test and source changes (tests=0, src=1)
+#346: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#295: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#440: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop
+#471: needs both test and source changes (tests=1, src=0)
+#464: needs both test and source changes (tests=1, src=0)
+#461: needs both test and source changes (tests=1, src=0)
+#465: suite@base=0 holdout@base=0 holdout@merge=0 old-tests@merge=0 -> drop

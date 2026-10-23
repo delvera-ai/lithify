@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `humanize.natural_list([])` raises `IndexError: list index out of range`. An empty list should render as an empty string.",
+  "k": 1,
+  "reason": "build (S=0.60)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 17684,
+    "cached": 124916,
+    "out": 1727,
+    "cost": 0.005648460000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

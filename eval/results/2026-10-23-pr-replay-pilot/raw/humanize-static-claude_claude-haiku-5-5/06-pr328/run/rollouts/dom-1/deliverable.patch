@@ -1,0 +1,32 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 1cbfc2b..2704e14 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -543,6 +543,11 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+     if exponent >= 33 or exponent < -30:
+         return scientific(value, precision - 1) + unit
+ 
++    # Rounding can carry up to 1000 (e.g. 999.9 -> "1000"); use the next prefix.
++    scaled = abs(value) / 10 ** (exponent // 3 * 3)
++    if exponent < 30 and round(scaled, max(0, precision - exponent % 3 - 1)) >= 1000:
++        exponent += 1
++
+     value /= 10 ** (exponent // 3 * 3)
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+diff --git a/tests/test_number.py b/tests/test_number.py
+index d8f9100..88b2562 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -268,6 +268,11 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+         ([1e50], "1.00 x 10⁵⁰"),
+         ([1e-50], "1.00 x 10⁻⁵⁰"),
+         ([-1500, "V"], "-1.50 kV"),
++        ([999.9, "V"], "1.00 kV"),
++        ([-999.9, "V"], "-1.00 kV"),
++        ([999999, "V"], "1.00 MV"),
++        ([0.0009999, "V"], "1.00 mV"),
++        ([999.9, "", 1], "1 k"),
+         ([0.12], "120 m"),
+         ([0.012], "12.0 m"),
+         ([0.0012], "1.20 m"),

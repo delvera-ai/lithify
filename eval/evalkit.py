@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -99,9 +100,18 @@ def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> 
 
 
 def run_task(
-    repo: Path, task_file: Path, strategy: str, holdout_cmd: str, timeout: int, evidence: Path, extra_redact: dict[str, str]
+    repo: Path,
+    task_file: Path,
+    strategy: str,
+    holdout: str | Callable[[Path, Path], int],
+    timeout: int,
+    evidence: Path,
+    extra_redact: dict[str, str],
 ) -> dict[str, Any]:
-    """Run one task through `lithify run` under a strategy; return the metrics for it."""
+    """Run one task through `lithify run` under a strategy; return the metrics for it.
+
+    `holdout` is a shell command, or a callable(repo, log_path) -> exit code, run afterwards on
+    the working tree with the applied patch."""
     args = ["run", "--task-file", str(task_file), "--json"]
     if strategy == "baseline":
         args += ["--k", "0", "--no-escalate"]
@@ -119,15 +129,22 @@ def run_task(
     outcome = json.loads((rdir / "outcome.json").read_text()) if rdir and (rdir / "outcome.json").exists() else {}
     state = json.loads((repo / ".lithify" / "state.json").read_text())
     rec = state["history"][-1] if state["history"] and tid and state["history"][-1]["task_id"] == tid else {}
-    hold = sh(holdout_cmd, repo, check=False, timeout=600) if holdout_cmd else None
+    hold_rc: int | None = None
+    if callable(holdout):
+        hold_rc = holdout(repo, evidence / "holdout_applied.txt")
+    elif holdout:
+        hold = sh(holdout, repo, check=False, timeout=600)
+        hold_rc = hold.returncode
+        (evidence / "holdout_applied.txt").write_text(
+            f"exit {hold.returncode}\n{hold.stdout[-4000:]}{hold.stderr[-2000:]}", encoding="utf-8"
+        )
     if rdir and rdir.exists():
         copy_redacted(rdir, evidence / "run", extra_redact)
     (evidence / "state.json").write_text(redact(json.dumps(state, indent=2), extra_redact), encoding="utf-8")
     (evidence / "lithify.log").write_text(redact(proc.stdout + "\n" + proc.stderr, extra_redact), encoding="utf-8")
-    if hold is not None:
-        (evidence / "holdout_applied.txt").write_text(
-            redact(f"exit {hold.returncode}\n{hold.stdout[-4000:]}{hold.stderr[-2000:]}", extra_redact), encoding="utf-8"
-        )
+    hl = evidence / "holdout_applied.txt"
+    if hl.exists():
+        hl.write_text(redact(hl.read_text(encoding="utf-8"), extra_redact), encoding="utf-8")
     usage = outcome.get("usage", {})
     proposal = outcome.get("proposal")
     proposed = ""
@@ -141,7 +158,7 @@ def run_task(
         "delivered": bool(res.get("delivered", rec.get("delivered", False))),
         "applied": bool(outcome.get("applied", False)),
         "first_pass": bool(outcome.get("first_pass", rec.get("first_pass", False))),
-        "holdout_pass": (hold.returncode == 0) if hold is not None else "",
+        "holdout_pass": (hold_rc == 0) if hold_rc is not None else "",
         "selected": outcome.get("selected", ""),
         "executions": int(usage.get("exec", rec.get("executions", 0))),
         "role_sessions": int(usage.get("roles", 0)),
@@ -187,7 +204,7 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
 def spent(results_root: Path) -> float:
     """Total live spend recorded in every results.csv under eval/results/."""
     total = 0.0
-    for f in results_root.rglob("results.csv"):
+    for f in results_root.rglob("results*.csv"):
         with open(f, encoding="utf-8") as fh:
             for row in csv.DictReader(fh):
                 with contextlib.suppress(ValueError):

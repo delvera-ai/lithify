@@ -1,0 +1,26 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 727435f..2dfeffe 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -160,7 +160,7 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
+                 value = float(value)
+             else:
+                 value = int(value)
+-        else:
++        elif not isinstance(value, int):
+             if not math.isfinite(float(value)):
+                 return _format_not_finite(float(value))
+             float(value)
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cf55ee1..6679e7b 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -47,6 +47,8 @@ def test_ordinal(test_input: str, expected: str) -> None:
+         ([10311], "10,311"),
+         ([1_000_000], "1,000,000"),
+         ([1_234_567.25], "1,234,567.25"),
++        ([10**400 + 123], f"{10**400 + 123:,}"),
++        ([-(10**400 + 123)], f"{-(10**400 + 123):,}"),
+         (["100"], "100"),
+         (["1000"], "1,000"),
+         (["10123"], "10,123"),

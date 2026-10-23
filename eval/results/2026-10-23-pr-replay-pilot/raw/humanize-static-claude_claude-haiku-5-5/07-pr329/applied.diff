@@ -1,0 +1,70 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 9341e11..08c665c 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-145531-bug-humanize-naturalsize-can-sho](20261023-145531-bug-humanize-naturalsize-can-sho/EXPERIENCE.md) — **when** A humanize bug fix where the agent must show the reported output on the unmodified code and prove each new parametrize case changes output, and the harness has no ready-made old-vs-new tool. In that situation agents fall back on swapping `git show HEAD:<file>` over the working tree and copying the fix back in one shell chain. **then** Keep `scripts/compare_outputs.py` in the harness (HEAD via `git archive` to a temp dir, a separate subprocess per side, a `C changed` summary line, exit 2 on setup failure). Point to it from always-on `tool_guidance.md` with the exact call form and an explicit ban on copying HEAD files over the tree, and say it is meant for both steps: before editing, to reproduce the bug (expect 0 changed, read the `old:` lines), and after editing, to confirm the new cases. The pointer alone was enough to get it adopted; no `system.md` wording was needed. Do not expect it to catch wrong test expectations; only the suite run does that.
+ - [20261023-144514-bug-humanize-metric-can-output-a](20261023-144514-bug-humanize-metric-can-output-a/EXPERIENCE.md) — **when** A humanize bug fix that changes what a formatter returns, where the agent has to show the reported output on the unmodified code and confirm each new parametrize case changes (or sweep many inputs for unintended changes). This is the point where agents start rebuilding HEAD by hand: loading two copies of the package in one process, `git show` into /tmp, or copying HEAD files over the working tree. **then** Ship the old-vs-new comparison as a harness script (`scripts/compare_outputs.py`: HEAD via `git archive` into a temp dir, each side in its own subprocess, checks the import path, ends with an `N expressions, C changed` line, exit 2 on setup failure). Point to it from `tool_guidance.md` with the "don't write your own: a shared `sys.modules` silently reports no change" warning, plus the "no `-I`" note. Don't rely on `system.md` wording alone to get this verification done correctly.
+ - [20261023-143921-bug-humanize-fractional-1-3-retu](20261023-143921-bug-humanize-fractional-1-3-retu/EXPERIENCE.md) — **when** A humanize bug-fix task where the reported failing inputs sit beside neighbouring inputs that already give the right (or quirky) output, such as other signs, zero, or values that round to 0, and the agent adds regression cases to an existing `@pytest.mark.parametrize` list. **then** Define "done" for a bug fix in always-on `system.md`, not in a module `skills/<name>`. Every new test case must fail on the unmodified code, and inputs that already behaved correctly go in the final message rather than in the test list. Also tell the agent to run the original code once, before editing, on every input it plans to add as a test, so it doesn't have to rebuild HEAD afterwards to check them.
+ - [20261023-142958-bug-humanize-naturalday-and-huma](20261023-142958-bug-humanize-naturalday-and-huma/EXPERIENCE.md) — **when** A humanize task where two public functions share logic and one calls the other (here `naturaldate` → `naturalday`), and a harness skill states a rule that keeps the two consistent. **then** In the `skills/<name>` for that module, phrase a cross-function rule as a check to run on the finished diff ("for each new test input, `naturaldate(x)` and `naturalday(x)` give the same today/tomorrow/yesterday label"). Do not phrase it as a design requirement ("both must use the same notion of today / must not disagree"). The requirement wording led the agent to restructure the functions so they could not disagree, which is an unrequested refactor. The check wording keeps the existing call structure and still catches the near-miss through a test.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 6ae5574..e75715a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -90,6 +90,21 @@
+       "wall_s": 616.1,
+       "always_on_tokens": 448,
+       "stability_after": 0.9125
++    },
++    {
++      "task_id": "20261023-145531-bug-humanize-naturalsize-can-sho",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 158,
++      "executions": 3,
++      "tokens_in": 290628,
++      "tokens_cached": 2343163,
++      "tokens_out": 49474,
++      "cost_usd": 2.3546,
++      "wall_s": 442.7,
++      "always_on_tokens": 448,
++      "stability_after": 0.7557
+     }
+   ]
+ }
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index c495fed..a63ee27 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -97,6 +97,9 @@ def naturalsize(
+         return f"{int(bytes_)}B" if gnu else _("%d Bytes") % int(bytes_)
+ 
+     exp = int(min(log(abs_bytes, base), len(suffix)))
++    # Rounding can carry the value up to the base (999999 -> "1000.0 kB"); use the next unit.
++    if exp < len(suffix) and format % (abs_bytes / (base**exp)) == format % base:
++        exp += 1
+     space = "" if gnu else " "
+     ret: str = format % (bytes_ / (base**exp)) + space + _(suffix[exp - 1])
+     return ret
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 04774d9..59a88ef 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -82,6 +82,13 @@ import humanize
+         ([1.123456789, False, True], "1B"),
+         ([1.123456789 * 10**3, False, True], "1.1K"),
+         ([1.123456789 * 10**6, False, True], "1.1M"),
++        ([999999], "1.0 MB"),
++        ([999999.9], "1.0 MB"),
++        ([999999500], "1.0 GB"),
++        ([1024**2 - 1, True], "1.0 MiB"),
++        ([1024**3 - 1, True], "1.0 GiB"),
++        ([1024**2 - 1, False, True], "1.0M"),
++        ([1024**3 - 1, False, True], "1.0G"),
+     ],
+ )
+ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> None:

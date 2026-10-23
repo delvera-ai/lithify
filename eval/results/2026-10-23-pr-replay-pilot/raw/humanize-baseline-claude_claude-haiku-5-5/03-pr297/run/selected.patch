@@ -1,0 +1,125 @@
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index f0b24fa..615c94b 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -308,16 +308,43 @@ def _convert_aware_datetime(
+     return value
+ 
+ 
++def _today_for(value: object) -> dt.date:
++    """Return the current date, in the timezone of `value` if it is tz-aware."""
++    import datetime as dt
++
++    if isinstance(value, dt.datetime) and value.tzinfo is not None:
++        return dt.datetime.now(value.tzinfo).date()
++    return dt.date.today()
++
++
++def _natural_day(value: dt.date, today: dt.date, format: str) -> str:
++    """Return a natural day for `value` relative to `today`."""
++    delta = value - today
++
++    if delta.days == 0:
++        return _("today")
++
++    if delta.days == 1:
++        return _("tomorrow")
++
++    if delta.days == -1:
++        return _("yesterday")
++
++    return value.strftime(format)
++
++
+ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     """Return a natural day.
+ 
+     For date values that are tomorrow, today or yesterday compared to
+     present day return representing string. Otherwise, return a string
+-    formatted according to `format`.
++    formatted according to `format`. For tz-aware datetimes, "present day"
++    is taken in the datetime's own timezone.
+ 
+     """
+     import datetime as dt
+ 
++    today = _today_for(value)
+     try:
+         value = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+@@ -326,24 +353,14 @@ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = value - dt.date.today()
+-
+-    if delta.days == 0:
+-        return _("today")
+-
+-    if delta.days == 1:
+-        return _("tomorrow")
+-
+-    if delta.days == -1:
+-        return _("yesterday")
+-
+-    return value.strftime(format)
++    return _natural_day(value, today, format)
+ 
+ 
+ def naturaldate(value: dt.date | dt.datetime) -> str:
+     """Like `naturalday`, but append a year for dates more than ~five months away."""
+     import datetime as dt
+ 
++    today = _today_for(value)
+     try:
+         value = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+@@ -352,10 +369,10 @@ def naturaldate(value: dt.date | dt.datetime) -> str:
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = _abs_timedelta(value - dt.date.today())
++    delta = _abs_timedelta(value - today)
+     if delta.days >= 5 * 365 / 12:
+-        return naturalday(value, "%b %d %Y")
+-    return naturalday(value)
++        return _natural_day(value, today, "%b %d %Y")
++    return _natural_day(value, today, "%b %d")
+ 
+ 
+ def _quotient_and_remainder(
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 63e171a..10658ee 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -300,6 +300,30 @@ def test_naturaldate(test_input: dt.date, expected: str) -> None:
+     assert humanize.naturaldate(test_input) == expected
+ 
+ 
++AEDT = dt.timezone(dt.timedelta(hours=11))
++
++
++@freeze_time("2023-10-15 23:00:00")  # 2023-10-16 10:00 in AEDT
++@pytest.mark.parametrize(
++    "test_input, expected_naturalday, expected_naturaldate",
++    [
++        # Same calendar date in the datetime's own timezone as "today" there.
++        (dt.datetime(2023, 10, 16, 17, 0, tzinfo=AEDT), "today", "today"),
++        # Yesterday in AEDT, although it is still 15 Oct in UTC.
++        (dt.datetime(2023, 10, 15, 9, 0, tzinfo=AEDT), "yesterday", "yesterday"),
++        (dt.datetime(2023, 10, 17, 9, 0, tzinfo=AEDT), "tomorrow", "tomorrow"),
++        (dt.datetime(2023, 3, 5, 9, 0, tzinfo=AEDT), "Mar 05", "Mar 05 2023"),
++    ],
++)
++def test_naturalday_aware_datetime_uses_own_timezone(
++    test_input: dt.datetime,
++    expected_naturalday: str,
++    expected_naturaldate: str,
++) -> None:
++    assert humanize.naturalday(test_input) == expected_naturalday
++    assert humanize.naturaldate(test_input) == expected_naturaldate
++
++
+ @pytest.mark.parametrize(
+     "seconds, expected",
+     [

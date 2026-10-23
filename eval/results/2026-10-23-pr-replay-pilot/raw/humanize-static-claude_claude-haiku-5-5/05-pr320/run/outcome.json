@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.fractional(-1.3)` returns `\"-1 -3/10\"` with two minus signs; the same happens for any negative number whose absolute value is at least 1 (`fractional(-2.5)` gives `\"-2 -1/2\"`). Negative mixed numbers should be shown in the conventional form, e.g. `\"-1 3/10\"`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The deciding factor was a minimal, correct fix (criteria 1 and 4). The bug only happens on the mixed-number return path, and c2 fixes it there with `abs(numerator)`, a one-token change. The whole part already carries the sign, and the other paths (integers, and values with no whole part such as -0.3 \u2192 \"-3/10\") already worked.\nc1 and c3 work but rewrite the whole function around `abs()` and a separate `sign` variable. That is more code that could break and adds nothing for this bug.\nThe runner-up was c4. Its code is the same as c2's. c2 won narrowly because its tests also cover a string input (\"-1.5\"). c4 only adds a comment and its tests miss that case.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-143921-bug-humanize-fractional-1-3-retu",
+  "usage": {
+    "in": 289697,
+    "cached": 2304658,
+    "out": 38124,
+    "cost": 2.35035596,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.895,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}
