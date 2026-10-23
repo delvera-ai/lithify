@@ -28,6 +28,7 @@
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           { "context": "plugin" },
+          { "context": "sim-sweep" },
           { "context": "test (ubuntu-latest, 3.11)" },
           { "context": "test (ubuntu-latest, 3.12)" },
           { "context": "test (ubuntu-latest, 3.13)" },

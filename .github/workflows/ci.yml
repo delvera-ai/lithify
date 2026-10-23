@@ -33,6 +33,19 @@ jobs:
       - name: Simulated end-to-end demo
         run: lithify demo
 
+  sim-sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          activate-environment: true
+      - name: Install
+        run: uv pip install -e .
+      - name: Simulation sweep (3 orders x noise 0, 0.2)
+        run: python eval/sim_sweep.py --orders 3 --noise 0,0.2 --strict
+
   plugin:
     runs-on: ubuntu-latest
     steps:
