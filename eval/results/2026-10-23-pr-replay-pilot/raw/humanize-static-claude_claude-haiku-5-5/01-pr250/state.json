@@ -1,0 +1,20 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-142110-regression-when-gnu-is-false-hum",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 4,
+      "tokens_in": 251657,
+      "tokens_cached": 2087258,
+      "tokens_out": 30482,
+      "cost_usd": 1.8856,
+      "wall_s": 287.8,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Regression: when `gnu` is False, `humanize.naturalsize(1.0)` or `naturalsize("1")` returns `"1.0 Byte"` instead of `"1 Byte"`, which was the return value until 4.12. Restore the previous output for float and numeric-string inputs that are below one kilobyte.

@@ -1,0 +1,74 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 046b6a4..af1e8ea 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-150818-bug-humanize-naturaldelta-docume](20261023-150818-bug-humanize-naturaldelta-docume/EXPERIENCE.md) — **when** A humanize bug fix where the task names one public function, but sibling functions in the same module (e.g. `naturaltime`, `precisedelta` beside `naturaldelta`) take the same bad input through a different code path that the fix won't reach. Without a written description of how the functions call each other, the agent fixes the named function and never runs the siblings. **then** In the module's `skills/<module>-output` skill (e.g. `skills/humanize-time-output`), state as verified facts which public function calls which, and which path converts the input (e.g. "`naturaltime` reaches `naturaldelta` only after `_date_and_delta` has built a timedelta, so a guard in `naturaldelta` doesn't cover it"). Add a check for the finished diff: "fix only the function the task names; run each sibling on the new inputs and report those that still fail in the final message". Keep the fix itself out of the skill, and put repo-wide conventions (imports, parametrize style) in `memory.md` rather than in the skill.
+ - [20261023-150254-bug-humanize-fractional-produces](20261023-150254-bug-humanize-fractional-produces/EXPERIENCE.md) — **when** A humanize fix or edit near the end of the task, where a lint or type tool that `pyproject.toml` or tox configures (ruff, mypy) is not installed in the project venv, and the harness names that tool or its rules without saying it is missing. **then** In always-on `tool_guidance.md`, give one bullet to each configured-but-missing checker. Name it, give the exact failure (`No module named …`), say "don't run or install it", give a fallback that reads `[tool.ruff]` in `pyproject.toml` against the changed lines, and require the final message to say the check was not run. In any `skills/<name>` that lists that tool's rules (e.g. mypy `strict`, `RUF046`), point back to that bullet rather than naming the tool alone, because naming a tool without saying it is missing triggers a probe.
+ - [20261023-145531-bug-humanize-naturalsize-can-sho](20261023-145531-bug-humanize-naturalsize-can-sho/EXPERIENCE.md) — **when** A humanize bug fix where the agent must show the reported output on the unmodified code and prove each new parametrize case changes output, and the harness has no ready-made old-vs-new tool. In that situation agents fall back on swapping `git show HEAD:<file>` over the working tree and copying the fix back in one shell chain. **then** Keep `scripts/compare_outputs.py` in the harness (HEAD via `git archive` to a temp dir, a separate subprocess per side, a `C changed` summary line, exit 2 on setup failure). Point to it from always-on `tool_guidance.md` with the exact call form and an explicit ban on copying HEAD files over the tree, and say it is meant for both steps: before editing, to reproduce the bug (expect 0 changed, read the `old:` lines), and after editing, to confirm the new cases. The pointer alone was enough to get it adopted; no `system.md` wording was needed. Do not expect it to catch wrong test expectations; only the suite run does that.
+ - [20261023-144514-bug-humanize-metric-can-output-a](20261023-144514-bug-humanize-metric-can-output-a/EXPERIENCE.md) — **when** A humanize bug fix that changes what a formatter returns, where the agent has to show the reported output on the unmodified code and confirm each new parametrize case changes (or sweep many inputs for unintended changes). This is the point where agents start rebuilding HEAD by hand: loading two copies of the package in one process, `git show` into /tmp, or copying HEAD files over the working tree. **then** Ship the old-vs-new comparison as a harness script (`scripts/compare_outputs.py`: HEAD via `git archive` into a temp dir, each side in its own subprocess, checks the import path, ends with an `N expressions, C changed` line, exit 2 on setup failure). Point to it from `tool_guidance.md` with the "don't write your own: a shared `sys.modules` silently reports no change" warning, plus the "no `-I`" note. Don't rely on `system.md` wording alone to get this verification done correctly.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 363054d..7b3bee3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -120,6 +120,21 @@
+       "wall_s": 322.9,
+       "always_on_tokens": 682,
+       "stability_after": 0.7778
++    },
++    {
++      "task_id": "20261023-150818-bug-humanize-naturaldelta-docume",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 34,
++      "executions": 4,
++      "tokens_in": 360974,
++      "tokens_cached": 3197352,
++      "tokens_out": 68539,
++      "cost_usd": 2.7811,
++      "wall_s": 567.2,
++      "always_on_tokens": 742,
++      "stability_after": 0.7742
+     }
+   ]
+ }
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 4a07d52..739d3d2 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -149,6 +149,9 @@ def naturaldelta(
+     else:
+         try:
+             int(value)  # Explicitly don't support string such as "NaN" or "inf"
++        except (ValueError, TypeError, OverflowError):  # OverflowError: float("inf")
++            return str(value)
++        try:
+             value = float(value)
+             delta = dt.timedelta(seconds=value)
+         except (ValueError, TypeError):
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 7699770..adf7cd4 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -138,6 +138,17 @@ def test_naturaldelta(test_input: float | dt.timedelta, expected: str) -> None:
+         assert humanize.naturaldelta(-test_input) == expected
+ 
+ 
++@pytest.mark.parametrize(
++    "test_input, expected",
++    [
++        (float("inf"), "inf"),
++        (float("-inf"), "-inf"),
++    ],
++)
++def test_naturaldelta_non_finite(test_input: float, expected: str) -> None:
++    assert humanize.naturaldelta(test_input) == expected
++
++
+ @freeze_time(FROZEN_DATE)
+ @pytest.mark.parametrize(
+     "test_input, expected",

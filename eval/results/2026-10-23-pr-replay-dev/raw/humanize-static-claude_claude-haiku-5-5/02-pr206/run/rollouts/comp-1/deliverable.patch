@@ -1,0 +1,63 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index 996506e..fee3c20 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -55,6 +55,8 @@ def naturalsize(
+         '2.930K'
+         >>> naturalsize(3000, True)
+         '2.9 KiB'
++        >>> naturalsize(10**24)
++        '1.0 YB'
+         >>> naturalsize(10**28)
+         '10.0 RB'
+         >>> naturalsize(10**34 * 3)
+@@ -85,6 +87,9 @@ def naturalsize(
+     base = 1024 if (gnu or binary) else 1000
+     bytes_ = float(value)
+     abs_bytes = abs(bytes_)
++    # float(value) can round a large int below a unit boundary, so compare the
++    # exact int when the input is one.
++    exact_bytes = abs(value) if isinstance(value, int) else abs_bytes
+ 
+     if abs_bytes == 1 and not gnu:
+         return "%d Byte" % bytes_
+@@ -94,7 +99,7 @@ def naturalsize(
+ 
+     for i, s in enumerate(suffix, 2):
+         unit = base**i
+-        if abs_bytes < unit:
++        if exact_bytes < unit:
+             break
+ 
+     ret: str = format % (base * bytes_ / unit) + s
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 416cbf1..baacacc 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -22,6 +22,10 @@ import humanize
+         ([1000**8 * 38], "38.0 YB"),
+         ([1000**9 * 39], "39.0 RB"),
+         ([1000**10 * 40], "40.0 QB"),
++        ([10**24], "1.0 YB"),
++        ([1_000_000_000_000_000_050_331_648], "1.0 YB"),
++        ([10**24 - 10**20], "999.9 ZB"),
++        ([10**34 * 3], "30000.0 QB"),
+         ([300, True], "300 Bytes"),
+         ([1024**1 * 31, True], "31.0 KiB"),
+         ([1024**2 * 32, True], "32.0 MiB"),
+@@ -33,6 +37,7 @@ import humanize
+         ([1024**8 * 38, True], "38.0 YiB"),
+         ([1024**9 * 39, True], "39.0 RiB"),
+         ([1024**10 * 40, True], "40.0 QiB"),
++        ([1024**8, True], "1.0 YiB"),
+         ([1000**1 * 31, True], "30.3 KiB"),
+         ([1000**2 * 32, True], "30.5 MiB"),
+         ([1000**3 * 33, True], "30.7 GiB"),
+@@ -53,6 +58,7 @@ import humanize
+         ([1000**8 * 38, False, True], "31.4Y"),
+         ([1000**9 * 39, False, True], "31.5R"),
+         ([1000**10 * 40, False, True], "31.6Q"),
++        ([1024**8, False, True], "1.0Y"),
+         ([300, False, True], "300B"),
+         ([3000, False, True], "2.9K"),
+         ([3000000, False, True], "2.9M"),

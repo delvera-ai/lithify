@@ -1,0 +1,73 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 08c665c..046b6a4 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-150254-bug-humanize-fractional-produces](20261023-150254-bug-humanize-fractional-produces/EXPERIENCE.md) — **when** A humanize fix or edit near the end of the task, where a lint or type tool that `pyproject.toml` or tox configures (ruff, mypy) is not installed in the project venv, and the harness names that tool or its rules without saying it is missing. **then** In always-on `tool_guidance.md`, give one bullet to each configured-but-missing checker. Name it, give the exact failure (`No module named …`), say "don't run or install it", give a fallback that reads `[tool.ruff]` in `pyproject.toml` against the changed lines, and require the final message to say the check was not run. In any `skills/<name>` that lists that tool's rules (e.g. mypy `strict`, `RUF046`), point back to that bullet rather than naming the tool alone, because naming a tool without saying it is missing triggers a probe.
+ - [20261023-145531-bug-humanize-naturalsize-can-sho](20261023-145531-bug-humanize-naturalsize-can-sho/EXPERIENCE.md) — **when** A humanize bug fix where the agent must show the reported output on the unmodified code and prove each new parametrize case changes output, and the harness has no ready-made old-vs-new tool. In that situation agents fall back on swapping `git show HEAD:<file>` over the working tree and copying the fix back in one shell chain. **then** Keep `scripts/compare_outputs.py` in the harness (HEAD via `git archive` to a temp dir, a separate subprocess per side, a `C changed` summary line, exit 2 on setup failure). Point to it from always-on `tool_guidance.md` with the exact call form and an explicit ban on copying HEAD files over the tree, and say it is meant for both steps: before editing, to reproduce the bug (expect 0 changed, read the `old:` lines), and after editing, to confirm the new cases. The pointer alone was enough to get it adopted; no `system.md` wording was needed. Do not expect it to catch wrong test expectations; only the suite run does that.
+ - [20261023-144514-bug-humanize-metric-can-output-a](20261023-144514-bug-humanize-metric-can-output-a/EXPERIENCE.md) — **when** A humanize bug fix that changes what a formatter returns, where the agent has to show the reported output on the unmodified code and confirm each new parametrize case changes (or sweep many inputs for unintended changes). This is the point where agents start rebuilding HEAD by hand: loading two copies of the package in one process, `git show` into /tmp, or copying HEAD files over the working tree. **then** Ship the old-vs-new comparison as a harness script (`scripts/compare_outputs.py`: HEAD via `git archive` into a temp dir, each side in its own subprocess, checks the import path, ends with an `N expressions, C changed` line, exit 2 on setup failure). Point to it from `tool_guidance.md` with the "don't write your own: a shared `sys.modules` silently reports no change" warning, plus the "no `-I`" note. Don't rely on `system.md` wording alone to get this verification done correctly.
+ - [20261023-143921-bug-humanize-fractional-1-3-retu](20261023-143921-bug-humanize-fractional-1-3-retu/EXPERIENCE.md) — **when** A humanize bug-fix task where the reported failing inputs sit beside neighbouring inputs that already give the right (or quirky) output, such as other signs, zero, or values that round to 0, and the agent adds regression cases to an existing `@pytest.mark.parametrize` list. **then** Define "done" for a bug fix in always-on `system.md`, not in a module `skills/<name>`. Every new test case must fail on the unmodified code, and inputs that already behaved correctly go in the final message rather than in the test list. Also tell the agent to run the original code once, before editing, on every input it plans to add as a test, so it doesn't have to rebuild HEAD afterwards to check them.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index e75715a..363054d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -105,6 +105,21 @@
+       "wall_s": 442.7,
+       "always_on_tokens": 448,
+       "stability_after": 0.7557
++    },
++    {
++      "task_id": "20261023-150254-bug-humanize-fractional-produces",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 9,
++      "executions": 4,
++      "tokens_in": 288004,
++      "tokens_cached": 2056954,
++      "tokens_out": 38892,
++      "cost_usd": 2.1274,
++      "wall_s": 322.9,
++      "always_on_tokens": 682,
++      "stability_after": 0.7778
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 78bb26f..d7fa894 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -361,10 +361,10 @@ def fractional(value: NumberOrString) -> str:
+     frac = Fraction(number - whole_number).limit_denominator(1000)
+     numerator = frac.numerator
+     denominator = frac.denominator
+-    if whole_number and not numerator and denominator == 1:
+-        # this means that an integer was passed in
+-        # (or variants of that integer like 1.0000)
+-        return f"{whole_number:.0f}"
++    if denominator == 1:
++        # the fractional part is a whole number: an integer was passed in (or a variant
++        # like 1.0000), or it rounded to 0 or ±1 (e.g. 2.9999999 -> 3)
++        return f"{whole_number + numerator:.0f}"
+ 
+     if not whole_number:
+         return f"{numerator:.0f}/{denominator:.0f}"
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 78639c3..7b9b4a4 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -187,6 +187,11 @@ def test_apnumber(test_input: int | str, expected: str) -> None:
+         (-1.3, "-1 3/10"),
+         (-2.5, "-2 1/2"),
+         (-0.5, "-1/2"),
++        (0, "0"),
++        (2.9999999, "3"),
++        (0.9999999, "1"),
++        (-0.9999999, "-1"),
++        (-2.9999999, "-3"),
+     ],
+ )
+ def test_fractional(test_input: float | str, expected: str) -> None:

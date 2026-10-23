@@ -1,0 +1,35 @@
+lithify ▸ 20261023-142110-regression-when-gnu-is-false-hum  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✓ probe dom-1: test=pass
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 4 gate-passing deliverables (claude)
+  ✓ applied deliverable from base-1: The source fix is identical in every candidate, so the pick came down to test fit and minimality (maintainability). c4 puts its tests next to the existing `[1, False, False] -> "1 Byte"` case. It cove
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 3 edit row(s)
+lithify ◂ delivered=True first_pass=True S=0.20 executions=4 role_sessions=5 tokens(in/cached/out)=251657/2087258/30482 cost=$1.89
+{
+  "task_id": "20261023-142110-regression-when-gnu-is-false-hum",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.2,
+  "executions": 4,
+  "role_sessions": 5
+}
+

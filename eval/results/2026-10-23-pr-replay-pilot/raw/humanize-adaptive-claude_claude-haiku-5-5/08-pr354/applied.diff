@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1d05458..e3bf410 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -105,6 +105,21 @@
+       "wall_s": 46.4,
+       "always_on_tokens": 189,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-142552-bug-humanize-fractional-produces",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 21744,
++      "tokens_cached": 257899,
++      "tokens_out": 4237,
++      "cost_usd": 0.009,
++      "wall_s": 43.4,
++      "always_on_tokens": 189,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 78bb26f..a719c05 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -361,10 +361,10 @@ def fractional(value: NumberOrString) -> str:
+     frac = Fraction(number - whole_number).limit_denominator(1000)
+     numerator = frac.numerator
+     denominator = frac.denominator
+-    if whole_number and not numerator and denominator == 1:
+-        # this means that an integer was passed in
+-        # (or variants of that integer like 1.0000)
+-        return f"{whole_number:.0f}"
++    if denominator == 1:
++        # the fractional part is zero, or has rounded to a whole number (e.g.
++        # 2.9999999 -> 1/1), so the value is just an integer
++        return f"{whole_number + numerator:.0f}"
+ 
+     if not whole_number:
+         return f"{numerator:.0f}/{denominator:.0f}"
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 78639c3..0fb9827 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -187,6 +187,11 @@ def test_apnumber(test_input: int | str, expected: str) -> None:
+         (-1.3, "-1 3/10"),
+         (-2.5, "-2 1/2"),
+         (-0.5, "-1/2"),
++        (0, "0"),
++        (0.9999999, "1"),
++        (2.9999999, "3"),
++        (-0.9999999, "-1"),
++        (-2.9999999, "-3"),
+     ],
+ )
+ def test_fractional(test_input: float | str, expected: str) -> None:

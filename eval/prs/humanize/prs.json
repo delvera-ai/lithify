@@ -1,0 +1,326 @@
+{
+  "repo": "humanize",
+  "since": "2023-06-01",
+  "prs": [
+    {
+      "number": 206,
+      "title": "Fix rollover from ZB to 1.0 YB",
+      "merged_at": "2024-10-01T11:25:10Z",
+      "merge": "56b4fa812b0961cddc528764b5e2508cfe68e6f1",
+      "base": "922c5479ac42850e699b47e9e7de5f44a2a6e3bb",
+      "holdout": [
+        "tests/test_filesize.py"
+      ],
+      "src_files": [
+        "src/humanize/filesize.py"
+      ],
+      "src_lines": 8,
+      "issues": [
+        205
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 110,
+      "title": "Add `natural_list`",
+      "merged_at": "2024-10-05T13:52:14Z",
+      "merge": "d7f5dc5d60a4eb8f43b1ff6ddb842030062e9910",
+      "base": "19b43d3b8d80959d75097d8e145690be811465bd",
+      "holdout": [
+        "tests/test_lists.py"
+      ],
+      "src_files": [
+        "src/humanize/__init__.py",
+        "src/humanize/lists.py"
+      ],
+      "src_lines": 36,
+      "issues": [
+        103
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 230,
+      "title": "Handle en_GB and en_US locale",
+      "merged_at": "2025-02-12T21:24:37Z",
+      "merge": "31acb37e14c99782ea78dc1fe3a7ac0804217483",
+      "base": "de8b8a124c5209918ac0f2921d7cf58b1f6c1060",
+      "holdout": [
+        "tests/test_i18n.py"
+      ],
+      "src_files": [
+        "src/humanize/i18n.py"
+      ],
+      "src_lines": 9,
+      "issues": [
+        210
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 240,
+      "title": "Fix regression in `naturalsize` for float",
+      "merged_at": "2025-02-18T16:48:51Z",
+      "merge": "c11c08add7cfe22de4f27cd275c89a789c970dae",
+      "base": "a0602c70bb6e11322107b51114333bab7adab021",
+      "holdout": [
+        "tests/test_filesize.py"
+      ],
+      "src_files": [
+        "src/humanize/filesize.py"
+      ],
+      "src_lines": 2,
+      "issues": [
+        239
+      ],
+      "split": "dev"
+    },
+    {
+      "number": 250,
+      "title": "Fix regression in `naturalsize` for float and str",
+      "merged_at": "2025-04-10T08:39:15Z",
+      "merge": "2968d44280a68f775db73ddeb2f2fc6c05edac84",
+      "base": "8059ebe1732c89177709476165f6e87cc76fe1b7",
+      "holdout": [
+        "tests/test_filesize.py"
+      ],
+      "src_files": [
+        "src/humanize/filesize.py"
+      ],
+      "src_lines": 2,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 286,
+      "title": "Replace `Exception` with more specific `FileNotFoundError`",
+      "merged_at": "2025-12-20T20:03:38Z",
+      "merge": "2ddb5903cdc1c7e6eb6b083f4f99f73db50aecd9",
+      "base": "e87f2e25660d3af2ea553ea8dc63bff99652bc94",
+      "holdout": [
+        "tests/test_i18n.py"
+      ],
+      "src_files": [
+        "src/humanize/i18n.py"
+      ],
+      "src_lines": 4,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 297,
+      "title": "Handle tz-aware datetimes in `naturalday()` and `naturaldate()`",
+      "merged_at": "2026-02-22T13:13:48Z",
+      "merge": "a47a89ea9111a5eaba138c391e8a564134a15c60",
+      "base": "b172d67eac6a623db14020653cb311d29338d01f",
+      "holdout": [
+        "tests/test_time.py"
+      ],
+      "src_files": [
+        "src/humanize/time.py"
+      ],
+      "src_lines": 19,
+      "issues": [
+        152
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 318,
+      "title": "Return an empty string from `natural_list()` for an empty list",
+      "merged_at": "2026-05-22T05:37:14Z",
+      "merge": "0a06a3d4a12113cd5f3d0df0cfbb3e27d92499eb",
+      "base": "013969a1f7eef437f3c5e13dbd76b5466008fab8",
+      "holdout": [
+        "tests/test_lists.py"
+      ],
+      "src_files": [
+        "src/humanize/lists.py"
+      ],
+      "src_lines": 2,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 320,
+      "title": "Stop printing two minus signs in fractional for a negative mixed number",
+      "merged_at": "2026-06-25T20:38:23Z",
+      "merge": "c2c410c1521a3b1eb3efef52f3b06c2e42f7b92b",
+      "base": "976484a655df046aa6849f440a4f0cd44fc4918c",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 7,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 328,
+      "title": "Carry `metric()` to the next SI prefix when rounding reaches 1000",
+      "merged_at": "2026-06-30T15:34:13Z",
+      "merge": "7574e0cc377d80db0d2756fc2c5e0b8799a6f8b4",
+      "base": "c2c410c1521a3b1eb3efef52f3b06c2e42f7b92b",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 12,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 329,
+      "title": "Fix `naturalsize()` rounding rollover at unit boundaries",
+      "merged_at": "2026-06-30T15:36:42Z",
+      "merge": "823ad6096e1e5ba82ea876ce761fc2efebd76157",
+      "base": "7574e0cc377d80db0d2756fc2c5e0b8799a6f8b4",
+      "holdout": [
+        "tests/test_filesize.py"
+      ],
+      "src_files": [
+        "src/humanize/filesize.py"
+      ],
+      "src_lines": 6,
+      "issues": [
+        205
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 354,
+      "title": "Fix `fractional()` emitting degenerate output when the fraction rounds to a whole",
+      "merged_at": "2026-08-29T17:12:24Z",
+      "merge": "08cf2c3026cfd7c553e397e1d91ea069eb2a4978",
+      "base": "e1a5c7c9efe9f82edc89a2df8c2b599516a87dcb",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 10,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 334,
+      "title": "Return non-finite floats unchanged from `naturaldelta`",
+      "merged_at": "2026-08-29T17:27:05Z",
+      "merge": "b48b37b187682ccc55b28ed1b7cfaa853dbca72f",
+      "base": "08cf2c3026cfd7c553e397e1d91ea069eb2a4978",
+      "holdout": [
+        "tests/test_time.py"
+      ],
+      "src_files": [
+        "src/humanize/time.py"
+      ],
+      "src_lines": 10,
+      "issues": [
+        333
+      ],
+      "split": "eval"
+    },
+    {
+      "number": 392,
+      "title": "Fix intcomma overflow for large Python integers",
+      "merged_at": "2026-09-16T15:46:34Z",
+      "merge": "984526c02448110a8392dde3f5e26096dfd7c729",
+      "base": "14965a74953eb5119859975e7c452a04b481cdae",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 2,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 359,
+      "title": "Fix `metric()` showing an extra significant digit on rounding carry",
+      "merged_at": "2026-09-16T15:55:13Z",
+      "merge": "e46732ed235019682b7bfc6c44443e247b332e95",
+      "base": "984526c02448110a8392dde3f5e26096dfd7c729",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 5,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 391,
+      "title": "Fix translation loss during catalog updates",
+      "merged_at": "2026-09-16T16:13:45Z",
+      "merge": "bada0f88b4d115b96d94db1fe73b20579e84fc14",
+      "base": "e46732ed235019682b7bfc6c44443e247b332e95",
+      "holdout": [
+        "tests/test_i18n.py"
+      ],
+      "src_files": [
+        "src/humanize/i18n.py",
+        "src/humanize/number.py"
+      ],
+      "src_lines": 64,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 381,
+      "title": "Support general iterables in `natural_list`",
+      "merged_at": "2026-09-16T17:06:24Z",
+      "merge": "ffdf407fdfe1a5738159b989eb2df190ed780448",
+      "base": "bada0f88b4d115b96d94db1fe73b20579e84fc14",
+      "holdout": [
+        "tests/test_lists.py"
+      ],
+      "src_files": [
+        "src/humanize/lists.py"
+      ],
+      "src_lines": 20,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 346,
+      "title": "Fix `intword()` rounding carry for very large numbers",
+      "merged_at": "2026-09-16T17:44:17Z",
+      "merge": "ca892b368a535a79cc5e2181d052245b94fd6652",
+      "base": "f971127ce7e7770d3ff5be05cfc484bdf9302e04",
+      "holdout": [
+        "tests/test_number.py"
+      ],
+      "src_files": [
+        "src/humanize/number.py"
+      ],
+      "src_lines": 8,
+      "issues": [],
+      "split": "eval"
+    },
+    {
+      "number": 295,
+      "title": "Fix `naturaldelta` truncating years instead of rounding",
+      "merged_at": "2026-09-16T18:03:13Z",
+      "merge": "392aef707c0e74341ab4a51420984e9ea6b566c5",
+      "base": "ca892b368a535a79cc5e2181d052245b94fd6652",
+      "holdout": [
+        "tests/test_time.py"
+      ],
+      "src_files": [
+        "src/humanize/time.py"
+      ],
+      "src_lines": 1,
+      "issues": [],
+      "split": "eval"
+    }
+  ]
+}

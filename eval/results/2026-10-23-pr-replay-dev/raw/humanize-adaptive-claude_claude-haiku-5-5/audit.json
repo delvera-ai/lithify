@@ -1,0 +1,26 @@
+{
+  "label": "humanize-adaptive-claude_claude-haiku-5-5",
+  "lithify_commit": "88f3c38",
+  "run_cost_usd": 4.3671,
+  "invariants": [
+    {
+      "pr": 142,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": [
+        "dom-1",
+        "dom-2",
+        "inv-1",
+        "inv-2"
+      ]
+    },
+    {
+      "pr": 206,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}

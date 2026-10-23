@@ -1,0 +1,26 @@
+lithify ▸ 20261023-143754-bug-humanize-natural-list-raises  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  base rollout base-1: passed on first execution
+  ✓ applied deliverable from base-1: only one distinct deliverable passed the gates (no LLM judge needed)
+lithify ◂ delivered=True first_pass=True S=0.76 executions=1 role_sessions=3 tokens(in/cached/out)=110075/740038/7863 cost=$0.99
+{
+  "task_id": "20261023-143754-bug-humanize-natural-list-raises",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.7565,
+  "executions": 1,
+  "role_sessions": 3
+}
+

@@ -1,0 +1,65 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index e3bf410..9175d0d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -120,6 +120,21 @@
+       "wall_s": 43.4,
+       "always_on_tokens": 189,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-142636-bug-humanize-naturaldelta-docume",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 23862,
++      "tokens_cached": 291945,
++      "tokens_out": 4796,
++      "cost_usd": 0.0101,
++      "wall_s": 44.4,
++      "always_on_tokens": 189,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 4a07d52..08cbe04 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -149,10 +149,10 @@ def naturaldelta(
+     else:
+         try:
+             int(value)  # Explicitly don't support string such as "NaN" or "inf"
+-            value = float(value)
+-            delta = dt.timedelta(seconds=value)
+-        except (ValueError, TypeError):
++        except (ValueError, TypeError, OverflowError):  # OverflowError: float("inf")
+             return str(value)
++        value = float(value)
++        delta = dt.timedelta(seconds=value)
+ 
+     use_months = months
+ 
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 7699770..a478233 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -138,6 +138,16 @@ def test_naturaldelta(test_input: float | dt.timedelta, expected: str) -> None:
+         assert humanize.naturaldelta(-test_input) == expected
+ 
+ 
++@pytest.mark.parametrize("test_input", [float("inf"), float("-inf"), float("nan")])
++def test_naturaldelta_non_finite_unchanged(test_input: float) -> None:
++    assert humanize.naturaldelta(test_input) == str(test_input)
++
++
++def test_naturaldelta_too_large_raises() -> None:
++    with pytest.raises(OverflowError):
++        humanize.naturaldelta(1e30)
++
++
+ @freeze_time(FROZEN_DATE)
+ @pytest.mark.parametrize(
+     "test_input, expected",

@@ -1,0 +1,80 @@
+{
+  "task": "Extend `humanize.naturalsize()` to support the new SI prefixes ronna (R, 10^27) and quetta (Q, 10^30) for decimal sizes, and their binary counterparts (RiB, QiB), as well as the GNU-style single-letter suffixes (R, Q). Values larger than the yottabyte range should now be expressed in RB/QB (or RiB/QiB, R/Q) instead of very large YB numbers.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 544006,
+    "cached": 4819493,
+    "out": 103584,
+    "cost": 4.127126929999999,
+    "exec": 8,
+    "roles": 7
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=FAIL(1)"
+    },
+    "base-2": {
+      "passed": false,
+      "gates": "test=FAIL(1)"
+    },
+    "inv-1": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "inv-2": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "dom-1": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "dom-2": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "comp-1": {
+      "passed": false,
+      "gates": "test=FAIL(1)"
+    },
+    "comp-2": {
+      "passed": false,
+      "gates": "test=FAIL(1)"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "inv-2": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-2": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-2": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

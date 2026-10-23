@@ -1,0 +1,44 @@
+{
+  "task": "Bug: `humanize.naturalsize()` can show the base value with the smaller suffix when rounding pushes a value up to the next unit:\n\n```python\n>>> naturalsize(999999)\n'1000.0 kB'      # expected '1.0 MB'\n>>> naturalsize(1024 ** 2 - 1, binary=True)\n'1024.0 KiB'     # expected '1.0 MiB'\n```\n\nThis happens at every decimal, binary and GNU boundary. After rounding, a value that reaches the base should be shown in the next unit. Values already at the largest suffix (QB/QiB) are unaffected.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The deciding criterion was correctness beyond the tests. c1 checks for a carry by running `float()` on the formatted string. That raises `ValueError` for any custom `format` that adds text, such as `\"~%.1f\"`, which works today. c2 and c3 instead compare the formatted value with `format % base`. That works with any format and doesn't change anything when there's no carry.\nBoth make the same one-line change, using the existing `abs_bytes` and leaving the QB/QiB cap alone. c3 is the runner-up and lost only on tests: it checks just the three boundaries from the request. c2 also covers a float input, a second carry boundary (GB, GiB, G) and binary/GNU above KiB.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-145531-bug-humanize-naturalsize-can-sho",
+  "usage": {
+    "in": 290628,
+    "cached": 2343163,
+    "out": 49474,
+    "cost": 2.3545797499999996,
+    "exec": 3,
+    "roles": 5
+  },
+  "stability_after": 0.7557,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

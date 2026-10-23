@@ -1,0 +1,44 @@
+{
+  "task": "Bug: `humanize.intcomma(10**400 + 123)` raises `OverflowError` with the default `ndigits=None`. Python can format such integers with thousands separators directly, so very large integers (positive and negative) should be grouped correctly with every digit preserved. Behaviour for numeric strings and for explicit `ndigits` is unchanged.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "All three candidates make the same one-line source fix (`elif not isinstance(value, int):`), so the pick comes down to test quality.\nc1's expected values are built with `f\"{x:,}\"`, which is the same expression the code under test uses. Its new tests check the code against itself and could never catch a grouping error, so c1 loses.\nc2 and c3 both spell out the exact expected digit grouping and cover negative values.\nc2 also tests `10**309`, the first integer just past the float range that used to overflow, so it pins down the real boundary. That's why c2 wins.\nc3 is a close runner-up: it is just as correct and its tests are placed a little more naturally, but it has no boundary case.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-151747-bug-humanize-intcomma-10-400-123",
+  "usage": {
+    "in": 273009,
+    "cached": 2024614,
+    "out": 35285,
+    "cost": 2.07041647,
+    "exec": 3,
+    "roles": 5
+  },
+  "stability_after": 0.781,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

@@ -1,0 +1,68 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 50216b5..9341e11 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-144514-bug-humanize-metric-can-output-a](20261023-144514-bug-humanize-metric-can-output-a/EXPERIENCE.md) — **when** A humanize bug fix that changes what a formatter returns, where the agent has to show the reported output on the unmodified code and confirm each new parametrize case changes (or sweep many inputs for unintended changes). This is the point where agents start rebuilding HEAD by hand: loading two copies of the package in one process, `git show` into /tmp, or copying HEAD files over the working tree. **then** Ship the old-vs-new comparison as a harness script (`scripts/compare_outputs.py`: HEAD via `git archive` into a temp dir, each side in its own subprocess, checks the import path, ends with an `N expressions, C changed` line, exit 2 on setup failure). Point to it from `tool_guidance.md` with the "don't write your own: a shared `sys.modules` silently reports no change" warning, plus the "no `-I`" note. Don't rely on `system.md` wording alone to get this verification done correctly.
+ - [20261023-143921-bug-humanize-fractional-1-3-retu](20261023-143921-bug-humanize-fractional-1-3-retu/EXPERIENCE.md) — **when** A humanize bug-fix task where the reported failing inputs sit beside neighbouring inputs that already give the right (or quirky) output, such as other signs, zero, or values that round to 0, and the agent adds regression cases to an existing `@pytest.mark.parametrize` list. **then** Define "done" for a bug fix in always-on `system.md`, not in a module `skills/<name>`. Every new test case must fail on the unmodified code, and inputs that already behaved correctly go in the final message rather than in the test list. Also tell the agent to run the original code once, before editing, on every input it plans to add as a test, so it doesn't have to rebuild HEAD afterwards to check them.
+ - [20261023-142958-bug-humanize-naturalday-and-huma](20261023-142958-bug-humanize-naturalday-and-huma/EXPERIENCE.md) — **when** A humanize task where two public functions share logic and one calls the other (here `naturaldate` → `naturalday`), and a harness skill states a rule that keeps the two consistent. **then** In the `skills/<name>` for that module, phrase a cross-function rule as a check to run on the finished diff ("for each new test input, `naturaldate(x)` and `naturalday(x)` give the same today/tomorrow/yesterday label"). Do not phrase it as a design requirement ("both must use the same notion of today / must not disagree"). The requirement wording led the agent to restructure the functions so they could not disagree, which is an unrequested refactor. The check wording keeps the existing call structure and still catches the near-miss through a test.
+ - [20261023-142559-humanize-i18n-raises-a-bare-exce](20261023-142559-humanize-i18n-raises-a-bare-exce/EXPERIENCE.md) — **when** A humanize task that narrows or changes behaviour that existing tests only check loosely. For example, `pytest.raises(Exception, match=...)` still passes after the type is narrowed to a subclass, and would pass if the change were never made. So the existing suite cannot show the new behaviour, and the agent is tempted to "tighten" those assertions. **then** In the `skills/<name>` that covers the change, write the verification step as "pin the new behaviour by adding a NEW test function beside the existing one (same setup, same `match`); do not modify any pre-existing test line, even to make it stricter." Do not phrase it as "make sure some test asserts the new type". Agents satisfy that wording by rewriting the existing assertions, which counts as editing existing tests.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 27346a3..6ae5574 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -75,6 +75,21 @@
+       "wall_s": 351.7,
+       "always_on_tokens": 256,
+       "stability_after": 0.895
++    },
++    {
++      "task_id": "20261023-144514-bug-humanize-metric-can-output-a",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 4,
++      "tokens_in": 395950,
++      "tokens_cached": 3444431,
++      "tokens_out": 93188,
++      "cost_usd": 2.9697,
++      "wall_s": 616.1,
++      "always_on_tokens": 448,
++      "stability_after": 0.9125
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 1cbfc2b..eb62239 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -543,6 +543,10 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+     if exponent >= 33 or exponent < -30:
+         return scientific(value, precision - 1) + unit
+ 
++    scaled = abs(value) / 10 ** (exponent // 3 * 3)
++    if exponent < 32 and float(format(scaled, f".{max(0, precision - exponent % 3 - 1)}f")) >= 1000:
++        # Rounding carried into the next prefix, e.g. 999.9 V -> 1.00 kV
++        exponent += 1
+     value /= 10 ** (exponent // 3 * 3)
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+diff --git a/tests/test_number.py b/tests/test_number.py
+index d8f9100..cb94323 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -276,6 +276,10 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+         ([1e-24], "1.00 y"),
+         ([1e-25], "100 r"),
+         ([1e-26], "10.0 r"),
++        ([999.9, "V"], "1.00 kV"),
++        ([-999.9, "V"], "-1.00 kV"),
++        ([999999, "V"], "1.00 MV"),
++        ([0.0009999, "V"], "1.00 mV"),
+         ([1, "°"], "1.00°"),
+         ([0.1, "°"], "100m°"),
+         ([100], "100"),

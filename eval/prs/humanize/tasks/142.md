@@ -1,0 +1,1 @@
+Extend `humanize.naturalsize()` to support the new SI prefixes ronna (R, 10^27) and quetta (Q, 10^30) for decimal sizes, and their binary counterparts (RiB, QiB), as well as the GNU-style single-letter suffixes (R, Q). Values larger than the yottabyte range should now be expressed in RB/QB (or RiB/QiB, R/Q) instead of very large YB numbers.

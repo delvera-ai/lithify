@@ -1,0 +1,21 @@
+{
+  "label": "humanize-baseline-claude_claude-haiku-5-5",
+  "lithify_commit": "88f3c38",
+  "run_cost_usd": 0.0236,
+  "invariants": [
+    {
+      "pr": 142,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "pr": 206,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}

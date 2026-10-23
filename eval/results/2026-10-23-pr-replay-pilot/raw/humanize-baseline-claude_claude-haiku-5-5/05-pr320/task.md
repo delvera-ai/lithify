@@ -1,0 +1,1 @@
+Bug: `humanize.fractional(-1.3)` returns `"-1 -3/10"` with two minus signs; the same happens for any negative number whose absolute value is at least 1 (`fractional(-2.5)` gives `"-2 -1/2"`). Negative mixed numbers should be shown in the conventional form, e.g. `"-1 3/10"`.

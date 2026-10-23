@@ -1,0 +1,81 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index ca4d468..2baebc3 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -3,9 +3,31 @@
+ from __future__ import annotations
+ 
+ suffixes = {
+-    "decimal": (" kB", " MB", " GB", " TB", " PB", " EB", " ZB", " YB"),
+-    "binary": (" KiB", " MiB", " GiB", " TiB", " PiB", " EiB", " ZiB", " YiB"),
+-    "gnu": "KMGTPEZY",
++    "decimal": (
++        " kB",
++        " MB",
++        " GB",
++        " TB",
++        " PB",
++        " EB",
++        " ZB",
++        " YB",
++        " RB",
++        " QB",
++    ),
++    "binary": (
++        " KiB",
++        " MiB",
++        " GiB",
++        " TiB",
++        " PiB",
++        " EiB",
++        " ZiB",
++        " YiB",
++        " RiB",
++        " QiB",
++    ),
++    "gnu": "KMGTPEZYRQ",
+ }
+ 
+ 
+@@ -34,7 +56,7 @@ def naturalsize(
+         >>> naturalsize(3000, True)
+         '2.9 KiB'
+         >>> naturalsize(10**28)
+-        '10000.0 YB'
++        '10.0 RB'
+         >>> naturalsize(-4096, True)
+         '-4.0 KiB'
+ 
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 0119d58..86e8b4a 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -39,3 +39,28 @@ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) ->
+     args_with_negative = test_args
+     args_with_negative[0] *= -1
+     assert humanize.naturalsize(*args_with_negative) == "-" + expected
++
++
++@pytest.mark.parametrize(
++    "test_args, expected",
++    [
++        ([3 * 10**27], "3.0 RB"),
++        ([3 * 10**30], "3.0 QB"),
++        ([3 * 10**30 * 1000], "3000.0 QB"),
++        ([3 * 1024**9, True], "3.0 RiB"),
++        ([3 * 1024**10, True], "3.0 QiB"),
++        ([3 * 1024**9, False, True], "3.0R"),
++        ([3 * 1024**10, False, True], "3.0Q"),
++        ([3 * 10**27, False, False, "%.2f"], "3.00 RB"),
++        ([3 * 1024**10, True, False, "%.3f"], "3.000 QiB"),
++        ([3 * 1024**9, False, True, "%.0f"], "3R"),
++    ],
++)
++def test_naturalsize_ronna_quetta(
++    test_args: list[int] | list[int | bool], expected: str
++) -> None:
++    assert humanize.naturalsize(*test_args) == expected
++
++    args_with_negative = test_args
++    args_with_negative[0] *= -1
++    assert humanize.naturalsize(*args_with_negative) == "-" + expected

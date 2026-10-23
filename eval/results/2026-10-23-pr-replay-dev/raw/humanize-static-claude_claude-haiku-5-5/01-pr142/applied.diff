@@ -1,0 +1,36 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 26cc7e5..ec3dd22 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,3 +3,4 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-133822-extend-humanize-naturalsize-to-s](20261023-133822-extend-humanize-naturalsize-to-s/EXPERIENCE.md) — **when** A task in this repo adds entries to an ordered lookup table that drives a formatting function, such as size suffixes in `filesize.py` or the prefix string in `number.metric`. Adding a unit moves the overflow cutoff and the boundaries that existing parametrize rows and docstring examples were written against. **then** Add a `skills/<module>-units` skill for that module (`skills/humanize-filesize-units` is the template). It should name the single table and its parallel entries, and say that new entries are appended rather than changing the loop. It should list each place that must stay in step: the table, the docstring `pycon` examples (checked with an explicit `--doctest-modules` run), `README.md`, and the one parametrize table. Most importantly, it should ask for new rows per mode at the exact boundary, a value just inside it, and a value past the new top unit, computed by running the code before writing expectations. Don't spend harness edits on the edited-existing-tests gate for such tasks: the task makes those edits unavoidable. Reporting rules in `system.md` left that result unchanged.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..a10d061 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+-  "consecutive_failures": 0,
+-  "history": []
++  "consecutive_failures": 1,
++  "history": [
++    {
++      "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
++      "k": 1,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 4,
++      "tokens_in": 290990,
++      "tokens_cached": 2359477,
++      "tokens_out": 65337,
++      "cost_usd": 2.1114,
++      "wall_s": 406.6,
++      "always_on_tokens": 189,
++      "stability_after": 0.0
++    }
++  ]
+ }

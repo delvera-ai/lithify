@@ -1,0 +1,1 @@
+Bug: `humanize.fractional()` produces degenerate output when the fractional part rounds to a whole number: `fractional(2.9999999)` returns `"2 1/1"` (expected `"3"`), `fractional(0.9999999)` returns `"1/1"` (expected `"1"`), and `fractional(0)` returns `"0/1"` (expected `"0"`). The result should read as a plain integer in these cases, including for negative inputs.

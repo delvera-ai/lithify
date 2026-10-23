@@ -1,0 +1,75 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index ca4d468..2baebc3 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -3,9 +3,31 @@
+ from __future__ import annotations
+ 
+ suffixes = {
+-    "decimal": (" kB", " MB", " GB", " TB", " PB", " EB", " ZB", " YB"),
+-    "binary": (" KiB", " MiB", " GiB", " TiB", " PiB", " EiB", " ZiB", " YiB"),
+-    "gnu": "KMGTPEZY",
++    "decimal": (
++        " kB",
++        " MB",
++        " GB",
++        " TB",
++        " PB",
++        " EB",
++        " ZB",
++        " YB",
++        " RB",
++        " QB",
++    ),
++    "binary": (
++        " KiB",
++        " MiB",
++        " GiB",
++        " TiB",
++        " PiB",
++        " EiB",
++        " ZiB",
++        " YiB",
++        " RiB",
++        " QiB",
++    ),
++    "gnu": "KMGTPEZYRQ",
+ }
+ 
+ 
+@@ -34,7 +56,7 @@ def naturalsize(
+         >>> naturalsize(3000, True)
+         '2.9 KiB'
+         >>> naturalsize(10**28)
+-        '10000.0 YB'
++        '10.0 RB'
+         >>> naturalsize(-4096, True)
+         '-4.0 KiB'
+ 
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 0119d58..81efb9f 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -39,3 +39,22 @@ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) ->
+     args_with_negative = test_args
+     args_with_negative[0] *= -1
+     assert humanize.naturalsize(*args_with_negative) == "-" + expected
++
++
++@pytest.mark.parametrize(
++    "value, binary, gnu, expected",
++    [
++        (10**27, False, False, "1.0 RB"),
++        (10**29, False, False, "100.0 RB"),
++        (10**30, False, False, "1.0 QB"),
++        (2**90, True, False, "1.0 RiB"),
++        (2**100, True, False, "1.0 QiB"),
++        (2**90, False, True, "1.0R"),
++        (2**100, False, True, "1.0Q"),
++        (-(10**30), False, False, "-1.0 QB"),
++    ],
++)
++def test_naturalsize_ronna_quetta(
++    value: int, binary: bool, gnu: bool, expected: str
++) -> None:
++    assert humanize.naturalsize(value, binary, gnu) == expected

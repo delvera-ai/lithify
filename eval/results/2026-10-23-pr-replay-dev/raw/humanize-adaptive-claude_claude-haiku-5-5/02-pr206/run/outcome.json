@@ -1,0 +1,31 @@
+{
+  "task": "Bug: `humanize.naturalsize()` does not roll over from ZB to YB where expected for large integers. For every smaller unit you never see \"1000.x\" of a unit, it rolls over to the next one, but:\n\n```python\n>>> naturalsize(1_000_000_000_000_000_000_000_000)\n'1000.0 ZB'   # expected '1.0 YB'\n>>> naturalsize(1_000_000_000_000_000_050_331_648)\n'1000.0 ZB'   # expected '1.0 YB'\n```\n\nMake large integer inputs roll over to the next unit consistently.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "Deciding criterion: correctness beyond the tests. c2 makes the existing loop compare float to float (`unit = float(base**i)`). That fixes 10**24, 10**24+50331648 and float inputs like 1e24 with a one-line change and no new import. Because float rounding preserves order, any value at or above a unit boundary always rolls over to that unit.\nRunner-up c1 picks the unit using `Decimal(str(value))`, which adds a dependency and a second representation of the input. It also breaks NaN input: `Decimal('NaN') < unit` raises `InvalidOperation`. Before the change, `naturalsize(float('nan'))` returned a string (\"nan QB\") instead of crashing. c1 also leaves 10**24-1 printing \"1000.0 ZB\".",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 68819,
+    "cached": 780223,
+    "out": 17650,
+    "cost": 0.23998449,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

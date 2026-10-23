@@ -1,0 +1,1 @@
+`humanize.i18n` raises a bare `Exception` when it cannot determine the default location of its locale folder. `Exception` is too broad: raise `FileNotFoundError` instead (keep the same message). This is not a breaking change, since `FileNotFoundError` is a subclass of `Exception`.

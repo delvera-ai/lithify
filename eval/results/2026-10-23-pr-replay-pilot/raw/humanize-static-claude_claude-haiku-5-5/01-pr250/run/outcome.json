@@ -1,0 +1,52 @@
+{
+  "task": "Regression: when `gnu` is False, `humanize.naturalsize(1.0)` or `naturalsize(\"1\")` returns `\"1.0 Byte\"` instead of `\"1 Byte\"`, which was the return value until 4.12. Restore the previous output for float and numeric-string inputs that are below one kilobyte.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "base-1",
+  "why": "The source fix is identical in every candidate, so the pick came down to test fit and minimality (maintainability). c4 puts its tests next to the existing `[1, False, False] -> \"1 Byte\"` case. It covers the reported inputs (`1.0`, `\"1\"`) plus the numeric string `\"1.0\"` and gnu-mode `1.0 -> \"1B\"`, so the fix is shown to leave the gnu path alone.\nRunner-up c1 is the same fix with tests for only the two literal inputs from the report; it lost because it checks neither `\"1.0\"` nor the gnu path.\nc2 and c3 add `300.0`/`\"300\"` cases, which were never broken. c3 also re-adds `[1]`, which the existing `[1, False, False]` case already covers.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 251657,
+    "cached": 2087258,
+    "out": 30482,
+    "cost": 1.8856103000000002,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "consecutive_failures": 1,
+  "history": [
+    {
+      "task_id": "20261023-133822-extend-humanize-naturalsize-to-s",
+      "k": 1,
+      "first_pass": false,
+      "delivered": false,
+      "churn_lines": 0,
+      "executions": 4,
+      "tokens_in": 290990,
+      "tokens_cached": 2359477,
+      "tokens_out": 65337,
+      "cost_usd": 2.1114,
+      "wall_s": 406.6,
+      "always_on_tokens": 189,
+      "stability_after": 0.0
+    }
+  ]
+}

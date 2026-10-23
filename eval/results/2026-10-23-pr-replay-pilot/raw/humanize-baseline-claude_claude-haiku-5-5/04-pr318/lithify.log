@@ -1,0 +1,19 @@
+lithify ▸ 20261023-142235-bug-humanize-natural-list-raises  k=0 (override k=0) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ✓ applied deliverable from base-1: cruise: gates passed on first execution
+lithify ◂ delivered=True first_pass=True S=0.80 executions=1 role_sessions=0 tokens(in/cached/out)=17297/155328/1703 cost=$0.01
+{
+  "task_id": "20261023-142235-bug-humanize-natural-list-raises",
+  "k": 0,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.8,
+  "executions": 1,
+  "role_sessions": 0
+}
+

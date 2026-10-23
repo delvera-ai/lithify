@@ -1,0 +1,34 @@
+lithify ▸ 20261023-142559-humanize-i18n-raises-a-bare-exce  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✗ probe dom-1: test=pass, edited-existing-tests=1
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (claude)
+  ✓ applied deliverable from comp-1: The source change is identical in both, so the deciding factor is whether the new behaviour is checked. c2 adds a test that fails unless `FileNotFoundError` is raised. The existing tests in `tests/tes
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 1 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-142559-humanize-i18n-raises-a-bare-exce (skills/humanize-error-contract) — `lithify adopt 20261023-142559-humanize-i18n-raises-a-bare-exce`
+lithify ◂ delivered=True first_pass=True S=0.36 executions=3 role_sessions=5 tokens(in/cached/out)=193269/1447540/21071 cost=$1.58
+{
+  "task_id": "20261023-142559-humanize-i18n-raises-a-bare-exce",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "comp-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-142559-humanize-i18n-raises-a-bare-exce",
+  "stability": 0.3565,
+  "executions": 3,
+  "role_sessions": 5
+}
+

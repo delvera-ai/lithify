@@ -1,0 +1,57 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 2165308..c2d5935 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 54.0,
+       "always_on_tokens": 189,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-142722-bug-humanize-intcomma-10-400-123",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 22940,
++      "tokens_cached": 264589,
++      "tokens_out": 4680,
++      "cost_usd": 0.0096,
++      "wall_s": 44.4,
++      "always_on_tokens": 189,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 727435f..f35c51c 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -160,10 +160,9 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
+                 value = float(value)
+             else:
+                 value = int(value)
+-        else:
+-            if not math.isfinite(float(value)):
+-                return _format_not_finite(float(value))
+-            float(value)
++        elif not isinstance(value, int) and not math.isfinite(float(value)):
++            # Integers are exact at any size, so only non-int values are range-checked as floats.
++            return _format_not_finite(float(value))
+     except (TypeError, ValueError):
+         return str(value)
+ 
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cf55ee1..bc79ebf 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -75,6 +75,8 @@ def test_ordinal(test_input: str, expected: str) -> None:
+         ([-math.inf], "-Inf"),
+         (["nan"], "NaN"),
+         (["-inf"], "-Inf"),
++        ([10**400 + 123], f"{10**400 + 123:,}"),
++        ([-(10**400) - 123], f"{-(10**400) - 123:,}"),
+     ],
+ )
+ def test_intcomma(

@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.fractional()` produces degenerate output when the fractional part rounds to a whole number: `fractional(2.9999999)` returns `\"2 1/1\"` (expected `\"3\"`), `fractional(0.9999999)` returns `\"1/1\"` (expected `\"1\"`), and `fractional(0)` returns `\"0/1\"` (expected `\"0\"`). The result should read as a plain integer in these cases, including for negative inputs.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "inv-1",
+  "why": "Correctness beyond the tests decided it. c2 and c4 have the same code. Both change the guard to `denominator == 1` and return `whole_number + numerator`. That fixes 0, \u00b10.9999999, \u00b12.9999999 and near-zero inputs like 0.0001 in a two-line edit that reuses the existing variables. c4 wins over c2 only on its comment, which correctly says the fraction can round to 0 or \u00b11; c2's mentions only rounding to 1.\nThe runner-up is c1. It behaves the same but adds a separate carry step (`abs(frac) == 1`) and mutates state, so it has more moving parts than needed.\nc3 is correct but recomputes the result with `round(number)` instead of the fraction already calculated, which hides why the value is a whole number.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-150254-bug-humanize-fractional-produces",
+  "usage": {
+    "in": 288004,
+    "cached": 2056954,
+    "out": 38892,
+    "cost": 2.12739642,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7778,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

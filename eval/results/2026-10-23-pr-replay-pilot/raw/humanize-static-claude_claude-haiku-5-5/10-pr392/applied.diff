@@ -1,0 +1,66 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index af1e8ea..606ee45 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-151747-bug-humanize-intcomma-10-400-123](20261023-151747-bug-humanize-intcomma-10-400-123/EXPERIENCE.md) — **when** A humanize formatter bug where the correct output is long or tedious to write out (huge ints, many digit groups, long repeated strings), and the agent adds cases to the function's existing `@pytest.mark.parametrize` list. Agents then tend to compute `expected` with the very expression the implementation uses (e.g. `f"{x:,}"` inside `intcomma`), so the test passes for any output. **then** In the module's `skills/<module>-output` test item (here `skills/humanize-number-output` item 3), say that `expected` must be a string literal, as in every existing case, and must never be built with the format call the function under test uses, because such a test passes whatever the function returns. Allow building a long literal from repeated pieces, and give that pattern generically (`"1" + ",000" * k` for `10**(3*k)`), never as this task's actual expected value.
+ - [20261023-150818-bug-humanize-naturaldelta-docume](20261023-150818-bug-humanize-naturaldelta-docume/EXPERIENCE.md) — **when** A humanize bug fix where the task names one public function, but sibling functions in the same module (e.g. `naturaltime`, `precisedelta` beside `naturaldelta`) take the same bad input through a different code path that the fix won't reach. Without a written description of how the functions call each other, the agent fixes the named function and never runs the siblings. **then** In the module's `skills/<module>-output` skill (e.g. `skills/humanize-time-output`), state as verified facts which public function calls which, and which path converts the input (e.g. "`naturaltime` reaches `naturaldelta` only after `_date_and_delta` has built a timedelta, so a guard in `naturaldelta` doesn't cover it"). Add a check for the finished diff: "fix only the function the task names; run each sibling on the new inputs and report those that still fail in the final message". Keep the fix itself out of the skill, and put repo-wide conventions (imports, parametrize style) in `memory.md` rather than in the skill.
+ - [20261023-150254-bug-humanize-fractional-produces](20261023-150254-bug-humanize-fractional-produces/EXPERIENCE.md) — **when** A humanize fix or edit near the end of the task, where a lint or type tool that `pyproject.toml` or tox configures (ruff, mypy) is not installed in the project venv, and the harness names that tool or its rules without saying it is missing. **then** In always-on `tool_guidance.md`, give one bullet to each configured-but-missing checker. Name it, give the exact failure (`No module named …`), say "don't run or install it", give a fallback that reads `[tool.ruff]` in `pyproject.toml` against the changed lines, and require the final message to say the check was not run. In any `skills/<name>` that lists that tool's rules (e.g. mypy `strict`, `RUF046`), point back to that bullet rather than naming the tool alone, because naming a tool without saying it is missing triggers a probe.
+ - [20261023-145531-bug-humanize-naturalsize-can-sho](20261023-145531-bug-humanize-naturalsize-can-sho/EXPERIENCE.md) — **when** A humanize bug fix where the agent must show the reported output on the unmodified code and prove each new parametrize case changes output, and the harness has no ready-made old-vs-new tool. In that situation agents fall back on swapping `git show HEAD:<file>` over the working tree and copying the fix back in one shell chain. **then** Keep `scripts/compare_outputs.py` in the harness (HEAD via `git archive` to a temp dir, a separate subprocess per side, a `C changed` summary line, exit 2 on setup failure). Point to it from always-on `tool_guidance.md` with the exact call form and an explicit ban on copying HEAD files over the tree, and say it is meant for both steps: before editing, to reproduce the bug (expect 0 changed, read the `old:` lines), and after editing, to confirm the new cases. The pointer alone was enough to get it adopted; no `system.md` wording was needed. Do not expect it to catch wrong test expectations; only the suite run does that.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 7b3bee3..b4fc2d7 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 567.2,
+       "always_on_tokens": 742,
+       "stability_after": 0.7742
++    },
++    {
++      "task_id": "20261023-151747-bug-humanize-intcomma-10-400-123",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 21,
++      "executions": 3,
++      "tokens_in": 273009,
++      "tokens_cached": 2024614,
++      "tokens_out": 35285,
++      "cost_usd": 2.0704,
++      "wall_s": 340.4,
++      "always_on_tokens": 973,
++      "stability_after": 0.781
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 727435f..2dfeffe 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -160,7 +160,7 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
+                 value = float(value)
+             else:
+                 value = int(value)
+-        else:
++        elif not isinstance(value, int):
+             if not math.isfinite(float(value)):
+                 return _format_not_finite(float(value))
+             float(value)
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cf55ee1..0a0fa82 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -70,6 +70,10 @@ def test_ordinal(test_input: str, expected: str) -> None:
+         ([1234.5454545, 2], "1,234.55"),
+         ([1234.5454545, 3], "1,234.545"),
+         ([1234.5454545, 10], "1,234.5454545000"),
++        ([10**309], "1" + ",000" * 103),
++        ([10**400], "10" + ",000" * 133),
++        ([10**400 + 123], "10" + ",000" * 132 + ",123"),
++        ([-(10**400 + 123)], "-10" + ",000" * 132 + ",123"),
+         ([math.nan], "NaN"),
+         ([math.inf], "+Inf"),
+         ([-math.inf], "-Inf"),

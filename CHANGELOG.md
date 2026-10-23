@@ -22,6 +22,9 @@ All notable changes to this project are documented here. The format follows
   (CI job `sim-sweep`); `LITHIFY_MOCK_SEED` varies mock noise draws between replicates.
 - `eval/`: validators fixture with out-of-repo holdouts, `run_sequence.py` live runner,
   adapter conformance and pilot results (phase 3B).
+- `eval/pr_select.py`, `eval/pr_replay.py`, `eval/repos.py`: PR-replay evaluation (post-hoc
+  holdouts, per-strategy clones carrying `.lithify/`), humanize and tenacity PR lists, the
+  development-set debug run and the humanize pilot (phase 3C).
 
 ### Fixed
 - Codex adapter: `codex-cli` 0.163.0 rejects `--full-auto`; default flags are now

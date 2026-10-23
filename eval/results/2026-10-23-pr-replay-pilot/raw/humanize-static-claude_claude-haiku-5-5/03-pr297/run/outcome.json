@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `humanize.naturalday()` and `humanize.naturaldate()` give the wrong answer for timezone-aware datetimes. They compare against the system's local date, so when the date in the datetime's own timezone differs from the system date the result is off by a day. Example: if it is currently `2023-10-15 23:00 UTC`, a datetime 7 hours later expressed in AEDT (`+11:00`) is still \"today\" in AEDT, but humanize reports \"tomorrow\". For tz-aware datetimes, \"today\" must be determined in that datetime's timezone; behaviour for naive datetimes and plain dates must not change.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "base-1",
+  "why": "c2 wins on fidelity and minimalism. It adds a small `_today` helper right next to `_convert_aware_datetime` and uses the same `value.tzinfo is not None` check as the existing code. It changes only how \"today\" is calculated, keeps the try/except layout, and leaves naturalday's and naturaldate's behaviour for naive datetimes and plain dates unchanged. Its tests cover timezones both ahead of and behind UTC.\nc3 is the runner-up and almost the same, but it calls `_today` outside the `try` block and puts the helper away from the related tz helper. c4 puts the helper below the functions that use it and checks `utcoffset()`, which doesn't match the rest of the file. c1 adds a refactor nobody asked for (a new `_natural_day` helper, and naturaldate no longer calls naturalday).",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 356675,
+    "cached": 3689723,
+    "out": 73732,
+    "cost": 2.7910570900000007,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.5565,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

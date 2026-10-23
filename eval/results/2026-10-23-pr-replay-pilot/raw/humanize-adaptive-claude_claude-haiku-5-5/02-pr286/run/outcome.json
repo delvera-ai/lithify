@@ -1,0 +1,31 @@
+{
+  "task": "`humanize.i18n` raises a bare `Exception` when it cannot determine the default location of its locale folder. `Exception` is too broad: raise `FileNotFoundError` instead (keep the same message). This is not a breaking change, since `FileNotFoundError` is a subclass of `Exception`.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 31832,
+    "cached": 194103,
+    "out": 2439,
+    "cost": 0.009525330000000002,
+    "exec": 2,
+    "roles": 0
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

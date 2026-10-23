@@ -1,0 +1,29 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index c495fed..64319fe 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -97,6 +97,10 @@ def naturalsize(
+         return f"{int(bytes_)}B" if gnu else _("%d Bytes") % int(bytes_)
+ 
+     exp = int(min(log(abs_bytes, base), len(suffix)))
++    # Rounding can carry the value up to the next unit (999999 -> "1000.0 kB"),
++    # so move to that unit when the rounded value reaches the base.
++    if exp < len(suffix) and format % (abs_bytes / base**exp) == format % base:
++        exp += 1
+     space = "" if gnu else " "
+     ret: str = format % (bytes_ / (base**exp)) + space + _(suffix[exp - 1])
+     return ret
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 04774d9..8cf5d1d 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -79,6 +79,9 @@ import humanize
+         ([1.123456789], "1 Bytes"),
+         ([1.123456789 * 10**3], "1.1 kB"),
+         ([1.123456789 * 10**6], "1.1 MB"),
++        ([999999], "1.0 MB"),
++        ([1024**2 - 1, True], "1.0 MiB"),
++        ([1024**2 - 1, False, True], "1.0M"),
+         ([1.123456789, False, True], "1B"),
+         ([1.123456789 * 10**3, False, True], "1.1K"),
+         ([1.123456789 * 10**6, False, True], "1.1M"),

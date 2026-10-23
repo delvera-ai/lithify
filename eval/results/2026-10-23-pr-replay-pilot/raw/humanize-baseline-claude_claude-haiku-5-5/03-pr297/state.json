@@ -1,0 +1,50 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-142110-regression-when-gnu-is-false-hum",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 21724,
+      "tokens_cached": 159903,
+      "tokens_out": 2756,
+      "cost_usd": 0.0073,
+      "wall_s": 23.9,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-142135-humanize-i18n-raises-a-bare-exce",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 16253,
+      "tokens_cached": 96149,
+      "tokens_out": 1362,
+      "cost_usd": 0.0049,
+      "wall_s": 16.0,
+      "always_on_tokens": 189,
+      "stability_after": 0.4
+    },
+    {
+      "task_id": "20261023-142151-bug-humanize-naturalday-and-huma",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 24367,
+      "tokens_cached": 307055,
+      "tokens_out": 6788,
+      "cost_usd": 0.0113,
+      "wall_s": 42.6,
+      "always_on_tokens": 189,
+      "stability_after": 0.6
+    }
+  ]
+}
