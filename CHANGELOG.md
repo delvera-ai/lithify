@@ -27,6 +27,9 @@ All notable changes to this project are documented here. The format follows
   development-set debug run and the humanize pilot (phase 3C).
 
 ### Fixed
+- Reflector prompt: `helped` is defined operationally and one rollout is enough evidence. The old
+  rule ("prefer `confounded` when a single rollout stands behind the difference") made `helped`
+  unreachable, so `auto_adopt` never promoted anything (#13).
 - Codex adapter: `codex-cli` 0.163.0 rejects `--full-auto`; default flags are now
   `--sandbox workspace-write`.
 - Antigravity adapter: read `cache_read_tokens` and `thinking_tokens` (agy 1.4.3), and keep the
