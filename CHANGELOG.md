@@ -22,6 +22,8 @@ All notable changes to this project are documented here. The format follows
   (CI job `sim-sweep`); `LITHIFY_MOCK_SEED` varies mock noise draws between replicates.
 
 ### Fixed
+- `holdout_cmd` no longer reaches agents: probe and snapshot worktrees drop `.lithify/config.toml`,
+  and gate reports show the holdout's result but not its command (#9).
 - Codex marketplace manifest lives at `.agents/plugins/marketplace.json` (was misplaced at
   `plugins/marketplace.json`).
 - Deliverable diffs and the main-tree dirty patch excluded all of `.claude/` and `.agents/`, so

@@ -150,3 +150,29 @@ def test_deliverable_keeps_source_files_under_agent_dirs(repo):
     paths = {p for _, p in wtm.changed_files(wt)} if wtm.deliverable(wt) else set()
     assert paths == {".agents/plugins/marketplace.json", ".claude-plugin/plugin.json", ".claude/settings.json"}
     wtm.remove(repo, wt)
+
+
+def test_holdout_command_never_reaches_agents(tmp_path):
+    """holdout_cmd must stay invisible: no config in probe worktrees, no path in gate reports."""
+    from lithify.config import load_config
+
+    repo, _ = setup_fixture(tmp_path)
+    secret = tmp_path / "hidden" / "holdout_check.py"
+    secret.parent.mkdir()
+    secret.write_text("import sys\nprint('holdout ran')\nsys.exit(0)\n")
+    cfgp = repo / ".lithify" / "config.toml"
+    cfgp.write_text(cfgp.read_text().replace('holdout_cmd = ""', f'holdout_cmd = "python3 {secret}"'))
+    git(repo, "commit", "-qam", "holdout")
+    cfg = load_config(repo)
+    pipe = Pipeline(repo, cfg, log=lambda m: None, seed=1, keep_worktrees=True)
+    out = pipe.run_task(task_prompt("create_user", "api"))
+    assert out.delivered
+    evidence = list((repo / ".lithify" / "runs" / out.task_id).rglob("*.md"))
+    gates = [p for p in evidence if p.name == "gates.md"]
+    assert gates and all("holdout=pass" in p.read_text() or "holdout=FAIL" in p.read_text() for p in gates)
+    assert not any(str(secret) in p.read_text() for p in evidence)
+    assert pipe._wts and not any((wt / ".lithify" / "config.toml").exists() for wt in pipe._wts)
+    for wt in pipe._wts:
+        from lithify import worktree as wtm
+
+        wtm.remove(repo, wt)
