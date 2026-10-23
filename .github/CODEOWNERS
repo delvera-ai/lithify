@@ -1,0 +1,8 @@
+# Default owner for everything.
+*                                 @donbro8
+
+# Safety-critical paths: changes here need the owner's explicit review.
+/src/lithify/prompts/             @donbro8
+/src/lithify/gates.py             @donbro8
+/src/lithify/worktree.py          @donbro8
+/src/lithify/validate.py          @donbro8

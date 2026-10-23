@@ -22,5 +22,9 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 - Codex marketplace manifest lives at `.agents/plugins/marketplace.json` (was misplaced at
   `plugins/marketplace.json`).
+- Deliverable diffs and the main-tree dirty patch excluded all of `.claude/` and `.agents/`, so
+  edits to real sources there (e.g. `.agents/plugins/marketplace.json`, `.claude/settings.json`)
+  were silently dropped from task deliverables and never reached probe worktrees. Only the
+  rendered subpaths (`.claude/skills`, `.agents/skills`, `.claude/agents`) are excluded now.
 - CI installs into the `setup-uv` virtual environment instead of the system interpreter, and
   `claude plugin validate . --profile directory --strict` now fails the build instead of warning.

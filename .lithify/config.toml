@@ -1,0 +1,45 @@
+# lithify configuration — https://github.com/delvera-ai/lithify
+[lithify]
+# CLI that executes tasks during probes: claude | codex | agy | mock, optionally cli@model
+# (e.g. "claude@claude-haiku-5-5" — a cheaper executor with a stronger editor is the paper's setup)
+executor = "claude"
+# Deterministic gates, run in every probe worktree before any LLM judge sees a candidate.
+test_cmd = "pytest -q"
+lint_cmd = "ruff check . && ruff format --check ."
+typecheck_cmd = "mypy"
+# Optional checks the agents never see (e.g. a script outside the repo). Strongest anti-gaming gate.
+holdout_cmd = ""
+max_k = 3
+mode = "parallel"           # parallel | sequential
+# false: harness changes land in .lithify/proposals/ for `lithify adopt`.
+# true: components the reflector marks `helped` are promoted automatically.
+auto_adopt = false
+# false: a probe that edits tests which existed before it started fails its gate.
+allow_test_edits = false
+# With real gates, base rollouts that all pass leave nothing to contrast: deliver and skip proposals.
+skip_when_base_passes = true
+timeout_s = 1800
+concurrency = 4
+
+# Which CLI plays each improvement role. Using a different vendor for `select`
+# reduces self-preference bias when judging the executor's work.
+[roles]
+propose_inv = "claude"
+propose_dom = "claude"
+compose = "claude"
+select = "codex"
+reflect = "claude"
+compact = "claude"
+
+[schedule]
+explore_below = 0.4   # S below this -> k = max_k (wide exploration)
+cruise_at = 0.8         # S at/above this -> k = 0 (execute + observe only)
+window = 10
+first_pass_weight = 0.7
+churn_scale_lines = 40
+
+[budget]
+always_on_tokens = 2500  # warn when always-on harness text exceeds this
+
+# Extra CLI flags per adapter, e.g. claude = ["--model", "claude-sonnet-5-5"]
+[adapter_args]

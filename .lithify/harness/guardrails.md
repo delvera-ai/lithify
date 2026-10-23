@@ -1,0 +1,7 @@
+- Never edit, skip or weaken an existing test to make it pass; fix the code instead.
+- Never add credentials, tokens or secrets to the repository, including test fixtures and captured CLI output (redact them).
+- No runtime dependencies: `src/lithify/` uses the Python standard library only. Dev tools go in `[dependency-groups] dev`.
+- Never weaken a safety default without an explicit issue that asks for it: `auto_adopt = false`, test-edit gating (`allow_test_edits = false`), and no commits, pushes or PRs from the pipeline (`worktree.py` only commits inside probe worktrees).
+- Every change under `src/lithify/adapters/` needs a fixture-based parse test built from captured real CLI output (see the `adapter-change` skill).
+- Every change under `src/lithify/prompts/` must name the failure mode it addresses (see the `prompt-change` skill).
+- Do not hand-edit the lithify managed block in `CLAUDE.md`/`AGENTS.md` or anything under `.claude/skills/`, `.agents/skills/`, `.claude/agents/`; edit `.lithify/harness/` and run `lithify sync`.
