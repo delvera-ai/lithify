@@ -20,9 +20,21 @@ behaviour; an edit inside the adopted candidate may have contributed nothing.
 
 For each component any candidate changed, write one row: what the edit changed, the observed
 difference in execution it produced (cite the rollout and the trajectory moment), and a verdict:
-`helped`, `hurt`, `no observed effect` or `confounded`. Prefer `confounded` whenever a candidate
-changed several components and no rollout isolates one, or a single rollout is all that stands
-behind the difference. A confounded row is useful; an invented attribution poisons the library.
+
+- `helped`: a rollout whose harness carried this edit passed gates that the base rollout failed
+  (or produced a clearly better deliverable), its trajectory shows the agent reading or acting on
+  this component before the behaviour that made the difference, and no other edit in that
+  candidate is an equally plausible cause. One such rollout is enough: every candidate is probed
+  once, so say "single rollout" in `observed` rather than withholding the verdict.
+- `hurt`: the rollout with this edit did worse than the base, and the trajectory ties the
+  regression to the component.
+- `no observed effect`: the component was never consulted, or the rollout behaved like the base.
+- `confounded`: the candidate changed several components and its trajectory does not single out
+  which one produced the difference, or the base also passed so there was nothing to explain.
+
+The test for `helped` is the trajectory, not your opinion of the edit: if the record does not
+show the component in use at the moment behaviour changed, it is not `helped`. A confounded row
+is useful; an invented attribution poisons the library.
 
 Use the component names exactly as they appear in the harness tree: `system.md`, `guardrails.md`,
 `memory.md`, `tool_guidance.md`, `skills/<name>`, `scripts/<file>`, `subagents/<name>`.
