@@ -12,5 +12,7 @@ Caps: pilot (3B) $25; total $150. Cost is the sum of `usage.cost` from every `ou
 | 2026-10-23 | 3B install/hook checks | 1 claude + 4 codex sessions | 0.0029 | 6.7243 | codex sessions: small prompts, tokens not recorded |
 | 2026-10-23 | 3C dev set (humanize #142, #206 × 3 strategies) | 6 tasks | 9.0344 | 15.7587 | harness debugging; found test-edit gate blocks PRs that change pinned behaviour |
 | 2026-10-23 | 3C pilot humanize (10 eval PRs × 3 strategies) | 30 tasks | 22.2600 | 38.0187 | baseline 0.09, static 21.90, adaptive 0.27 |
+| 2026-10-23 | 3C full tenacity — ABORTED by operator error (a broken `ps | grep` check showed the live runs as dead; I killed their in-flight agents, deleted their worktrees and moved their output, crashing them) | 10 tasks recorded + 3 killed in flight | 2.3482 + 2.00 est | 42.3669 | recorded rows in `results/2026-10-23-pr-replay-aborted/`; in-flight spend unrecorded, estimated; runs restarted from task 1 |
+| 2026-10-23 | 3C full tenacity (22 eval PRs × 3 strategies) | 66 tasks | 18.4603 | 60.8272 | restart after the aborted run |
 
-**Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent $38.02.
+**Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent $60.83 (incl. $2.00 estimated).
