@@ -32,7 +32,7 @@ from pathlib import Path
 from . import prompts, worktree
 from .adapters import get_adapter, split_spec
 from .adapters.base import RunResult
-from .config import LITHIFY_DIR, Config
+from .config import CONFIG_FILE, LITHIFY_DIR, Config
 from .gates import GateResult, is_test_path, run_gates
 from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, promote, render
 from .library import Reflection, ensure_library, library_dir, parse_reflection, write_entry
@@ -156,7 +156,9 @@ class Pipeline:
         with self._git_lock:
             wt = worktree.create(self.root, f"{self.task_id}/{name}", self.dirty)
             self._wts.append(wt)
-            return wt
+        # The config names the gate commands, including holdout_cmd: agents must not see it.
+        (wt / LITHIFY_DIR / CONFIG_FILE).unlink(missing_ok=True)
+        return wt
 
     def _pmap(self, fn, items):
         items = list(items)
