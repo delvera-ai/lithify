@@ -1,39 +1,35 @@
 # Maintainer notes
 
-Repository settings for `delvera-ai/lithify`, what is applied, and what is waiting for the
-repository to become public (the `delvera-ai` organisation is on GitHub Free, where several
-protections are unavailable for private repositories). Last verified 2026-10-23.
+Repository settings for `delvera-ai/lithify`. Last verified 2026-10-23.
+
+The repository was created private and made public on 2026-10-23 at the owner's request,
+when the organisation's free GitHub Actions minutes for private repositories ran out (CI jobs
+were refused to start). Several protections below are only available on public repositories
+for a GitHub Free organisation; they were applied right after the visibility change.
 
 ## Applied
 
 | Setting | Value | How |
 |---|---|---|
-| Visibility | private | `gh repo create` (owner decision: private until release) |
+| Visibility | public | `gh repo edit --visibility public --accept-visibility-change-consequences` |
 | Description, topics | `agents, claude-code, codex, antigravity, agent-skills, harness, self-improvement, developer-tools` | `gh repo edit --add-topic …` |
 | Merge methods | squash only (title = PR title, body = PR body); merge commits and rebase off | `gh api -X PATCH repos/delvera-ai/lithify -F allow_squash_merge=true -F allow_merge_commit=false -F allow_rebase_merge=false …` |
 | Delete head branches | on | same call, `delete_branch_on_merge=true` |
+| Auto-merge | on | `gh api -X PATCH repos/delvera-ai/lithify -F allow_auto_merge=true` |
+| `main` ruleset | active, id 25715160 (details below) | `gh api -X POST repos/delvera-ai/lithify/rulesets --input .github/settings/ruleset-main.json`; update with `-X PUT …/rulesets/25715160` |
+| Secret scanning + push protection | on | `gh api -X PATCH repos/delvera-ai/lithify` with `{"security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"}}}` |
+| Private vulnerability reporting | on (SECURITY.md links to it) | `gh api -X PUT repos/delvera-ai/lithify/private-vulnerability-reporting` |
 | Dependabot alerts | on | `gh api -X PUT repos/delvera-ai/lithify/vulnerability-alerts` |
 | Dependabot security updates | on | `gh api -X PUT repos/delvera-ai/lithify/automated-security-fixes` |
 | Dependabot version updates | GitHub Actions, weekly | `.github/dependabot.yml` |
-| `pypi` environment | deployable only from tags matching `v*` | `gh api -X PUT …/environments/pypi` with `custom_branch_policies`, then `POST …/deployment-branch-policies name=v* type=tag` |
+| `pypi` environment | required reviewer `donbro8`; deployable only from tags matching `v*` | `gh api -X PUT …/environments/pypi` with `reviewers` and `custom_branch_policies`, then `POST …/deployment-branch-policies name=v* type=tag` |
 | Labels | `bug`, `enhancement`, `adapter:claude`, `adapter:codex`, `adapter:agy`, `prompts`, `safety`, `eval`, `docs`, `good first issue`, `release-blocker` | `gh label create … --force` |
 | CODEOWNERS | owner on everything; prompts, gates, worktree, validate called out | `.github/CODEOWNERS` |
 | Tracking issue | #6 "0.1.0 release readiness", pinned | `gh issue create`, `gh issue pin` |
 
-## Not available while private on GitHub Free
-
-Each of these was attempted; the API response is recorded.
-
-| Setting | API response | Apply when public |
-|---|---|---|
-| `main` ruleset | `403 Upgrade to GitHub Pro or make this repository public` | `gh api -X POST repos/delvera-ai/lithify/rulesets --input .github/settings/ruleset-main.json` |
-| Auto-merge | `allow_auto_merge` stays `false` | `gh api -X PATCH repos/delvera-ai/lithify -F allow_auto_merge=true` |
-| Secret scanning + push protection | `422 Secret scanning is not available for this repository` | `gh api -X PATCH repos/delvera-ai/lithify --input -` with `{"security_and_analysis":{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"}}}` |
-| Private vulnerability reporting | `404` | `gh api -X PUT repos/delvera-ai/lithify/private-vulnerability-reporting` (SECURITY.md links to it) |
-| `pypi` required reviewer | `422 … billing plan supports the required reviewers protection rule` | `gh api -X PUT repos/delvera-ai/lithify/environments/pypi --input -` with `{"reviewers":[{"type":"User","id":83458797}],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}` |
-
-Until the ruleset is active, the PR-only workflow is a convention, not an enforced rule: no
-direct pushes to `main`, no force-pushes, squash-merge only after CI is green.
+While the repository was private on GitHub Free, the ruleset (`403 Upgrade to GitHub Pro or make
+this repository public`), auto-merge, secret scanning (`422`), private vulnerability reporting
+(`404`) and environment reviewers (`422`) were all unavailable.
 
 ### The `main` ruleset (`.github/settings/ruleset-main.json`)
 
@@ -43,8 +39,8 @@ direct pushes to `main`, no force-pushes, squash-merge only after CI is green.
 - Requires these status checks, with the branch up to date (`strict`): `plugin`, `sim-sweep`,
   `test (ubuntu-latest, 3.11)`, `test (ubuntu-latest, 3.12)`, `test (ubuntu-latest, 3.13)`,
   `test (macos-latest, 3.11)`, `test (macos-latest, 3.12)`, `test (macos-latest, 3.13)`.
-  These are the job names as they appear in the `ci` workflow's runs; update the list if the
-  matrix changes.
+  These are the job names as they appear in the `ci` workflow's runs; update the JSON and the
+  live ruleset together if the matrix changes.
 - Blocks deletion and non-fast-forward pushes; requires linear history.
 - Bypass: repository admin role only (actor 5, `RepositoryRole`), i.e. the owner.
 
@@ -70,7 +66,6 @@ rendered into `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/` 
 
 ## Release (owner only)
 
-1. Make the repository public; apply everything in the table above.
-2. Configure PyPI trusted publishing for workflow `release.yml`, environment `pypi`.
-3. Bump the version in `pyproject.toml`, `plugin.json`, `.claude-plugin/plugin.json`,
+1. Configure PyPI trusted publishing for workflow `release.yml`, environment `pypi`.
+2. Bump the version in `pyproject.toml`, `plugin.json`, `.claude-plugin/plugin.json`,
    `.codex-plugin/plugin.json` (the workflow checks they match the tag), merge, then tag `vX.Y.Z`.
