@@ -106,7 +106,8 @@ class MockAdapter(Adapter):
                         known.setdefault(tok, f"skills/{skill.name}")
         noise = float(os.environ.get("LITHIFY_MOCK_NOISE", "0") or 0)
         if noise and known:
-            rng = random.Random(f"{cwd.name}:{feat}")
+            # LITHIFY_MOCK_SEED varies the draws between replicates; unset keeps them fixed per probe.
+            rng = random.Random(f"{os.environ.get('LITHIFY_MOCK_SEED', '')}{cwd.name}:{feat}")
             if rng.random() < noise:
                 dropped = rng.choice(sorted(known))
                 known.pop(dropped)

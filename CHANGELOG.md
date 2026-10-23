@@ -18,6 +18,8 @@ All notable changes to this project are documented here. The format follows
   agent for tests and `lithify demo`.
 - Claude Code, Codex and Antigravity plugin manifests, five skills, and a fail-open
   `SessionStart` hook.
+- `eval/sim_sweep.py`: simulation robustness sweep across task orders and mock noise levels
+  (CI job `sim-sweep`); `LITHIFY_MOCK_SEED` varies mock noise draws between replicates.
 
 ### Fixed
 - Codex marketplace manifest lives at `.agents/plugins/marketplace.json` (was misplaced at

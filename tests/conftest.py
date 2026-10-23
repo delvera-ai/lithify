@@ -10,6 +10,7 @@ import pytest
 def _isolate_work_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LITHIFY_WORK_DIR", str(tmp_path / "_work"))
     monkeypatch.delenv("LITHIFY_MOCK_NOISE", raising=False)
+    monkeypatch.delenv("LITHIFY_MOCK_SEED", raising=False)
 
 
 def git(cwd: Path, *args: str) -> str:

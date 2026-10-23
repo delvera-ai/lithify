@@ -40,7 +40,7 @@ direct pushes to `main`, no force-pushes, squash-merge only after CI is green.
 - Applies to the default branch.
 - Requires a pull request (0 approvals so a sole maintainer can merge; squash only; stale
   reviews dismissed on push).
-- Requires these status checks, with the branch up to date (`strict`): `plugin`,
+- Requires these status checks, with the branch up to date (`strict`): `plugin`, `sim-sweep`,
   `test (ubuntu-latest, 3.11)`, `test (ubuntu-latest, 3.12)`, `test (ubuntu-latest, 3.13)`,
   `test (macos-latest, 3.11)`, `test (macos-latest, 3.12)`, `test (macos-latest, 3.13)`.
   These are the job names as they appear in the `ci` workflow's runs; update the list if the
@@ -52,6 +52,8 @@ direct pushes to `main`, no force-pushes, squash-merge only after CI is green.
 
 - `test`: Ubuntu and macOS × Python 3.11–3.13: ruff, ruff format, mypy, pytest with coverage,
   `lithify demo`.
+- `sim-sweep`: `eval/sim_sweep.py --orders 3 --noise 0,0.2 --strict` (fails if adaptive ever
+  delivers less than static).
 - `plugin`: JSON parse of every manifest, then
   `npx -y @anthropic-ai/claude-code@2.1.309 plugin validate . --profile directory --strict`.
   The root `CLAUDE.md` (contributor context from dogfooding) is removed in the job first,
