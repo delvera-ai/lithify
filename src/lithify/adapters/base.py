@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
+
+# Notices CLIs return when a subscription or API limit stops a session before it does any work.
+LIMIT_NOTICE = re.compile(r"(session|usage|rate) limit|hit your limit|quota (reached|exceeded)|RESOURCE_EXHAUSTED", re.I)
+
+
+class LimitReached(RuntimeError):
+    """The agent CLI refused to work because of a usage, session or rate limit."""
+
+
+def hit_limit(res: RunResult) -> bool:
+    return not res.ok and bool(LIMIT_NOTICE.search(f"{res.error}\n{res.text[:2000]}"))
 
 
 @dataclass
