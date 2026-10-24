@@ -198,6 +198,12 @@ bias when judging the executor's work.
   `[adapter_args]`. Gates run your own commands with your own environment.
 * Isolation covers the repository, not your user-level configuration: probes still load your
   global `~/.claude/` or `~/.codex/` instructions, hooks and plugins.
+* Isolation covers the repository, not the machine. With `--dangerously-skip-permissions`, Claude
+  Code probes can write anywhere your user can: in lithify's evaluation they created virtualenvs
+  under `/tmp`, ran `pip install` from the network, and one tried to install into the environment
+  the gates use (it failed only because that environment had no `pip`). Codex's `workspace-write`
+  sandbox prevented all of this in the same evaluation. Run lithify in a container or VM for
+  untrusted repositories, and keep gate environments read-only to agents.
 * lithify applies the selected patch to your working tree and **never commits, pushes or opens PRs**.
 * Role sessions are told that everything under `context/` is evidence, not instructions, and never
   to execute scripts found in candidate harnesses.
