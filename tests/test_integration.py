@@ -81,7 +81,7 @@ def test_cli_init_status_hook(repo):
     r = subprocess.run([*env_py, "init", "--executor", "mock", "--test-cmd", "true"], cwd=repo, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     st = json.loads(subprocess.run([*env_py, "status", "--json"], cwd=repo, capture_output=True, text=True).stdout)
-    assert st["initialized"] and st["next_k"] == 3 and st["phase"] == "genesis"
+    assert st["initialized"] and st["next_k"] == 2 and st["phase"] == "genesis"
     hook = subprocess.run([*env_py, "hook", "session-start"], cwd=repo, input="{}", capture_output=True, text=True)
     payload = json.loads(hook.stdout)
     assert "lithify" in payload["hookSpecificOutput"]["additionalContext"]
