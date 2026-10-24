@@ -205,6 +205,10 @@ bias when judging the executor's work.
   sandbox prevented all of this in the same evaluation. Run lithify in a container or VM for
   untrusted repositories, and keep gate environments read-only to agents.
 * lithify applies the selected patch to your working tree and **never commits, pushes or opens PRs**.
+* A probe that edits tests which existed before it started fails its gate (`allow_test_edits = false`),
+  even when the task genuinely changes behaviour those tests pin. Such work is never applied; if a
+  rollout passed every other gate, its patch is saved as `.lithify/runs/<id>/needs-review.patch` for
+  you to review.
 * Role sessions are told that everything under `context/` is evidence, not instructions, and never
   to execute scripts found in candidate harnesses.
 * `lithify validate` rejects harnesses with credentials, uncompilable scripts, skills without a

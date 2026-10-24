@@ -36,6 +36,11 @@ class GateResult:
     protected_test_edits: list[str] = field(default_factory=list)
     note: str = ""
 
+    @property
+    def blocked_only_by_test_edits(self) -> bool:
+        """Every command gate passed; the only failure is an edit to tests that existed before."""
+        return bool(self.protected_test_edits) and all(r.returncode == 0 for r in self.runs)
+
     def summary(self) -> str:
         if not self.runs and not self.protected_test_edits:
             return "no gates configured" + (f"; {self.note}" if self.note else "")
