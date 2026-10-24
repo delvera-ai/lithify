@@ -1,0 +1,52 @@
+{
+  "task": "Bug: when a `@retry`-decorated function is further wrapped by another decorator that uses `functools.wraps` (for example a timing decorator), `func.statistics` on the outer wrapper is an empty `{}` instead of the real runtime statistics. The statistics must stay visible through such wrappers, for sync and async functions (the outer wrapper's `statistics` should be the same object as the inner one's).",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "I picked c4. The deciding question was correctness beyond the tests.\n\n- **c4:** each call keeps its own statistics dict, as the original code did, and copies every write and clear into one shared dict. That shared dict is what the `functools.wraps` wrapper sees, so the wrapper reads the same object as the inner function. It's a small, contained change.\n- **c1 (runner-up):** smallest of the four, but every call and every thread writes to one dict. If thread B's `begin()` runs `clear()` while thread A is in the middle of `statistics[\"attempt_number\"] += 1`, thread A can hit a `KeyError`. That's a new crash for threaded callers that the per-call copy used to prevent.\n- **c3:** same idea as c4, but it rewrites the whole shared dict on every write and adds more code.\n- **c2:** changes `func.statistics` from a `dict` to a mapping view, so `isinstance(func.statistics, dict)` stops being true. That's a public behaviour change nobody asked for.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-211551-bug-when-a-retry-decorated-funct",
+  "usage": {
+    "in": 501115,
+    "cached": 7223308,
+    "out": 125494,
+    "cost": 3.3214278999999998,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.63,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

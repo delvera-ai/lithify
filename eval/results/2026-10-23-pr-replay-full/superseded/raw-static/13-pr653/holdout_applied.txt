@@ -1,0 +1,76 @@
+exit 1
+.......F....s............................................... [ 38%]
+......................................................F................. [ 84%]
+.........................                                                [100%]
+=================================== FAILURES ===================================
+_________ TestAsyncio.test_statistics_visible_through_outer_decorator __________
+
+self = <tests.test_asyncio.TestAsyncio testMethod=test_statistics_visible_through_outer_decorator>
+
+    @asynctest
+    async def test_statistics_visible_through_outer_decorator(self) -> None:
+        """Statistics must resolve when @retry is wrapped by another decorator.
+    
+        A well-behaved outer decorator uses functools.wraps, which copies the
+        inner wrapper's ``__dict__`` (including ``statistics``). Rebinding the
+        attribute on each call left the outer wrapper pointing at a stale empty
+        dict. See issue #519.
+        """
+    
+        def outer(fn: _F) -> _F:
+            @wraps(fn)
+            async def wrapper(*args: Any, **kwargs: Any) -> Any:
+                return await fn(*args, **kwargs)
+    
+            return wrapper  # type: ignore[return-value]
+    
+        @outer
+        @retry(stop=stop_after_attempt(3))
+        async def my_call() -> str:
+            return "ok"
+    
+        assert await my_call() == "ok"
+>       assert my_call.statistics["attempt_number"] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'attempt_number'
+
+tests/test_asyncio.py:136: KeyError
+______ TestStatisticsKeys.test_statistics_visible_through_outer_decorator ______
+
+self = <tests.test_tenacity.TestStatisticsKeys object at 0x1097c6ed0>
+
+    def test_statistics_visible_through_outer_decorator(self) -> None:
+        """Statistics must resolve when @retry is wrapped by another decorator.
+    
+        A well-behaved outer decorator uses functools.wraps, which copies the
+        inner wrapper's ``__dict__`` (including ``statistics``). Rebinding the
+        attribute on each call left the outer wrapper pointing at a stale empty
+        dict. The statistics must instead stay visible through the wrapper
+        chain. See issue #519.
+        """
+        import functools
+    
+        _F = typing.TypeVar("_F", bound=typing.Callable[..., typing.Any])
+    
+        def outer(fn: _F) -> _F:
+            @functools.wraps(fn)
+            def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+                return fn(*args, **kwargs)
+    
+            return typing.cast("_F", wrapper)
+    
+        @outer
+        @retry(stop=tenacity.stop_after_attempt(3))
+        def my_call() -> str:
+            return "ok"
+    
+        assert my_call() == "ok"
+>       assert my_call.statistics["attempt_number"] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'attempt_number'
+
+tests/test_tenacity.py:1535: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_asyncio.py::TestAsyncio::test_statistics_visible_through_outer_decorator
+FAILED tests/test_tenacity.py::TestStatisticsKeys::test_statistics_visible_through_outer_decorator
+2 failed, 154 passed, 1 skipped, 12 subtests passed in 1.84s

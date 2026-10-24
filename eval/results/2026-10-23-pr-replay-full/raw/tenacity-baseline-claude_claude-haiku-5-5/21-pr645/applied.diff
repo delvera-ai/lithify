@@ -1,0 +1,114 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index bd15b0a..24ecc4f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -300,6 +300,21 @@
+       "wall_s": 44.0,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-193157-bug-retrying-enabled-false-fn-an",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32980,
++      "tokens_cached": 399566,
++      "tokens_out": 6505,
++      "cost_usd": 0.0138,
++      "wall_s": 49.0,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 530b63a..e466003 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -538,6 +538,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index aa4a756..97179ed 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -113,10 +113,15 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        is_async = _utils.is_coroutine_callable(fn)
++        if not self.enabled:
++            if is_async:
++                return await fn(*args, **kwargs)
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+-        is_async = _utils.is_coroutine_callable(fn)
+         while True:
+             do = await self.iter(retry_state=retry_state)
+             if isinstance(do, DoAttempt):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index f4fded1..889376f 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -214,6 +214,22 @@ class TestAsyncEnabled(unittest.TestCase):
+             await always_fails()
+         assert call_count == 1
+ 
++    @asynctest
++    async def test_enabled_false_call_on_retrying_object_skips_retry(self) -> None:
++        """When enabled=False, calling the AsyncRetrying object directly awaits fn
++        once and propagates the original exception, not a RetryError."""
++        call_count = 0
++
++        async def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            await retrying(always_fails)
++        assert call_count == 1
++
+     @asynctest
+     async def test_enabled_false_aiter_raises_original_exception(self) -> None:
+         """When enabled=False, the async iterator raises the original exception,
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..0c75f27 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1665,6 +1665,21 @@ class TestEnabled:
+             always_fails()
+         assert call_count == 1
+ 
++    def test_enabled_false_call_on_retrying_object_skips_retry(self) -> None:
++        """When enabled=False, calling the Retrying object directly runs fn once
++        and propagates the original exception, not a RetryError."""
++        call_count = 0
++
++        def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = tenacity.Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            retrying(always_fails)
++        assert call_count == 1
++
+     def test_enabled_false_preserves_attributes(self) -> None:
+         """When enabled=False, .retry, .retry_with, .statistics are still available."""
+ 

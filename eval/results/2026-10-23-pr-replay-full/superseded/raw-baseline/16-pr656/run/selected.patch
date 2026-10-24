@@ -1,0 +1,47 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index a662eef..1640489 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -208,7 +208,12 @@ class wait_exponential(wait_base):
+             and self.max > 0
+             and self.exp_base > 1
+             and math.isfinite(self.max)
+-            and exponent > math.log(self.max / self.multiplier, self.exp_base)
++            # max / multiplier can underflow to 0.0 (or multiplier can be inf),
++            # in which case even the first wait exceeds max and log() would fail.
++            and (
++                self.max / self.multiplier == 0
++                or exponent > math.log(self.max / self.multiplier, self.exp_base)
++            )
+         ):
+             return max(max(0, self.min), self.max)
+         try:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index f6c15ce..5f4d5f4 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -16,6 +16,7 @@
+ import contextlib
+ import datetime
+ import logging
++import math
+ import pickle
+ import re
+ import time
+@@ -367,6 +368,16 @@ class TestWaitConditions(unittest.TestCase):
+         r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=ExplodingPower(2)))
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_with_max_smaller_than_multiplier_underflow(self) -> None:
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=1e300, max=1e-100))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 1e-100)
++        self.assertEqual(r.wait(make_retry_state(50, 0)), 1e-100)
++
++    def test_exponential_with_infinite_multiplier(self) -> None:
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=math.inf, max=40))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 40)
++        self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

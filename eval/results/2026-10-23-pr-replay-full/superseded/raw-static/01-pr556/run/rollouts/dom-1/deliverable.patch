@@ -1,0 +1,57 @@
+diff --git a/releasenotes/notes/fix-find-ordinal-teens-3f9c2a7d1e8b5a40.yaml b/releasenotes/notes/fix-find-ordinal-teens-3f9c2a7d1e8b5a40.yaml
+new file mode 100644
+index 0000000..5759c2e
+--- /dev/null
++++ b/releasenotes/notes/fix-find-ordinal-teens-3f9c2a7d1e8b5a40.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    Fixed the ordinal suffix used in ``before`` and ``after`` log messages for
++    numbers greater than 20 that end in 11, 12 or 13. For example, attempt 111
++    was logged as "111st", "112nd" and "113rd"; these now read "111th",
++    "112th" and "113th".
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..8485fb6 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -3,6 +3,26 @@ import functools
+ from tenacity import _utils
+ 
+ 
++def test_to_ordinal() -> None:
++    assert _utils.to_ordinal(0) == "0th"
++    assert _utils.to_ordinal(1) == "1st"
++    assert _utils.to_ordinal(2) == "2nd"
++    assert _utils.to_ordinal(3) == "3rd"
++    assert _utils.to_ordinal(4) == "4th"
++    assert _utils.to_ordinal(11) == "11th"
++    assert _utils.to_ordinal(12) == "12th"
++    assert _utils.to_ordinal(13) == "13th"
++    assert _utils.to_ordinal(21) == "21st"
++    assert _utils.to_ordinal(22) == "22nd"
++    assert _utils.to_ordinal(23) == "23rd"
++    assert _utils.to_ordinal(101) == "101st"
++    assert _utils.to_ordinal(111) == "111th"
++    assert _utils.to_ordinal(112) == "112th"
++    assert _utils.to_ordinal(113) == "113th"
++    assert _utils.to_ordinal(121) == "121st"
++    assert _utils.to_ordinal(1011) == "1011th"
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

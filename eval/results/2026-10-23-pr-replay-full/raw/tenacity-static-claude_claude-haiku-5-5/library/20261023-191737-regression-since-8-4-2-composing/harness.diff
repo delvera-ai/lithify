@@ -1,0 +1,196 @@
+--- a/scripts/run_tests.py
++++ b/scripts/run_tests.py
+@@ -0,0 +1,113 @@
++#!/usr/bin/env python3
++"""Run pytest in the foreground with a hard time limit; name the test that hangs.
++
++A retry loop with no `stop=` (tenacity's default is never stop, no wait) spins
++forever when the predicate under test is wrong, so a single bad test can hang
++the whole suite with no output. This script bounds every run and, on timeout,
++prints the node id of the test that was running.
++
++Usage (from the repo root, with the project python from memory.md):
++    <project python> .lithify/harness/scripts/run_tests.py [--timeout SECS] [pytest args...]
++    e.g.  ... run_tests.py                                  # full suite, 300 s
++          ... run_tests.py --timeout 60 tests/test_x.py::Cls::test_name
++
++Output: the last 40 lines of pytest -v output (full log in /tmp/run_tests.log),
++then one verdict line.
++
++Exit codes:
++    0..5  pytest's own exit code (0 = all passed, 1 = failures, ...)
++    124   TIMEOUT: process group killed; `HUNG IN: <node id>` names the test.
++          Do not re-run the suite unchanged. Run that node id alone with
++          --timeout 60; if it is a test you wrote, make its retry loop bounded
++          (or fix the code it exposes). If it is an existing test, check
++          whether it also hangs without your change (`git stash`, run, `git
++          stash pop`) and report what you found.
++"""
++
++from __future__ import annotations
++
++import os
++import signal
++import subprocess
++import sys
++import threading
++
++LOG = "/tmp/run_tests.log"
++
++
++def main() -> int:
++    args = sys.argv[1:]
++    timeout = 300.0
++    if args[:1] == ["--timeout"]:
++        if len(args) < 2:
++            print("usage: run_tests.py [--timeout SECS] [pytest args...]")
++            return 2
++        timeout = float(args[1])
++        args = args[2:]
++    cmd = [
++        sys.executable,
++        "-m",
++        "pytest",
++        "-v",
++        "-rfE",
++        "-p",
++        "no:cacheprovider",
++        "--color=no",
++        *args,
++    ]
++    env = dict(os.environ, PYTHONUNBUFFERED="1")
++    proc = subprocess.Popen(
++        cmd,
++        stdout=subprocess.PIPE,
++        stderr=subprocess.STDOUT,
++        env=env,
++        start_new_session=True,
++    )
++    chunks: list[bytes] = []
++
++    def pump() -> None:
++        assert proc.stdout is not None
++        fd = proc.stdout.fileno()
++        while True:
++            data = os.read(fd, 4096)
++            if not data:
++                break
++            chunks.append(data)
++
++    reader = threading.Thread(target=pump, daemon=True)
++    reader.start()
++    timed_out = False
++    try:
++        code = proc.wait(timeout=timeout)
++    except subprocess.TimeoutExpired:
++        timed_out = True
++        try:
++            os.killpg(proc.pid, signal.SIGKILL)
++        except ProcessLookupError:
++            pass
++        code = proc.wait()
++    reader.join(timeout=5)
++
++    text = b"".join(chunks).decode("utf-8", "replace")
++    with open(LOG, "w", encoding="utf-8") as fh:
++        fh.write(text)
++    lines = text.splitlines()
++    print("\n".join(lines[-40:]))
++    print("---")
++    if timed_out:
++        hung = "(unknown: no test had started)"
++        for line in reversed(lines):
++            word = line.split(" ", 1)[0]
++            if "::" in word:
++                hung = word
++                break
++        print(f"TIMEOUT after {timeout:.0f}s; process group killed")
++        print(f"HUNG IN: {hung}")
++        print("exit=124 (see this script's docstring for the next step)")
++        return 124
++    print(f"exit={code} (pytest); full log: {LOG}")
++    return code
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code.
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code.
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -41,6 +41,27 @@
+   `contextlib.suppress(RetryError)` (or `assertRaises(RetryError)`), never
+   `suppress(Exception)`, which hides the very `KeyError`/`TypeError` under test.
+ 
++## 1b. Strategy composition (`|`, `&`) and sync/async mixing
++- Sync combinators (`tenacity/retry.py` `retry_any`/`retry_all`) call members directly. Async
++  ones (`tenacity/asyncio/retry.py`) await each member through `_utils.wrap_to_async_func`,
++  so they accept sync and async members alike. A sync combinator must never hold an async
++  member: the call returns a coroutine, which is truthy. Retry then never stops, and the
++  suite hangs instead of failing.
++- `retry_base.__or__`/`__and__` call `other.__ror__(self)`/`other.__rand__(self)` on purpose.
++  For `sync_strategy | async_strategy` the right operand is not a subclass of the left one, so
++  Python calls the left `__or__`. Delegating is the only way `async_retry_base.__ror__` builds
++  the async combinator. When extending these operators, keep that delegation for
++  `isinstance(other, retry_base)` and build `retry_any(self, other)`/`retry_all(self, other)`
++  directly only for anything else (plain callables). A plain callable on the LEFT already
++  reaches `retry_base.__ror__`/`__rand__`.
++- Guarding tests: `tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_or`
++  (and `_ror`, `_and`, `_rand`)
++  mix sync and async strategies. Run them by node id after touching either operator set.
++- Type aliases: sync `RetryBaseT` (`tenacity/retry.py`) and async `RetryBaseT`
++  (`tenacity/asyncio/retry.py`). Inside `tenacity/asyncio/` the sync one is imported under
++  `TYPE_CHECKING` as `SyncRetryBaseT` (see `tenacity/asyncio/__init__.py`). They are defined
++  after `retry_base`, so annotations that use them in the class body are quoted strings.
++
+ ## 2. A release note in `releasenotes/notes/` (reno)
+ Maintainer commits that change behaviour ship a reno note alongside the code (e.g. #555, #551,
+ #552, #540). It is not CI-enforced, so it is easy to omit — do not omit it.
+
+--- a/system.md
++++ b/system.md
+@@ -2,13 +2,19 @@
+ satisfies the task, following the patterns the surrounding code already uses. Read the relevant
+ code before editing it.
+ 
+-Done means, in this order, each with its output read:
+-1. Write the regression test first and run it alone against the unfixed code; it must fail for
+-   the reported reason (the error or wrong output the task describes, not an
+-   import or typo error). Then fix and re-run it green.
+-2. Run the full check command from memory.md; read the exit code and summary line.
++Done means, in this order, each with its output read. Run every pytest through
++`<project python> .lithify/harness/scripts/run_tests.py [--timeout S] [node ids]`, in the
++foreground (it bounds the run and names a hung test; never background pytest or watch it with
++a monitor):
++1. Write the regression test first and run it alone (`--timeout 60 <node id>`) against the
++   unfixed code; it must fail for the reported reason (the error or wrong output the task
++   describes, not an import or typo error). Then fix and re-run it green.
++2. Run the full suite (`run_tests.py`, no args); read the `exit=` line and the summary line.
++   `exit=124` means a test hung: follow the script's printed next step; never just re-run.
+ 3. Run `<project python> .lithify/harness/scripts/check_changed.py` (stdlib: line length,
+    nested-def spacing, syntax, reno note shape on changed files). Exit 1: fix each printed
+    file:line and re-run. Never state a line length or format verdict from reading; quote this
+    script. ruff/mypy can't run here: report them as not run.
+-A successful edit or file write is not evidence. In the final message, list every step skipped.
++Do not end your turn while a check is still running; a check you have not seen finish is not
++run. A successful edit or file write is not evidence. In the final message, list every step
++skipped.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -4,4 +4,7 @@
+ - The shell is zsh: quote globs (`--include='*.py'`), or the command fails with "no matches found".
+   `${PIPESTATUS[0]}` prints empty; use `cmd > /tmp/out.txt 2>&1; echo "exit=$?"; tail /tmp/out.txt`.
+   A word starting with `=` (e.g. `echo ===`) aborts the command ("== not found"); use `echo ---`.
+-- Run one test by node id: `<project python> -m pytest -q -p no:cacheprovider tests/test_x.py::Class::test_name`.
++- Run tests with `<project python> .lithify/harness/scripts/run_tests.py [--timeout S] [node ids]`
++  (default 300 s, full log in /tmp/run_tests.log). Raw `pytest` has no time limit here: the full
++  suite once hung with no output until the 900 s kill (a sync combinator holding an async
++  strategy; see the tenacity-change-contract skill, §1b). A hang is a bug, not a slow suite.

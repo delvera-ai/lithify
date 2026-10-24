@@ -1,0 +1,52 @@
+{
+  "task": "Feature: `AttemptManager` (the object yielded by `for attempt in Retrying(...)` / `async for attempt in AsyncRetrying(...)`) should also support the async context-manager protocol, so `async with attempt:` works inside `async for` loops, behaving exactly like `with attempt:`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "base-1",
+  "why": "All four add the same delegation to `__enter__`/`__exit__`, so scope and maintainability decided it. c4 is the smallest complete change: the two methods, a release note in the existing reno style, and two tests. One test covers retrying until `RetryError` and the other covers succeeding after a failed attempt.\nc1 and c2 also add an `index.rst` example that the task didn't ask for, and they copy the sync tests nearly line for line.\nc3 was the runner-up. It has no doc additions, but its `test_async_with_success_sets_result` never checks the result its name promises. It only asserts that one attempt ran, which is weaker than c4's retry-then-succeed test.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 322633,
+    "cached": 2930673,
+    "out": 42666,
+    "cost": 2.4367826600000004,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

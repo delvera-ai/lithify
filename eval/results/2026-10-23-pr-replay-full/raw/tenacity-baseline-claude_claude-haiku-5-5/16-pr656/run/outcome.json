@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `wait_exponential` can raise `ValueError: math domain error` instead of returning a wait time when `multiplier` and `max` are finite and positive but `max / multiplier` underflows to 0.0 (e.g. `wait_exponential(multiplier=1e300, max=1e-100)`), or when `multiplier` is not finite. It should return the capped wait instead; results for ordinary values must not change.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 29368,
+    "cached": 384333,
+    "out": 9079,
+    "cost": 0.014254229999999998,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

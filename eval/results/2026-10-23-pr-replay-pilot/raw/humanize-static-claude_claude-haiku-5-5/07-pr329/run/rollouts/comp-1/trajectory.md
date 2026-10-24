@@ -86,8 +86,8 @@ u=True`
    published documentation.
 
 [tool_use Bash] {"command": "ls -la <work>/env-humanize/bin/python ~/.cache/lithify/work/repo-591a89d5b953/20261023-145531-bug-humanize-naturalsize-can-sho/comp-1/.lithify/harness/memory.md 2>&1; ls ~/.cache/lithify/work/repo-591a89d5b953/20261023-145531-bug-humanize-naturalsize-can-sho/comp-1/.lithify/harness/ 2>&1", "description": "Check interpreter and harness files exist"}
-[tool_result] -rw-r--r--@ 1 donovan  staff  249 Oct 23 14:21 ~/.cache/lithify/work/repo-591a89d5b953/20261023-145531-bug-humanize-naturalsize-can-sho/comp-1/.lithify/harness/memory.md
-lrwxr-xr-x@ 1 donovan  wheel   84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] -rw-r--r--@ 1 user  staff  249 Oct 23 14:21 ~/.cache/lithify/work/repo-591a89d5b953/20261023-145531-bug-humanize-naturalsize-can-sho/comp-1/.lithify/harness/memory.md
+lrwxr-xr-x@ 1 user  wheel   84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 guardrails.md
 memory.md
 scripts

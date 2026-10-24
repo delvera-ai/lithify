@@ -1,0 +1,106 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f17e5c7..05d9c46 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -60,6 +60,21 @@
+       "wall_s": 110.4,
+       "always_on_tokens": 186,
+       "stability_after": 0.8
++    },
++    {
++      "task_id": "20261023-200625-feature-attemptmanager-the-objec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 19305,
++      "tokens_cached": 103936,
++      "tokens_out": 1373,
++      "cost_usd": 0.0,
++      "wall_s": 49.1,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5f12c2b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..e0b79e7 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -176,6 +176,53 @@ class TestTrio(unittest.TestCase):
+ 
+ 
+ class TestContextManager(unittest.TestCase):
++    @asynctest
++    async def test_async_context_manager(self) -> None:
++        attempts = 0
++        async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt as value:
++                assert value is None
++                attempts += 1
++                await asyncio.sleep(0)
++                if attempts < 3:
++                    raise ValueError("retry")
++            assert attempt.retry_state.outcome is not None
++            if attempts < 3:
++                assert isinstance(attempt.retry_state.outcome.exception(), ValueError)
++            else:
++                assert attempt.retry_state.outcome.result() is None
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_context_manager_exhaustion(self) -> None:
++        for reraise in (False, True):
++            attempts = 0
++            error = ValueError("retry")
++            with pytest.raises(ValueError if reraise else RetryError) as exc_info:
++                async for attempt in AsyncRetrying(
++                    stop=stop_after_attempt(2), reraise=reraise
++                ):
++                    async with attempt:
++                        attempts += 1
++                        raise error
++            assert attempts == 2
++            if reraise:
++                assert exc_info.value is error
++            else:
++                assert isinstance(exc_info.value, RetryError)
++                assert exc_info.value.last_attempt.exception() is error
++
++    @asynctest
++    async def test_async_context_manager_with_sync_retrying(self) -> None:
++        attempts = 0
++        for attempt in tenacity.Retrying(stop=stop_after_attempt(2)):
++            async with attempt as value:
++                assert value is None
++                attempts += 1
++                if attempts == 1:
++                    raise ValueError("retry")
++        assert attempts == 2
++
+     @asynctest
+     async def test_do_max_attempts(self) -> None:
+         attempts = 0

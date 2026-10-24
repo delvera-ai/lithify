@@ -1,0 +1,176 @@
+--- a/scripts/check_changed.py
++++ b/scripts/check_changed.py
+@@ -0,0 +1,134 @@
++#!/usr/bin/env python3
++"""Lint/type/YAML checks for the files changed in the working tree.
++
++The project venv (the one that runs pytest) has no pip, ruff, mypy or PyYAML,
++and `uv`/`uvx` are absent. This script makes ONE throwaway venv in /tmp with
++those tools, then checks only the changed files:
++
++  - changed *.py            -> ruff check, ruff format --check, mypy (strict,
++                               from pyproject, resolving imports against the
++                               project interpreter)
++  - releasenotes/notes/*.yaml -> must parse as a YAML mapping of reno sections
++
++Usage (from the repo root):
++    <project python> .lithify/harness/scripts/check_changed.py
++
++Exit codes:
++    0  every check ran and passed
++    1  a check ran and failed -- fix the reported lines, then re-run once
++    2  tooling unavailable (venv/pip install failed) -- do NOT retry; report
++       lint/type/YAML as "not run" with the printed reason
++"""
++
++from __future__ import annotations
++
++import os
++import subprocess
++import sys
++import venv
++
++VENV = "/tmp/tenacity-check-venv"
++TOOLS = ["ruff", "mypy", "pyyaml"]
++RENO_SECTIONS = {
++    "prelude",
++    "features",
++    "issues",
++    "upgrade",
++    "deprecations",
++    "critical",
++    "security",
++    "fixes",
++    "other",
++}
++
++
++def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
++    return subprocess.run(cmd, capture_output=True, text=True)
++
++
++def changed_files() -> list[str]:
++    tracked = run(["git", "diff", "--name-only", "HEAD"])
++    untracked = run(["git", "ls-files", "--others", "--exclude-standard"])
++    if tracked.returncode != 0:
++        print("UNAVAILABLE: git diff failed:", tracked.stderr.strip())
++        sys.exit(2)
++    names = set(tracked.stdout.split()) | set(untracked.stdout.split())
++    return sorted(n for n in names if os.path.exists(n))
++
++
++def ensure_venv() -> str:
++    py = os.path.join(VENV, "bin", "python")
++    if os.path.exists(py) and run([py, "-c", "import ruff, mypy, yaml"]).returncode == 0:
++        return py
++    try:
++        venv.EnvBuilder(with_pip=True, clear=True).create(VENV)
++    except Exception as exc:  # ensurepip missing, disk, permissions
++        print(f"UNAVAILABLE: could not create {VENV}: {exc}")
++        sys.exit(2)
++    res = run([py, "-m", "pip", "install", "-q", *TOOLS])
++    if res.returncode != 0:
++        print("UNAVAILABLE: pip install failed (offline?):")
++        print(res.stderr.strip()[-2000:])
++        sys.exit(2)
++    return py
++
++
++def main() -> int:
++    files = changed_files()
++    py_files = [f for f in files if f.endswith(".py") and not f.startswith(".lithify/")]
++    notes = [
++        f
++        for f in files
++        if f.startswith("releasenotes/notes/") and f.endswith((".yaml", ".yml"))
++    ]
++    print("changed:", ", ".join(files) or "(none)")
++    if not py_files and not notes:
++        print("nothing to check")
++        return 0
++
++    tool_py = ensure_venv()
++    failed = False
++
++    if py_files:
++        checks = [
++            ("ruff check", [tool_py, "-m", "ruff", "check", *py_files]),
++            ("ruff format --check", [tool_py, "-m", "ruff", "format", "--check", *py_files]),
++            (
++                "mypy",
++                [tool_py, "-m", "mypy", "--python-executable", sys.executable, *py_files],
++            ),
++        ]
++        for label, cmd in checks:
++            res = run(cmd)
++            status = "PASS" if res.returncode == 0 else "FAIL"
++            failed |= res.returncode != 0
++            print(f"[{status}] {label}")
++            if res.returncode != 0:
++                print((res.stdout + res.stderr).strip()[-4000:])
++
++    for note in notes:
++        code = (
++            "import sys, yaml\n"
++            "d = yaml.safe_load(open(sys.argv[1]))\n"
++            "assert isinstance(d, dict) and d, 'not a non-empty mapping'\n"
++            "bad = set(d) - set(sys.argv[2].split(','))\n"
++            "assert not bad, f'unknown reno sections: {sorted(bad)}'\n"
++            "for k, v in d.items():\n"
++            "    if k == 'prelude':\n"
++            "        assert isinstance(v, str), 'prelude: must be a string'\n"
++            "        continue\n"
++            "    assert isinstance(v, list) and all(isinstance(e, str) for e in v),"
++            " f'{k}: must be a list of strings'\n"
++        )
++        res = run([tool_py, "-c", code, note, ",".join(sorted(RENO_SECTIONS))])
++        status = "PASS" if res.returncode == 0 else "FAIL"
++        failed |= res.returncode != 0
++        print(f"[{status}] reno yaml {note}")
++        if res.returncode != 0:
++            print(res.stderr.strip().splitlines()[-1])
++
++    return 1 if failed else 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -38,6 +38,8 @@
+   every new test function needs full parameter and `-> None` annotations.
+ - ruff (`line-length = 88`, `target-version = "py310"`) checks and format-checks the whole repo,
+   tests included (`tox -e pep8`).
++- Check items 2 and 3 with `<project python> .lithify/harness/scripts/check_changed.py`; it
++  parses the reno YAML and runs ruff + mypy on the changed files.
+ 
+ ## 4. Keep the change surface minimal
+ Do not edit `AGENTS.md`/`CLAUDE.md` (generated by `lithify sync`).
+
+--- a/system.md
++++ b/system.md
+@@ -1,3 +1,13 @@
+ You are a careful engineer working in this repository. Make the smallest change that fully
+ satisfies the task, following the patterns the surrounding code already uses. Read the relevant
+-code before editing it, and finish only after the project's checks pass.
++code before editing it.
++
++Done means, in this order, each with its output read:
++1. Write the regression test first and run it alone against the unfixed code; it must fail for
++   the reported reason (the error or wrong output the task describes, not an
++   import or typo error). Then fix and re-run it green.
++2. Run the full check command from memory.md; read the exit code and summary line.
++3. Run `<project python> .lithify/harness/scripts/check_changed.py` (ruff, mypy, reno YAML on
++   changed files). Exit 1: fix and re-run once. Exit 2: tooling unavailable, so don't hunt for
++   other installs; report those checks as not run, quoting the printed reason.
++A successful edit or file write is not evidence. In the final message, list every step skipped.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -0,0 +1,5 @@
++- The project venv (python in memory.md) runs pytest but has no pip, ruff, mypy or PyYAML, and
++  `uv`/`uvx` are not on PATH. Don't probe for them; `.lithify/harness/scripts/check_changed.py`
++  builds the one throwaway `/tmp` venv that has them.
++- The shell is zsh: quote globs (`--include='*.py'`), or the command fails with "no matches found".
++- Run one test by node id: `<project python> -m pytest -q -p no:cacheprovider tests/test_x.py::Class::test_name`.

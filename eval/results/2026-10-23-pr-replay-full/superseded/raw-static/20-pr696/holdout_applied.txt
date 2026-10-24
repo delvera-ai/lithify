@@ -1,0 +1,45 @@
+exit 1
+....F                                                                    [100%]
+=================================== FAILURES ===================================
+_____________________ TestTornado.test_tornado_set_to_none _____________________
+
+self = <tests.test_tornado.TestTornado testMethod=test_tornado_set_to_none>
+
+    def test_tornado_set_to_none(self) -> None:
+        # Forcing the non-tornado path by nulling the module global is how
+        # downstream suites exercise installs without tornado.
+        with mock.patch.object(tenacity, "tornado", None):
+    
+>           @retry(stop=stop_after_attempt(1))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tornado.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+f = <function TestTornado.test_tornado_set_to_none.<locals>.retryable at 0x10b597420>
+
+    def wrap(f: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+        if isinstance(f, retry_base):
+            warnings.warn(
+                f"Got retry_base instance ({f.__class__.__name__}) as callable argument, "
+                f"this will probably hang indefinitely (did you mean retry={f.__class__.__name__}(...)?)",
+                stacklevel=2,
+            )
+        r: BaseRetrying
+        sleep = dkw.get("sleep")
+        if _utils.is_coroutine_callable(f) or (
+            sleep is not None and _utils.is_coroutine_callable(sleep)
+        ):
+            r = AsyncRetrying(*dargs, **dkw)
+        elif (
+            _HAS_TORNADO
+>           and hasattr(tornado.gen, "is_coroutine_function")
+                        ^^^^^^^^^^^
+            and tornado.gen.is_coroutine_function(f)
+        ):
+E       AttributeError: 'NoneType' object has no attribute 'gen'
+
+tenacity/__init__.py:790: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_tornado.py::TestTornado::test_tornado_set_to_none - Attribu...
+1 failed, 4 passed in 0.07s

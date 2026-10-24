@@ -1,0 +1,67 @@
+diff --git a/releasenotes/notes/fix-after-log-unset-timestamp-3c1f9a7e2b5d8e41.yaml b/releasenotes/notes/fix-after-log-unset-timestamp-3c1f9a7e2b5d8e41.yaml
+new file mode 100644
+index 0000000..92b0e19
+--- /dev/null
++++ b/releasenotes/notes/fix-after-log-unset-timestamp-3c1f9a7e2b5d8e41.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    ``after_log`` no longer raises ``TypeError`` when the retry state has no
++    outcome timestamp (``seconds_since_start`` is ``None``). The message is
++    still logged, with ``?`` in place of the elapsed seconds.
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..bb4d00b 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,15 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        seconds_since_start = retry_state.seconds_since_start
++        if seconds_since_start is None:
++            seconds = "?"
++        else:
++            seconds = sec_format % seconds_since_start
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {seconds}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..2c47a2a 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -74,3 +74,29 @@ class TestAfterLogFormat(unittest.TestCase):
+             f"after {sec_format % retry_state.seconds_since_start}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
++
++
++class TestAfterLogUnsetTimestamp(unittest.TestCase):
++    def test_seconds_since_start_none_logs_question_mark(self) -> None:
++        """Log a '?' elapsed time instead of crashing when the timestamp is unset."""
++        log = unittest.mock.MagicMock(spec="logging.Logger.log")
++        logger = unittest.mock.MagicMock(spec="logging.Logger", log=log)
++
++        retry_state = test_tenacity.make_retry_state(3, 0.1)
++        retry_state.outcome_timestamp = None
++        assert retry_state.seconds_since_start is None
++
++        fun = after_log(logger=logger, log_level=logging.INFO)
++        fun(retry_state)
++
++        fn_name = (
++            "<unknown>"
++            if retry_state.fn is None
++            else _utils.get_callback_name(retry_state.fn)
++        )
++        log.assert_called_once_with(
++            logging.INFO,
++            f"Finished call to '{fn_name}' "
++            "after ?(s), "
++            f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
++        )

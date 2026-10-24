@@ -1,0 +1,83 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f3d4443..45de686 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -75,6 +75,21 @@
+       "wall_s": 54.1,
+       "always_on_tokens": 196,
+       "stability_after": 0.997
++    },
++    {
++      "task_id": "20261023-205142-bug-humanize-metric-can-output-a",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 11569,
++      "tokens_cached": 111232,
++      "tokens_out": 1335,
++      "cost_usd": 0.0,
++      "wall_s": 51.2,
++      "always_on_tokens": 196,
++      "stability_after": 0.9975
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 1cbfc2b..d050607 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -544,13 +544,18 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+         return scientific(value, precision - 1) + unit
+ 
+     value /= 10 ** (exponent // 3 * 3)
++    value_ = format(value, f".{int(max(0, precision - exponent % 3 - 1))}f")
++    if abs(float(value_)) >= 1000 and exponent < 30:
++        value /= 1000
++        exponent = (exponent // 3 + 1) * 3
++        value_ = format(value, f".{int(max(0, precision - 1))}f")
++
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+     elif exponent < 0:
+         ordinal_ = "mμnpfazyrq"[(-exponent - 1) // 3]
+     else:
+         ordinal_ = ""
+-    value_ = format(value, f".{int(max(0, precision - exponent % 3 - 1))}f")
+     if not (unit or ordinal_) or unit in ("°", "′", "″"):
+         space = ""
+     else:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index d8f9100..875d808 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -310,3 +310,28 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+ )
+ def test_metric(test_args: list[typing.Any], expected: str) -> None:
+     assert humanize.metric(*test_args) == expected
++
++
++@pytest.mark.parametrize(
++    "value, unit, precision, expected",
++    [
++        (999.9, "V", 3, "1.00 kV"),
++        (999999, "V", 3, "1.00 MV"),
++        (0.0009999, "V", 3, "1.00 mV"),
++        (-999.9, "V", 3, "-1.00 kV"),
++        (0.9999, "V", 3, "1.00 V"),
++        (999.4, "V", 3, "999 V"),
++        (999.9, "V", 4, "999.9 V"),
++        (999.99, "V", 4, "1.000 kV"),
++        (999.9, "", 0, "1 k"),
++        (999.9, "°", 3, "1.00k°"),
++        (9.999e-28, "V", 3, "1.00 rV"),
++        (9.999e29, "V", 3, "1.00 QV"),
++        (9.999e32, "V", 3, "1000 QV"),
++        (-9.999e32, "V", 3, "-1000 QV"),
++    ],
++)
++def test_metric_rounding_prefix(
++    value: float, unit: str, precision: int, expected: str
++) -> None:
++    assert humanize.metric(value, unit, precision) == expected

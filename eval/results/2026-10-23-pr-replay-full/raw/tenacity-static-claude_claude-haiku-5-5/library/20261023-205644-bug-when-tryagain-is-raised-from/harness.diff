@@ -1,0 +1,50 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -40,6 +40,39 @@
+   `RetryError`. So a test that lets retries exhaust must use
+   `contextlib.suppress(RetryError)` (or `assertRaises(RetryError)`), never
+   `suppress(Exception)`, which hides the very `KeyError`/`TypeError` under test.
++
++## 1a2. Give-up path: `TryAgain`, `reraise`, `RetryError` (`tenacity/__init__.py`)
++Use this when a task is about which exception escapes once retries stop.
++- `TryAgain` is detected in `_begin_iter`. It sets `iter_state.is_explicit_retry`, which
++  skips the `retry` strategy, so it is retried even with `retry=retry_never`. The attempt's
++  `Future` holds the `TryAgain` instance itself. Any exception it was raised for is reachable
++  only through its `__context__`/`__cause__`.
++- Giving up happens once, in `_post_stop_check_actions`. If `retry_error_callback` is set,
++  its return value is the result. Otherwise `exc_check` builds `self.retry_error_cls(fut)`.
++  With `reraise=True` it calls `retry_exc.reraise()`; without it, it runs
++  `raise retry_exc from fut.exception()`. `AsyncRetrying` (`tenacity/asyncio/__init__.py`)
++  and `TornadoRetrying` don't override `_begin_iter`, `_post_retry_check_actions` or
++  `_post_stop_check_actions`. A fix in these methods or in `RetryError.reraise()` covers
++  every entry point: `__call__`, `for attempt in` / `with attempt:` (`AttemptManager.__exit__`
++  stores the exception on the outcome), `async for`, and tornado. Don't add an async copy.
++  State this in the final message.
++- `RetryError.reraise()` is public API. Users call it themselves on a caught `RetryError`
++  (`TestReraiseExceptions::test_reraise_from_retry_error`), and `retry_error_cls` lets them
++  subclass `RetryError`. A change there therefore also changes the non-`reraise=True` path
++  for callers of `.reraise()`. Name that in the final message and the reno note.
++- Behaviour that stays guarded: a bare `TryAgain` (no underlying error) with `reraise=True`
++  still raises `TryAgain` (`TestRetryConditions::test_retry_try_again_forever_reraise`). A
++  last attempt that did NOT fail makes `reraise()` raise the `RetryError` itself
++  (`TestReraiseExceptions::test_reraise_timeout_from_retry_error`,
++  `test_reraise_no_exception`).
++- Exception chains: `raise X` inside an `except` sets `X.__context__`. `raise X from e` sets
++  `__cause__` (and also `__context__` when inside an `except`). `raise X from None` sets
++  `__suppress_context__ = True` but keeps `__context__`. The repo's existing chain walk
++  (`retry_if_exception_cause_type`, `tenacity/retry.py`) follows `__cause__`. A fix that reads
++  the chain must say in the final message which of these forms it handles.
++- Tests: the `TryAgain` tests are in `tests/test_tenacity.py::TestRetryConditions`
++  (`test_retry_try_again*`), and the `reraise` tests in `TestReraiseExceptions`. Async
++  `reraise` is in `tests/test_asyncio.py::TestContextManager::test_reraise`.
+ 
+ ## 1b. Strategy composition (`|`, `&`) and sync/async mixing
+ - Sync combinators (`tenacity/retry.py` `retry_any`/`retry_all`) call members directly. Async

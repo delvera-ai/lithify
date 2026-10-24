@@ -1,0 +1,1 @@
+Bug: `humanize.intcomma(10**400 + 123)` raises `OverflowError` with the default `ndigits=None`. Python can format such integers with thousands separators directly, so very large integers (positive and negative) should be grouped correctly with every digit preserved. Behaviour for numeric strings and for explicit `ndigits` is unchanged.

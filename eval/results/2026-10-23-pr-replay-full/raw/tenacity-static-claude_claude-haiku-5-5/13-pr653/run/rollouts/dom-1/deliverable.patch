@@ -1,0 +1,169 @@
+diff --git a/releasenotes/notes/fix-statistics-functools-wraps-5c2e9a1d7b3f4e80.yaml b/releasenotes/notes/fix-statistics-functools-wraps-5c2e9a1d7b3f4e80.yaml
+new file mode 100644
+index 0000000..90d6922
+--- /dev/null
++++ b/releasenotes/notes/fix-statistics-functools-wraps-5c2e9a1d7b3f4e80.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    ``func.statistics`` is now visible through another decorator that uses
++    ``functools.wraps`` on a function decorated with ``@retry``, for both sync and
++    async functions. Previously the outer wrapper's ``statistics`` stayed ``{}``.
++    The outer wrapper's ``statistics`` is now the same object as the inner one's.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e9532fc..4c35f96 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -234,6 +234,27 @@ class AttemptManager:
+         return self.__exit__(exc_type, exc_value, traceback)
+ 
+ 
++class _SharedStatistics(dict[str, t.Any]):
++    """Statistics of one call, mirrored into the decorated function's shared dict.
++
++    ``functools.wraps`` copies the function's ``statistics`` object onto outer wrappers
++    once, at decoration time, so that object must never be rebound. Each call keeps its
++    own dict (per-call isolation) and mirrors every change into the shared one.
++    """
++
++    def __init__(self, shared: dict[str, t.Any]) -> None:
++        super().__init__()
++        self._shared = shared
++
++    def __setitem__(self, key: str, value: t.Any) -> None:
++        super().__setitem__(key, value)
++        self._shared[key] = value
++
++    def clear(self) -> None:
++        super().clear()
++        self._shared.clear()
++
++
+ class BaseRetrying(ABC):
+     def __init__(
+         self,
+@@ -369,8 +390,9 @@ class BaseRetrying(ABC):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            wrapped_f.statistics = copy.statistics  # type: ignore[attr-defined]
+-            self._local.statistics = copy.statistics
++            shared = wrapped_f.statistics  # type: ignore[attr-defined]
++            copy._local.statistics = _SharedStatistics(shared)
++            self._local.statistics = shared
+             return copy(f, *args, **kw)
+ 
+         def retry_with(*args: t.Any, **kwargs: t.Any) -> "_RetryDecorated[P, R]":
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 6459894..6139119 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -28,6 +28,7 @@ from tenacity import (
+     RetryCallState,
+     RetryError,
+     _RetryDecorated,
++    _SharedStatistics,
+     _utils,
+     after_nothing,
+     before_nothing,
+@@ -210,8 +211,9 @@ class AsyncRetrying(BaseRetrying):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            async_wrapped.statistics = copy.statistics  # type: ignore[attr-defined]
+-            self._local.statistics = copy.statistics
++            shared = async_wrapped.statistics  # type: ignore[attr-defined]
++            copy._local.statistics = _SharedStatistics(shared)
++            self._local.statistics = shared
+             return await copy(fn, *args, **kwargs)  # type: ignore[type-var]
+ 
+         # Preserve attributes
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 20b320e..13d1471 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -17,7 +17,7 @@ import inspect
+ import unittest
+ from collections.abc import Callable, Coroutine
+ from functools import wraps
+-from typing import Any, TypeVar
++from typing import Any, List, Optional, TypeVar
+ from unittest import mock
+ 
+ try:
+@@ -494,6 +494,31 @@ class TestContextManager(unittest.TestCase):
+ 
+ 
+ class TestDecoratorWrapper(unittest.TestCase):
++    @asynctest
++    async def test_statistics_visible_through_functools_wraps(self) -> None:
++        def timed(f: Any) -> Any:
++            @wraps(f)
++            async def wrapper(*args: Any, **kwargs: Any) -> Any:
++                return await f(*args, **kwargs)
++
++            return wrapper
++
++        @tenacity.retry(
++            retry=tenacity.retry_if_result(lambda r: r is None),
++            stop=tenacity.stop_after_attempt(3),
++        )
++
++        async def inner() -> Optional[int]:
++            calls.append(1)
++            return None if len(calls) < 3 else 3
++
++        calls: List[int] = []
++        outer = timed(inner)
++
++        self.assertEqual(await outer(), 3)
++        self.assertIs(outer.statistics, inner.statistics)
++        self.assertEqual(outer.statistics["attempt_number"], 3)
++
+     @asynctest
+     async def test_retry_function_attributes(self) -> None:
+         """Test that the wrapped function attributes are exposed as intended.
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b2c0289..23d6eea 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ import contextlib
+ import datetime
++import functools
+ import logging
+ import pickle
+ import re
+@@ -1247,6 +1248,30 @@ def _retryable_test_with_exception_type_custom_attempt_limit(
+ 
+ 
+ class TestDecoratorWrapper(unittest.TestCase):
++    def test_statistics_visible_through_functools_wraps(self) -> None:
++        def timed(f: typing.Any) -> typing.Any:
++            @functools.wraps(f)
++            def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
++                return f(*args, **kwargs)
++
++            return wrapper
++
++        @retry(
++            retry=tenacity.retry_if_result(lambda r: r is None),
++            stop=tenacity.stop_after_attempt(3),
++        )
++
++        def inner() -> typing.Optional[int]:
++            calls.append(1)
++            return None if len(calls) < 3 else 3
++
++        calls: typing.List[int] = []
++        outer = timed(inner)
++
++        self.assertEqual(outer(), 3)
++        self.assertIs(outer.statistics, inner.statistics)
++        self.assertEqual(outer.statistics["attempt_number"], 3)
++
+     def test_with_wait(self) -> None:
+         start = current_time_ms()
+         result = _retryable_test_with_wait(NoneReturnUntilAfterCount(5))

@@ -1,0 +1,119 @@
+diff --git a/releasenotes/notes/fix-retry-if-exception-cause-type-cycle-2c9d4e1a7b6f3085.yaml b/releasenotes/notes/fix-retry-if-exception-cause-type-cycle-2c9d4e1a7b6f3085.yaml
+new file mode 100644
+index 0000000..c3a1e98
+--- /dev/null
++++ b/releasenotes/notes/fix-retry-if-exception-cause-type-cycle-2c9d4e1a7b6f3085.yaml
+@@ -0,0 +1,8 @@
++---
++fixes:
++  - |
++    Fix ``retry_if_exception_cause_type`` hanging forever (100% CPU) when the
++    exception's ``__cause__`` chain is cyclic, for example ``raise e from e`` or
++    two exceptions whose causes point at each other. The cause walk now stops
++    when it revisits an exception, and still matches a cause of the wanted type
++    anywhere in a non-cyclic chain.
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..23feaf4 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -177,7 +177,10 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            # Track visited exceptions so a cyclic __cause__ chain terminates.
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..8defb8e 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -18,6 +18,7 @@ import datetime
+ import logging
+ import pickle
+ import re
++import threading
+ import time
+ import typing
+ import unittest
+@@ -1441,6 +1442,76 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_cycle_returns_direct(self) -> None:
++        # Call the strategy directly in a thread so a hang fails the test
++        # instead of stalling the whole run.
++        exc = ValueError("self cause")
++        exc.__cause__ = exc
++        rs = make_retry_state(1, 0)
++        rs.set_exception((type(exc), exc, None))
++        strategy = tenacity.retry_if_exception_cause_type(IOError)
++        result: list[bool] = []
++        thread = threading.Thread(
++            target=lambda: result.append(strategy(rs)), daemon=True
++        )
++        thread.start()
++        thread.join(timeout=5)
++        self.assertFalse(thread.is_alive())
++        self.assertEqual(result, [False])
++
++    def test_retry_if_exception_cause_type_self_cause_terminates(self) -> None:
++        # `raise e from e` leaves e.__cause__ pointing at e itself.
++        def raise_self_cause() -> typing.Any:
++            e = ValueError("self cause")
++            e.__cause__ = e
++            raise e
++
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(3),
++            retry=tenacity.retry_if_exception_cause_type(IOError),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_self_cause)
++
++    def test_retry_if_exception_cause_type_mutual_cause_terminates(self) -> None:
++        # Two exceptions whose causes point at each other, no matching type.
++        def raise_mutual_cause() -> typing.Any:
++            a = ValueError("a")
++            b = KeyError("b")
++            a.__cause__ = b
++            b.__cause__ = a
++            raise a
++
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(3),
++            retry=tenacity.retry_if_exception_cause_type(IOError),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_mutual_cause)
++
++    def test_retry_if_exception_cause_type_match_inside_cycle(self) -> None:
++        # A matching cause is still found when the chain also contains a cycle.
++        attempts = []
++
++        def raise_cycle_with_match() -> typing.Any:
++            attempts.append(1)
++            a = ValueError("a")
++            b = IOError("b")
++            a.__cause__ = b
++            b.__cause__ = a
++            raise a
++
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(3),
++            retry=tenacity.retry_if_exception_cause_type(IOError),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_cycle_with_match)
++        self.assertEqual(len(attempts), 3)
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

@@ -1,0 +1,156 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c011690..ae1741d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -165,6 +165,21 @@
+       "wall_s": 57.7,
+       "always_on_tokens": 196,
+       "stability_after": 0.9985
++    },
++    {
++      "task_id": "20261023-205730-bug-running-the-translation-upda",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 44196,
++      "tokens_cached": 227328,
++      "tokens_out": 2757,
++      "cost_usd": 0.0,
++      "wall_s": 95.8,
++      "always_on_tokens": 196,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/README.md b/README.md
+index efa939e..f759780 100644
+--- a/README.md
++++ b/README.md
+@@ -233,7 +233,7 @@ FileNotFoundError: [Errno 2] No translation file found for domain: 'humanize'
+ How to add new phrases to existing locale files:
+ 
+ ```sh
+-xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py  # extract new phrases
++xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NP_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py  # extract new phrases
+ msgmerge -U src/humanize/locale/ru_RU/LC_MESSAGES/humanize.po humanize.pot # add them to locale files
+ ```
+ 
+diff --git a/scripts/update-translations.sh b/scripts/update-translations.sh
+index bb4ec80..d3ed51e 100755
+--- a/scripts/update-translations.sh
++++ b/scripts/update-translations.sh
+@@ -1,7 +1,7 @@
+ set -e
+ 
+ # extract new phrases
+-xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py
++xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NP_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py
+ 
+ for d in src/humanize/locale/*/; do
+     locale="$(basename $d)"
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index f9b1c42..ea4c9cd 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -159,6 +159,19 @@ def _gettext_noop(message: str) -> str:
+     return message
+ 
+ 
++def _pgettext_noop(msgctxt: str, message: str) -> tuple[str, str]:
++    """Mark a contextual translation without translating it.
++
++    Args:
++        msgctxt (str): Context of the translation.
++        message (str): Text to translate in the future.
++
++    Returns:
++        tuple: Original context and text, unchanged.
++    """
++    return msgctxt, message
++
++
+ def _ngettext_noop(singular: str, plural: str) -> tuple[str, str]:
+     """Mark two strings as pluralized translations without translating them.
+ 
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index b169fc2..b31dfdb 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -7,9 +7,11 @@ __lazy_modules__ = {"bisect"}
+ import bisect
+ 
+ from .i18n import _gettext as _
++from .i18n import _gettext_noop as N_
+ from .i18n import _ngettext, decimal_separator, thousands_separator
+ from .i18n import _ngettext_noop as NS_
+ from .i18n import _pgettext as P_
++from .i18n import _pgettext_noop as NP_
+ 
+ TYPE_CHECKING = False
+ if TYPE_CHECKING:
+@@ -35,18 +37,43 @@ _SUPERSCRIPT_MAP = {
+ }
+ _SUPERSCRIPT_TRANS = str.maketrans(_SUPERSCRIPT_MAP)
+ 
+-_ORDINAL_SUFFIXES = ("th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th")
++_ORDINAL_SUFFIXES = {
++    "male": (
++        NP_("0 (male)", "th"),
++        NP_("1 (male)", "st"),
++        NP_("2 (male)", "nd"),
++        NP_("3 (male)", "rd"),
++        NP_("4 (male)", "th"),
++        NP_("5 (male)", "th"),
++        NP_("6 (male)", "th"),
++        NP_("7 (male)", "th"),
++        NP_("8 (male)", "th"),
++        NP_("9 (male)", "th"),
++    ),
++    "female": (
++        NP_("0 (female)", "th"),
++        NP_("1 (female)", "st"),
++        NP_("2 (female)", "nd"),
++        NP_("3 (female)", "rd"),
++        NP_("4 (female)", "th"),
++        NP_("5 (female)", "th"),
++        NP_("6 (female)", "th"),
++        NP_("7 (female)", "th"),
++        NP_("8 (female)", "th"),
++        NP_("9 (female)", "th"),
++    ),
++}
+ _APNUMBER_WORDS = (
+-    "zero",
+-    "one",
+-    "two",
+-    "three",
+-    "four",
+-    "five",
+-    "six",
+-    "seven",
+-    "eight",
+-    "nine",
++    N_("zero"),
++    N_("one"),
++    N_("two"),
++    N_("three"),
++    N_("four"),
++    N_("five"),
++    N_("six"),
++    N_("seven"),
++    N_("eight"),
++    N_("nine"),
+ )
+ 
+ 
+@@ -110,7 +137,7 @@ def ordinal(value: NumberOrString, gender: str = "male") -> str:
+         return str(value)
+     gender = "male" if gender == "male" else "female"
+     digit = 0 if value % 100 in (11, 12, 13) else value % 10
+-    return f"{value}{P_(f'{digit} ({gender})', _ORDINAL_SUFFIXES[digit])}"
++    return f"{value}{P_(*_ORDINAL_SUFFIXES[gender][digit])}"
+ 
+ 
+ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:

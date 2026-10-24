@@ -1,0 +1,20 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-154911-bug-wait-random-exponential-min",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 24303,
+      "tokens_cached": 160908,
+      "tokens_out": 2953,
+      "cost_usd": 0.0079,
+      "wall_s": 30.6,
+      "always_on_tokens": 186,
+      "stability_after": 0.2
+    }
+  ]
+}

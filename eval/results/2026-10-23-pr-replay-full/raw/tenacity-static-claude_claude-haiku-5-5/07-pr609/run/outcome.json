@@ -1,0 +1,52 @@
+{
+  "task": "Improvement: composing several retry conditions with `|` or `&` currently nests containers, e.g. `a | b | c` becomes `retry_any(retry_any(a, b), c)`. Chained operators should flatten into a single container instead: `a | b | c` must produce one `retry_any` whose `retries` holds `a`, `b` and `c`, and likewise `&` must produce one `retry_all`; the same for the async retry strategies. Behaviour of the combined condition must not change. (Stated requirement: the flattened object exposes its members as `.retries`.)",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Decided on scope: c4 only splices containers of exactly the async type, so a mixed chain such as `sync_a | sync_b | async_c` still nests a sync `retry_any` inside the async one, which breaks the async flattening requirement. c1, c2 and c3 make essentially the same correct source change. c3 is the most compact of the three and imports with `from tenacity import ...` like the existing code. Its tests cover associativity, operands staying unchanged, mixed operators, and sync/async mixes.\nRunner-up c1: same correct logic, but its tests run to about 130 lines for one structural property, which makes it the heavier change with no extra correctness.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-201420-improvement-composing-several-re",
+  "usage": {
+    "in": 486286,
+    "cached": 6497568,
+    "out": 134164,
+    "cost": 3.01802073,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.6,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

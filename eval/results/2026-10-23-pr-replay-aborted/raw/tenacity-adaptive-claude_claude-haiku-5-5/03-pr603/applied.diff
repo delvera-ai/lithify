@@ -1,0 +1,38 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index e3d2529..afb49db 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -30,6 +30,21 @@
+       "wall_s": 41.7,
+       "always_on_tokens": 186,
+       "stability_after": 0.4
++    },
++    {
++      "task_id": "20261023-155121-bug-the-delay-since-first-attemp",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 21803,
++      "tokens_cached": 265464,
++      "tokens_out": 3407,
++      "cost_usd": 0.0087,
++      "wall_s": 34.3,
++      "always_on_tokens": 186,
++      "stability_after": 0.6
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)

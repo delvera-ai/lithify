@@ -1,0 +1,36 @@
+{
+  "task": "Bug: when `TryAgain` is raised from inside an `except` block to drive a manual retry (e.g. with `retry=retry_never`) and `reraise=True`, the error raised after the attempts are exhausted is the opaque `TryAgain` sentinel instead of the underlying exception that caused the retry:\n\n```python\ndef call():\n    try:\n        raise ValueError(\"the real error\")\n    except ValueError:\n        raise tenacity.TryAgain\n\nRetrying(stop=stop_after_attempt(2), retry=retry_never, reraise=True)(call)\n# raises tenacity.TryAgain; expected the ValueError\n```\n\nWith `reraise=True`, the underlying exception should be re-raised; this must work for sync and async retrying.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 0,
+    "cached": 0,
+    "out": 0,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 4
+  },
+  "stability_after": 0.501,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": false,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": false,
+      "issues": []
+    }
+  }
+}

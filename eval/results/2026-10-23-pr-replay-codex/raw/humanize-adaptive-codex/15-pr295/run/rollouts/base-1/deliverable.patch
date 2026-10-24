@@ -1,0 +1,41 @@
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 303bed2..e7435e8 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -256,6 +256,7 @@ def naturaldelta(
+ 
+         return _ngettext("1 year, %d day", "1 year, %d days", days) % days
+ 
++    years = round(delta.total_seconds() / (365 * 24 * 60 * 60))
+     return _ngettext("%d year", "%d years", years).replace("%d", "%s") % intcomma(years)
+ 
+ 
+diff --git a/tests/test_time.py b/tests/test_time.py
+index c3743bb..3f848c7 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -151,6 +151,24 @@ def test_naturaldelta_non_finite(value: float, expected: str) -> None:
+     assert humanize.naturaldelta(value) == expected
+ 
+ 
++@pytest.mark.parametrize("months", [True, False])
++@pytest.mark.parametrize(
++    "days, expected",
++    [
++        (1058, "3 years"),
++        (365 * 2 + 182, "2 years"),
++        (365 * 2.5, "2 years"),
++        (365 * 2 + 183, "3 years"),
++        (365 * 3.5, "4 years"),
++        (365 * 1_141 + 300, "1,142 years"),
++    ],
++)
++def test_naturaldelta_round_years(days: float, expected: str, months: bool) -> None:
++    delta = dt.timedelta(days=days)
++    for value in (delta, -delta, delta.total_seconds(), -delta.total_seconds()):
++        assert humanize.naturaldelta(value, months=months) == expected
++
++
+ def test_naturaldelta_too_large_value_raises() -> None:
+     """A too-large *finite* value still raises OverflowError (unlike inf)."""
+     with pytest.raises(OverflowError):

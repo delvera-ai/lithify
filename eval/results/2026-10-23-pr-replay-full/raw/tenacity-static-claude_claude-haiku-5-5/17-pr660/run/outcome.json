@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `retry_if_exception_cause_type` hangs forever (100% CPU, stop conditions never run) when an exception's `__cause__` chain is cyclic, e.g. `raise e from e`, or two exceptions whose causes point at each other. Walking the cause chain must terminate on cycles while still finding a matching cause type anywhere in a non-cyclic chain.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "base-1",
+  "why": "The fix is the same in all four, so fidelity and maintainability decided it. c4 is the only one that also updates the class docstring, which otherwise says the walk runs \"until finding an exception in the chain that has no `__cause__`\" and is no longer true. Its tests are small and cover a real `raise e from e`, a two-exception cycle, and a cycle that contains a matching type. The runner-up, c3, also adds a useful deep non-cyclic chain test, but it leaves the docstring out of date and uses single backticks in its RST release note. c1 adds a `threading` import and a thread-based test, which is more machinery than the fix needs. c2 never tests that a matching cause is still found, so half the request is unchecked.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 388075,
+    "cached": 5851723,
+    "out": 65460,
+    "cost": 3.99053574,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7375,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

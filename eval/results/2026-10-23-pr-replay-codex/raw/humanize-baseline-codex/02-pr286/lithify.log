@@ -1,0 +1,18 @@
+lithify ▸ 20261023-204334-humanize-i18n-raises-a-bare-exce  k=0 (override k=0) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✗ probe base-1: test=pass, edited-existing-tests=1
+lithify ◂ delivered=False first_pass=False S=0.20 executions=1 role_sessions=0 tokens(in/cached/out)=13016/79360/552
+{
+  "task_id": "20261023-204334-humanize-i18n-raises-a-bare-exce",
+  "k": 0,
+  "delivered": false,
+  "applied": false,
+  "first_pass": false,
+  "selected": "",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.2,
+  "executions": 1,
+  "role_sessions": 0
+}
+

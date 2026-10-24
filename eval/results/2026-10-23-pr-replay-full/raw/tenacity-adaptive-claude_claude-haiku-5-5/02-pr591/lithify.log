@@ -1,0 +1,24 @@
+lithify ▸ 20261023-160033-bug-tenacity-after-log-crashes-w  k=2 (genesis (S=0.20)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ▸ probe base-2: executing with claude@claude-haiku-5-5
+  ✓ probe base-2: test=pass
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (claude)
+  ✓ applied deliverable from base-1: The source changes are byte-identical (same blob hash `7732146`). Both print "?" when `seconds_since_start` is `None`, both still emit the log message, and both pass the gates. The two tests are also 
+lithify ◂ delivered=True first_pass=True S=0.40 executions=2 role_sessions=1 tokens(in/cached/out)=57551/514539/7211 cost=$0.18
+{
+  "task_id": "20261023-160033-bug-tenacity-after-log-crashes-w",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.4,
+  "executions": 2,
+  "role_sessions": 1
+}
+

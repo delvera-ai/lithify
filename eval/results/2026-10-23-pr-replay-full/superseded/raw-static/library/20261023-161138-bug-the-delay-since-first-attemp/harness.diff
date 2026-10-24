@@ -1,0 +1,164 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text) — lists the files such a change must touch in this repo (release note, regression test) and the conventions they follow.
++description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text, retry-loop or `statistics` behaviour) — lists the files such a change must touch in this repo (release note, regression test), the conventions they follow, how to prove the test fails on the old code, and the sync/async invariants of the retry loop.
+ ---
+ 
+ # What a maintainer-complete tenacity change contains
+@@ -26,7 +26,8 @@
+    `tests/test_utils.py` for `tenacity/_utils.py`, `tests/test_after.py` for `after_log`,
+    core `Retrying`/`retry` behaviour in `tests/test_tenacity.py`, asyncio in
+    `tests/test_asyncio.py`, issue-specific
+-   repros as `tests/test_issue_<N>.py`. Add a test that fails on the old code. Follow the
++   repros as `tests/test_issue_<N>.py`. Add a test that fails on the old code — prove it with
++   `fails_on_base.py` (DONE step 1), not by stashing or hand-reverting the fix. Follow the
+    existing style in that file (plain `def test_...() -> None:` functions with bare `assert` in
+    `test_utils.py`).
+ 3. **Confirm they agree:** the note describes the same behaviour the test pins down; the diff
+@@ -56,3 +57,37 @@
+   `_utils.to_ordinal`. Fix such helpers in `_utils.py` itself (not at call sites), and test the
+   helper directly in `tests/test_utils.py` — the logging tests will not catch a wrong helper
+   because they call the same helper.
++- **Per-run `statistics` are owned by `BaseRetrying.begin()`** (`tenacity/__init__.py`): it
++  clears the dict and initialises the keys every run starts with. `Retrying` and
++  `AsyncRetrying` (`tenacity/asyncio/__init__.py`, incl. `__aiter__`) call it and do not
++  override it, so a key that must exist from the start of a run is initialised there once.
++  Later updates happen in `_run_stop` (`delay_since_first_attempt`) and the `next_action`
++  closure (`idle_for`, `attempt_number`).
++- **Sync and async retry loops are parallel implementations.** `AsyncRetrying` re-implements
++  `_run_stop` / `iter` and the other action runners as async versions (e.g.
++  `delay_since_first_attempt` is written in both `tenacity/__init__.py` and
++  `tenacity/asyncio/__init__.py`). A change inside one of those methods must be mirrored in
++  the other file; a change in `begin()` reaches both. Cover a loop/statistics fix with a sync
++  test (`tests/test_tenacity.py`, e.g. `TestStatistics`) and an async one
++  (`tests/test_asyncio.py`, e.g. `TestContextManager`).
++- **`statistics` is thread-local** (`self._local`); the decorator exposes a per-call copy's
++  dict as `wrapped_f.statistics` while `wrapped_f.retry.statistics` stays `{}`. The
++  `test_retry_function_attributes` tests compare the whole `statistics` dict, so adding or
++  removing a key is a change those tests pin down.
++- **`with attempt:` swallows exceptions** (`AttemptManager.__exit__` records the exception as
++  the attempt's outcome). A `KeyError` raised inside the block becomes a failed, retried
++  attempt, not an error reaching the test: record values inside the block and assert after
++  the loop, or read them from a `before=` hook to see the raw error.
++
++## DONE means (run in this order, read each result)
++
++1. **New tests fail on the old code** — one read-only call, from the repo root, with the
++   project interpreter from `memory.md`:
++   `<project-python> .lithify/harness/skills/tenacity-change-contract/scripts/fails_on_base.py <new test node ids>`
++   Exit 0 = fails on HEAD (read the printed failure and check it is the bug; quote it in the
++   final message). Exit 1 = test passes on HEAD: rework the test, rerun once. Exit 2 = the
++   check could not run: do not improvise a stash/revert round-trip; say in the final message
++   that fail-on-base was not verified.
++2. **Full suite last**, once, after the final edit (command in `memory.md`).
++3. **`git status --short`** — confirms the untracked reno note is present and nothing else
++   stray is left.
+
+--- a/skills/tenacity-change-contract/scripts/fails_on_base.py
++++ b/skills/tenacity-change-contract/scripts/fails_on_base.py
+@@ -0,0 +1,102 @@
++#!/usr/bin/env python3
++"""Check that new/changed tests FAIL on the unmodified code (HEAD), read-only.
++
++Usage (from the repo root, with the project interpreter so pytest is importable):
++    <project-python> .lithify/harness/skills/tenacity-change-contract/scripts/fails_on_base.py \
++        tests/test_x.py::TestY::test_z [more pytest node ids or args ...]
++
++What it does: exports HEAD with `git archive` into a temp dir, copies the
++working-tree `tests/` directory over it (so your new tests run against the OLD
++package code), confirms `import tenacity` resolves inside the temp dir, and runs
++pytest there with the arguments you gave. The working tree, index and stash are
++never touched.
++
++Exit codes:
++    0  GOOD  - the tests fail (or fail to import) on HEAD: they catch the bug.
++    1  BAD   - the tests pass on HEAD: they do not reproduce the bug.
++    2  ERROR - the check could not run; report the fail-on-base check as NOT verified.
++"""
++
++import os
++import shutil
++import subprocess
++import sys
++import tempfile
++
++
++def main(argv: list[str]) -> int:
++    if not argv:
++        print("ERROR: pass the pytest node ids of the new tests", file=sys.stderr)
++        return 2
++    try:
++        root = subprocess.run(
++            ["git", "rev-parse", "--show-toplevel"],
++            capture_output=True, text=True, check=True,
++        ).stdout.strip()
++    except (OSError, subprocess.CalledProcessError) as exc:
++        print(f"ERROR: not inside a git repository: {exc}", file=sys.stderr)
++        return 2
++    tests_dir = os.path.join(root, "tests")
++    if not os.path.isdir(tests_dir):
++        print(f"ERROR: no tests/ directory under {root}", file=sys.stderr)
++        return 2
++
++    tmp = tempfile.mkdtemp(prefix="fails_on_base_")
++    try:
++        archive = subprocess.run(
++            ["git", "-C", root, "archive", "--format=tar", "HEAD"],
++            capture_output=True, check=False,
++        )
++        if archive.returncode != 0:
++            print("ERROR: git archive HEAD failed:", archive.stderr.decode(), file=sys.stderr)
++            return 2
++        untar = subprocess.run(
++            ["tar", "-x", "-C", tmp], input=archive.stdout, capture_output=True, check=False
++        )
++        if untar.returncode != 0:
++            print("ERROR: extracting HEAD failed:", untar.stderr.decode(), file=sys.stderr)
++            return 2
++        shutil.rmtree(os.path.join(tmp, "tests"), ignore_errors=True)
++        shutil.copytree(
++            tests_dir, os.path.join(tmp, "tests"),
++            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
++        )
++
++        probe = subprocess.run(
++            [sys.executable, "-c", "import tenacity, os; print(os.path.realpath(tenacity.__file__))"],
++            cwd=tmp, capture_output=True, text=True, check=False,
++        )
++        resolved = probe.stdout.strip()
++        if probe.returncode != 0 or not resolved.startswith(os.path.realpath(tmp)):
++            print(
++                "ERROR: `import tenacity` does not resolve to the HEAD copy "
++                f"(got {resolved or probe.stderr.strip()!r}); check not valid.",
++                file=sys.stderr,
++            )
++            return 2
++
++        run = subprocess.run(
++            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--color=no", *argv],
++            cwd=tmp, capture_output=True, text=True, check=False,
++        )
++        out = (run.stdout + run.stderr).splitlines()
++        print("\n".join(out[-40:]))
++        print("-" * 60)
++        if run.returncode == 1:
++            print("GOOD: tests FAIL on HEAD. Check the failure above is the bug, not an unrelated error.")
++            return 0
++        if run.returncode == 2:
++            print("GOOD (collection error): tests cannot even import on HEAD. "
++                  "Confirm above that the error is the missing/changed name your fix adds.")
++            return 0
++        if run.returncode == 0:
++            print("BAD: tests PASS on HEAD - they do not reproduce the bug. Rework the test.")
++            return 1
++        print(f"ERROR: pytest exit {run.returncode} (5 = no tests matched the ids). Not verified.")
++        return 2
++    finally:
++        shutil.rmtree(tmp, ignore_errors=True)
++
++
++if __name__ == "__main__":
++    sys.exit(main(sys.argv[1:]))

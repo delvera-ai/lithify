@@ -1,0 +1,87 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index f1405db..8de2560 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,4 +3,5 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-160401-bug-tenacity-after-log-crashes-w](20261023-160401-bug-tenacity-after-log-crashes-w/EXPERIENCE.md) — **when** The tenacity-change-contract skill asks the agent to verify something, such as "test fails on the old code", but gives no command for it. The only obvious way to do it is a state-changing git round-trip (stash/apply/drop, or hand-reverting the fix) on the working tree that holds the deliverable. **then** Ship the check as a deterministic, read-only script under `skills/tenacity-change-contract/scripts/` (temp copy of HEAD plus the working-tree tests, with clear exit codes and a "report not verified on exit 2" rule). Add an explicit invocation line in `skills/tenacity-change-contract/SKILL.md`'s DONE checklist, where the requirement is stated. Don't leave the agent with prose that just says "verify it".
+ - [20261023-155945-bug-tenacity-utils-find-ordinal](20261023-155945-bug-tenacity-utils-find-ordinal/EXPERIENCE.md) — **when** The task fixes or changes user-visible behaviour in tenacity (log or error text, defaults, API), and the task text only asks for the code fix. The harness has nothing that tells the agent about the repo's ship-with-fix artifacts (reno notes in `releasenotes/notes/`). **then** Keep the on-demand skill `skills/tenacity-change-contract` and its one-line pointer in `memory.md`. The skill spells out the reno note (file name pattern, `fixes:`/`features:` YAML, no edits to `changelog.rst`) and the test-module map. Without it, rollouts deliver a correct code-only fix and leave out the release note. Add new repo-convention facts to this skill rather than to always-on `system.md`.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f3f58e9..189a008 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -15,6 +15,21 @@
+       "wall_s": 255.0,
+       "always_on_tokens": 186,
+       "stability_after": 0.14
++    },
++    {
++      "task_id": "20261023-160401-bug-tenacity-after-log-crashes-w",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 8,
++      "executions": 4,
++      "tokens_in": 297723,
++      "tokens_cached": 2564991,
++      "tokens_out": 42469,
++      "cost_usd": 2.4268,
++      "wall_s": 456.1,
++      "always_on_tokens": 439,
++      "stability_after": 0.298
+     }
+   ]
+ }
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..a12c8eb 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,15 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        seconds_since_start = retry_state.seconds_since_start
++        if seconds_since_start is None:
++            elapsed = "?"
++        else:
++            elapsed = sec_format % seconds_since_start
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {elapsed}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..3c3cc7f 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -74,3 +74,25 @@ class TestAfterLogFormat(unittest.TestCase):
+             f"after {sec_format % retry_state.seconds_since_start}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
++
++    def test_03_unset_seconds_since_start(self) -> None:
++        """Test log formatting when the outcome timestamp is not set."""
++        log = unittest.mock.MagicMock(spec="logging.Logger.log")
++        logger = unittest.mock.MagicMock(spec="logging.Logger", log=log)
++
++        retry_state = test_tenacity.make_retry_state(self.previous_attempt_number, 0.1)
++        retry_state.outcome_timestamp = None
++        assert retry_state.seconds_since_start is None
++        fun = after_log(logger=logger, log_level=self.log_level)
++        fun(retry_state)
++        fn_name = (
++            "<unknown>"
++            if retry_state.fn is None
++            else _utils.get_callback_name(retry_state.fn)
++        )
++        log.assert_called_once_with(
++            self.log_level,
++            f"Finished call to '{fn_name}' "
++            "after ?(s), "
++            f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
++        )

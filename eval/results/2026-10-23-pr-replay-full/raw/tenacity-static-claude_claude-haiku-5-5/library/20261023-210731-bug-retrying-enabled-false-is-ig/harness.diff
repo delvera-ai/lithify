@@ -1,0 +1,66 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -211,7 +211,18 @@
+   calls `self.begin()` itself: `Retrying.__call__`, `BaseRetrying.__iter__`
+   (`for attempt in Retrying(...)`), `AsyncRetrying.__call__`, `AsyncRetrying.__aiter__`
+   (`async for`), `TornadoRetrying.__call__` (`tenacity/tornadoweb.py`). Handle each one, or
+-  name the ones left out in the final message and the docs.
++  name the ones left out in the final message and the docs. `wraps` is not a run entry
++  point; it calls `copy()` then `copy(f, ...)` (`__call__`).
++- `enabled` (base commit): checked only in `wraps` — sync `wrapped_f` and async
++  `async_wrapped` (`tenacity/asyncio/__init__.py`) — as `if not self.enabled: return f(...)`
++  BEFORE `self.copy()`. So the decorator's disabled path is a raw call: no `begin()`, no
++  `before`/`after`/`before_sleep`/`retry_error_callback`, and `fn.statistics` stays the `{}`
++  set at decoration. The five run entry points above do not check it. List which ones honour
++  it with `grep -n "self.enabled" tenacity/*.py tenacity/asyncio/__init__.py`. Tests:
++  `tests/test_tenacity.py::TestEnabled`, `tests/test_asyncio.py::TestAsyncEnabled`. A fix
++  that claims to "match the decorator path" for another entry point must say in the final
++  message whether that path still runs `begin()`/`before` (iterating starts with `iter()`,
++  which runs `before`), since the decorator path runs neither.
+ - `AsyncRetrying.__call__` can be handed a SYNC `fn`: `@retry(sleep=<async fn>)` picks
+   `AsyncRetrying` for a plain function (see `TestSyncFunctionWithAsyncSleep`). A direct-call
+   path must branch on `_utils.is_coroutine_callable(fn)` (as the loop does) or go through
+@@ -221,6 +232,35 @@
+   tornado → `tests/test_tornado.py` (`testing.AsyncTestCase` + `@testing.gen_test`, functions
+   decorated `@retry` over `@gen.coroutine`). Editing `tornadoweb.py` without a
+   `test_tornado.py` test leaves that path unexecuted.
++
++## 1d. The iterator pattern: `for attempt in` / `async for` + `with attempt:`
++Verified in `tenacity/__init__.py` and `tenacity/asyncio/__init__.py`.
++- One `AttemptManager` (`tenacity/__init__.py`) serves both forms: `__aexit__` just returns
++  `self.__exit__(...)`, so a change in `__exit__` covers `async with`/`with` inside
++  `async for` too. Don't add an async copy. `__exit__` stores the exception with
++  `retry_state.set_exception(...)` and returns `True`, which SWALLOWS it; on success it
++  stores `set_result(None)`. `self.retry_state.retry_object` is the running `BaseRetrying`.
++- The loop is driven from outside: sync `BaseRetrying.__iter__` is a generator (`begin()`,
++  one `RetryCallState(self, fn=None, ...)`, then `iter()` → yield `AttemptManager` on
++  `DoAttempt`, `self.sleep` on `DoSleep`, `break` otherwise). Async splits it:
++  `__aiter__` does `begin()` and stores `self._retry_state`; each `__anext__` calls
++  `await self.iter(...)` and raises `StopAsyncIteration` when `do` is `None` or not
++  `DoAttempt`/`DoSleep`. `AsyncRetrying.__iter__` raises `TypeError`. A change to when the
++  loop stops must be made in BOTH `__iter__` and `__anext__`; they share no code.
++- The outcome of attempt N is judged only when the loop asks for attempt N+1 (`iter()` →
++  `_begin_iter` → `_post_retry_check_actions`). A non-retried exception escapes because that
++  next `iter()` runs `rs.outcome.result()`, re-raising it from inside the iterator; giving up
++  raises `RetryError` (or the `reraise`/`retry_error_callback` result) the same way. Guarding
++  tests: `tests/test_tenacity.py::TestContextManager` (`test_context_manager_on_error`,
++  `_retry_error`, `_reraise`) and `tests/test_asyncio.py::TestContextManager`. Run both
++  classes by node id after touching `AttemptManager`, `__iter__` or `__anext__`.
++- `_begin_iter`/`iter()` are shared with every `__call__` (they return the function's
++  result), so a branch there changes the call path too; a branch in `AttemptManager`,
++  `__iter__` or `__anext__` affects iteration only. State which you chose and why.
++- Docs: the iterator form is the "Retrying code block" section of `doc/source/index.rst`
++  (`grep -n "for attempt in" doc/source/index.rst`). The "Disabling Retries" section
++  just above it describes only the decorated function; a change that makes `enabled=False`
++  work for another usage form updates that section's sentence.
+ 
+ ## 2. A release note in `releasenotes/notes/` (reno)
+ Maintainer commits that change behaviour ship a reno note alongside the code (e.g. #555, #551,

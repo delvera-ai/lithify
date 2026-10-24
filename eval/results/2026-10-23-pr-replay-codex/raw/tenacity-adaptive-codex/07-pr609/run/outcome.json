@@ -1,0 +1,27 @@
+{
+  "task": "Improvement: composing several retry conditions with `|` or `&` currently nests containers, e.g. `a | b | c` becomes `retry_any(retry_any(a, b), c)`. Chained operators should flatten into a single container instead: `a | b | c` must produce one `retry_any` whose `retries` holds `a`, `b` and `c`, and likewise `&` must produce one `retry_all`; the same for the async retry strategies. Behaviour of the combined condition must not change. (Stated requirement: the flattened object exposes its members as `.retries`.)",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 13053,
+    "cached": 202624,
+    "out": 3098,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

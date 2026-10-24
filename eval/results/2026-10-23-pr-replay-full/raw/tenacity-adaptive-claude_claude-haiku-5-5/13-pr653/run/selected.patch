@@ -1,0 +1,165 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e9532fc..8ce4924 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -23,6 +23,7 @@ import time
+ import typing as t
+ import warnings
+ from abc import ABC, abstractmethod
++from collections.abc import Mapping
+ from concurrent import futures
+ 
+ from . import _utils
+@@ -234,6 +235,30 @@ class AttemptManager:
+         return self.__exit__(exc_type, exc_value, traceback)
+ 
+ 
++class _StatisticsView(Mapping[str, t.Any]):
++    """Live view of a retry object's statistics for the calling thread.
++
++    Wrappers hold one view and hand it on through :func:`functools.wraps`, so an
++    outer wrapper built on top of a retry-decorated function sees the same,
++    up-to-date statistics as the inner one.
++    """
++
++    def __init__(self, retry: "BaseRetrying") -> None:
++        self._retry = retry
++
++    def __getitem__(self, key: str) -> t.Any:
++        return self._retry.statistics[key]
++
++    def __iter__(self) -> t.Iterator[str]:
++        return iter(self._retry.statistics)
++
++    def __len__(self) -> int:
++        return len(self._retry.statistics)
++
++    def __repr__(self) -> str:
++        return repr(self._retry.statistics)
++
++
+ class BaseRetrying(ABC):
+     def __init__(
+         self,
+@@ -369,7 +394,6 @@ class BaseRetrying(ABC):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            wrapped_f.statistics = copy.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return copy(f, *args, **kw)
+ 
+@@ -379,7 +403,7 @@ class BaseRetrying(ABC):
+         # Preserve attributes
+         wrapped_f.retry = self  # type: ignore[attr-defined]
+         wrapped_f.retry_with = retry_with  # type: ignore[attr-defined]
+-        wrapped_f.statistics = {}  # type: ignore[attr-defined]
++        wrapped_f.statistics = _StatisticsView(self)  # type: ignore[attr-defined]
+ 
+         return t.cast("_RetryDecorated[P, R]", wrapped_f)
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 6459894..cad39aa 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -28,6 +28,7 @@ from tenacity import (
+     RetryCallState,
+     RetryError,
+     _RetryDecorated,
++    _StatisticsView,
+     _utils,
+     after_nothing,
+     before_nothing,
+@@ -210,14 +211,13 @@ class AsyncRetrying(BaseRetrying):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            async_wrapped.statistics = copy.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return await copy(fn, *args, **kwargs)  # type: ignore[type-var]
+ 
+         # Preserve attributes
+         async_wrapped.retry = self  # type: ignore[attr-defined]
+         async_wrapped.retry_with = wrapped.retry_with  # type: ignore[attr-defined]
+-        async_wrapped.statistics = {}  # type: ignore[attr-defined]
++        async_wrapped.statistics = _StatisticsView(self)  # type: ignore[attr-defined]
+ 
+         return t.cast("_RetryDecorated[P, R]", async_wrapped)
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 20b320e..27e8d3a 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -562,6 +562,32 @@ async def foo() -> None:
+     pass
+ 
+ 
++class TestAsyncStatisticsWrapper(unittest.TestCase):
++    @asynctest
++    async def test_stats_visible_through_functools_wraps_wrapper(self) -> None:
++        """An outer async wrapper built with functools.wraps reports the live statistics."""
++
++        def timed(
++            f: Callable[..., Coroutine[Any, Any, Any]],
++        ) -> Callable[..., Coroutine[Any, Any, Any]]:
++            @wraps(f)
++            async def wrapper(*args: Any, **kwargs: Any) -> Any:
++                return await f(*args, **kwargs)
++
++            return wrapper
++
++        @retry(stop=stop_after_attempt(2))
++        async def _foobar() -> None:
++            raise ValueError(42)
++
++        outer = timed(_foobar)
++        self.assertEqual({}, outer.statistics)
++        with self.assertRaises(RetryError):
++            await outer()
++        self.assertIs(_foobar.statistics, outer.statistics)
++        self.assertEqual(2, outer.statistics["attempt_number"])
++
++
+ class TestSyncFunctionWithAsyncSleep(unittest.TestCase):
+     @asynctest
+     async def test_sync_function_with_async_sleep(self) -> None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b2c0289..4b32f12 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ import contextlib
+ import datetime
++import functools
+ import logging
+ import pickle
+ import re
+@@ -1905,6 +1906,27 @@ class TestStatistics(unittest.TestCase):
+         _foobar()
+         self.assertEqual(attempts, [1, 2, 3])
+ 
++    def test_stats_visible_through_functools_wraps_wrapper(self) -> None:
++        """An outer wrapper built with functools.wraps reports the live statistics."""
++
++        def timed(f: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
++            @functools.wraps(f)
++            def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
++                return f(*args, **kwargs)
++
++            return wrapper
++
++        @retry(stop=tenacity.stop_after_attempt(2))
++        def _foobar() -> None:
++            raise ValueError(42)
++
++        outer = timed(_foobar)
++        self.assertEqual({}, outer.statistics)
++        with contextlib.suppress(Exception):
++            outer()
++        self.assertIs(_foobar.statistics, outer.statistics)
++        self.assertEqual(2, outer.statistics["attempt_number"])
++
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
+     def setUp(self) -> None:

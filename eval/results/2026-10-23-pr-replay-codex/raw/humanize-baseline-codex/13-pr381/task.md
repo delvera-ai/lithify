@@ -1,0 +1,1 @@
+`humanize.natural_list()` documents its argument as "an iterable of items" but only works with lists: tuples, sets, generators, `dict_keys`, `range` and other non-subscriptable iterables raise `TypeError`. Make it accept any finite iterable (and annotate it accordingly), with the same output as for the equivalent list.

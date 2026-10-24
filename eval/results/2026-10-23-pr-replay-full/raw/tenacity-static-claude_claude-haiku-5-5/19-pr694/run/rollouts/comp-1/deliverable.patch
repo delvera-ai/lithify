@@ -1,0 +1,227 @@
+diff --git a/releasenotes/notes/fix-wait-none-zero-3e7a9d1c5b20f684.yaml b/releasenotes/notes/fix-wait-none-zero-3e7a9d1c5b20f684.yaml
+new file mode 100644
+index 0000000..e6f7e9c
+--- /dev/null
++++ b/releasenotes/notes/fix-wait-none-zero-3e7a9d1c5b20f684.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    ``Retrying(wait=None)``, ``wait=0`` and ``wait=sum([])`` mean "no wait"
++    again. Retrying after a failure raised ``TypeError: 'NoneType' object is
++    not callable`` (or ``'int' object is not callable``) instead of retrying
++    without a delay. This applies to both ``Retrying`` and ``AsyncRetrying``.
+diff --git a/releasenotes/notes/fix-wait-plain-callable-8c4f2e6a1d9b0537.yaml b/releasenotes/notes/fix-wait-plain-callable-8c4f2e6a1d9b0537.yaml
+new file mode 100644
+index 0000000..f307412
+--- /dev/null
++++ b/releasenotes/notes/fix-wait-plain-callable-8c4f2e6a1d9b0537.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    A plain callable can again be added to a wait strategy with ``+``:
++    ``my_callable + wait_fixed(1)`` builds a ``wait_combine`` that sums both.
++    ``wait_combine`` now passes the retry state to each strategy positionally,
++    so plain callables may name their parameter anything.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 9ceaf16..1e3a25a 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -248,7 +248,7 @@ class BaseRetrying(ABC):
+         self,
+         sleep: t.Callable[[int | float], None] = sleep,
+         stop: "StopBaseT" = stop_never,
+-        wait: "WaitBaseT" = wait_none(),
++        wait: "WaitBaseT | None | int" = wait_none(),
+         retry: "RetryBaseT" = retry_if_exception_type(),
+         before: t.Callable[["RetryCallState"], None] = before_nothing,
+         after: t.Callable[["RetryCallState"], None] = after_nothing,
+@@ -415,7 +415,12 @@ class BaseRetrying(ABC):
+         self.iter_state.retry_run_result = self.retry(retry_state)
+ 
+     def _run_wait(self, retry_state: "RetryCallState") -> None:
+-        retry_state.upcoming_sleep = self.wait(retry_state)
++        if self.wait:
++            sleep = self.wait(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     def _run_stop(self, retry_state: "RetryCallState") -> None:
+         self.statistics["delay_since_first_attempt"] = retry_state.seconds_since_start
+@@ -724,7 +729,7 @@ def retry(
+     *,
+     sleep: t.Callable[[int | float], t.Awaitable[None]],
+     stop: "StopBaseT" = ...,
+-    wait: "WaitBaseT" = ...,
++    wait: "WaitBaseT | None | int" = ...,
+     retry: "RetryBaseT | tasyncio.retry.RetryBaseT" = ...,
+     before: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = ...,
+     after: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = ...,
+@@ -741,7 +746,7 @@ def retry(
+ def retry(
+     sleep: t.Callable[[int | float], None] = sleep,
+     stop: "StopBaseT" = stop_never,
+-    wait: "WaitBaseT" = wait_none(),
++    wait: "WaitBaseT | None | int" = wait_none(),
+     retry: "RetryBaseT | tasyncio.retry.RetryBaseT" = retry_if_exception_type(),
+     before: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = before_nothing,
+     after: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = after_nothing,
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index a6c2253..23e0bb9 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -79,7 +79,7 @@ class AsyncRetrying(BaseRetrying):
+             [int | float], t.Awaitable[None] | None
+         ] = _portable_async_sleep,
+         stop: "StopBaseT" = tenacity.stop.stop_never,
+-        wait: "WaitBaseT" = tenacity.wait.wait_none(),
++        wait: "WaitBaseT | None | int" = tenacity.wait.wait_none(),
+         retry: "SyncRetryBaseT | RetryBaseT" = tenacity.retry_if_exception_type(),
+         before: t.Callable[
+             ["RetryCallState"], t.Awaitable[None] | None
+@@ -147,9 +147,12 @@ class AsyncRetrying(BaseRetrying):
+ 
+     @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+-        retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+-            retry_state
+-        )
++        if self.wait:
++            sleep = await _utils.wrap_to_async_func(self.wait)(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     @override
+     async def _run_stop(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index e137b35..7ec79ff 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -34,16 +34,18 @@ class wait_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         pass
+ 
+-    def __add__(self, other: "wait_base") -> "wait_combine":
++    def __add__(self, other: "WaitBaseT") -> "wait_combine":
+         return wait_combine(self, other)
+ 
+-    def __radd__(self, other: int) -> "wait_base":
+-        # `sum()` seeds its accumulator with the int 0, so tolerate that to
+-        # make summing waits work. Any other left operand is a `wait_base`,
+-        # whose `__add__` never defers to us.
+-        if other != 0:
++    def __radd__(self, other: "WaitBaseT | int") -> "wait_base":
++        # `sum()` seeds its accumulator with the int 0, which adds nothing.
++        if other == 0:
++            return self
++        # A plain callable has no `__add__`, so Python falls back to us for it.
++        # Any other non-zero left operand (a number) is not a wait strategy.
++        if not callable(other):
+             return NotImplemented
+-        return self
++        return wait_combine(other, self)
+ 
+ 
+ WaitBaseT = wait_base | typing.Callable[["RetryCallState"], float | int]
+@@ -86,12 +88,13 @@ class wait_random(wait_base):
+ class wait_combine(wait_base):
+     """Combine several waiting strategies."""
+ 
+-    def __init__(self, *strategies: wait_base) -> None:
++    def __init__(self, *strategies: WaitBaseT) -> None:
+         self.wait_funcs = strategies
+ 
+     @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        return sum(x(retry_state=retry_state) for x in self.wait_funcs)
++        # Positional: a plain callable may name its parameter anything.
++        return sum(x(retry_state) for x in self.wait_funcs)
+ 
+ 
+ class wait_chain(wait_base):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c9d5802..27cfff1 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -185,6 +185,30 @@ class TestAsyncio(unittest.TestCase):
+         assert list(attempt_nos2) == [1, 2, 3]
+ 
+ 
++class TestAsyncNoWaitValues(unittest.TestCase):
++    @asynctest
++    async def test_no_wait_values_mean_no_sleep_on_retry(self) -> None:
++        # None, 0 and sum([]) (which is the int 0) all mean "no wait".
++        for wait in (None, 0, sum([])):
++            with self.subTest(wait=wait):
++                sleeps: list[float] = []
++                attempts = 0
++
++                async def record_sleep(seconds: float) -> None:
++                    sleeps.append(seconds)
++
++                async def fails_once() -> str:
++                    nonlocal attempts
++                    attempts += 1
++                    if attempts == 1:
++                        raise ValueError
++                    return "ok"
++
++                retrying = tasyncio.AsyncRetrying(sleep=record_sleep, wait=wait)
++                self.assertEqual(await retrying(fails_once), "ok")
++                self.assertEqual(sleeps, [0])
++
++
+ class TestAsyncEnabled(unittest.TestCase):
+     @asynctest
+     async def test_enabled_false_skips_retry(self) -> None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1acd3f8..32e2ca4 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -506,6 +506,41 @@ class TestWaitConditions(unittest.TestCase):
+             self.assertLess(w, 9)
+             self.assertGreaterEqual(w, 6)
+ 
++    def test_no_wait_values_mean_no_sleep_on_retry(self) -> None:
++        # None, 0 and sum([]) (which is the int 0) all mean "no wait".
++        for wait in (None, 0, sum([])):
++            with self.subTest(wait=wait):
++                sleeps: list[float] = []
++                attempts = 0
++
++                def fails_once() -> str:
++                    nonlocal attempts
++                    attempts += 1
++                    if attempts == 1:
++                        raise ValueError
++                    return "ok"
++
++                r = Retrying(sleep=sleeps.append, wait=wait)
++                self.assertEqual(r(fails_once), "ok")
++                self.assertEqual(sleeps, [0])
++
++    def test_plain_callable_plus_wait_builds_combine(self) -> None:
++        def two_seconds(retry_state: RetryCallState) -> float:
++            return 2
++
++        combined = two_seconds + tenacity.wait_fixed(1)
++        self.assertIsInstance(combined, tenacity.wait_combine)
++        self.assertEqual(combined(make_retry_state(1, 5)), 3)
++
++    def test_wait_combine_passes_retry_state_positionally(self) -> None:
++        # The parameter name is deliberately not `retry_state`.
++        def attempt_seconds(current: RetryCallState) -> float:
++            return current.attempt_number
++
++        state = make_retry_state(3, 5)
++        combined = tenacity.wait_combine(attempt_seconds, tenacity.wait_fixed(1))
++        self.assertEqual(combined(state), state.attempt_number + 1)
++
+     def _assert_range(self, wait: float, min_: float, max_: float) -> None:
+         self.assertLess(wait, max_)
+         self.assertGreaterEqual(wait, min_)

@@ -1,0 +1,65 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c4d1471..0813b21 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -120,6 +120,21 @@
+       "wall_s": 54.9,
+       "always_on_tokens": 196,
+       "stability_after": 0.9981
++    },
++    {
++      "task_id": "20261023-205444-bug-humanize-naturaldelta-docume",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32293,
++      "tokens_cached": 76416,
++      "tokens_out": 865,
++      "cost_usd": 0.0,
++      "wall_s": 49.2,
++      "always_on_tokens": 196,
++      "stability_after": 0.9983
+     }
+   ]
+ }
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 4a07d52..7002e8f 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -149,6 +149,9 @@ def naturaldelta(
+     else:
+         try:
+             int(value)  # Explicitly don't support string such as "NaN" or "inf"
++        except (OverflowError, ValueError, TypeError):
++            return str(value)
++        try:
+             value = float(value)
+             delta = dt.timedelta(seconds=value)
+         except (ValueError, TypeError):
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 7699770..af8b9f1 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -138,6 +138,20 @@ def test_naturaldelta(test_input: float | dt.timedelta, expected: str) -> None:
+         assert humanize.naturaldelta(-test_input) == expected
+ 
+ 
++@pytest.mark.parametrize(
++    "value, expected",
++    [(float("inf"), "inf"), (float("-inf"), "-inf"), (float("nan"), "nan")],
++)
++def test_naturaldelta_nonfinite(value: float, expected: str) -> None:
++    assert humanize.naturaldelta(value) == expected
++
++
++@pytest.mark.parametrize("value", [1e30, -1e30])
++def test_naturaldelta_finite_overflow(value: float) -> None:
++    with pytest.raises(OverflowError):
++        humanize.naturaldelta(value)
++
++
+ @freeze_time(FROZEN_DATE)
+ @pytest.mark.parametrize(
+     "test_input, expected",

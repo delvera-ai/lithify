@@ -1,0 +1,36 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..f42bdfb 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1634,6 +1634,19 @@ class TestStatistics(unittest.TestCase):
+             _foobar()
+         self.assertEqual(2, _foobar.statistics["attempt_number"])
+ 
++    def test_stats_delay_since_first_attempt_present_on_first_attempt(self) -> None:
++        seen = []
++
++        @retry(stop=tenacity.stop_after_attempt(2))
++        def _foobar() -> None:
++            seen.append(_foobar.statistics["delay_since_first_attempt"])
++            raise ValueError(42)
++
++        with contextlib.suppress(Exception):
++            _foobar()
++        self.assertEqual(0, seen[0])
++        self.assertEqual(2, len(seen))
++
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
+     def setUp(self) -> None:

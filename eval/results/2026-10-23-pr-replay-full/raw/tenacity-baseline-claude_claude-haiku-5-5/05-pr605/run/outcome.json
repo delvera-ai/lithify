@@ -1,0 +1,27 @@
+{
+  "task": "Feature: `AttemptManager` (the object yielded by `for attempt in Retrying(...)` / `async for attempt in AsyncRetrying(...)`) should also support the async context-manager protocol, so `async with attempt:` works inside `async for` loops, behaving exactly like `with attempt:`.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 21166,
+    "cached": 292779,
+    "out": 3716,
+    "cost": 0.00901699,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

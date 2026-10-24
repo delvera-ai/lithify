@@ -1,0 +1,52 @@
+{
+  "task": "Feature: add an `enabled` parameter (default `True`) to `Retrying`, `AsyncRetrying` and the `@retry` decorator. With `enabled=False` the decorated function is called directly, exactly once, with no retry logic, and any exception it raises propagates unchanged. This is useful during development and testing.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "Scope decided it. The task only asks that a call through `Retrying`, `AsyncRetrying` and `@retry` with `enabled=False` runs the function once and passes its result or exception straight through. c1 does exactly that with a guard in each `__call__` (Tornado included), and carries `enabled` through `copy()`/`retry_with` and `repr`, the same way `name` already is. Its tests cover the sync, async, Tornado, `copy` and `retry_with` paths.\nThe runner-up was c4, which is just as minimal but leaves `enabled` out of `repr` and adds no Tornado test.\nc2 and c3 go further than asked by also changing how iterating over a `Retrying` behaves. c2 adds a new `_PassthroughAttemptManager` class and extra state on the async iterator; c3 changes `_begin_iter`.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-164433-feature-add-an-enabled-parameter",
+  "usage": {
+    "in": 500459,
+    "cached": 6528442,
+    "out": 115449,
+    "cost": 3.1653479,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

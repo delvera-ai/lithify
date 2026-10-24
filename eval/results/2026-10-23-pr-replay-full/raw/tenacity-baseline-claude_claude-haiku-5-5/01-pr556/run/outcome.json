@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `tenacity._utils.find_ordinal` (used for \"1st attempt\"-style wording in log messages) returns the wrong suffix for numbers greater than 20 that end in 11, 12 or 13: for 111, 112 and 113 it gives \"st\", \"nd\" and \"rd\", so messages read \"111st\", \"112nd\", \"113rd\". They should get \"th\"; all other numbers keep their current suffixes.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 18921,
+    "cached": 94876,
+    "out": 1725,
+    "cost": 0.0055946599999999996,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

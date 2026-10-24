@@ -167,6 +167,30 @@ The DOM proposer traced the failure to the moment the agent skipped `app/audit.p
 invariant as a sourced fact, including that existing validators are *not* a model to copy. Three
 tasks is an illustration, not a benchmark — see [docs/benchmarking.md](docs/benchmarking.md).
 
+## Evaluation (0.1.0)
+
+Replayed merged PRs from two public repositories: the task is the PR's issue text, and the hidden
+check is the PR's own tests, run only after delivery and never shown to any strategy. Each strategy
+kept its own harness across the PRs, in merge order.
+Protocol: [docs/benchmarking.md](docs/benchmarking.md); data and reports: [`eval/results/`](eval/results/);
+go/no-go: [`eval/RELEASE_READINESS.md`](eval/RELEASE_READINESS.md).
+
+| PRs | executor | baseline (plain agent) | static (Harness² step every task) | adaptive (lithify) |
+|---|---|---|---|---|
+| humanize, 10 | Claude Haiku | 10/10 · $0.09 | 10/10 · $21.90 | 10/10 · $0.27 |
+| tenacity, 22 | Claude Haiku | 21/22 · $0.43 | 21/21 · $65.51 (stopped at its $65 cap before PR 22) | 21/22 · $0.81 |
+| tenacity, 22 | Codex | 21/22 | — | 22/22 (+9% tokens) |
+| humanize, 15 | Codex | 14/15 | — | 15/15 (+119% tokens) |
+
+* **Cost:** adaptive explored on the first 2–4 tasks, then ran once per task (k = 0) and cost what a
+  plain agent costs. Static paid for a full Propose→Probe→Compose step on every task, about $2–3.50
+  each with default-model editor roles, and its always-on harness grew 5–9×.
+* **Quality:** the plain agent already passed almost every hidden test, so there was little to
+  improve. Adaptive was never worse and was slightly better with Codex, but **no difference here is
+  statistically meaningful** (95% intervals overlap). Treat lithify's quality benefit as unproven on
+  real PRs. It was demonstrated only on a fixture whose hidden check needs a convention the code
+  documents but the task never mentions (see "A live run").
+
 ## Configuration
 
 `.lithify/config.toml` (written by `lithify init`, fully commented):
@@ -218,16 +242,24 @@ bias when judging the executor's work.
 
 ## Status
 
-**Alpha (0.1).** The full loop runs on real worktrees, gates and the Claude Code, Codex and
-Antigravity CLIs; the simulated demo and test suite run in CI. Known limits:
+**Alpha (0.1).** The full loop runs on real worktrees and gates with Claude Code 2.1.309 and
+codex-cli 0.163.0 (both verified end to end in the 0.1.0 evaluation); the simulated demo and test
+suite run in CI. Known limits:
+
+* **Antigravity is not verified for 0.1.0.** The adapter parses agy 1.4.3's JSON envelope (tested
+  against a captured error response) and `agy plugin install` works, but no successful live agy
+  run was possible during the evaluation (account quota exhausted).
 
 * Middleware hooks (component C8) are stored and validated but not yet rendered into CLIs.
 * Antigravity's headless JSON has no tool trajectory, so proposers see less evidence when agy is
   the executor; Antigravity plugin hooks are observe-only, so the session-start hint is Claude
   Code only (Codex: user-level hook, see above).
-* Untracked files are not copied into probe worktrees — commit or stage what the task needs.
-* Cost scales with `k`: a `k = 1` step is up to 4 executions and 5 role sessions. Use
-  `lithify run --dry-run` to see the plan before spending anything.
+* Untracked and gitignored files are not copied into probe worktrees — commit or stage what the
+  task needs. This includes generated files a package imports (e.g. a build-time `_version.py`).
+* Cost scales with `k`: a `k = 1` step is up to 4 executions and 5 role sessions, and editor
+  roles dominate it (about 98% of a step's cost with a Haiku executor and default-model editors).
+  Use `lithify run --dry-run` to see the plan before spending anything.
+* Agent-CLI usage and session limits stop the task (`LimitReached`); rerun it once the limit resets.
 
 See [docs/architecture.md](docs/architecture.md) and
 [docs/benchmarking.md](docs/benchmarking.md) for the live evaluation protocol.

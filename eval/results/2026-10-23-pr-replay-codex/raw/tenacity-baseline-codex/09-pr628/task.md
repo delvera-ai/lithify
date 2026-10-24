@@ -1,0 +1,1 @@
+Feature: `wait_exponential_jitter` should be consistent with `wait_exponential`: add a `min` parameter that sets a floor on the wait, and accept `datetime.timedelta` values for `max`, `jitter` and `min` (as well as numbers of seconds).

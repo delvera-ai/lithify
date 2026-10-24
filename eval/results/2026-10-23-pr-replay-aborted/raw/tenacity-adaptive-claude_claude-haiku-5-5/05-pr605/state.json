@@ -1,0 +1,80 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-154952-bug-tenacity-utils-find-ordinal",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 60355,
+      "tokens_cached": 502480,
+      "tokens_out": 7402,
+      "cost_usd": 0.2144,
+      "wall_s": 45.7,
+      "always_on_tokens": 186,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-155039-bug-tenacity-after-log-crashes-w",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 56014,
+      "tokens_cached": 412731,
+      "tokens_out": 6160,
+      "cost_usd": 0.2053,
+      "wall_s": 41.7,
+      "always_on_tokens": 186,
+      "stability_after": 0.4
+    },
+    {
+      "task_id": "20261023-155121-bug-the-delay-since-first-attemp",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 21803,
+      "tokens_cached": 265464,
+      "tokens_out": 3407,
+      "cost_usd": 0.0087,
+      "wall_s": 34.3,
+      "always_on_tokens": 186,
+      "stability_after": 0.6
+    },
+    {
+      "task_id": "20261023-155157-regression-since-8-4-2-composing",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 44966,
+      "tokens_cached": 990001,
+      "tokens_out": 17846,
+      "cost_usd": 0.0278,
+      "wall_s": 107.6,
+      "always_on_tokens": 186,
+      "stability_after": 0.8
+    },
+    {
+      "task_id": "20261023-155347-feature-attemptmanager-the-objec",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 19739,
+      "tokens_cached": 345194,
+      "tokens_out": 3990,
+      "cost_usd": 0.0094,
+      "wall_s": 38.3,
+      "always_on_tokens": 186,
+      "stability_after": 1.0
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 019ad00..1c2a9ab 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -210,6 +210,21 @@
+       "wall_s": 200.4,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-164835-bug-retry-if-exception-message-m",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 23966,
++      "tokens_cached": 402719,
++      "tokens_out": 6716,
++      "cost_usd": 0.0122,
++      "wall_s": 56.4,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index df0cc4d..e59f4c0 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -223,22 +223,22 @@ class retry_if_exception_message(retry_if_exception):
+         message: str | None = None,
+         match: None | str | re.Pattern[str] = None,
+     ) -> None:
+-        if message and match:
++        if message is not None and match is not None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+             )
+ 
+-        if not message and not match:
++        if message is None and match is None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+             )
+ 
+         self.message = message
+-        self.match = re.compile(match) if match else None
++        self.match = re.compile(match) if match is not None else None
+         super().__init__(self._check)
+ 
+     def _check(self, exception: BaseException) -> bool:
+-        if self.message:
++        if self.message is not None:
+             return self.message == str(exception)
+         assert self.match is not None
+         return bool(self.match.match(str(exception)))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 61fd8db..8fc9486 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -925,6 +925,51 @@ class TestRetryConditions(unittest.TestCase):
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message(message="negative", match="negative")
+ 
++    def test_retry_if_exception_message_empty_message(self) -> None:
++        # str(RuntimeError()) == "", so an empty message must be accepted and matched.
++        r = tenacity.Retrying(
++            retry=tenacity.retry_if_exception_message(message=""),
++            stop=tenacity.stop_after_attempt(3),
++            wait=tenacity.wait_none(),
++            reraise=True,
++        )
++        with self.assertRaises(RuntimeError):
++            r(_raise_empty_runtime_error)
++        self.assertEqual(3, r.statistics["attempt_number"])
++
++    def test_retry_if_exception_message_empty_match(self) -> None:
++        r = tenacity.Retrying(
++            retry=tenacity.retry_if_exception_message(match=""),
++            stop=tenacity.stop_after_attempt(3),
++            wait=tenacity.wait_none(),
++            reraise=True,
++        )
++        with self.assertRaises(RuntimeError):
++            r(_raise_empty_runtime_error)
++        self.assertEqual(3, r.statistics["attempt_number"])
++
++    def test_retry_if_not_exception_message_empty_message(self) -> None:
++        r = tenacity.Retrying(
++            retry=tenacity.retry_if_not_exception_message(message=""),
++            stop=tenacity.stop_after_attempt(3),
++            wait=tenacity.wait_none(),
++            reraise=True,
++        )
++        # An empty-message exception matches message="" so it must not be retried.
++        with self.assertRaises(RuntimeError):
++            r(_raise_empty_runtime_error)
++        self.assertEqual(1, r.statistics["attempt_number"])
++
++    def test_retry_if_exception_message_empty_inputs_both_raise(self) -> None:
++        with self.assertRaises(TypeError):
++            tenacity.retry_if_exception_message(message="", match="")
++        with self.assertRaises(TypeError):
++            tenacity.retry_if_not_exception_message(message="", match="")
++
++
++def _raise_empty_runtime_error() -> None:
++    raise RuntimeError()
++
+ 
+ class NoneReturnUntilAfterCount:
+     """Holds counter state for invoking a method several times in a row."""

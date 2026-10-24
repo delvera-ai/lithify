@@ -1,0 +1,20 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-185633-bug-tenacity-utils-find-ordinal",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 43,
+      "executions": 4,
+      "tokens_in": 271294,
+      "tokens_cached": 2302153,
+      "tokens_out": 35584,
+      "cost_usd": 2.0616,
+      "wall_s": 355.6,
+      "always_on_tokens": 186,
+      "stability_after": 0.14
+    }
+  ]
+}

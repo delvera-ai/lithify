@@ -1,0 +1,27 @@
+{
+  "task": "Feature: `wait_exponential_jitter` should be consistent with `wait_exponential`: add a `min` parameter that sets a floor on the wait, and accept `datetime.timedelta` values for `max`, `jitter` and `min` (as well as numbers of seconds).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 28895,
+    "cached": 371895,
+    "out": 6194,
+    "cost": 0.01259275,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

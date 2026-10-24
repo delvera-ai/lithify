@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c0bfa15..bcea2ea 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -150,6 +150,21 @@
+       "wall_s": 46.6,
+       "always_on_tokens": 189,
+       "stability_after": 0.9
++    },
++    {
++      "task_id": "20261023-205137-bug-humanize-metric-can-show-one",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 19098,
++      "tokens_cached": 82944,
++      "tokens_out": 948,
++      "cost_usd": 0.0,
++      "wall_s": 53.4,
++      "always_on_tokens": 189,
++      "stability_after": 0.9
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 2dfeffe..3963139 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -556,6 +556,9 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+         value /= 10 ** (new_bucket - old_bucket)
+         digits = int(max(0, precision - exponent % 3 - 1))
+ 
++    if digits > 0 and round(abs(value), digits) >= 10 ** (exponent % 3 + 1):
++        digits -= 1
++
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+     elif exponent < 0:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 6f0a664..7ce15f4 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -270,6 +270,16 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+         ([1234.56], "1.23 k"),
+         ([12345, "", 6], "12.3450 k"),
+         ([200_000], "200 k"),
++        ([9999], "10.0 k"),
++        ([99999], "100 k"),
++        ([9.99999], "10.0"),
++        ([99.9999], "100"),
++        ([-9999, "V"], "-10.0 kV"),
++        ([-99999], "-100 k"),
++        ([0.00999999, "V"], "10.0 mV"),
++        ([0.0999999], "100 m"),
++        ([9.99999, "", 4], "10.00"),
++        ([99.9999, "", 4], "100.0"),
+         ([999.9, "V"], "1.00 kV"),
+         ([999.99, "V"], "1.00 kV"),
+         ([999_999, "V"], "1.00 MV"),

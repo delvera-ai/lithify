@@ -104,7 +104,7 @@ variants of that integer like 1.0000)
 199	        (["1000"], "1.00 x 10³"),
 [assistant] The bug is in the mixed-number branch: for negative input, `int()` truncates toward zero, so the whole part is negative while `number - whole_number` is also negative, and the sign lands on both parts. I'll get a baseline test run first, using the project's documented command.
 [tool_use Bash] {"command": "PY=<work>/env-humanize/bin/python; ls -la $PY 2>&1; PYTHONPATH=src $PY -c \"import humanize,sys; print(humanize.fractional(-1.3), humanize.fractional(-2.5), humanize.fractional(-0.3))\" 2>&1", "description": "Check project interpreter and reproduce the bug"}
-[tool_result] lrwxr-xr-x@ 1 donovan  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] lrwxr-xr-x@ 1 user  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 -1 -3/10 -2 -1/2 -3/10
 [assistant] Reproduced: `-1 -3/10` and `-2 -1/2`. Now the fix. I'll take the sign from the input and format the absolute value, so the whole part and the fraction are both positive. I'm keeping the `-0/1` case from appearing for tiny negatives like `-0.0001`, which currently prints `0/1`.
 [tool_use Edit] {"replace_all": false, "file_path": "~/.cache/lithify/work/repo-591a89d5b953/20261023-143921-bug-humanize-fractional-1-3-retu/base-1/src/humanize/number.py", "old_string": "    whole_number = int(number)\n    frac = Fraction(number - whole_number).limit_denominator(1000)\n    numerator = frac.numerator\n    denominator = frac.denominator\n    if whole_number and not numerator and deno

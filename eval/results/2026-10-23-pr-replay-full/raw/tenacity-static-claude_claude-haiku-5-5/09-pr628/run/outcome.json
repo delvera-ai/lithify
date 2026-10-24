@@ -1,0 +1,52 @@
+{
+  "task": "Feature: `wait_exponential_jitter` should be consistent with `wait_exponential`: add a `min` parameter that sets a floor on the wait, and accept `datetime.timedelta` values for `max`, `jitter` and `min` (as well as numbers of seconds).",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "inv-1",
+  "why": "All four have the same `wait.py` code, and it follows `wait_exponential` exactly (`_utils.time_unit_type`, `_utils.to_seconds`, the `max(max(0, self.min), ...)` floor). So docs, release notes and tests decided it.\nc3 loses on completeness: it doesn't update the user docs in `doc/source/index.rst`. c1 puts its docs example inside the existing jitter section, which breaks up the text around it.\nc4 wins on maintainability. Its user-docs example is short and placed in the right spot. Its tests check `min` with `jitter=0`, so the results are exact, and they test each `timedelta` parameter on its own.\nc2 is a close runner-up. It's just as correct, but its tests pack several separate scenarios into one method, and its docs example is longer.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-203956-feature-wait-exponential-jitter",
+  "usage": {
+    "in": 420987,
+    "cached": 4648804,
+    "out": 72855,
+    "cost": 2.77280748,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.6222,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

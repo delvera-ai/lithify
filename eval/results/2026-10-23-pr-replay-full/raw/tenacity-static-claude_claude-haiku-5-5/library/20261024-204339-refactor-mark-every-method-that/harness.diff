@@ -1,0 +1,379 @@
+--- a/scripts/check_changed.py
++++ b/scripts/check_changed.py
+@@ -13,6 +13,10 @@
+         a decorated one sits directly under its decorator, even after `)`
+       * every added `def` annotates all parameters and its return (mypy
+         strict covers tenacity/ AND tests/; `self`/`cls` exempt)
++      * once `tenacity/_utils.py` provides `override`: every added method that
++        overrides a base-class method carries `@override` (via
++        list_overrides.py; object-only overrides such as a plain `__init__`
++        are not required)
+   - releasenotes/notes/*.yaml
+       * starts with `---`, top-level keys are reno sections, each section
+         holds `- ` list entries, no tabs
+@@ -148,6 +152,36 @@
+     return errs
+ 
+ 
++def check_overrides(changed: dict[str, set[int]]) -> list[str]:
++    """Added overriding methods without `@override`, if the repo has `override`."""
++    try:
++        with open("tenacity/_utils.py", encoding="utf-8") as fh:
++            utils = fh.read()
++    except OSError:
++        return []
++    provides = r"^\s*(def override\b|override\s*=|from typing\S* import .*\boverride\b)"
++    if not re.search(provides, utils, re.M):
++        return []
++    files = [f for f in changed if f.startswith(("tenacity/", "tests/"))]
++    if not files:
++        return []
++    here = os.path.dirname(os.path.abspath(__file__))
++    script = os.path.join(here, "list_overrides.py")
++    res = subprocess.run([sys.executable, script, *files], capture_output=True, text=True)
++    if res.returncode == 2 or "SUMMARY:" not in res.stdout:
++        print("NOTE: list_overrides.py could not run; @override on new defs unchecked")
++        print(res.stdout[-800:] + res.stderr[-800:])
++        return []
++    errs: list[str] = []
++    for line in res.stdout.splitlines():
++        m = re.match(r"UNMARKED (\S+):(\d+) (.*)", line)
++        if m and int(m.group(2)) in changed.get(m.group(1), set()):
++            errs.append(f"{m.group(1)}:{m.group(2)}: missing @override: {m.group(3)}")
++        elif line.startswith("UNCHECKED"):
++            print("NOTE:", line)
++    return errs
++
++
+ def check_reno(path: str) -> list[str]:
+     errs: list[str] = []
+     with open(path, encoding="utf-8") as fh:
+@@ -189,11 +223,14 @@
+     )
+     print("changed:", ", ".join(files) or "(none)")
+     errs: list[str] = []
++    py_changed: dict[str, set[int]] = {}
+     for f in files:
+         if f.endswith(".py"):
+-            errs += check_py(f, added_lines(f, f in untracked))
++            py_changed[f] = added_lines(f, f in untracked)
++            errs += check_py(f, py_changed[f])
+         elif f.startswith("releasenotes/notes/") and f.endswith((".yaml", ".yml")):
+             errs += check_reno(f)
++    errs += check_overrides(py_changed)
+     for e in errs:
+         print("FAIL", e)
+     print(f"{'FAIL' if errs else 'PASS'}: {len(errs)} problem(s)")
+
+--- a/scripts/list_overrides.py
++++ b/scripts/list_overrides.py
+@@ -0,0 +1,236 @@
++#!/usr/bin/env python3
++"""List every method that overrides a base-class method, and whether it has `@override`.
++
++One authoritative, deduplicated list for "mark/annotate every override" work and
++for checking that a new subclass method carries `@override`. It imports each
++module (run it with the project python, from the repo root), walks the classes
++the module itself defines, and for every method defined in the class body looks
++the name up along the MRO. "Marked" is read from the source: a decorator named
++`override` (`@override`, `@typing.override`, `@_utils.override`, ...).
++
++Usage (from the repo root):
++    <project python> .lithify/harness/scripts/list_overrides.py [options] [FILES...]
++      FILES             default: tenacity/**/*.py and tests/*.py
++      --include-object  also list methods whose only base definition is on
++                        `object` (__init__, __repr__, __eq__ ... of plain classes)
++      --all             also print MARKED lines, not only problems
++
++Output, one line each (path:line is the `def` line):
++    UNMARKED  path:line Class.method (overrides module.Base.method)
++    MARKED    path:line ...                       (--all only)
++    OBJECT    path:line Class.method (only object.method; marked=yes|no)
++                                                  (--include-object only)
++    UNMARKED  path:line Class.method (nested) ... a class defined inside a
++              function (e.g. a test-local BaseRetrying subclass); its bases
++              are resolved from the module's globals
++    UNCHECKED path:line Class (nested class whose base can't be resolved:
++              check its methods by hand)
++    UNAVAILABLE module: <import error>   (that file was not checked)
++    SUMMARY: ...
++
++Exit codes:
++    0  no UNMARKED method (OBJECT lines never fail the run)
++    1  at least one UNMARKED method -- add `@override` at each path:line
++    2  no module could be imported -- report the check as not run
++The scope rule (object-only overrides excluded by default) is a decision: say in
++the final message which rule you used and what --include-object would add.
++"""
++
++from __future__ import annotations
++
++import ast
++import builtins
++import importlib
++import inspect
++import os
++import sys
++from pathlib import Path
++
++
++def default_files() -> list[str]:
++    files = [str(p) for p in sorted(Path("tenacity").rglob("*.py"))]
++    files += [str(p) for p in sorted(Path("tests").glob("*.py"))]
++    return [f for f in files if not f.endswith(("_version.py", "__main__.py"))]
++
++
++def module_name(path: str) -> str:
++    parts = list(Path(path).with_suffix("").parts)
++    if parts[-1] == "__init__":
++        parts = parts[:-1]
++    return ".".join(parts)
++
++
++def is_override_decorator(node: ast.expr) -> bool:
++    if isinstance(node, ast.Call):
++        node = node.func
++    if isinstance(node, ast.Name):
++        return node.id == "override"
++    if isinstance(node, ast.Attribute):
++        return node.attr == "override"
++    return False
++
++
++def index_source(path: str) -> tuple[dict[tuple[str, str], tuple[int, bool]], list]:
++    """(class qualname, method) -> (def line, marked); plus classes nested in defs.
++
++    A nested entry is (line, class name, base expressions, [(method, line, marked)]).
++    """
++    with open(path, encoding="utf-8") as fh:
++        tree = ast.parse(fh.read(), path)
++    defs: dict[tuple[str, str], tuple[int, bool]] = {}
++    nested: list[tuple[int, str, list[ast.expr], list[tuple[str, int, bool]]]] = []
++    funcs = (ast.FunctionDef, ast.AsyncFunctionDef)
++
++    def marked_of(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
++        return any(is_override_decorator(d) for d in node.decorator_list)
++
++    def visit(node: ast.AST, qual: str | None, in_func: bool) -> None:
++        for child in ast.iter_child_nodes(node):
++            if isinstance(child, ast.ClassDef):
++                if in_func:
++                    methods = [
++                        (b.name, b.lineno, marked_of(b))
++                        for b in child.body
++                        if isinstance(b, funcs)
++                    ]
++                    if child.bases and methods:
++                        nested.append((child.lineno, child.name, child.bases, methods))
++                    visit(child, None, True)
++                else:
++                    name = f"{qual}.{child.name}" if qual else child.name
++                    visit(child, name, False)
++            elif isinstance(child, funcs):
++                if qual is not None and not in_func:
++                    # Repeated names (property setter, overloads): keep the first
++                    # line; marked if any of the definitions is.
++                    line, was = defs.get((qual, child.name), (child.lineno, False))
++                    defs[(qual, child.name)] = (line, marked_of(child) or was)
++                visit(child, None, True)
++            else:
++                visit(child, qual, in_func)
++
++    visit(tree, None, False)
++    return defs, nested
++
++
++def resolve(expr: ast.expr, module: object) -> type | None:
++    """Resolve a base like `tenacity.BaseRetrying` or `float` in module globals."""
++    names: list[str] = []
++    while isinstance(expr, ast.Attribute):
++        names.append(expr.attr)
++        expr = expr.value
++    if not isinstance(expr, ast.Name):
++        return None
++    scope = vars(module)
++    obj = scope.get(expr.id, getattr(builtins, expr.id, None))
++    for attr in reversed(names):
++        obj = getattr(obj, attr, None)
++    return obj if isinstance(obj, type) else None
++
++
++def classes_of(module: object, modname: str) -> list[type]:
++    found: list[type] = []
++    seen: set[int] = set()
++
++    def add(obj: object) -> None:
++        if not isinstance(obj, type) or id(obj) in seen:
++            return
++        if obj.__module__ != modname:
++            return
++        seen.add(id(obj))
++        found.append(obj)
++        for value in vars(obj).values():
++            add(value)
++
++    for value in vars(module).values():
++        add(value)
++    return found
++
++
++def main() -> int:
++    args = sys.argv[1:]
++    include_object = "--include-object" in args
++    show_all = "--all" in args
++    files = [a for a in args if not a.startswith("--")] or default_files()
++    sys.path.insert(0, os.getcwd())
++
++    counts = {"marked": 0, "unmarked": 0, "object": 0, "nested": 0, "generated": 0}
++    imported = 0
++
++    def report(where: str, name: str, base: type, marked: bool) -> None:
++        if base is object:
++            counts["object"] += 1
++            if include_object:
++                print(f"OBJECT {where} (only object.{name};"
++                      f" marked={'yes' if marked else 'no'})")
++            return
++        target = f"{base.__module__}.{base.__qualname__}.{name}"
++        if marked:
++            counts["marked"] += 1
++            if show_all:
++                print(f"MARKED {where} (overrides {target})")
++        else:
++            counts["unmarked"] += 1
++            print(f"UNMARKED {where} (overrides {target})")
++
++    for path in files:
++        if not path.endswith(".py") or not os.path.exists(path):
++            continue
++        modname = module_name(path)
++        try:
++            module = importlib.import_module(modname)
++        except Exception as exc:  # report and keep checking other files
++            print(f"UNAVAILABLE {modname}: {type(exc).__name__}: {exc}")
++            continue
++        imported += 1
++        defs, nested = index_source(path)
++        for cls_line, cls_name, base_exprs, methods in nested:
++            bases = [resolve(b, module) for b in base_exprs]
++            if any(b is None for b in bases):
++                counts["nested"] += 1
++                print(f"UNCHECKED {path}:{cls_line} {cls_name} (class inside a function"
++                      " with a base this script can't resolve: check it by hand)")
++                continue
++            mro = [m for b in bases if b for m in b.__mro__]
++            for name, line, marked in methods:
++                base = next((b for b in mro if name in vars(b)), None)
++                if base is not None:
++                    report(f"{path}:{line} {cls_name}.{name} (nested)", name, base,
++                           marked)
++        for cls in classes_of(module, modname):
++            for name, value in vars(cls).items():
++                func = value
++                if isinstance(func, (staticmethod, classmethod)):
++                    func = func.__func__
++                elif isinstance(func, property):
++                    func = func.fget
++                if not callable(func) or isinstance(func, type):
++                    continue
++                key = (cls.__qualname__, name)
++                if key not in defs:
++                    # Generated (dataclass, functools) or assigned, not a `def` here.
++                    if inspect.isfunction(func):
++                        counts["generated"] += 1
++                    continue
++                base = next((b for b in cls.__mro__[1:] if name in vars(b)), None)
++                if base is None:
++                    continue
++                line, marked = defs[key]
++                report(f"{path}:{line} {cls.__qualname__}.{name}", name, base, marked)
++
++    total = counts["marked"] + counts["unmarked"]
++    print(
++        f"SUMMARY: {total} overriding method(s): {counts['marked']} marked,"
++        f" {counts['unmarked']} unmarked; {counts['object']} object-only override(s)"
++        f" {'listed' if include_object else 'excluded (--include-object)'};"
++        f" {counts['nested']} nested class(es) unchecked;"
++        f" {counts['generated']} generated method(s) skipped;"
++        f" {imported}/{len(files)} file(s) imported"
++    )
++    if imported == 0:
++        return 2
++    return 1 if counts["unmarked"] else 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+
+--- a/skills/sweeping-refactor/SKILL.md
++++ b/skills/sweeping-refactor/SKILL.md
+@@ -0,0 +1,58 @@
++---
++name: sweeping-refactor
++description: Load when a task applies the same mechanical edit to every member of a set across the codebase, such as "mark every method that overrides a base method with @override", adding a decorator, annotation, import or rename to every subclass, strategy or test helper. Covers building the authoritative target list (scripts/list_overrides.py for overrides), applying the edit by script, proving nothing was missed, and what still has to ship with a refactor.
++---
++
++# Applying one edit to every member of a set
++
++The edit is easy. The risk is the set: a member left out passes every gate and nobody
++notices. A runtime walker over `cls.__subclasses__()` or module globals cannot see classes
++defined inside a function. One run marked 66 methods, called that list complete, and missed
++the `tenacity.BaseRetrying` subclass defined inside a test method in `tests/test_tenacity.py`.
++
++## 1. Build the list with a script, before editing
++- Overrides: `<project python> .lithify/harness/scripts/list_overrides.py > /tmp/targets.txt;
++  echo "exit=$?"; tail -1 /tmp/targets.txt`. Run it from the repo root. It imports
++  `tenacity/**` and `tests/*.py`, resolves classes nested in functions from module globals,
++  prints `UNMARKED path:line Class.method (overrides Base.method)` and a SUMMARY line. A
++  `(nested)` tag means a class defined inside a function. Before the `@override` refactor it
++  found 68 overriding methods (2 nested) and 43 object-only ones.
++- Object-only overrides (a plain class's `__init__`/`__repr__`, whose only base definition is
++  on `object`) are left out by default. `--include-object` lists them. Choose a scope rule,
++  apply it to everything, and state it in the final message along with the count it leaves
++  out. Don't apply it to some classes and not others.
++- Other kinds of sets: write the same kind of list with `ast` and save it to /tmp. Don't use
++  grep for this.
++- If two counts of the same set disagree (an early estimate vs the script, or the walker vs
++  the edit count), diff the two lists before going on. Don't declare either one
++  authoritative until you can explain the gap.
++
++## 2. Apply the edit by script, bottom-up
++- Put the helper script in the scratchpad, outside the repo. Run it from the repo root with
++  `PYTHONPATH=$PWD <project python> <script>`. Without that, `import tenacity` fails with
++  `ModuleNotFoundError`, because the script's own directory goes on `sys.path`, not the cwd.
++- Insert at AST-located `def` lines in descending line order, so earlier inserts don't shift
++  later targets. Copy the def's own indentation. Put a new decorator directly above the `def`,
++  below any existing decorators (`@abc.abstractmethod`, `@gen.coroutine`, `@property`).
++- To add an import to many files with anchor replacement: assert that each anchor occurs once
++  and that `old != new`. Afterwards, `grep -L '<new import>'` the touched files. One run's
++  batch edit printed "ok" for a file it hadn't changed.
++
++## 3. Done means
++1. Re-run `list_overrides.py`. It must show `0 unmarked` and `0 nested class(es) unchecked`,
++   and its total must equal the number of decorators you added (`git diff -U0 | grep -c
++   '^+ *@override'`). Read the counts. Don't just check that the exit code is 0.
++2. If you add a guard test, a runtime walker won't see nested classes. Say so in the final
++   message, or cover those classes another way.
++3. Version-gated code: the project venv is Python 3.12, and no 3.10/3.11 interpreter is on
++   this host (`python3.10`/`python3.11` not found; only newer ones). Don't go looking for
++   one. Define the fallback at module level, unconditionally, so a test can call it
++   directly. Then report the version-switch line itself as checked by reading only.
++4. Run system.md steps 2–3 (full suite, `check_changed.py`). After `tenacity/_utils.py`
++   provides `override`, `check_changed.py` also fails on any added overriding method that
++   doesn't carry `@override`.
++
++## 4. A refactor still ships its companion files
++"No behaviour change" is not a reason to skip `tenacity-change-contract`. Read its §2:
++changes to internal structure and typing that keep behaviour still get an `other:` reno note.
++Decide based on that section, and give the decision in the final message.
+
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the attributes of a decorated function (`fn.statistics`/`fn.retry`/`fn.retry_with`, also seen through an outer `functools.wraps` decorator), the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class, a performance/efficiency fix or rewrite of a strategy's arithmetic where results must stay the same (e.g. `wait_exponential` `exp_base ** n` past `max`)) — i.e. any edit under tenacity/ that a user of the library could notice, including speed. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the attributes of a decorated function (`fn.statistics`/`fn.retry`/`fn.retry_with`, also seen through an outer `functools.wraps` decorator), the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change or a behaviour-preserving refactor across tenacity/ (e.g. adding `@override`/annotations/decorators to methods; §2 still asks for an `other:` note), dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class, a performance/efficiency fix or rewrite of a strategy's arithmetic where results must stay the same (e.g. `wait_exponential` `exp_base ** n` past `max`)) — i.e. any edit under tenacity/ that a user of the library could notice, including speed. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch

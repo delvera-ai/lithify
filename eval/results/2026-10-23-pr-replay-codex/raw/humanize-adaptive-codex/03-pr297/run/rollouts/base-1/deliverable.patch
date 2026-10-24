@@ -1,0 +1,97 @@
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index f0b24fa..2af064d 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -318,6 +318,11 @@ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     """
+     import datetime as dt
+ 
++    today = (
++        dt.datetime.now(value.tzinfo).date()
++        if isinstance(value, dt.datetime) and value.utcoffset() is not None
++        else dt.date.today()
++    )
+     try:
+         value = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+@@ -326,7 +331,7 @@ def naturalday(value: dt.date | dt.datetime, format: str = "%b %d") -> str:
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = value - dt.date.today()
++    delta = value - today
+ 
+     if delta.days == 0:
+         return _("today")
+@@ -344,15 +349,20 @@ def naturaldate(value: dt.date | dt.datetime) -> str:
+     """Like `naturalday`, but append a year for dates more than ~five months away."""
+     import datetime as dt
+ 
++    today = (
++        dt.datetime.now(value.tzinfo).date()
++        if isinstance(value, dt.datetime) and value.utcoffset() is not None
++        else dt.date.today()
++    )
+     try:
+-        value = dt.date(value.year, value.month, value.day)
++        date = dt.date(value.year, value.month, value.day)
+     except AttributeError:
+         # Passed value wasn't date-ish
+         return str(value)
+     except (OverflowError, ValueError):
+         # Date arguments out of range
+         return str(value)
+-    delta = _abs_timedelta(value - dt.date.today())
++    delta = _abs_timedelta(date - today)
+     if delta.days >= 5 * 365 / 12:
+         return naturalday(value, "%b %d %Y")
+     return naturalday(value)
+diff --git a/tests/test_time.py b/tests/test_time.py
+index 63e171a..3397936 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -300,6 +300,44 @@ def test_naturaldate(test_input: dt.date, expected: str) -> None:
+     assert humanize.naturaldate(test_input) == expected
+ 
+ 
++@pytest.mark.parametrize("humanizer", [humanize.naturalday, humanize.naturaldate])
++@pytest.mark.parametrize(
++    "now, offset",
++    [("2023-10-15 23:00:00+00:00", 11), ("2023-10-16 01:00:00+00:00", -7)],
++)
++@pytest.mark.parametrize(
++    "days, expected", [(-1, "yesterday"), (0, "today"), (1, "tomorrow")]
++)
++def test_naturalday_and_naturaldate_timezone(
++    humanizer: typing.Callable[[dt.datetime], str],
++    now: str,
++    offset: int,
++    days: int,
++    expected: str,
++) -> None:
++    with freeze_time(now):
++        tz = dt.timezone(dt.timedelta(hours=offset))
++        hours = 7 if offset > 0 else -7
++        value = dt.datetime.now(tz) + dt.timedelta(hours=hours, days=days)
++        assert humanizer(value) == expected
++
++
++@freeze_time("2023-10-15 23:00:00+00:00")
++@pytest.mark.parametrize("humanizer", [humanize.naturalday, humanize.naturaldate])
++@pytest.mark.parametrize("value", [dt.datetime(2023, 10, 16), dt.date(2023, 10, 16)])
++def test_naturalday_and_naturaldate_local_date(
++    humanizer: typing.Callable[[dt.date], str], value: dt.date
++) -> None:
++    assert humanizer(value) == "tomorrow"
++
++
++@freeze_time("2023-10-15 23:00:00+00:00")
++def test_naturaldate_timezone_year_threshold() -> None:
++    tz = dt.timezone(dt.timedelta(hours=11))
++    value = dt.datetime(2024, 3, 16, tzinfo=tz)
++    assert humanize.naturaldate(value) == "Mar 16"
++
++
+ @pytest.mark.parametrize(
+     "seconds, expected",
+     [

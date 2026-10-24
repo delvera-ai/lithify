@@ -1,0 +1,207 @@
+diff --git a/README.md b/README.md
+index efa939e..81adef1 100644
+--- a/README.md
++++ b/README.md
+@@ -233,7 +233,7 @@ FileNotFoundError: [Errno 2] No translation file found for domain: 'humanize'
+ How to add new phrases to existing locale files:
+ 
+ ```sh
+-xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py  # extract new phrases
++xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'PS_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py  # extract new phrases
+ msgmerge -U src/humanize/locale/ru_RU/LC_MESSAGES/humanize.po humanize.pot # add them to locale files
+ ```
+ 
+diff --git a/scripts/update-translations.sh b/scripts/update-translations.sh
+index bb4ec80..eade289 100755
+--- a/scripts/update-translations.sh
++++ b/scripts/update-translations.sh
+@@ -1,7 +1,7 @@
+ set -e
+ 
+ # extract new phrases
+-xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py
++xgettext --from-code=UTF-8 -o humanize.pot -k'_' -k'N_' -k'P_:1c,2' -k'PS_:1c,2' -k'NS_:1,2' -k'_ngettext:1,2' -l python src/humanize/*.py
+ 
+ for d in src/humanize/locale/*/; do
+     locale="$(basename $d)"
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index f9b1c42..ea4c9cd 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -159,6 +159,19 @@ def _gettext_noop(message: str) -> str:
+     return message
+ 
+ 
++def _pgettext_noop(msgctxt: str, message: str) -> tuple[str, str]:
++    """Mark a contextual translation without translating it.
++
++    Args:
++        msgctxt (str): Context of the translation.
++        message (str): Text to translate in the future.
++
++    Returns:
++        tuple: Original context and text, unchanged.
++    """
++    return msgctxt, message
++
++
+ def _ngettext_noop(singular: str, plural: str) -> tuple[str, str]:
+     """Mark two strings as pluralized translations without translating them.
+ 
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index b169fc2..ebccfb9 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -7,9 +7,11 @@ __lazy_modules__ = {"bisect"}
+ import bisect
+ 
+ from .i18n import _gettext as _
++from .i18n import _gettext_noop as N_
+ from .i18n import _ngettext, decimal_separator, thousands_separator
+ from .i18n import _ngettext_noop as NS_
+ from .i18n import _pgettext as P_
++from .i18n import _pgettext_noop as PS_
+ 
+ TYPE_CHECKING = False
+ if TYPE_CHECKING:
+@@ -35,18 +37,43 @@ _SUPERSCRIPT_MAP = {
+ }
+ _SUPERSCRIPT_TRANS = str.maketrans(_SUPERSCRIPT_MAP)
+ 
+-_ORDINAL_SUFFIXES = ("th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th")
++_ORDINAL_SUFFIXES = {
++    "male": (
++        PS_("0 (male)", "th"),
++        PS_("1 (male)", "st"),
++        PS_("2 (male)", "nd"),
++        PS_("3 (male)", "rd"),
++        PS_("4 (male)", "th"),
++        PS_("5 (male)", "th"),
++        PS_("6 (male)", "th"),
++        PS_("7 (male)", "th"),
++        PS_("8 (male)", "th"),
++        PS_("9 (male)", "th"),
++    ),
++    "female": (
++        PS_("0 (female)", "th"),
++        PS_("1 (female)", "st"),
++        PS_("2 (female)", "nd"),
++        PS_("3 (female)", "rd"),
++        PS_("4 (female)", "th"),
++        PS_("5 (female)", "th"),
++        PS_("6 (female)", "th"),
++        PS_("7 (female)", "th"),
++        PS_("8 (female)", "th"),
++        PS_("9 (female)", "th"),
++    ),
++}
+ _APNUMBER_WORDS = (
+-    "zero",
+-    "one",
+-    "two",
+-    "three",
+-    "four",
+-    "five",
+-    "six",
+-    "seven",
+-    "eight",
+-    "nine",
++    N_("zero"),
++    N_("one"),
++    N_("two"),
++    N_("three"),
++    N_("four"),
++    N_("five"),
++    N_("six"),
++    N_("seven"),
++    N_("eight"),
++    N_("nine"),
+ )
+ 
+ 
+@@ -110,7 +137,7 @@ def ordinal(value: NumberOrString, gender: str = "male") -> str:
+         return str(value)
+     gender = "male" if gender == "male" else "female"
+     digit = 0 if value % 100 in (11, 12, 13) else value % 10
+-    return f"{value}{P_(f'{digit} ({gender})', _ORDINAL_SUFFIXES[digit])}"
++    return f"{value}{P_(*_ORDINAL_SUFFIXES[gender][digit])}"
+ 
+ 
+ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
+diff --git a/tests/test_i18n.py b/tests/test_i18n.py
+index 98be485..65dee82 100644
+--- a/tests/test_i18n.py
++++ b/tests/test_i18n.py
+@@ -5,6 +5,8 @@ from __future__ import annotations
+ import datetime as dt
+ import importlib
+ import pathlib
++import shutil
++import subprocess
+ 
+ import pytest
+ from freezegun import freeze_time
+@@ -351,3 +353,63 @@ def test_intword_unit_has_no_format_placeholder(locale: str) -> None:
+         pytest.skip("Generate .mo with scripts/generate-translation-binaries.sh")
+     finally:
+         humanize.i18n.deactivate()
++
++
++def test_update_translations_preserves_number_translations(
++    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
++) -> None:
++    for tool in ("xgettext", "msgmerge", "msgfmt"):
++        if shutil.which(tool) is None:
++            pytest.skip(f"{tool} is required to update translations")
++
++    root = pathlib.Path(__file__).resolve().parents[1]
++    source = tmp_path / "src" / "humanize"
++    source.mkdir(parents=True)
++    for module in (root / "src" / "humanize").glob("*.py"):
++        shutil.copy(module, source)
++    for locale in ("de_DE", "fr_FR"):
++        shutil.copytree(LOCALE_DIR / locale, source / "locale" / locale)
++
++    subprocess.run(
++        ["bash", str(root / "scripts" / "update-translations.sh")],
++        cwd=tmp_path,
++        check=True,
++        capture_output=True,
++        text=True,
++    )
++    catalog = (tmp_path / "humanize.pot").read_text()
++    words = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
++    for word in words:
++        assert f'msgid "{word}"' in catalog
++    for gender in ("male", "female"):
++        suffixes = ("th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th")
++        for digit, suffix in enumerate(suffixes):
++            assert f'msgctxt "{digit} ({gender})"\nmsgid "{suffix}"' in catalog
++
++    monkeypatch.setattr(
++        humanize.i18n, "_TRANSLATIONS", {None: humanize.i18n._TRANSLATIONS[None]}
++    )
++    try:
++        for locale, words, male, female in (
++            (
++                "de_DE",
++                ("eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"),
++                "1.",
++                "1.",
++            ),
++            (
++                "fr_FR",
++                ("un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"),
++                "1er",
++                "1ère",
++            ),
++        ):
++            humanize.i18n.activate(locale, source / "locale")
++            assert tuple(humanize.apnumber(n) for n in range(1, 10)) == words
++            assert humanize.ordinal(1, gender="male") == male
++            assert humanize.ordinal(1, gender="female") == female
++        humanize.i18n.deactivate()
++        assert humanize.apnumber(1) == "one"
++        assert humanize.ordinal(1, gender="female") == "1st"
++    finally:
++        humanize.i18n.deactivate()

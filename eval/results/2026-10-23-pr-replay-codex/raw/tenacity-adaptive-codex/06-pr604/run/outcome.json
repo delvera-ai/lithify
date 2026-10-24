@@ -1,0 +1,27 @@
+{
+  "task": "Feature: add an `enabled` parameter (default `True`) to `Retrying`, `AsyncRetrying` and the `@retry` decorator. With `enabled=False` the decorated function is called directly, exactly once, with no retry logic, and any exception it raises propagates unchanged. This is useful during development and testing.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 47281,
+    "cached": 249344,
+    "out": 3191,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

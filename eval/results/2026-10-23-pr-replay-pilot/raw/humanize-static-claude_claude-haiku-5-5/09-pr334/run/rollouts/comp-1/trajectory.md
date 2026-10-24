@@ -71,7 +71,7 @@ or `precisedelta`. Fix only
 
 [assistant] The skill's checklist says the fix belongs in `naturaldelta` only, with function-local imports and the docstring kept in sync. Next I'll reproduce the bug on the unmodified code using the harness script.
 [tool_use Bash] {"command": "PY=<work>/env-humanize/bin/python; ls -la $PY; PYTHONPATH=src $PY -c \"\nfrom humanize import naturaldelta\nfor v in [float('nan'), float('inf'), float('-inf'), 1e30, '1e30', 'inf']:\n    try: print(repr(v), '->', repr(naturaldelta(v)))\n    except Exception as e: print(repr(v), 'RAISES', type(e).__name__, e)\n\"; sed -n 164,200p src/humanize/time.py", "description": "Reproduce inf/nan/huge behavior on unmodified code"}
-[tool_result] lrwxr-xr-x@ 1 donovan  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] lrwxr-xr-x@ 1 user  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 nan -> 'nan'
 inf RAISES OverflowError cannot convert float infinity to integer
 -inf RAISES OverflowError cannot convert float infinity to integer

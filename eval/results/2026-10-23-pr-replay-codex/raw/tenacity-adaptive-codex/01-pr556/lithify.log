@@ -1,0 +1,26 @@
+lithify ▸ 20261023-195940-bug-tenacity-utils-find-ordinal  k=2 (genesis (S=0.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ▸ probe base-2: executing with codex
+  ✓ probe base-1: test=pass
+  ✓ probe base-2: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (codex)
+  ✓ applied deliverable from base-1: Both candidates fix the requested suffixes, preserve other behavior, and add identical regression coverage.
+c1 wins on minimality: it extends the existing “th” condition directly.
+Runner-up c2 is equa
+lithify ◂ delivered=True first_pass=True S=0.20 executions=2 role_sessions=1 tokens(in/cached/out)=28835/284032/2589
+{
+  "task_id": "20261023-195940-bug-tenacity-utils-find-ordinal",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.2,
+  "executions": 2,
+  "role_sessions": 1
+}
+

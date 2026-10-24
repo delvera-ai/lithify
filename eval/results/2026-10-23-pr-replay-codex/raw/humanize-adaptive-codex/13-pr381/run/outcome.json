@@ -1,0 +1,27 @@
+{
+  "task": "`humanize.natural_list()` documents its argument as \"an iterable of items\" but only works with lists: tuples, sets, generators, `dict_keys`, `range` and other non-subscriptable iterables raise `TypeError`. Make it accept any finite iterable (and annotate it accordingly), with the same output as for the equivalent list.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 17678,
+    "cached": 83840,
+    "out": 1062,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

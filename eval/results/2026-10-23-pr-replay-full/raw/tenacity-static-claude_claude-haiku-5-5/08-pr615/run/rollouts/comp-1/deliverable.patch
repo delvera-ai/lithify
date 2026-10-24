@@ -1,0 +1,282 @@
+diff --git a/releasenotes/notes/pickle-retrying-objects-3c516c9dd191ba3a.yaml b/releasenotes/notes/pickle-retrying-objects-3c516c9dd191ba3a.yaml
+new file mode 100644
+index 0000000..bc740e9
+--- /dev/null
++++ b/releasenotes/notes/pickle-retrying-objects-3c516c9dd191ba3a.yaml
+@@ -0,0 +1,8 @@
++---
++fixes:
++  - |
++    ``Retrying`` objects, including ones that have already run, and the built-in
++    retry strategies (``retry_if_exception_type``, ``retry_if_exception_message``,
++    and their variants) can now be pickled. This makes ``@retry``-decorated
++    functions usable with ``multiprocessing``. A restored ``Retrying`` keeps its
++    configuration and starts with empty ``statistics``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 591f970..f2e8600 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -291,6 +291,17 @@ class BaseRetrying(ABC):
+             enabled=_first_set(enabled, self.enabled),
+         )
+ 
++    def __getstate__(self) -> dict[str, t.Any]:
++        # threading.local cannot be pickled. Statistics and iter_state are per-run
++        # state, so only the configuration is kept and a restored object starts fresh.
++        state = self.__dict__.copy()
++        del state["_local"]
++        return state
++
++    def __setstate__(self, state: dict[str, t.Any]) -> None:
++        self.__dict__.update(state)
++        self._local = threading.local()
++
+     def __str__(self) -> str:
+         return self._name if self._name is not None else "<unknown>"
+ 
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 6e9fc3e..f15ab98 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import functools
+ import re
+ import typing
+ 
+@@ -81,6 +82,36 @@ class _retry_always(retry_base):
+ retry_always = _retry_always()
+ 
+ 
++# Predicate helpers are module-level so that functools.partial objects built from
++# them pickle; lambdas and nested functions cannot be pickled.
++def _is_instance(
++    exception_types: type[BaseException] | tuple[type[BaseException], ...],
++    exception: BaseException,
++) -> bool:
++    return isinstance(exception, exception_types)
++
++
++def _is_not_instance(
++    exception_types: type[BaseException] | tuple[type[BaseException], ...],
++    exception: BaseException,
++) -> bool:
++    return not isinstance(exception, exception_types)
++
++
++def _message_equals(message: str, exception: BaseException) -> bool:
++    return message == str(exception)
++
++
++def _message_matches(prog: re.Pattern[str], exception: BaseException) -> bool:
++    return bool(prog.match(str(exception)))
++
++
++def _negate(
++    predicate: typing.Callable[..., bool], *args: typing.Any, **kwargs: typing.Any
++) -> bool:
++    return not predicate(*args, **kwargs)
++
++
+ class retry_if_exception(retry_base):
+     """Retry strategy that retries if an exception verifies a predicate."""
+ 
+@@ -108,7 +139,7 @@ class retry_if_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_instance, exception_types))
+ 
+ 
+ class retry_if_not_exception_type(retry_if_exception):
+@@ -120,7 +151,7 @@ class retry_if_not_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_not_instance, exception_types))
+ 
+ 
+ class retry_unless_exception_type(retry_if_exception):
+@@ -132,7 +163,7 @@ class retry_unless_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_not_instance, exception_types))
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+@@ -221,18 +252,10 @@ class retry_if_exception_message(retry_if_exception):
+ 
+         # set predicate
+         if message:
+-
+-            def message_fnc(exception: BaseException) -> bool:
+-                return message == str(exception)
+-
+-            predicate = message_fnc
++            predicate = functools.partial(_message_equals, message)
+         elif match:
+             prog = re.compile(match)
+-
+-            def match_fnc(exception: BaseException) -> bool:
+-                return bool(prog.match(str(exception)))
+-
+-            predicate = match_fnc
++            predicate = functools.partial(_message_matches, prog)
+         else:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+@@ -252,7 +275,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+         super().__init__(message, match)
+         # invert predicate
+         if_predicate = self.predicate
+-        self.predicate = lambda *args_, **kwargs_: not if_predicate(*args_, **kwargs_)
++        self.predicate = functools.partial(_negate, if_predicate)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 80060a3..bf1f4f3 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -16,6 +16,7 @@
+ import contextlib
+ import datetime
+ import logging
++import pickle
+ import re
+ import time
+ import typing
+@@ -1933,6 +1934,127 @@ class TestRetryException(unittest.TestCase):
+         self.assertEqual(expected.last_attempt, actual.last_attempt)
+ 
+ 
++class TestPickling(unittest.TestCase):
++    def _count_attempts(self, strategy: typing.Any, exc: BaseException) -> int:
++        attempts = 0
++
++        def fn() -> None:
++            nonlocal attempts
++            attempts += 1
++            raise exc
++
++        # A non-retried exception propagates raw, so it is suppressed by its own type.
++        with contextlib.suppress(RetryError, type(exc)):
++            Retrying(
++                retry=strategy,
++                stop=tenacity.stop_after_attempt(3),
++                wait=tenacity.wait_none(),
++            )(fn)
++        return attempts
++
++    def test_retrying_is_pickleable(self) -> None:
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_fixed(0),
++            retry=tenacity.retry_if_exception_type(ValueError),
++            reraise=True,
++            name="flaky",
++        )
++        restored = pickle.loads(pickle.dumps(retrying))
++
++        self.assertIsInstance(restored, Retrying)
++        self.assertEqual("flaky", str(restored))
++        attempts = 0
++
++        def fn() -> None:
++            nonlocal attempts
++            attempts += 1
++            raise ValueError("boom")
++
++        with self.assertRaises(ValueError):
++            restored(fn)
++        self.assertEqual(2, attempts)
++
++    def test_used_retrying_is_pickleable(self) -> None:
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(3),
++            wait=tenacity.wait_fixed(0),
++            retry=tenacity.retry_if_exception_type(ValueError),
++        )
++        calls = 0
++
++        def flaky() -> str:
++            nonlocal calls
++            calls += 1
++            if calls < 2:
++                raise ValueError("not yet")
++            return "done"
++
++        self.assertEqual("done", retrying(flaky))
++        self.assertEqual(2, retrying.statistics["attempt_number"])
++
++        restored = pickle.loads(pickle.dumps(retrying))
++        # Runtime statistics are per-run state, so the restored object starts fresh.
++        self.assertEqual({}, restored.statistics)
++        self.assertEqual("done", restored(flaky))
++        # flaky succeeds from its second call on, so the restored run needs one attempt.
++        self.assertEqual(1, restored.statistics["attempt_number"])
++
++    def test_decorated_function_retry_is_pickleable(self) -> None:
++        @retry(stop=tenacity.stop_after_attempt(2), wait=tenacity.wait_fixed(0))
++        def fn() -> int:
++            return 1
++
++        restored = pickle.loads(pickle.dumps(fn.retry))
++
++        self.assertIsInstance(restored, Retrying)
++        self.assertEqual(1, restored(lambda: 1))
++
++    def test_builtin_retry_strategies_are_pickleable(self) -> None:
++        cases: list[tuple[typing.Any, BaseException, int]] = [
++            (tenacity.retry_if_exception_type(ValueError), ValueError("boom"), 3),
++            (tenacity.retry_if_not_exception_type(ValueError), ValueError("boom"), 1),
++            (tenacity.retry_unless_exception_type(ValueError), ValueError("boom"), 1),
++            (
++                tenacity.retry_if_exception_message(message="boom"),
++                ValueError("boom"),
++                3,
++            ),
++            (tenacity.retry_if_exception_message(match="bo"), ValueError("boom"), 3),
++            (
++                tenacity.retry_if_not_exception_message(message="boom"),
++                ValueError("boom"),
++                1,
++            ),
++            (
++                tenacity.retry_if_not_exception_message(match="bo"),
++                ValueError("boom"),
++                1,
++            ),
++        ]
++        for strategy, exc, expected in cases:
++            with self.subTest(strategy=strategy):
++                restored = pickle.loads(pickle.dumps(strategy))
++                self.assertEqual(expected, self._count_attempts(restored, exc))
++
++    def test_builtin_stop_and_wait_strategies_are_pickleable(self) -> None:
++        strategies: list[typing.Any] = [
++            tenacity.stop_never,
++            tenacity.stop_after_attempt(2),
++            tenacity.stop_after_delay(1),
++            tenacity.stop_before_delay(1),
++            tenacity.wait_none(),
++            tenacity.wait_fixed(1),
++            tenacity.wait_random(0, 1),
++            tenacity.wait_incrementing(1),
++            tenacity.wait_exponential(),
++        ]
++        for strategy in strategies:
++            with self.subTest(strategy=strategy):
++                restored = pickle.loads(pickle.dumps(strategy))
++                self.assertIs(type(strategy), type(restored))
++
++
+ class TestRetryTyping(unittest.TestCase):
+     def test_retry_type_annotations(self) -> None:
+         """The decorator should maintain types of decorated functions."""

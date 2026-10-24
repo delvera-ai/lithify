@@ -1,0 +1,63 @@
+exit 1
+......................................FFF.F................. [ 48%]
+...............................................................          [100%]
+=================================== FAILURES ===================================
+_______________ TestWaitConditions.test_wait_exponential_jitter ________________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter>
+
+    def test_wait_exponential_jitter(self) -> None:
+        fn = tenacity.wait_exponential_jitter(max=60)
+    
+        for _ in range(1000):
+            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 1, 2)
+            self._assert_inclusive_range(fn(make_retry_state(2, 0)), 2, 3)
+            self._assert_inclusive_range(fn(make_retry_state(3, 0)), 4, 5)
+            self._assert_inclusive_range(fn(make_retry_state(4, 0)), 8, 9)
+            self._assert_inclusive_range(fn(make_retry_state(5, 0)), 16, 17)
+            self._assert_inclusive_range(fn(make_retry_state(6, 0)), 32, 33)
+            self.assertEqual(fn(make_retry_state(7, 0)), 60)
+            self.assertEqual(fn(make_retry_state(8, 0)), 60)
+            self.assertEqual(fn(make_retry_state(9, 0)), 60)
+    
+>       with self.assertWarns(DeprecationWarning):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: DeprecationWarning not triggered
+
+tests/test_tenacity.py:612: AssertionError
+_ TestWaitConditions.test_wait_exponential_jitter_initial_and_multiplier_raises _
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter_initial_and_multiplier_raises>
+
+    def test_wait_exponential_jitter_initial_and_multiplier_raises(self) -> None:
+        with self.assertRaises(ValueError):
+>           tenacity.wait_exponential_jitter(initial=5, multiplier=10)
+E           TypeError: wait_exponential_jitter.__init__() got an unexpected keyword argument 'multiplier'
+
+tests/test_tenacity.py:659: TypeError
+______ TestWaitConditions.test_wait_exponential_jitter_initial_deprecated ______
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter_initial_deprecated>
+
+    def test_wait_exponential_jitter_initial_deprecated(self) -> None:
+>       with self.assertWarns(DeprecationWarning):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: DeprecationWarning not triggered
+
+tests/test_tenacity.py:652: AssertionError
+__________ TestWaitConditions.test_wait_exponential_jitter_multiplier __________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter_multiplier>
+
+    def test_wait_exponential_jitter_multiplier(self) -> None:
+>       fn = tenacity.wait_exponential_jitter(multiplier=10, max=60, jitter=0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: wait_exponential_jitter.__init__() got an unexpected keyword argument 'multiplier'
+
+tests/test_tenacity.py:645: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter_initial_and_multiplier_raises
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter_initial_deprecated
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter_multiplier
+4 failed, 119 passed, 12 subtests passed in 1.87s

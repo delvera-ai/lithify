@@ -1,0 +1,62 @@
+diff --git a/releasenotes/notes/fix-tornado-none-decoration-3f9c2e7a1d864b05.yaml b/releasenotes/notes/fix-tornado-none-decoration-3f9c2e7a1d864b05.yaml
+new file mode 100644
+index 0000000..fad1043
+--- /dev/null
++++ b/releasenotes/notes/fix-tornado-none-decoration-3f9c2e7a1d864b05.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    ``@retry`` no longer raises ``AttributeError: 'NoneType' object has no attribute 'gen'``
++    when the ``tenacity.tornado`` module global has been set to ``None``. Whether tornado is
++    available is now read at decoration time instead of from an import-time snapshot.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 51925ef..21ffb4f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -94,6 +94,13 @@ except ImportError:
+ # Keep the availability answer in a plain bool instead.
+ _HAS_TORNADO = tornado is not None
+ 
++
++def _has_tornado() -> bool:
++    # Read the live global at call time: tests set `tenacity.tornado = None` to
++    # hide tornado, and decoration must honour that rather than the snapshot.
++    return tornado is not None
++
++
+ if t.TYPE_CHECKING:
+     if sys.version_info >= (3, 11):
+         from typing import Self
+@@ -786,7 +793,7 @@ def retry(*dargs: t.Any, **dkw: t.Any) -> t.Any:
+         ):
+             r = AsyncRetrying(*dargs, **dkw)
+         elif (
+-            _HAS_TORNADO
++            _has_tornado()
+             and hasattr(tornado.gen, "is_coroutine_function")
+             and tornado.gen.is_coroutine_function(f)
+         ):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..adcfcfa 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -2369,5 +2369,18 @@ class TestPickle(unittest.TestCase):
+         assert calls == 3
+ 
+ 
++class TestTornadoAvailabilityAtDecoration(unittest.TestCase):
++    def test_retry_decorates_sync_function_when_tornado_global_is_none(self) -> None:
++        # Tests hide tornado by setting the module global to None; decoration
++        # must read that live value rather than the import-time snapshot.
++        with mock.patch.object(tenacity, "tornado", None):
++
++            @retry(stop=tenacity.stop_after_attempt(2))
++            def succeed() -> str:
++                return "ok"
++
++        assert succeed() == "ok"
++
++
+ if __name__ == "__main__":
+     unittest.main()

@@ -1,0 +1,52 @@
+{
+  "task": "Performance: `wait_exponential(max=...)` still computes `exp_base ** attempt_number` on every retry even after the result has reached `max`, so long-running polling gets more and more expensive (the integer grows without bound). Once the exponential would exceed `max`, return `max` without performing the power operation. (Stated requirement: the power must not be computed for attempts beyond the cap.) Results must otherwise be unchanged.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Deciding criteria: correctness beyond the tests, then fidelity. c1 checks in log space whether the result is already past `max` and returns `max`. It only does this when `max >= max(0, min)`, where every path of the old code returns `max` anyway, so results are exactly as before. It also adds the reno note the repo's change rules ask for.\nRunner-up c3 is simpler but changes one result. With `min > max` and a float base large enough to overflow, the old code returned `max` but c3 returns `min`. It also has no release note.\nc4 only skips the power for integer base and multiplier, and its cut-off is loose, so it still computes the power for some attempts past the cap. That breaks the stated requirement.\nc2 is correct but far more complex (type checks, `sys.float_info` boundaries) and also has no release note.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-212750-performance-wait-exponential-max",
+  "usage": {
+    "in": 452147,
+    "cached": 5567762,
+    "out": 107007,
+    "cost": 3.48253348,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

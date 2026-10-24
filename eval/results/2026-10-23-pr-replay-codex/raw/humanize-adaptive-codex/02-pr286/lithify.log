@@ -1,0 +1,45 @@
+lithify ▸ 20261023-204358-humanize-i18n-raises-a-bare-exce  k=2 (genesis (S=0.20)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ▸ probe base-2: executing with codex
+  ✓ probe base-1: test=pass
+  ✗ probe base-2: test=pass, edited-existing-tests=1
+  ▸ propose dom-1 (codex)
+  ▸ propose inv-2 (codex)
+  ▸ propose dom-2 (codex)
+  ▸ propose inv-1 (codex)
+  ✓ dom-1: candidate harness ready
+  ✓ dom-2: candidate harness ready
+  ✓ inv-2: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with codex
+  ▸ probe inv-2: executing with codex
+  ✓ probe inv-1: test=pass
+  ✓ probe inv-2: test=pass
+  ▸ compose comp-1 (codex)
+  ▸ compose comp-2 (codex)
+  ✓ comp-2: candidate harness ready
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with codex
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 3 gate-passing deliverables (codex)
+  ✓ applied deliverable from inv-1: c2 makes the requested exception and documentation changes, preserves the message, and adds a focused regression test following the surrounding importlib convention.
+Runner-up c1 provides equivalent c
+  ▸ reflect (codex)
+  ✎ library: lesson recorded; 1 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-204358-humanize-i18n-raises-a-bare-exce (guardrails.md) — `lithify adopt 20261023-204358-humanize-i18n-raises-a-bare-exce`
+lithify ◂ delivered=True first_pass=True S=0.40 executions=5 role_sessions=8 tokens(in/cached/out)=200396/1318784/9266
+{
+  "task_id": "20261023-204358-humanize-i18n-raises-a-bare-exce",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "inv-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-204358-humanize-i18n-raises-a-bare-exce",
+  "stability": 0.397,
+  "executions": 5,
+  "role_sessions": 8
+}
+

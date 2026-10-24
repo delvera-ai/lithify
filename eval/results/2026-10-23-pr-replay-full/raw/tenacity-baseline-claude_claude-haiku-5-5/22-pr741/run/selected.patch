@@ -1,0 +1,126 @@
+diff --git a/releasenotes/notes/fix-falsy-callable-wait-5c2e8d1f7a9b4e63.yaml b/releasenotes/notes/fix-falsy-callable-wait-5c2e8d1f7a9b4e63.yaml
+new file mode 100644
+index 0000000..2e6f487
+--- /dev/null
++++ b/releasenotes/notes/fix-falsy-callable-wait-5c2e8d1f7a9b4e63.yaml
+@@ -0,0 +1,8 @@
++---
++fixes:
++  - |
++    A callable ``wait`` strategy is now always called, even when it is falsy
++    (for example, an empty container or an object whose ``__bool__`` or
++    ``__len__`` returns False). Previously such a strategy was silently
++    skipped and retries happened with no delay. The sync and async retry
++    loops both honour this. ``None``, ``0`` and ``sum([])`` still mean no wait.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e466003..93bfd56 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -421,8 +421,9 @@ class BaseRetrying(ABC):
+         # `wait` is annotated as always set, so a type checker sees this guard
+         # as always true -- but untyped callers legitimately pass `None` or `0`
+         # to mean "no wait", and `sum([])` over an empty list of strategies
+-        # yields the int 0. Keep honouring those.
+-        if not self.wait:  # type: ignore[truthy-bool]
++        # yields the int 0. Keep honouring those. Callables are always invoked,
++        # even if they define a falsy `__bool__` or `__len__`.
++        if not callable(self.wait) and not self.wait:  # type: ignore[truthy-bool]
+             retry_state.upcoming_sleep = 0.0
+         else:
+             retry_state.upcoming_sleep = self.wait(retry_state)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 3292a6c..af563ca 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -152,9 +152,10 @@ class AsyncRetrying(BaseRetrying):
+ 
+     @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+-        # See BaseRetrying._run_wait: falsy `wait` values mean "no wait" and
+-        # reach us from untyped callers.
+-        if not self.wait:  # type: ignore[truthy-bool]
++        # See BaseRetrying._run_wait: falsy non-callable `wait` values mean
++        # "no wait" and reach us from untyped callers; callables are always
++        # invoked.
++        if not callable(self.wait) and not self.wait:  # type: ignore[truthy-bool]
+             retry_state.upcoming_sleep = 0.0
+         else:
+             retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 21c4e93..24693f7 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -96,6 +96,27 @@ class TestAsyncio(unittest.TestCase):
+             await retrying(_async_function, thing)
+             assert thing.counter == thing.count
+ 
++    @asynctest
++    async def test_wait_falsy_callable_is_still_called(self) -> None:
++        # A falsy callable wait strategy must still be invoked by AsyncRetrying.
++        class FalsyWait:
++            def __init__(self) -> None:
++                self.calls = 0
++
++            def __bool__(self) -> bool:
++                return False
++
++            def __call__(self, retry_state: Any) -> float:
++                self.calls += 1
++                return 0.0
++
++        wait = FalsyWait()
++        thing = NoIOErrorAfterCount(2)
++        retrying = AsyncRetrying(wait=wait, stop=stop_after_attempt(5))  # type: ignore[arg-type]
++        await retrying(_async_function, thing)
++        assert thing.counter == thing.count
++        assert wait.calls == thing.count
++
+     @asynctest
+     async def test_iscoroutinefunction(self) -> None:
+         assert inspect.iscoroutinefunction(_retryable_coroutine)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 95ab811..1f028eb 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -530,6 +530,41 @@ class TestWaitConditions(unittest.TestCase):
+                 )
+                 self.assertEqual(r(flaky), "ok")
+ 
++    def test_wait_falsy_callable_is_still_called(self) -> None:
++        # A callable wait strategy must be invoked even when it is falsy
++        # (empty container, or a `__bool__`/`__len__` returning False).
++        class FalsyWait:
++            def __init__(self) -> None:
++                self.calls = 0
++
++            def __bool__(self) -> bool:
++                return False
++
++            def __call__(self, retry_state: RetryCallState) -> float:
++                self.calls += 1
++                return 0.25
++
++        class EmptyContainerWait(FalsyWait):
++            def __bool__(self) -> bool:
++                return True
++
++            def __len__(self) -> int:
++                return 0
++
++        for wait in (FalsyWait(), EmptyContainerWait()):
++            with self.subTest(wait=type(wait).__name__):
++                attempts = []
++
++                def flaky() -> str:
++                    attempts.append(1)
++                    if len(attempts) < 2:
++                        raise ValueError("boom")
++                    return "ok"
++
++                r = Retrying(wait=wait, stop=tenacity.stop_after_attempt(3))  # type: ignore[arg-type]
++                self.assertEqual(r(flaky), "ok")
++                self.assertEqual(wait.calls, 1)
++
+     def test_wait_radd_plain_callable(self) -> None:
+         # A plain callable is a valid WaitBaseT, and functions have no
+         # __add__, so `callable + strategy` goes through wait_base.__radd__.

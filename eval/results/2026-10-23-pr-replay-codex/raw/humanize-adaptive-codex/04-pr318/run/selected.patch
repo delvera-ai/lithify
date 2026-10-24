@@ -1,0 +1,25 @@
+diff --git a/src/humanize/lists.py b/src/humanize/lists.py
+index 543a32f..525f0e3 100644
+--- a/src/humanize/lists.py
++++ b/src/humanize/lists.py
+@@ -28,6 +28,8 @@ def natural_list(items: list[Any]) -> str:
+     Returns:
+         str: A string with commas and 'and' in the right places.
+     """
++    if not items:
++        return ""
+     if len(items) == 1:
+         return str(items[0])
+     elif len(items) == 2:
+diff --git a/tests/test_lists.py b/tests/test_lists.py
+index a39d344..e47d6c8 100644
+--- a/tests/test_lists.py
++++ b/tests/test_lists.py
+@@ -21,3 +21,7 @@ def test_natural_list(
+     test_args: list[str] | list[int] | list[str | int], expected: str
+ ) -> None:
+     assert humanize.natural_list(*test_args) == expected
++
++
++def test_natural_list_empty() -> None:
++    assert humanize.natural_list([]) == ""

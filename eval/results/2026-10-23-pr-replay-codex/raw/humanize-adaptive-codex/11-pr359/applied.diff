@@ -1,0 +1,74 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0683e75..c011690 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -150,6 +150,21 @@
+       "wall_s": 55.9,
+       "always_on_tokens": 196,
+       "stability_after": 0.9985
++    },
++    {
++      "task_id": "20261023-205631-bug-humanize-metric-can-show-one",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 16234,
++      "tokens_cached": 106752,
++      "tokens_out": 1258,
++      "cost_usd": 0.0,
++      "wall_s": 57.7,
++      "always_on_tokens": 196,
++      "stability_after": 0.9985
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 2dfeffe..1bbc9a5 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -556,6 +556,10 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+         value /= 10 ** (new_bucket - old_bucket)
+         digits = int(max(0, precision - exponent % 3 - 1))
+ 
++    # Rounding can add an integer digit without changing the SI prefix.
++    if round(abs(value), digits) >= 10 ** (exponent % 3 + 1):
++        digits = max(0, digits - 1)
++
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+     elif exponent < 0:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 6f0a664..c3e7d82 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -327,3 +327,28 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+ )
+ def test_metric(test_args: list[typing.Any], expected: str) -> None:
+     assert humanize.metric(*test_args) == expected
++
++
++@pytest.mark.parametrize(
++    "value, precision, expected",
++    [
++        (9999, 3, "10.0 k"),
++        (99999, 3, "100 k"),
++        (9.99999, 3, "10.0"),
++        (-9999, 3, "-10.0 k"),
++        (-99999, 3, "-100 k"),
++        (-9.99999, 3, "-10.0"),
++        (0.009999, 3, "10.0 m"),
++        (0.099999, 3, "100 m"),
++        (9.99999, 4, "10.00"),
++        (99.9999, 4, "100.0"),
++        (9.99999, 2, "10"),
++        (9.99999, 1, "10"),
++        (9.99999, 0, "10"),
++        (10000, 3, "10.0 k"),
++        (9994, 3, "9.99 k"),
++        (99949, 3, "99.9 k"),
++    ],
++)
++def test_metric_rounding_carry(value: float, precision: int, expected: str) -> None:
++    assert humanize.metric(value, precision=precision) == expected

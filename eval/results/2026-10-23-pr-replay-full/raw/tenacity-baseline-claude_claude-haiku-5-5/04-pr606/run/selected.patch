@@ -1,0 +1,227 @@
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..a8d28d8 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -30,22 +30,38 @@ class async_retry_base(retry_base):
+         pass
+ 
+     def __and__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self,
++        other: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
+     def __rand__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self,
++        other: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
+     def __or__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self,
++        other: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
+     def __ror__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self,
++        other: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
+     ) -> "retry_any":
+         return retry_any(other, self)
+ 
+@@ -95,7 +111,13 @@ class retry_if_result(async_retry_base):
+ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(
++        self,
++        *retries: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
++    ) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+@@ -110,7 +132,13 @@ class retry_any(async_retry_base):
+ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(
++        self,
++        *retries: (
++            "retry_base | async_retry_base "
++            "| typing.Callable[[RetryCallState], typing.Any]"
++        ),
++    ) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 593b252..136c4aa 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -29,16 +29,30 @@ class retry_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         pass
+ 
+-    def __and__(self, other: "retry_base") -> "retry_all":
+-        return other.__rand__(self)
+-
+-    def __rand__(self, other: "retry_base") -> "retry_all":
++    def __and__(
++        self, other: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> "retry_all":
++        # Let a retry_base operand pick the class (e.g. async) of the combined strategy.
++        if isinstance(other, retry_base):
++            return other.__rand__(self)
++        return retry_all(self, other)
++
++    def __rand__(
++        self, other: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> "retry_all":
+         return retry_all(other, self)
+ 
+-    def __or__(self, other: "retry_base") -> "retry_any":
+-        return other.__ror__(self)
+-
+-    def __ror__(self, other: "retry_base") -> "retry_any":
++    def __or__(
++        self, other: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> "retry_any":
++        # Let a retry_base operand pick the class (e.g. async) of the combined strategy.
++        if isinstance(other, retry_base):
++            return other.__ror__(self)
++        return retry_any(self, other)
++
++    def __ror__(
++        self, other: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> "retry_any":
+         return retry_any(other, self)
+ 
+ 
+@@ -254,7 +268,9 @@ class retry_if_not_exception_message(retry_if_exception_message):
+ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(
++        self, *retries: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+@@ -264,7 +280,9 @@ class retry_any(retry_base):
+ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(
++        self, *retries: "retry_base | typing.Callable[[RetryCallState], bool]"
++    ) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..fb7e5c3 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -377,6 +377,35 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    @asynctest
++    async def test_retry_with_plain_callable_composition(self) -> None:
++        async def test(retry_strategy: tenacity.retry_base) -> int:
++            attempts = 0
++            async for attempt in tasyncio.AsyncRetrying(retry=retry_strategy):
++                with attempt:
++                    attempts += 1
++                attempt.retry_state.set_result(attempts)
++            return attempts
++
++        # Plain callables in a composed strategy receive the RetryCallState.
++        def gt_0(retry_state: tenacity.RetryCallState) -> bool:
++            assert retry_state.outcome is not None
++            return retry_state.outcome.result() > 0
++
++        async def lt_3(x: float) -> bool:
++            return x < 3
++
++        def is_five(retry_state: tenacity.RetryCallState) -> bool:
++            assert retry_state.outcome is not None
++            return retry_state.outcome.result() == 5
++
++        # "|" retries while x < 3 or x == 5, so it stops at 3.
++        self.assertEqual(3, await test(tasyncio.retry_if_result(lt_3) | is_five))
++        self.assertEqual(3, await test(is_five | tasyncio.retry_if_result(lt_3)))
++        # "&" retries while x < 3 and x > 0, so it stops at 3.
++        self.assertEqual(3, await test(tasyncio.retry_if_result(lt_3) & gt_0))
++        self.assertEqual(3, await test(gt_0 & tasyncio.retry_if_result(lt_3)))
++
+     @asynctest
+     async def test_retry_with_async_result_rand(self) -> None:
+         async def test() -> int:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 0645a83..d7caca2 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -743,6 +743,40 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertFalse(r(tenacity.Future.construct(1, 2.2, False)))
+         self.assertFalse(r(tenacity.Future.construct(1, 42, True)))
+ 
++    def test_retry_composed_with_plain_callable(self) -> None:
++        # Plain callables in a composed strategy receive the RetryCallState.
++        def is_bad(retry_state: tenacity.RetryCallState) -> bool:
++            assert retry_state.outcome is not None
++            exc = retry_state.outcome.exception()
++            return exc is not None and "bad" in str(exc)
++
++        retry_or = tenacity.retry_if_exception_type(IOError) | is_bad
++        retry_or_reversed = is_bad | tenacity.retry_if_exception_type(IOError)
++        retry_and = tenacity.retry_if_exception_type(IOError) & is_bad
++        retry_and_reversed = is_bad & tenacity.retry_if_exception_type(IOError)
++
++        def r(retry: tenacity.retry_base, exc: BaseException) -> bool:
++            retry_state = make_retry_state(
++                1, 1.0, last_result=tenacity.Future.construct(1, exc, True)
++            )
++            return retry(retry_state)
++
++        self.assertIsInstance(retry_or, tenacity.retry_any)
++        self.assertIsInstance(retry_or_reversed, tenacity.retry_any)
++        self.assertIsInstance(retry_and, tenacity.retry_all)
++        self.assertIsInstance(retry_and_reversed, tenacity.retry_all)
++
++        for retry in (retry_or, retry_or_reversed):
++            self.assertTrue(r(retry, IOError("bad")))
++            self.assertTrue(r(retry, IOError("fine")))
++            self.assertTrue(r(retry, ValueError("bad")))
++            self.assertFalse(r(retry, ValueError("fine")))
++
++        for retry in (retry_and, retry_and_reversed):
++            self.assertTrue(r(retry, IOError("bad")))
++            self.assertFalse(r(retry, IOError("fine")))
++            self.assertFalse(r(retry, ValueError("bad")))
++
+     def _raise_try_again(self) -> None:
+         self._attempts += 1
+         if self._attempts < 3:

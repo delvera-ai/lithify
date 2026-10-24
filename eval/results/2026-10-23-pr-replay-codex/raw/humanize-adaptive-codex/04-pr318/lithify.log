@@ -1,0 +1,21 @@
+lithify ▸ 20261023-204958-bug-humanize-natural-list-raises  k=1 (build (S=0.60)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ✓ applied deliverable from base-1: only one distinct deliverable passed the gates (no LLM judge needed)
+lithify ◂ delivered=True first_pass=True S=0.80 executions=1 role_sessions=0 tokens(in/cached/out)=10296/133248/665
+{
+  "task_id": "20261023-204958-bug-humanize-natural-list-raises",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.797,
+  "executions": 1,
+  "role_sessions": 0
+}
+

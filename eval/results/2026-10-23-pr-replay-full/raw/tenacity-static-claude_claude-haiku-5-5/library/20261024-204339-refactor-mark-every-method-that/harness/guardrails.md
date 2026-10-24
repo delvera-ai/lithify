@@ -1,0 +1,2 @@
+- Never edit, skip or weaken an existing test to make it pass; fix the code instead.
+- Never add credentials, tokens or secrets to the repository.

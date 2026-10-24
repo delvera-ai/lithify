@@ -1,0 +1,247 @@
+diff --git a/doc/source/index.rst b/doc/source/index.rst
+index 2d1e9f8..1016248 100644
+--- a/doc/source/index.rst
++++ b/doc/source/index.rst
+@@ -308,6 +308,24 @@ is most visible), you can set `reraise=True`.
+         # timed out retrying
+         pass
+ 
++To turn retrying off without removing the decorator, for example during
++development or testing, pass ``enabled=False``. The function is then called
++exactly once, with no retry logic, and any exception it raises propagates
++unchanged. ``Retrying``, ``AsyncRetrying`` and ``retry_with`` accept the same
++argument.
++
++.. testcode::
++
++    @retry(stop=stop_after_attempt(3), enabled=False)
++    def raise_my_exception():
++        raise MyException("Fail")
++
++    try:
++        raise_my_exception()
++    except MyException:
++        # not retried
++        pass
++
+ Before and After Retry, and Logging
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/releasenotes/notes/add-enabled-parameter-5c1d2e8f9a3b4c70.yaml b/releasenotes/notes/add-enabled-parameter-5c1d2e8f9a3b4c70.yaml
+new file mode 100644
+index 0000000..b8606a1
+--- /dev/null
++++ b/releasenotes/notes/add-enabled-parameter-5c1d2e8f9a3b4c70.yaml
+@@ -0,0 +1,8 @@
++---
++features:
++  - |
++    Added an ``enabled`` parameter (default ``True``) to ``Retrying``,
++    ``AsyncRetrying`` and the ``@retry`` decorator. With ``enabled=False`` the
++    decorated function is called directly, exactly once, with no retry logic,
++    and any exception it raises propagates unchanged. This is useful during
++    development and testing.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 57af68a..bb6529b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -240,6 +240,7 @@ class BaseRetrying(ABC):
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -253,6 +254,7 @@ class BaseRetrying(ABC):
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
+         self._name = name
++        self.enabled = enabled
+ 
+     def copy(
+         self,
+@@ -269,6 +271,7 @@ class BaseRetrying(ABC):
+         | None
+         | object = _unset,
+         name: str | None | object = _unset,
++        enabled: bool | object = _unset,
+     ) -> "Self":
+         """Copy this object with some parameters changed if needed."""
+         return self.__class__(
+@@ -285,6 +288,7 @@ class BaseRetrying(ABC):
+                 retry_error_callback, self.retry_error_callback
+             ),
+             name=_first_set(name, self._name),
++            enabled=_first_set(enabled, self.enabled),
+         )
+ 
+     def __str__(self) -> str:
+@@ -484,6 +488,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+@@ -667,6 +674,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = ...,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = ...,
++    enabled: bool = ...,
+ ) -> _AsyncRetryDecorator: ...
+ 
+ 
+@@ -684,6 +692,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = RetryError,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = None,
++    enabled: bool = True,
+ ) -> t.Callable[[t.Callable[P, R]], _RetryDecorated[P, R]]: ...
+ 
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 85b216a..3a47efa 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -91,6 +91,7 @@ class AsyncRetrying(BaseRetrying):
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+         | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ) -> None:
+         super().__init__(
+             sleep=sleep,  # type: ignore[arg-type]
+@@ -104,15 +105,22 @@ class AsyncRetrying(BaseRetrying):
+             retry_error_cls=retry_error_cls,
+             retry_error_callback=retry_error_callback,
+             name=name,
++            enabled=enabled,
+         )
+ 
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        is_async = _utils.is_coroutine_callable(fn)
++        if not self.enabled:
++            result: t.Any = fn(*args, **kwargs)
++            if is_async:
++                result = await result
++            return result  # type: ignore[no-any-return]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+-        is_async = _utils.is_coroutine_callable(fn)
+         while True:
+             do = await self.iter(retry_state=retry_state)
+             if isinstance(do, DoAttempt):
+diff --git a/tenacity/tornadoweb.py b/tenacity/tornadoweb.py
+index 0d46ed7..7067ac7 100644
+--- a/tenacity/tornadoweb.py
++++ b/tenacity/tornadoweb.py
+@@ -43,6 +43,10 @@ class TornadoRetrying(BaseRetrying):
+         *args: typing.Any,
+         **kwargs: typing.Any,
+     ) -> "typing.Generator[typing.Any, typing.Any, _RetValT]":
++        if not self.enabled:
++            result = yield fn(*args, **kwargs)
++            raise gen.Return(result)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 0cdb8ba..16bc2a2 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -514,5 +514,31 @@ class TestSyncFunctionWithAsyncSleep(unittest.TestCase):
+         assert mock_sleep.await_count == 2
+ 
+ 
++class TestEnabled:
++    @asynctest
++    async def test_disabled_async_decorator_calls_once_and_propagates(self) -> None:
++        calls: list[int] = []
++
++        @retry(stop=stop_after_attempt(3), enabled=False)
++        async def fail() -> None:
++            calls.append(1)
++            raise ValueError("boom")
++
++        with pytest.raises(ValueError):
++            await fail()
++        assert len(calls) == 1
++
++    @asynctest
++    async def test_disabled_async_retrying_calls_sync_fn_once(self) -> None:
++        calls: list[int] = []
++
++        def succeed() -> str:
++            calls.append(1)
++            return "ok"
++
++        assert await AsyncRetrying(enabled=False)(succeed) == "ok"
++        assert len(calls) == 1
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 5a90a46..6e31d5a 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1930,5 +1930,50 @@ class TestMockingSleep:
+         assert mock_sleep.call_count == 1
+ 
+ 
++class TestEnabled:
++    def test_disabled_decorator_calls_once_and_propagates(self) -> None:
++        calls: list[int] = []
++
++        @retry(stop=tenacity.stop_after_attempt(3), enabled=False)
++        def fail() -> None:
++            calls.append(1)
++            raise CustomError("boom")
++
++        with pytest.raises(CustomError):
++            fail()
++        assert len(calls) == 1
++
++    def test_disabled_retrying_returns_result_without_retry(self) -> None:
++        calls: list[int] = []
++
++        def succeed() -> str:
++            calls.append(1)
++            return "ok"
++
++        assert Retrying(enabled=False)(succeed) == "ok"
++        assert len(calls) == 1
++
++    def test_retry_with_enabled_false_disables_retry(self) -> None:
++        calls: list[int] = []
++
++        @retry(stop=tenacity.stop_after_attempt(3))
++        def fail() -> None:
++            calls.append(1)
++            raise CustomError("boom")
++
++        with pytest.raises(RetryError):
++            fail()
++        assert len(calls) == 3
++
++        calls.clear()
++        with pytest.raises(CustomError):
++            fail.retry_with(enabled=False)()
++        assert len(calls) == 1
++
++    def test_enabled_defaults_to_true(self) -> None:
++        assert Retrying().enabled is True
++        assert retry(lambda: None).retry.enabled is True
++
++
+ if __name__ == "__main__":
+     unittest.main()

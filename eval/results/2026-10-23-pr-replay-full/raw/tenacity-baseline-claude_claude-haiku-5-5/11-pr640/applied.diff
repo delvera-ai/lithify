@@ -1,0 +1,97 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a5c8eff..ecbaf86 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -150,6 +150,21 @@
+       "wall_s": 76.4,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-191528-bug-when-tryagain-is-raised-from",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 35433,
++      "tokens_cached": 834599,
++      "tokens_out": 9038,
++      "cost_usd": 0.0199,
++      "wall_s": 70.9,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 282e6da..c84868f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -185,6 +185,11 @@ class RetryError(Exception):
+ 
+     def reraise(self) -> t.NoReturn:
+         if self.last_attempt.failed:
++            exc = self.last_attempt.exception()
++            # A TryAgain raised from an except block only exists to trigger a retry;
++            # the error that caused it is its context, which is what should surface.
++            if isinstance(exc, TryAgain) and exc.__context__ is not None:
++                raise exc.__context__
+             raise self.last_attempt.result()
+         raise self
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 7b5c641..d78ad95 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -440,6 +440,23 @@ class TestContextManager(unittest.TestCase):
+                 with attempts:
+                     await _async_function(thing)
+ 
++    @asynctest
++    async def test_retry_try_again_from_except_reraises_cause(self) -> None:
++        async def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        r = AsyncRetrying(
++            stop=stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            await r(_r)
++        self.assertEqual(2, r.statistics["attempt_number"])
++
+ 
+ class TestDecoratorWrapper(unittest.TestCase):
+     @asynctest
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 6a39739..0682810 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -869,6 +869,22 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertRaises(tenacity.TryAgain, r, _r)
+         self.assertEqual(5, r.statistics["attempt_number"])
+ 
++    def test_retry_try_again_from_except_reraises_cause(self) -> None:
++        def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        r = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            r(_r)
++        self.assertEqual(2, r.statistics["attempt_number"])
++
+     def test_retry_if_exception_message_negative_no_inputs(self) -> None:
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message()

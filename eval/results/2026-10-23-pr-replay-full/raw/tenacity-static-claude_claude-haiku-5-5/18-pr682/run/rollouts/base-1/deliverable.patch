@@ -1,0 +1,678 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e993396..b3e8fb7 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
+ from concurrent import futures
+ 
+ from . import _utils
++from ._utils import override
+ 
+ # Import all built-in after strategies for easier usage.
+ from .after import after_log, after_nothing
+@@ -184,6 +185,7 @@ def _first_set(first: t.Any | object, second: t.Any) -> t.Any:
+ class RetryError(Exception):
+     """Encapsulates the last attempt instance right before giving up."""
+ 
++    @override
+     def __init__(self, last_attempt: "Future") -> None:
+         self.last_attempt = last_attempt
+         super().__init__(last_attempt)
+@@ -201,6 +203,7 @@ class RetryError(Exception):
+             raise self.last_attempt.result()
+         raise self
+ 
++    @override
+     def __str__(self) -> str:
+         return f"{self.__class__.__name__}[{self.last_attempt}]"
+ 
+@@ -514,6 +517,7 @@ class BaseRetrying(ABC):
+ class Retrying(BaseRetrying):
+     """Retrying controller."""
+ 
++    @override
+     def __call__(
+         self,
+         fn: t.Callable[..., WrappedFnReturnT],
+@@ -542,6 +546,7 @@ class Retrying(BaseRetrying):
+ class Future(futures.Future[t.Any]):
+     """Encapsulates a (future or past) attempted call to a target function."""
+ 
++    @override
+     def __init__(self, attempt_number: int) -> None:
+         super().__init__()
+         self.attempt_number = attempt_number
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index 195fa50..3289d3a 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -24,6 +24,21 @@ from datetime import timedelta
+ # An integer giving the maximum value a variable of type Py_ssize_t can take.
+ MAX_WAIT = sys.maxsize / 2
+ 
++_F = typing.TypeVar("_F", bound=typing.Callable[..., typing.Any])
++
++
++def _override_fallback(method: _F) -> _F:
++    """PEP 698 ``override`` for Python < 3.12: flag the method and return it."""
++    with contextlib.suppress(AttributeError, TypeError):
++        typing.cast(typing.Any, method).__override__ = True
++    return method
++
++
++if sys.version_info >= (3, 12):
++    from typing import override
++else:
++    override = _override_fallback
++
+ 
+ class LoggerProtocol(typing.Protocol):
+     """
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index a91ca57..aea74e5 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -32,6 +32,7 @@ from tenacity import (
+     after_nothing,
+     before_nothing,
+ )
++from tenacity._utils import override
+ 
+ # Import all built-in retry strategies for easier usage.
+ from .retry import (
+@@ -72,6 +73,7 @@ def _portable_async_sleep(seconds: float) -> t.Awaitable[None]:
+ 
+ 
+ class AsyncRetrying(BaseRetrying):
++    @override
+     def __init__(
+         self,
+         sleep: t.Callable[
+@@ -108,6 +110,7 @@ class AsyncRetrying(BaseRetrying):
+             enabled=enabled,
+         )
+ 
++    @override
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
+@@ -133,25 +136,30 @@ class AsyncRetrying(BaseRetrying):
+             else:
+                 return do  # type: ignore[no-any-return]
+ 
++    @override
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(_utils.wrap_to_async_func(fn))
+ 
++    @override
+     async def _run_retry(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+         self.iter_state.retry_run_result = await _utils.wrap_to_async_func(self.retry)(
+             retry_state
+         )
+ 
++    @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+         retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+             retry_state
+         )
+ 
++    @override
+     async def _run_stop(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+         self.statistics["delay_since_first_attempt"] = retry_state.seconds_since_start
+         self.iter_state.stop_run_result = await _utils.wrap_to_async_func(self.stop)(
+             retry_state
+         )
+ 
++    @override
+     async def iter(self, retry_state: "RetryCallState") -> DoAttempt | DoSleep | t.Any:
+         self._begin_iter(retry_state)
+         result = None
+@@ -159,6 +167,7 @@ class AsyncRetrying(BaseRetrying):
+             result = await action(retry_state)
+         return result
+ 
++    @override
+     def __iter__(self) -> t.Generator[AttemptManager, None, None]:
+         raise TypeError("AsyncRetrying object is not iterable")
+ 
+@@ -194,6 +203,7 @@ class AsyncRetrying(BaseRetrying):
+             else:
+                 raise StopAsyncIteration
+ 
++    @override
+     def wraps(self, fn: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+         wrapped = super().wraps(fn)
+         # Ensure wrapper is recognized as a coroutine function.
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index e0d44e8..c248070 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,7 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity._utils import override
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -26,24 +27,29 @@ class async_retry_base(retry_base):
+     """Abstract base class for async retry strategies."""
+ 
+     @abc.abstractmethod
++    @override
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         pass
+ 
++    @override
+     def __and__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
++    @override
+     def __rand__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
++    @override
+     def __or__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
++    @override
+     def __ror__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+@@ -63,6 +69,7 @@ class retry_if_exception(async_retry_base):
+     ) -> None:
+         self.predicate = predicate
+ 
++    @override
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -83,6 +90,7 @@ class retry_if_result(async_retry_base):
+     ) -> None:
+         self.predicate = predicate
+ 
++    @override
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -98,6 +106,7 @@ class retry_any(async_retry_base):
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+         self.retries = retries
+ 
++    @override
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = False
+         for r in self.retries:
+@@ -106,6 +115,7 @@ class retry_any(async_retry_base):
+                 break
+         return result
+ 
++    @override
+     def __ror__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+@@ -120,6 +130,7 @@ class retry_all(async_retry_base):
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+         self.retries = retries
+ 
++    @override
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = True
+         for r in self.retries:
+@@ -128,6 +139,7 @@ class retry_all(async_retry_base):
+                 break
+         return result
+ 
++    @override
+     def __rand__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 61c63d2..8277272 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -18,6 +18,8 @@ import abc
+ import re
+ import typing
+ 
++from tenacity._utils import override
++
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+ 
+@@ -64,6 +66,7 @@ RetryBaseT = retry_base | typing.Callable[["RetryCallState"], bool]
+ class _retry_never(retry_base):
+     """Retry strategy that never rejects any result."""
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return False
+ 
+@@ -74,6 +77,7 @@ retry_never = _retry_never()
+ class _retry_always(retry_base):
+     """Retry strategy that always rejects any result."""
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return True
+ 
+@@ -87,6 +91,7 @@ class retry_if_exception(retry_base):
+     def __init__(self, predicate: typing.Callable[[BaseException], bool]) -> None:
+         self.predicate = predicate
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -102,6 +107,7 @@ class retry_if_exception(retry_base):
+ class retry_if_exception_type(retry_if_exception):
+     """Retries if an exception has been raised of one or more types."""
+ 
++    @override
+     def __init__(
+         self,
+         exception_types: type[BaseException]
+@@ -117,6 +123,7 @@ class retry_if_exception_type(retry_if_exception):
+ class retry_if_not_exception_type(retry_if_exception):
+     """Retries except an exception has been raised of one or more types."""
+ 
++    @override
+     def __init__(
+         self,
+         exception_types: type[BaseException]
+@@ -132,6 +139,7 @@ class retry_if_not_exception_type(retry_if_exception):
+ class retry_unless_exception_type(retry_if_exception):
+     """Retries until an exception is raised of one or more types."""
+ 
++    @override
+     def __init__(
+         self,
+         exception_types: type[BaseException]
+@@ -143,6 +151,7 @@ class retry_unless_exception_type(retry_if_exception):
+     def _check(self, e: BaseException) -> bool:
+         return not isinstance(e, self.exception_types)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -171,6 +180,7 @@ class retry_if_exception_cause_type(retry_base):
+     ) -> None:
+         self.exception_cause_types = exception_types
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__ called before outcome was set")
+@@ -196,6 +206,7 @@ class retry_if_result(retry_base):
+     def __init__(self, predicate: typing.Callable[[typing.Any], bool]) -> None:
+         self.predicate = predicate
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -211,6 +222,7 @@ class retry_if_not_result(retry_base):
+     def __init__(self, predicate: typing.Callable[[typing.Any], bool]) -> None:
+         self.predicate = predicate
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -223,6 +235,7 @@ class retry_if_not_result(retry_base):
+ class retry_if_exception_message(retry_if_exception):
+     """Retries if an exception message equals or matches."""
+ 
++    @override
+     def __init__(
+         self,
+         message: str | None = None,
+@@ -254,9 +267,11 @@ class retry_if_exception_message(retry_if_exception):
+ class retry_if_not_exception_message(retry_if_exception_message):
+     """Retries until an exception message equals or matches."""
+ 
++    @override
+     def _check(self, exception: BaseException) -> bool:
+         return not super()._check(exception)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -276,9 +291,11 @@ class retry_any(retry_base):
+     def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return any(r(retry_state) for r in self.retries)
+ 
++    @override
+     def __ror__(self, other: "RetryBaseT") -> "retry_any":
+         if isinstance(other, retry_any):
+             return retry_any(*other.retries, *self.retries)
+@@ -291,9 +308,11 @@ class retry_all(retry_base):
+     def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return all(r(retry_state) for r in self.retries)
+ 
++    @override
+     def __rand__(self, other: "RetryBaseT") -> "retry_all":
+         if isinstance(other, retry_all):
+             return retry_all(*other.retries, *self.retries)
+diff --git a/tenacity/stop.py b/tenacity/stop.py
+index c2251b3..c1f51ea 100644
+--- a/tenacity/stop.py
++++ b/tenacity/stop.py
+@@ -17,6 +17,7 @@ import abc
+ import typing
+ 
+ from tenacity import _utils
++from tenacity._utils import override
+ 
+ if typing.TYPE_CHECKING:
+     import threading
+@@ -47,6 +48,7 @@ class stop_any(stop_base):
+     def __init__(self, *stops: stop_base) -> None:
+         self.stops = stops
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return any(x(retry_state) for x in self.stops)
+ 
+@@ -57,6 +59,7 @@ class stop_all(stop_base):
+     def __init__(self, *stops: stop_base) -> None:
+         self.stops = stops
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return all(x(retry_state) for x in self.stops)
+ 
+@@ -64,6 +67,7 @@ class stop_all(stop_base):
+ class _stop_never(stop_base):
+     """Never stop."""
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return False
+ 
+@@ -77,6 +81,7 @@ class stop_when_event_set(stop_base):
+     def __init__(self, event: "threading.Event") -> None:
+         self.event = event
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return self.event.is_set()
+ 
+@@ -87,6 +92,7 @@ class stop_after_attempt(stop_base):
+     def __init__(self, max_attempt_number: int) -> None:
+         self.max_attempt_number = max_attempt_number
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return retry_state.attempt_number >= self.max_attempt_number
+ 
+@@ -104,6 +110,7 @@ class stop_after_delay(stop_base):
+     def __init__(self, max_delay: _utils.time_unit_type) -> None:
+         self.max_delay = _utils.to_seconds(max_delay)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.seconds_since_start is None:
+             raise RuntimeError("__call__() called but seconds_since_start is not set")
+@@ -121,6 +128,7 @@ class stop_before_delay(stop_base):
+     def __init__(self, max_delay: _utils.time_unit_type) -> None:
+         self.max_delay = _utils.to_seconds(max_delay)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.seconds_since_start is None:
+             raise RuntimeError("__call__() called but seconds_since_start is not set")
+diff --git a/tenacity/tornadoweb.py b/tenacity/tornadoweb.py
+index 0d46ed7..3c3b40b 100644
+--- a/tenacity/tornadoweb.py
++++ b/tenacity/tornadoweb.py
+@@ -18,6 +18,7 @@ import typing
+ from tornado import gen
+ 
+ from tenacity import BaseRetrying, DoAttempt, DoSleep, RetryCallState
++from tenacity._utils import override
+ 
+ if typing.TYPE_CHECKING:
+     from tornado.concurrent import Future
+@@ -28,6 +29,7 @@ _RetValT = typing.TypeVar("_RetValT")
+ class TornadoRetrying(BaseRetrying):
+     sleep: typing.Callable[..., "Future[None]"]
+ 
++    @override
+     def __init__(
+         self,
+         sleep: "typing.Callable[[float], Future[None]]" = gen.sleep,
+@@ -37,6 +39,7 @@ class TornadoRetrying(BaseRetrying):
+         self.sleep = sleep
+ 
+     @gen.coroutine
++    @override
+     def __call__(  # type: ignore[override]
+         self,
+         fn: "typing.Callable[..., typing.Generator[typing.Any, typing.Any, _RetValT] | Future[_RetValT]]",
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3053a5c..0c5c16f 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -21,6 +21,7 @@ import typing
+ import warnings
+ 
+ from tenacity import _utils
++from tenacity._utils import override
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -54,6 +55,7 @@ class wait_fixed(wait_base):
+     def __init__(self, wait: _utils.time_unit_type) -> None:
+         self.wait_fixed = _utils.to_seconds(wait)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         return self.wait_fixed
+ 
+@@ -61,6 +63,7 @@ class wait_fixed(wait_base):
+ class wait_none(wait_fixed):
+     """Wait strategy that doesn't wait at all before retrying."""
+ 
++    @override
+     def __init__(self) -> None:
+         super().__init__(0)
+ 
+@@ -74,6 +77,7 @@ class wait_random(wait_base):
+         self.wait_random_min = _utils.to_seconds(min)
+         self.wait_random_max = _utils.to_seconds(max)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         return self.wait_random_min + (
+             random.random() * (self.wait_random_max - self.wait_random_min)
+@@ -86,6 +90,7 @@ class wait_combine(wait_base):
+     def __init__(self, *strategies: wait_base) -> None:
+         self.wait_funcs = strategies
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         return sum(x(retry_state=retry_state) for x in self.wait_funcs)
+ 
+@@ -111,6 +116,7 @@ class wait_chain(wait_base):
+             raise ValueError("wait_chain() requires at least one strategy")
+         self.strategies = strategies
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         wait_func_no = min(max(retry_state.attempt_number, 1), len(self.strategies))
+         wait_func = self.strategies[wait_func_no - 1]
+@@ -146,6 +152,7 @@ class wait_exception(wait_base):
+     def __init__(self, predicate: typing.Callable[[BaseException], float]) -> None:
+         self.predicate = predicate
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         if retry_state.outcome is None:
+             raise RuntimeError("__call__() called before outcome was set")
+@@ -173,6 +180,7 @@ class wait_incrementing(wait_base):
+         self.increment = _utils.to_seconds(increment)
+         self.max = _utils.to_seconds(max)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         result = self.start + (self.increment * (retry_state.attempt_number - 1))
+         return max(0, min(result, self.max))
+@@ -203,6 +211,7 @@ class wait_exponential(wait_base):
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         exponent = retry_state.attempt_number - 1
+         if (
+@@ -249,6 +258,7 @@ class wait_random_exponential(wait_exponential):
+ 
+     """
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         high = super().__call__(retry_state=retry_state)
+         return random.uniform(self.min, high)
+@@ -294,6 +304,7 @@ class wait_exponential_jitter(wait_base):
+         self.jitter = _utils.to_seconds(jitter)
+         self.min = _utils.to_seconds(min)
+ 
++    @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         jitter = random.uniform(0, self.jitter)
+         try:
+diff --git a/tests/test_after.py b/tests/test_after.py
+index ccf4a73..86a6e40 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -6,11 +6,13 @@ from tenacity import (
+     _utils,
+     after_log,
+ )
++from tenacity._utils import override
+ 
+ from . import test_tenacity
+ 
+ 
+ class TestAfterLogFormat(unittest.TestCase):
++    @override
+     def setUp(self) -> None:
+         self.log_level = random.choice(
+             (
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index d5dd8f1..da0b8e1 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -28,6 +28,7 @@ import pytest
+ 
+ import tenacity
+ from tenacity import RetryCallState, RetryError, Retrying, retry
++from tenacity._utils import override
+ from tenacity.retry import retry_all, retry_any
+ 
+ _unset = object()
+@@ -1106,9 +1107,11 @@ class CustomError(Exception):
+     hierarchy.
+     """
+ 
++    @override
+     def __init__(self, value: str) -> None:
+         self.value = value
+ 
++    @override
+     def __str__(self) -> str:
+         return self.value
+ 
+@@ -1136,10 +1139,12 @@ class NoCustomErrorAfterCount:
+ class CapturingHandler(logging.Handler):
+     """Captures log records for inspection."""
+ 
++    @override
+     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+         super().__init__(*args, **kwargs)
+         self.records: list[logging.LogRecord] = []
+ 
++    @override
+     def emit(self, record: logging.LogRecord) -> None:
+         self.records.append(record)
+ 
+@@ -1996,6 +2001,7 @@ class TestStatistics(unittest.TestCase):
+ 
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
++    @override
+     def setUp(self) -> None:
+         self._attempt_number = 0
+         self._callback_called = False
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index 50a0e3d..fe043a5 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -1,6 +1,49 @@
+ import functools
++import inspect
+ 
+-from tenacity import _utils
++import tenacity.asyncio  # noqa: F401
++import tenacity.tornadoweb  # noqa: F401
++from tenacity import BaseRetrying, _utils
++from tenacity.retry import retry_base
++from tenacity.stop import stop_base
++from tenacity.wait import wait_base
++
++
++def _all_subclasses(cls: type) -> list[type]:
++    found: list[type] = []
++    for sub in cls.__subclasses__():
++        found.append(sub)
++        found.extend(_all_subclasses(sub))
++    return found
++
++
++def test_every_overriding_method_is_marked() -> None:
++    roots = [retry_base, wait_base, stop_base, BaseRetrying]
++    unmarked = []
++    for cls in dict.fromkeys(sub for root in roots for sub in _all_subclasses(root)):
++        base_dicts = [vars(base) for base in cls.__mro__[1:] if base is not object]
++        for name, value in vars(cls).items():
++            if not inspect.isfunction(value):
++                continue
++            if not any(name in base_dict for base_dict in base_dicts):
++                continue
++            if not getattr(value, "__override__", False):
++                unmarked.append(f"{cls.__module__}.{cls.__qualname__}.{name}")
++    assert unmarked == []
++
++
++def test_override_is_importable_and_marks_method() -> None:
++    from tenacity._utils import override
++
++    def method() -> None:
++        pass
++
++    assert override(method) is method
++    assert getattr(method, "__override__", False) is True
++
++
++def test_override_fallback_ignores_unsettable_callable() -> None:
++    assert _utils._override_fallback(len) is len  # noqa: SLF001
+ 
+ 
+ def test_is_coroutine_callable() -> None:

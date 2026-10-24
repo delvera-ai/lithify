@@ -1,0 +1,52 @@
+{
+  "task": "Refactor: mark every method that overrides a base-class method (on `retry_base`, `wait_base`, `stop_base`, `BaseRetrying` and their subclasses, and in the test helpers) with an `@override` decorator, so renaming a base method can no longer silently orphan subclass implementations. tenacity has no runtime dependencies and supports Python 3.10+, so provide `override` from `tenacity._utils`: use `typing.override` where available and a small PEP 698-compatible fallback (which sets `__override__ = True` and returns the function) otherwise. (Stated requirement: `from tenacity._utils import override` must work.)",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "inv-1",
+  "why": "Scope and fidelity decided it. c1 misses `ConcreteRetrying.__call__` (a `BaseRetrying` subclass) and `ExplodingPower.__pow__` in the test helpers. c2's fallback writes to `method.__dict__`, and its only test never runs that fallback.\nc4 covers every override, tests the fallback directly, checks that `typing.override` is used where available, and imports with `from ._utils import override` in `tenacity/__init__.py`, matching that file's existing `from . import _utils` style.\nRunner-up c3 is otherwise equivalent, but uses an absolute `from tenacity._utils import override` in `__init__.py`, unlike that file's relative imports. c4's one blemish is the fallback's name, `override_fallback`, which lacks the leading underscore that c3's `_override_fallback` has.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261024-204339-refactor-mark-every-method-that",
+  "usage": {
+    "in": 653125,
+    "cached": 11960503,
+    "out": 201529,
+    "cost": 5.4064053,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

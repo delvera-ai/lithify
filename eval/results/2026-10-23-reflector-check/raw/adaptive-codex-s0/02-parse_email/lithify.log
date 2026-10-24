@@ -1,0 +1,21 @@
+lithify ▸ 20261023-204645-add-parse-email-value-to-app-use  k=1 (genesis (S=0.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✓ probe base-1: test=pass, holdout=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ✓ applied deliverable from base-1: only one distinct deliverable passed the gates (no LLM judge needed)
+lithify ◂ delivered=True first_pass=True S=0.19 executions=1 role_sessions=0 tokens(in/cached/out)=12855/61312/1158
+{
+  "task_id": "20261023-204645-add-parse-email-value-to-app-use",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.188,
+  "executions": 1,
+  "role_sessions": 0
+}
+

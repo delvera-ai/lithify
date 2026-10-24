@@ -1,0 +1,28 @@
+exit 2
+
+==================================== ERRORS ====================================
+_____________________ ERROR collecting tests/test_after.py _____________________
+ImportError while importing test module '<run>/repo/tests/test_after.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+~/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_after.py:9: in <module>
+    from tenacity._utils import override
+E   ImportError: cannot import name 'override' from 'tenacity._utils' (<run>/repo/tenacity/_utils.py)
+___________________ ERROR collecting tests/test_tenacity.py ____________________
+ImportError while importing test module '<run>/repo/tests/test_tenacity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+~/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_tenacity.py:31: in <module>
+    from tenacity._utils import override
+E   ImportError: cannot import name 'override' from 'tenacity._utils' (<run>/repo/tenacity/_utils.py)
+=========================== short test summary info ============================
+ERROR tests/test_after.py
+ERROR tests/test_tenacity.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+2 errors in 0.09s

@@ -1,0 +1,52 @@
+{
+  "task": "Feature: add an `enabled` parameter (default `True`) to `Retrying`, `AsyncRetrying` and the `@retry` decorator. With `enabled=False` the decorated function is called directly, exactly once, with no retry logic, and any exception it raises propagates unchanged. This is useful during development and testing.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Correctness decided it. c1 and c3 put the `enabled` check inside `_begin_iter`, which `__call__`, iteration (`for attempt in Retrying(...)`), async and Tornado all go through. So one small change covers every entry point and skips the `before`/`after`/`before_sleep` hooks.\nc2 and c4 only short-circuit `__call__`. With `enabled=False`, the `for attempt in Retrying(...)` style still retries, which breaks the request.\nc1 is the runner-up and has essentially the same code. It lost on smaller points: its closure over `fut` is less idiomatic than the repo's existing `rs.outcome.result()`, which c3 uses. It also adds an odd hidden `testoutput` block to the docs, and unlike c3 it has no Tornado test.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-200259-feature-add-an-enabled-parameter",
+  "usage": {
+    "in": 484231,
+    "cached": 7324876,
+    "out": 111903,
+    "cost": 3.11216589,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.5833,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

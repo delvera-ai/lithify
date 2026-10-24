@@ -1,0 +1,52 @@
+{
+  "task": "Bug: the `delay_since_first_attempt` key is missing from a retrying object's `statistics` until after the first retry, so code that reads `statistics[\"delay_since_first_attempt\"]` during the first attempt raises `KeyError`. The key should be present from the start of each run, with value `0` until a delay has occurred.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "All four candidates make the same one-line fix in the shared `begin()`, so they differ only in their regression tests. c3's tests read `statistics` outside `with attempt:`, so on the old code a `KeyError` fails the test directly. They cover both the sync and async paths, and the comment explains why the read sits there. In c1 and c2 the read is inside `with attempt:`, which swallows the `KeyError` and treats it as a failed attempt. Those tests only catch the bug indirectly, through their `len == 2` check. c2 also adds an import. c4 (the runner-up) uses a clean `before` hook but has no async test, even though async has its own `_run_stop` path.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-161138-bug-the-delay-since-first-attemp",
+  "usage": {
+    "in": 346525,
+    "cached": 3185035,
+    "out": 51520,
+    "cost": 2.6679989700000006,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.42,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

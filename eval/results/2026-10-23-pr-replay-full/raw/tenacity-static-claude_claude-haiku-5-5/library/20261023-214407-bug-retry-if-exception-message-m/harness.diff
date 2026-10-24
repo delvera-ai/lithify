@@ -1,0 +1,76 @@
+--- a/scripts/check_changed.py
++++ b/scripts/check_changed.py
+@@ -9,7 +9,8 @@
+       * compiles (syntax)
+       * line length <= 88 (ruff line-length; do NOT eyeball this)
+       * no tabs / trailing whitespace
+-      * a nested `def`/`class` is preceded by a blank line (ruff format)
++      * a nested `def`/`class` is preceded by a blank line (ruff format);
++        a decorated one sits directly under its decorator, even after `)`
+       * every added `def` annotates all parameters and its return (mypy
+         strict covers tenacity/ AND tests/; `self`/`cls` exempt)
+   - releasenotes/notes/*.yaml
+@@ -78,6 +79,7 @@
+     except SyntaxError as exc:
+         errs.append(f"{path}:{exc.lineno}: syntax error: {exc.msg}")
+     errs += check_annotations(path, src, changed)
++    decorated = decorated_def_lines(src)
+     lines = src.splitlines()
+     for no in sorted(changed):
+         if no > len(lines):
+@@ -90,7 +92,9 @@
+         if line != line.rstrip():
+             errs.append(f"{path}:{no}: trailing whitespace")
+         m = DEF_RE.match(line)
+-        if m and no >= 2:
++        # A decorated def follows its decorator directly (ruff puts no blank
++        # line there), even when a multi-line decorator ends with `)`.
++        if m and no >= 2 and no not in decorated:
+             prev = lines[no - 2]
+             prev_s = prev.strip()
+             opener = prev_s.endswith(":") or prev_s.startswith(("@", "#"))
+@@ -99,6 +103,18 @@
+                     f"{path}:{no}: nested {m.group(2)} needs a blank line before it"
+                 )
+     return errs
++
++
++def decorated_def_lines(src: str) -> set[int]:
++    """Line numbers of `def`/`class` statements that carry decorators."""
++    try:
++        tree = ast.parse(src)
++    except SyntaxError:
++        return set()
++    kinds = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
++    return {
++        n.lineno for n in ast.walk(tree) if isinstance(n, kinds) and n.decorator_list
++    }
+ 
+ 
+ def check_annotations(path: str, src: str, changed: set[int]) -> list[str]:
+@@ -181,6 +197,12 @@
+     for e in errs:
+         print("FAIL", e)
+     print(f"{'FAIL' if errs else 'PASS'}: {len(errs)} problem(s)")
++    if errs:
++        print(
++            "HINT: this is a heuristic. If a FAIL contradicts a rule in"
++            " skills/tenacity-change-contract, keep the code as the skill says and"
++            " report the FAIL as a checker false positive; don't reshape the code"
++        )
+     print("NOT RUN: ruff, mypy, PyYAML (unavailable here) -- report them as not run")
+     return 1 if errs else 0
+ 
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -1,6 +1,7 @@
+ - Harness files are in the working tree: skills at `.lithify/harness/skills/<name>/SKILL.md`,
+-  scripts at `.lithify/harness/scripts/`. Read a skill there with `cat`; never `find /` or read
+-  copies outside the working tree (one search did both and returned a 55 KB dump).
++  scripts at `.lithify/harness/scripts/`. `tenacity-change-contract` is ~30 KB, so `cat` spills
++  to a persisted file: run `grep -n '^## ' <SKILL.md>`, then `sed -n 'A,Bp'` the sections that
++  apply. Never `find /` or read copies outside the working tree (that once gave a 55 KB dump).
+ - The project venv (python in memory.md) runs pytest but has no pip, ruff, mypy or PyYAML;
+   `uv`/`uvx` are not on PATH, and a new `/tmp` venv dies in ensurepip (SIGABRT). Don't probe or
+   build one; `.lithify/harness/scripts/check_changed.py` is the stdlib substitute.

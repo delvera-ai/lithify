@@ -1,0 +1,52 @@
+{
+  "task": "Bug: setting the module global `tenacity.tornado = None` (the usual way a test suite exercises the non-tornado path without uninstalling tornado) makes any subsequent `@tenacity.retry` decoration raise `AttributeError: 'NoneType' object has no attribute 'gen'`. Whether tornado is available must be read from the live module global at decoration time, so decorating works after the global is set to `None`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "Fidelity decided it. The repo stores tornado availability in `_HAS_TORNADO` with a comment explaining why: mypy, running in strict mode with `warn_unreachable`, treats a direct check on the `tornado` module as always true. c3 follows that by adding a small `_has_tornado()` helper that returns a bool and reads the live global, with a minimal test in `test_tenacity.py`.\nc2 puts `tornado is not None` straight into the `elif`, which is the pattern that comment says to avoid. c1 reads the global through `globals().get(\"tornado\")`, which is an unusual workaround.\nThe runner-up is c4, which is essentially the same as c3. It lost only because its comment is wordier and its test calls the function after the patch is undone, not while `tornado` is still `None`.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261024-220150-bug-setting-the-module-global-te",
+  "usage": {
+    "in": 363206,
+    "cached": 4293869,
+    "out": 58786,
+    "cost": 2.9931740500000004,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

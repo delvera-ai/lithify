@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `retry_if_exception_message(message=\"\")` raises `TypeError` (\"missing 1 required argument 'message' or 'match'\"), even though an empty string is a valid message to match (e.g. `str(RuntimeError()) == \"\"`). An empty `message` (or empty `match`) must be accepted and matched correctly; passing neither or both must still raise `TypeError`. The same applies to `retry_if_not_exception_message`.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 13976,
+    "cached": 123776,
+    "out": 1235,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

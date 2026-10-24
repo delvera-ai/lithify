@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `tenacity.after_log` crashes with `TypeError` when `retry_state.seconds_since_start` is `None` (it is `None` when the outcome timestamp has not been set). The log message should still be emitted, showing \"?\" in place of the elapsed seconds.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "The deciding criterion was fidelity to the existing test conventions. c3 reads `seconds_since_start` into a local once, then puts its test in the existing `TestAfterLogFormat` class with the `test_03_` naming and reuses `self.previous_attempt_number`/`self.log_level`.\nThe runner-up, c2, does the same but evaluates the property twice and has a needless f-string with no placeholders (`f\"after ?(s), \"`).\nc1 is equivalent but adds a whole new test class when the existing one fits.\nc4 imports `RetryCallState` and builds it by hand with a `# type: ignore` instead of using the existing `make_retry_state` helper.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-160401-bug-tenacity-after-log-crashes-w",
+  "usage": {
+    "in": 297723,
+    "cached": 2564991,
+    "out": 42469,
+    "cost": 2.42675172,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.298,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

@@ -1,0 +1,55 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5f12c2b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..6dbac71 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -190,6 +190,28 @@ class TestContextManager(unittest.TestCase):
+ 
+         assert attempts == 3
+ 
++    @asynctest
++    async def test_do_max_attempts_async_with(self) -> None:
++        attempts = 0
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(3))
++        try:
++            async for attempt in retrying:
++                async with attempt:
++                    attempts += 1
++                    raise Exception
++        except RetryError:
++            pass
++
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_with_success_sets_result(self) -> None:
++        async for attempt in tasyncio.AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt:
++                pass
++            self.assertFalse(attempt.retry_state.outcome.failed)
++            self.assertIsNone(attempt.retry_state.outcome.result())
++
+     @asynctest
+     async def test_reraise(self) -> None:
+         class CustomError(Exception):
