@@ -1,0 +1,204 @@
+#7691: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7660: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7692: needs both test and source changes (tests=0, src=0)
+#7695: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7697: needs both test and source changes (tests=0, src=1)
+#7681: needs both test and source changes (tests=0, src=4)
+#7702: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7703: needs both test and source changes (tests=0, src=1)
+#7705: needs both test and source changes (tests=0, src=1)
+#7706: needs both test and source changes (tests=0, src=1)
+#7693: merge commit not in history
+#7708: needs both test and source changes (tests=0, src=4)
+#7707: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7717: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7718: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7719: merge commit not in history
+#7716: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7724: needs both test and source changes (tests=0, src=12)
+#7725: needs both test and source changes (tests=0, src=1)
+#7729: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7728: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7730: needs both test and source changes (tests=0, src=1)
+#7736: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7737: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7720: needs both test and source changes (tests=0, src=4)
+#7741: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7704: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7742: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7731: needs both test and source changes (tests=0, src=1)
+#7747: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7743: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7744: needs both test and source changes (tests=0, src=0)
+#7735: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7750: needs both test and source changes (tests=0, src=2)
+#7753: needs both test and source changes (tests=0, src=1)
+#7756: needs both test and source changes (tests=0, src=0)
+#7760: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7757: needs both test and source changes (tests=0, src=1)
+#7758: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7723: needs both test and source changes (tests=0, src=4)
+#7766: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7765: needs both test and source changes (tests=0, src=1)
+#7767: needs both test and source changes (tests=0, src=1)
+#7709: needs both test and source changes (tests=0, src=1)
+#7771: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7770: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7774: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7768: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7776: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7778: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7772: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7779: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7781: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7783: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7769: needs both test and source changes (tests=0, src=2)
+#7784: needs both test and source changes (tests=0, src=1)
+#7785: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7786: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7789: needs both test and source changes (tests=1, src=0)
+#7791: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7790: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7792: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7787: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7788: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7796: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7802: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7794: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7797: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7803: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7804: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7807: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7812: needs both test and source changes (tests=0, src=1)
+#7800: merge commit not in history
+#7809: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7808: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7814: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7813: needs both test and source changes (tests=0, src=1)
+#7817: needs both test and source changes (tests=0, src=0)
+#7818: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7819: needs both test and source changes (tests=0, src=1)
+#7822: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7815: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7823: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7825: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7831: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7828: needs both test and source changes (tests=0, src=1)
+#7824: merge commit not in history
+#7816: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7832: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7836: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7835: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7841: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7843: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7820: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7846: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7848: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7845: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7849: needs both test and source changes (tests=0, src=0)
+#7850: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7858: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7865: needs both test and source changes (tests=0, src=1)
+#7860: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7854: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7859: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7856: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7855: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7863: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7862: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7851: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7867: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7868: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7870: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7869: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7861: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7773: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7847: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7873: suite@base=-1 holdout@base=2 holdout@merge=0 old-tests@merge=1 -> drop
+#7874: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7876: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7877: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7878: needs both test and source changes (tests=0, src=1)
+#7881: suite@base=0 holdout@base=124 holdout@merge=0 old-tests@merge=0 -> keep
+#7882: needs both test and source changes (tests=0, src=1)
+#7880: merge commit not in history
+#7884: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7888: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7886: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7889: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7885: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7890: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7894: needs both test and source changes (tests=0, src=1)
+#7875: needs both test and source changes (tests=0, src=3)
+#7897: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7910: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7908: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7901: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7899: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7900: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7895: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7911: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7914: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7915: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7913: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7883: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7891: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7920: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7893: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7922: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7896: needs both test and source changes (tests=0, src=4)
+#7921: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7872: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7918: needs both test and source changes (tests=0, src=4)
+#7925: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7929: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7930: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7931: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7928: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7892: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7932: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7935: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7933: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7936: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7924: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7937: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7945: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7944: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7946: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7947: needs both test and source changes (tests=0, src=0)
+#7957: merge commit not in history
+#7938: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7968: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7953: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7961: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7970: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7955: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7969: merge commit not in history
+#7934: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7973: needs both test and source changes (tests=0, src=1)
+#7980: needs both test and source changes (tests=0, src=6)
+#7977: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7974: needs both test and source changes (tests=0, src=1)
+#7976: needs both test and source changes (tests=0, src=2)
+#7975: needs both test and source changes (tests=0, src=2)
+#7982: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7985: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7971: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7999: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#8000: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7983: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7981: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7990: merge commit not in history
+#7989: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7984: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7997: needs both test and source changes (tests=0, src=10)
+#8002: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#8012: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#8014: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#8003: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#8009: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#8006: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#8007: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7979: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#8008: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#8015: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop

@@ -75,11 +75,14 @@ def run_suite(cmd: str, cwd: Path, env: dict[str, str]) -> int:
         return 124
 
 
-def merge_shards(repo: str, dev_share: float) -> int:
+def merge_shards(repo: str, dev_share: float, max_keep: int = 0) -> int:
+    """Combine shards in merge order; `max_keep` applies the same cap a single run would have."""
     out_dir = EVAL / "prs" / repo
     kept = sorted(
         (p for f in sorted(out_dir.glob("prs-*.json")) for p in json.loads(f.read_text())["prs"]), key=lambda p: p["merged_at"]
     )
+    if max_keep:
+        kept = kept[:max_keep]
     n_dev = max(1, round(len(kept) * dev_share)) if kept else 0
     for i, k in enumerate(kept):
         k["split"] = "dev" if i < n_dev else "eval"
