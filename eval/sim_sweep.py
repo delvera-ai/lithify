@@ -42,7 +42,8 @@ def one(job: tuple[int, float, str, int]) -> dict:
     seed, noise, strategy, max_k = job
     os.environ["LITHIFY_MOCK_NOISE"] = str(noise)
     os.environ["LITHIFY_MOCK_SEED"] = f"s{seed}:"
-    with tempfile.TemporaryDirectory(prefix="lithify-sweep-") as td:
+    # ignore_cleanup_errors: a background git process can still be writing .git when the run ends.
+    with tempfile.TemporaryDirectory(prefix="lithify-sweep-", ignore_cleanup_errors=True) as td:
         os.environ["LITHIFY_WORK_DIR"] = str(Path(td) / "_work")
         tasks = order_for(seed)
         t0 = time.time()
