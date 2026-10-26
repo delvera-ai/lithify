@@ -52,6 +52,7 @@ COLUMNS = [
     "promoted",
     "proposed",
     "adopted",
+    "feedback",
     "adopt_policy",
     "lithify_commit",
 ]

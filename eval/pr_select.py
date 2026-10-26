@@ -83,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-src-lines", type=int, default=400, help="skip PRs with larger source diffs")
     ap.add_argument("--work", required=True, help="scratch directory (outside this repository)")
     ap.add_argument("--dev-share", type=float, default=0.2)
+    ap.add_argument("--max-keep", type=int, default=0, help="stop once this many PRs are kept (0 = no limit)")
     a = ap.parse_args(argv)
 
     spec = REPOS[a.repo]
@@ -133,17 +134,24 @@ def main(argv: list[str] | None = None) -> int:
             dst = hdir / p
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_bytes(subprocess.run(["git", "show", f"{merge}:{p}"], cwd=clone, capture_output=True, check=True).stdout)
+        # Cheap holdout checks first; the two full-suite runs only for PRs that survive them.
+        suite_rc = old_tests_rc = -1
         prepare_checkout(a.repo, clone, base)
-        suite_rc = run_suite(spec["test_cmd"].format(py=py), clone, test_env(a.repo))
         at_base = run_holdout(a.repo, clone, hdir, py)
-        prepare_checkout(a.repo, clone, merge)
-        at_merge = run_holdout(a.repo, clone, hdir, py)
-        # The PR must not contradict tests that existed before it: lithify's default gate fails
-        # any edit to existing test lines, so such a PR is undeliverable for every strategy.
-        modified = [r[-1] for r in rows if r[0][:1] == "M" and r[-1] in tests]
-        if modified:
-            sh(["git", "checkout", "-q", base, "--", *modified], clone)
-        old_tests_rc = run_suite(spec["test_cmd"].format(py=py), clone, test_env(a.repo))
+        at_merge = -1
+        if at_base != 0:
+            prepare_checkout(a.repo, clone, merge)
+            at_merge = run_holdout(a.repo, clone, hdir, py)
+        if at_base != 0 and at_merge == 0:
+            # The PR must not contradict tests that existed before it: lithify's default gate fails
+            # any edit to existing test lines, so such a PR is undeliverable for every strategy.
+            modified = [r[-1] for r in rows if r[0][:1] == "M" and r[-1] in tests]
+            if modified:
+                sh(["git", "checkout", "-q", base, "--", *modified], clone)
+            old_tests_rc = run_suite(spec["test_cmd"].format(py=py), clone, test_env(a.repo))
+            if old_tests_rc == 0:
+                prepare_checkout(a.repo, clone, base)
+                suite_rc = run_suite(spec["test_cmd"].format(py=py), clone, test_env(a.repo))
         verdict = suite_rc == 0 and at_base != 0 and at_merge == 0 and old_tests_rc == 0
         log.append(
             f"#{n}: suite@base={suite_rc} holdout@base={at_base} holdout@merge={at_merge} "
@@ -171,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         print(f"kept #{n} ({len(kept)})", flush=True)
+        if a.max_keep and len(kept) >= a.max_keep:
+            break
     n_dev = max(1, round(len(kept) * a.dev_share)) if kept else 0
     for i, k in enumerate(kept):
         k["split"] = "dev" if i < n_dev else "eval"

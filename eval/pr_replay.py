@@ -113,6 +113,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--roles")
     ap.add_argument("--max-k", type=int, default=2)
     ap.add_argument("--adopt", choices=["all", "auto", "none"], default="all")
+    ap.add_argument(
+        "--feedback",
+        action="store_true",
+        help="after a delivered task fails its holdout, run `lithify feedback` with that output",
+    )
     ap.add_argument("--no-skip", action="store_true", help="ablation: skip_when_base_passes = false for adaptive")
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--concurrency", type=int, default=4)
@@ -139,7 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"missing task texts: {missing}", file=sys.stderr)
         return 1
 
-    label = a.label or f"{a.repo}-{a.strategy}-{a.executor.replace('@', '_')}"
+    arm = a.strategy + ("-noskip" if a.no_skip else "") + ("-feedback" if a.feedback else "")
+    label = a.label or f"{a.repo}-{arm}-{a.executor.replace('@', '_')}"
     ev_root = out / "raw" / label
     ev_root.mkdir(parents=True, exist_ok=True)
     run_dir = work / f"replay-{a.experiment}-{label}"
@@ -210,6 +216,33 @@ def main(argv: list[str] | None = None) -> int:
             r = lithify(clone, "adopt", m["task_id"])
             (ev / "adopt.txt").write_text(redact(r.stdout + r.stderr, redactions), encoding="utf-8")
             m["adopted"] = m["proposed"] if r.stdout.startswith("adopted") else ""
+        m["feedback"] = ""
+        if a.feedback and m["delivered"] and m["holdout_pass"] is False and m["task_id"]:
+            # Post-delivery feedback: the task is already scored; its hidden-test failure now
+            # reaches lithify the way a CI failure or review would, before the clone moves on.
+            fb = lithify(
+                clone, "feedback", m["task_id"], "--log", str(ev / "holdout_applied.txt"), "--json", timeout=a.timeout * 4
+            )
+            (ev / "feedback.txt").write_text(redact(fb.stdout + fb.stderr, redactions), encoding="utf-8")
+            if LIMIT_TEXT.search(fb.stdout + fb.stderr):
+                save_progress(pos)
+                print(f"LIMIT HIT during feedback at {pos}/{len(prs)}; task kept unrecorded. Re-run with --resume.", flush=True)
+                return 75
+            try:
+                res = json.loads(fb.stdout[fb.stdout.find("{") :])
+            except json.JSONDecodeError:
+                res = {}
+            u = res.get("usage") or {}
+            m["cost_usd"] = round(float(m["cost_usd"]) + float(u.get("cost", 0.0)), 4)
+            m["role_sessions"] = int(m["role_sessions"]) + int(u.get("roles", 0))
+            for col, key in (("tokens_in", "in"), ("tokens_cached", "cached"), ("tokens_out", "out")):
+                m[col] = int(m[col]) + int(u.get(key, 0))
+            m["feedback"] = " ".join(res.get("components") or []) or ("none" if res else "error")
+            if a.adopt == "all" and res.get("proposal"):
+                r = lithify(clone, "adopt", f"{m['task_id']}-feedback")
+                (ev / "adopt-feedback.txt").write_text(redact(r.stdout + r.stderr, redactions), encoding="utf-8")
+                if r.stdout.startswith("adopted"):
+                    m["adopted"] = (m["adopted"] + " " + m["feedback"]).strip()
         audit.append(
             {
                 "pr": pr["number"],
@@ -223,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         row = {
             "experiment": a.experiment,
-            "strategy": a.strategy + ("-noskip" if a.no_skip else ""),
+            "strategy": a.strategy + ("-noskip" if a.no_skip else "") + ("-feedback" if a.feedback else ""),
             "adopt_policy": a.adopt,
             "executor": a.executor,
             "task": f"{a.repo}#{pr['number']}",

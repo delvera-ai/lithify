@@ -38,6 +38,15 @@ REPOS: dict[str, dict] = {
         # Test deps of older bases in the replay window (setup.cfg era).
         "extra_deps": ["typeguard", "tornado>=4.5"],
     },
+    "sqlglot": {
+        "slug": "tobymao/sqlglot",
+        "url": "https://github.com/tobymao/sqlglot",
+        "package": "sqlglot",
+        "pythonpath": "",
+        "version_file": "sqlglot/_version.py",
+        "extras": ["dev"],
+        "groups": [],
+    },
     "marshmallow": {
         "slug": "marshmallow-code/marshmallow",
         "url": "https://github.com/marshmallow-code/marshmallow",
