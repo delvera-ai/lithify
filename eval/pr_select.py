@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     elif not a.tag:  # shards share the mirror: refresh it once, before launching them
         sh(["git", "remote", "update", "--prune"], mirror)
     if a.merge_shards:
-        return merge_shards(a.repo, a.dev_share)
+        return merge_shards(a.repo, a.dev_share, a.max_keep)
     clone = work / f"{a.repo}-select{'-' + a.tag if a.tag else ''}"
     if clone.exists():
         shutil.rmtree(clone)
