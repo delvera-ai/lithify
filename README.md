@@ -200,7 +200,7 @@ go/no-go: [`eval/RELEASE_READINESS.md`](eval/RELEASE_READINESS.md).
 | `executor` | first CLI found | `claude`, `codex`, `agy`, or `cli@model` (e.g. `claude@claude-haiku-5-5`) |
 | `test_cmd`, `lint_cmd`, `typecheck_cmd` | detected | deterministic gates run in every probe |
 | `holdout_cmd` | — | checks the agents never see (e.g. a script outside the repo) |
-| `max_k` | 3 | widest exploration (genesis and anomaly spikes) |
+| `max_k` | 2 | widest exploration (genesis and anomaly spikes); see `eval/RELEASE_READINESS.md` |
 | `mode` | `parallel` | or `sequential` (k chained steps) |
 | `auto_adopt` | `false` | promote `helped` components automatically |
 | `allow_test_edits` | `false` | let probes modify tests that existed before they started |
