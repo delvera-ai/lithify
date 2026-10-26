@@ -46,6 +46,8 @@ REPOS: dict[str, dict] = {
         "version_file": "sqlglot/_version.py",
         "extras": ["dev"],
         "groups": [],
+        # Unpinned in setup.py; duckdb 2 and pandas 3 break executor tests at 2026 bases.
+        "extra_deps": ["duckdb<2", "pandas<3"],
     },
     "marshmallow": {
         "slug": "marshmallow-code/marshmallow",

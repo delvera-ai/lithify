@@ -41,8 +41,8 @@ def sh(cmd: list[str], cwd: Path, check: bool = True) -> str:
     return p.stdout
 
 
-def fetch_prs(slug: str, since: str, limit: int) -> list[dict]:
-    q = f"merged:>={since} " + " ".join(f"-author:app/{b}" for b in BOTS)
+def fetch_prs(slug: str, since: str, limit: int, until: str = "") -> list[dict]:
+    q = (f"merged:{since}..{until} " if until else f"merged:>={since} ") + " ".join(f"-author:app/{b}" for b in BOTS)
     out = subprocess.run(
         [
             "gh", "pr", "list", "-R", slug, "--state", "merged", "--search", q, "--limit", str(limit),
@@ -75,6 +75,21 @@ def run_suite(cmd: str, cwd: Path, env: dict[str, str]) -> int:
         return 124
 
 
+def merge_shards(repo: str, dev_share: float) -> int:
+    out_dir = EVAL / "prs" / repo
+    kept = sorted(
+        (p for f in sorted(out_dir.glob("prs-*.json")) for p in json.loads(f.read_text())["prs"]), key=lambda p: p["merged_at"]
+    )
+    n_dev = max(1, round(len(kept) * dev_share)) if kept else 0
+    for i, k in enumerate(kept):
+        k["split"] = "dev" if i < n_dev else "eval"
+    (out_dir / "prs.json").write_text(json.dumps({"repo": repo, "prs": kept}, indent=2) + "\n", encoding="utf-8")
+    logs = sorted(out_dir.glob("selection-*.log"))
+    (out_dir / "selection.log").write_text("".join(p.read_text() for p in logs), encoding="utf-8")
+    print(f"{len(kept)} kept ({n_dev} dev, {len(kept) - n_dev} eval) from {len(logs)} shard(s)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("repo", choices=sorted(REPOS))
@@ -83,6 +98,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-src-lines", type=int, default=400, help="skip PRs with larger source diffs")
     ap.add_argument("--work", required=True, help="scratch directory (outside this repository)")
     ap.add_argument("--dev-share", type=float, default=0.2)
+    ap.add_argument("--until", default="", help="last merge date (inclusive), for sharding a window")
+    ap.add_argument("--tag", default="", help="shard name: own clone, writes prs-<tag>.json; merge with --merge-shards")
+    ap.add_argument("--merge-shards", action="store_true", help="combine prs-*.json shards into prs.json and split")
     ap.add_argument("--max-keep", type=int, default=0, help="stop once this many PRs are kept (0 = no limit)")
     a = ap.parse_args(argv)
 
@@ -92,9 +110,11 @@ def main(argv: list[str] | None = None) -> int:
     mirror = work / f"{a.repo}.git"
     if not mirror.exists():
         sh(["git", "clone", "-q", "--mirror", spec["url"], str(mirror)], work)
-    else:
+    elif not a.tag:  # shards share the mirror: refresh it once, before launching them
         sh(["git", "remote", "update", "--prune"], mirror)
-    clone = work / f"{a.repo}-select"
+    if a.merge_shards:
+        return merge_shards(a.repo, a.dev_share)
+    clone = work / f"{a.repo}-select{'-' + a.tag if a.tag else ''}"
     if clone.exists():
         shutil.rmtree(clone)
     sh(["git", "clone", "-q", str(mirror), str(clone)], work)
@@ -104,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
     (out_dir / "source").mkdir(parents=True, exist_ok=True)
     kept: list[dict] = []
     log: list[str] = []
-    for pr in fetch_prs(spec["slug"], a.since, a.limit):
+    for pr in fetch_prs(spec["slug"], a.since, a.limit, a.until):
         n, merge = pr["number"], (pr.get("mergeCommit") or {}).get("oid")
         if not merge:
             continue
@@ -181,6 +201,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"kept #{n} ({len(kept)})", flush=True)
         if a.max_keep and len(kept) >= a.max_keep:
             break
+    if a.tag:
+        (out_dir / f"prs-{a.tag}.json").write_text(
+            json.dumps({"repo": a.repo, "since": a.since, "until": a.until, "prs": kept}, indent=2) + "\n", encoding="utf-8"
+        )
+        (out_dir / f"selection-{a.tag}.log").write_text("\n".join(log) + "\n", encoding="utf-8")
+        print(f"{len(kept)} kept in shard {a.tag}")
+        return 0
     n_dev = max(1, round(len(kept) * a.dev_share)) if kept else 0
     for i, k in enumerate(kept):
         k["split"] = "dev" if i < n_dev else "eval"
