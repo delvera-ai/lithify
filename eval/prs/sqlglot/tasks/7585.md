@@ -1,0 +1,1 @@
+Redshift dialect: `APPROXIMATE PERCENTILE_DISC(p) WITHIN GROUP (ORDER BY x)` is valid Redshift syntax but raises a `ParseError` (only `APPROXIMATE COUNT(DISTINCT ...)` is understood). Support it as an approximate quantile so it parses, round-trips in Redshift, and transpiles.
