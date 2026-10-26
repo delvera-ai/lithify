@@ -176,3 +176,57 @@ def test_holdout_command_never_reaches_agents(tmp_path):
         from lithify import worktree as wtm
 
         wtm.remove(repo, wt)
+
+
+def test_test_edit_only_failure_is_saved_for_review(repo, monkeypatch):
+    """#15: a fix that must change an assertion an existing test pins is never applied, but the work is
+    kept as needs-review.patch instead of being reported as plain "no rollout passed"."""
+    from lithify.adapters.base import RunResult
+    from lithify.adapters.mock import MockAdapter
+    from lithify.config import Config
+
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_a.py").write_text("def test_a():\n    assert 1 + 1 == 2\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "tests")
+
+    def rewrites_assertion(self, prompt, cwd, timeout_s=1800, role="execute"):
+        (cwd / "tests" / "test_a.py").write_text("def test_a():\n    assert 1 + 1 >= 2\n")
+        return RunResult(ok=True, text="done")
+
+    monkeypatch.setattr(MockAdapter, "run", rewrites_assertion)
+    for test_cmd, expect_review in (("true", True), ("false", False)):
+        ops.init_project(repo, executor="mock", test_cmd=test_cmd, force=True)
+        cfg = Config(executor="mock", test_cmd=test_cmd)
+        out = Pipeline(repo, cfg, log=lambda m: None, escalate=False).run_task("change the pinned behaviour", k_override=0)
+        assert not out.delivered and not out.applied
+        assert (repo / "tests" / "test_a.py").read_text().endswith("== 2\n")  # nothing applied
+        outcome = json.loads((repo / ".lithify" / "runs" / out.task_id / "outcome.json").read_text())
+        assert bool(outcome["needs_review"]) is expect_review
+        if expect_review:
+            assert ">= 2" in (repo / ".lithify" / "runs" / out.task_id / "needs-review.patch").read_text()
+            assert "saved for review" in out.message
+
+
+def test_agent_limit_stops_the_task_cleanly(tmp_path, monkeypatch):
+    """A usage/session-limit notice must stop the task: no further sessions, no state record, no worktrees."""
+    import pytest
+
+    from lithify.adapters.base import LimitReached, RunResult
+    from lithify.adapters.mock import MockAdapter
+
+    repo, cfg = setup_fixture(tmp_path)
+    calls = []
+
+    def limited(self, prompt, cwd, timeout_s=1800, role="execute"):
+        calls.append(role)
+        return RunResult(ok=False, error="You've hit your session limit · resets 6:40pm")
+
+    monkeypatch.setattr(MockAdapter, "run", limited)
+    pipe = Pipeline(repo, cfg, log=lambda m: None, seed=1)
+    with pytest.raises(LimitReached):
+        pipe.run_task(task_prompt("create_user", "api"))
+    # parallel base probes may already be in flight; no role session may start after the refusal
+    assert set(calls) == {"execute"} and len(calls) <= cfg.max_k
+    assert load_state(repo).history == []
+    assert git(repo, "worktree", "list").count("\n") == 1

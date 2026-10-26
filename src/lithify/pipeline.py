@@ -31,7 +31,7 @@ from pathlib import Path
 
 from . import prompts, worktree
 from .adapters import get_adapter, split_spec
-from .adapters.base import RunResult
+from .adapters.base import LimitReached, RunResult, hit_limit
 from .config import CONFIG_FILE, LITHIFY_DIR, Config
 from .gates import GateResult, is_test_path, run_gates
 from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, promote, render
@@ -133,6 +133,7 @@ class Pipeline:
         self.runs_dir = Path()
         self.work = Path()
         self.snapshot: Path | None = None
+        self.needs_review = ""
         self._wts: list[Path] = []
 
     # ------------------------------------------------------------------ plumbing
@@ -148,6 +149,12 @@ class Pipeline:
             self.usage["out"] += r.tokens_out
             self.usage["cost"] += r.cost_usd
             self.usage["roles" if role else "exec"] += 1
+
+    def _stop_on_limit(self, res: RunResult, what: str) -> None:
+        """A limit notice means every later session would fail too: stop the task instead of burning
+        through proposers and probes that record empty failures."""
+        if hit_limit(res):
+            raise LimitReached(f"{what} stopped by an agent CLI limit: {(res.error or res.text)[:300]}")
 
     def _adapter(self, spec: str):
         return get_adapter(spec, self.cfg.adapter_args.get(split_spec(spec)[0]))
@@ -178,6 +185,7 @@ class Pipeline:
         self.log(f"  ▸ probe {label}: executing with {self.cfg.executor}")
         res = self._adapter(self.cfg.executor).run(self.task, wt, self.cfg.timeout_s, role="execute")
         self._account(res, role=False)
+        self._stop_on_limit(res, f"probe {label}")
         patch = worktree.deliverable(wt)
         changed = worktree.changed_files(wt)
         cmds = self.cfg.gate_commands()
@@ -255,6 +263,7 @@ class Pipeline:
         cli = self.cfg.role_cli(role)
         res = self._adapter(cli).run(ROLE_PROMPT, ctx, self.cfg.timeout_s, role=role)
         self._account(res, role=True)
+        self._stop_on_limit(res, f"role {role}")
         (ctx / "RESPONSE.md").write_text(res.text or res.error, encoding="utf-8")
         return res
 
@@ -485,9 +494,8 @@ class Pipeline:
                     k, reason, start_h, probes, cands, p, "cruise: gates passed on first execution", first_pass, t0, reflect=False
                 )
             if not self.escalate:
-                return self._finish(
-                    0, reason, start_h, probes, cands, None, "cruise failed; escalation disabled", first_pass, t0, reflect=False
-                )
+                why = "cruise failed; escalation disabled" + self._save_for_review(probes)
+                return self._finish(0, reason, start_h, probes, cands, None, why, first_pass, t0, reflect=False)
             self.log("  ! cruise execution failed its gates — escalating to k=1 on this task")
             k, reason, escalated_from_cruise = 1, reason + " → escalated", True
 
@@ -517,11 +525,26 @@ class Pipeline:
 
         passing = [p for p in probes if p.passed]
         if not passing:
-            return self._finish(
-                k, reason, start_h, probes, cands, None, "no rollout passed the gates", first_pass, t0, reflect=bool(cands)
-            )
+            why = "no rollout passed the gates" + self._save_for_review(probes)
+            return self._finish(k, reason, start_h, probes, cands, None, why, first_pass, t0, reflect=bool(cands))
         selected, why = self.select(passing)
         return self._finish(k, reason, start_h, probes, cands, selected, why, first_pass, t0, reflect=True)
+
+    def _save_for_review(self, probes: list[Probe]) -> str:
+        """A task whose correct fix changes behaviour an existing test pins can only pass by editing that
+        test, which the gate forbids. Keep the work instead of discarding it: never applied, but saved
+        for a human to review (or rerun with allow_test_edits = true)."""
+        blocked = [p for p in probes if p.run.ok and p.patch.strip() and p.gates.blocked_only_by_test_edits]
+        if not blocked:
+            return ""
+        best = min(blocked, key=lambda p: len(p.patch))
+        path = self.runs_dir / "needs-review.patch"
+        path.write_text(best.patch, encoding="utf-8")
+        self.needs_review = str(path)
+        return (
+            f"; {len(blocked)} rollout(s) passed every command gate but changed existing tests "
+            f"(allow_test_edits = false). The smallest, from {best.label}, is saved for review: {path}"
+        )
 
     def _finish(
         self,
@@ -615,6 +638,7 @@ class Pipeline:
                     "applied": out.applied,
                     "first_pass": first_pass,
                     "promoted": out.promoted,
+                    "needs_review": self.needs_review or None,
                     "proposal": str(out.proposal) if out.proposal else None,
                     "usage": self.usage,
                     "stability_after": rec.stability_after,
