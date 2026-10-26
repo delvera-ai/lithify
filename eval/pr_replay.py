@@ -126,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--experiment", default="pr-replay")
     ap.add_argument("--label", default="")
+    ap.add_argument("--total-cap", type=float, default=TOTAL_CAP_USD, help="cap on spend across --budget-glob result dirs")
+    ap.add_argument("--budget-glob", default="*", help="eval/results/ directories counted toward --total-cap")
     ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
 
@@ -177,8 +179,9 @@ def main(argv: list[str] | None = None) -> int:
     for pos, pr in enumerate(prs, 1):
         if pos < start:
             continue
-        total = spent(RESULTS)
-        if run_cost >= a.limit_usd or total >= TOTAL_CAP_USD:
+        # The experiment-wide cap counts only this experiment's result directories.
+        total = sum(spent(d) for d in RESULTS.glob(a.budget_glob) if d.is_dir())
+        if run_cost >= a.limit_usd or total >= a.total_cap:
             print(f"budget stop before #{pr['number']}: run ${run_cost:.2f}/{a.limit_usd:.2f}; all results ${total:.2f}")
             break
         reset_to(a.repo, clone, pr["base"], keep if pos > 1 else None, save=not (a.resume and pos == start))
