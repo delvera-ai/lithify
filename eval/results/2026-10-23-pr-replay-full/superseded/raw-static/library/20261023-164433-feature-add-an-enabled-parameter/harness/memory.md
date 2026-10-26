@@ -1,0 +1,2 @@
+- The project's checks run with `<work>/env-tenacity/bin/python -m pytest -q -p no:cacheprovider --color=no`.
+- Behaviour-changing code changes here ship with a reno note in `releasenotes/notes/` and a regression test in `tests/`; load skill `tenacity-change-contract` before finishing such a change.

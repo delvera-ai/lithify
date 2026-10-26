@@ -1,0 +1,27 @@
+lithify ▸ 20261023-171150-bug-retrying-skips-the-wait-stra  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✗ probe base-1: test=pass [executor: ]
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✗ dom-1: discarded ()
+  ✗ inv-1: discarded ()
+  ▸ compose comp-1 (claude)
+  ✗ comp-1: discarded ()
+  base rollout base-1: failed on first execution
+  ▸ reflect (claude)
+  ✎ library: NO_ENTRY; 0 edit row(s)
+lithify ◂ delivered=False first_pass=False S=0.00 executions=1 role_sessions=4 tokens(in/cached/out)=0/0/0
+{
+  "task_id": "20261023-171150-bug-retrying-skips-the-wait-stra",
+  "k": 1,
+  "delivered": false,
+  "applied": false,
+  "first_pass": false,
+  "selected": "",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.0,
+  "executions": 1,
+  "role_sessions": 4
+}
+

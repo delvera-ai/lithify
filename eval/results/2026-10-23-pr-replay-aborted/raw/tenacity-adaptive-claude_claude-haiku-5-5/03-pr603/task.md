@@ -1,0 +1,1 @@
+Bug: the `delay_since_first_attempt` key is missing from a retrying object's `statistics` until after the first retry, so code that reads `statistics["delay_since_first_attempt"]` during the first attempt raises `KeyError`. The key should be present from the start of each run, with value `0` until a delay has occurred.

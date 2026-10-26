@@ -1,0 +1,126 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index f6c7377..61943d5 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261024-152742-bug-retry-if-exception-cause-typ](20261024-152742-bug-retry-if-exception-cause-typ/EXPERIENCE.md) — **when** A tenacity task reports a hang (infinite loop, 100% CPU, a strategy or chain walk that never returns), so the regression test can't fail by assertion on unfixed code. Each red run lasts at least `--timeout` seconds, may outlast the shell tool's foreground limit, and on this host can stretch far past its limit when the machine is descheduled. **then** Define what red means for a hang in the always-on `system.md` step 1: `run_tests.py --timeout 20 <one node id>` returning `exit=124` with `HUNG IN:` naming the new test. In the same paragraph, set the shell call's timeout above S, forbid `perl alarm`/raw-pytest/background fallbacks, and allow one fallback: wait for the completion notice without killing the run. Have `scripts/run_tests.py` print wall and CPU seconds, so a stall where wall time is much larger than CPU time is read as host descheduling, not a broken bound. Keep red-test recipes for hangs out of `skills/tenacity-change-contract`: in these rollouts the skill was read only after the fix was in, and a recipe there (a thread-based test) arrived too late and led to a revert of the fix.
+ - [20261023-214407-bug-retry-if-exception-message-m](20261023-214407-bug-retry-if-exception-message-m/EXPERIENCE.md) — **when** A tenacity task in which the agent has to consult the large `tenacity-change-contract` skill (about 30 KB, many `## N.` sections) but needs only a few sections, typically §2 (reno note) and the docs/tests sections for a small user-visible fix. A whole-file read of a skill that size spills to persisted output and costs extra recovery calls. **then** In `tool_guidance.md`, tell the agent how to read a large harness skill rather than only where it is: name the skill as oversized and prescribe `grep -n '^## ' <SKILL.md>` followed by `sed -n 'A,Bp'` of the relevant sections, in place of `cat`. Reword the existing "where skills live" bullet instead of adding a new always-on line.
+ - [20261023-212750-performance-wait-exponential-max](20261023-212750-performance-wait-exponential-max/EXPERIENCE.md) — **when** A tenacity task frames the change as cost-only, such as a performance fix or a rewrite of a strategy's internals, and says results must stay unchanged. The agent then has to decide whether the change is "user-visible" enough to need the repository's ship-alongside files. **then** In `skills/tenacity-change-contract`, name results-preserving performance and refactor fixes in the `description` trigger. In §2, state that "results unchanged" is not an exemption from the reno note: a user-reported slowdown ships a `fixes:` note. Any other skill that handles results-preserving changes, such as `behavior-preserving-change`, should end with a pointer to load tenacity-change-contract. Without this, the agent rules itself out of the contract on the "not user-visible" reasoning.
+ - [20261023-211551-bug-when-a-retry-decorated-funct](20261023-211551-bug-when-a-retry-decorated-funct/EXPERIENCE.md) — **when** A tenacity fix changes how per-call or per-thread runtime state is exposed or shared, for example `fn.statistics` on a decorated function, through `functools.wraps`, `copy()`, `retry_with` or `threading.local`. The obvious fix (one shared object) quietly breaks an invariant that only a code comment or docstring mentions. **then** In `skills/tenacity-change-contract`, give that surface its own section. List its invariants explicitly, with where each comes from (a code comment, the property docstring, an issue number). Require the final message and reno note to keep each one or name it as changed. A one-line mention such as "statistics is per-thread" is not enough.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 01679b4..3496e75 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -240,6 +240,21 @@
+       "wall_s": 9646.8,
+       "always_on_tokens": 1311,
+       "stability_after": 0.7202
++    },
++    {
++      "task_id": "20261024-152742-bug-retry-if-exception-cause-typ",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 4,
++      "tokens_in": 388075,
++      "tokens_cached": 5851723,
++      "tokens_out": 65460,
++      "cost_usd": 3.9905,
++      "wall_s": 18950.9,
++      "always_on_tokens": 1311,
++      "stability_after": 0.7375
+     }
+   ]
+ }
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..b20f461 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -161,7 +161,8 @@ class retry_if_exception_cause_type(retry_base):
+     """Retries if any of the causes of the raised exception is of one or more types.
+ 
+     The check on the type of the cause of the exception is done recursively (until finding
+-    an exception in the chain that has no `__cause__`)
++    an exception in the chain that has no `__cause__`, or an exception already seen in a
++    cyclic chain)
+     """
+ 
+     def __init__(
+@@ -177,7 +178,9 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..f749a80 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1441,6 +1441,58 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_self_cause_terminates(self) -> None:
++        def raise_self_cause() -> None:
++            try:
++                raise ValueError("boom")
++            except ValueError as e:
++                raise e from e
++
++        retrying = tenacity.Retrying(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_self_cause)
++
++    def test_retry_if_exception_cause_type_mutual_cause_terminates(self) -> None:
++        first = ValueError("first")
++        second = KeyError("second")
++        first.__cause__ = second
++        second.__cause__ = first
++
++        def raise_first() -> None:
++            raise first
++
++        retrying = tenacity.Retrying(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_first)
++
++    def test_retry_if_exception_cause_type_cyclic_chain_finds_match(self) -> None:
++        first = ValueError("first")
++        second = NameError("second")
++        first.__cause__ = second
++        second.__cause__ = first
++        attempts: list[int] = []
++
++        def raise_first() -> None:
++            attempts.append(1)
++            raise first
++
++        retrying = tenacity.Retrying(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            reraise=True,
++        )
++        with self.assertRaises(ValueError):
++            retrying(raise_first)
++        self.assertEqual(len(attempts), 2)
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

@@ -1,0 +1,74 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 121ea63..d8b203d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -195,6 +195,21 @@
+       "wall_s": 58.6,
+       "always_on_tokens": 189,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-205456-bug-humanize-intword-fails-to-ca",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 11366,
++      "tokens_cached": 112896,
++      "tokens_out": 1246,
++      "cost_usd": 0.0,
++      "wall_s": 60.3,
++      "always_on_tokens": 189,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index ebccfb9..4303944 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -282,7 +282,7 @@ def intword(value: NumberOrString, format: str = "%.1f") -> str:
+     chopped = value / power
+     rounded_value = float(format % chopped)
+ 
+-    if not largest_ordinal and rounded_value * power == powers[ordinal + 1]:
++    if not largest_ordinal and rounded_value == powers[ordinal + 1] / power:
+         # After rounding, we end up just at the next power
+         ordinal += 1
+         rounded_value = 1.0
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 755e29e..5e30a01 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -148,6 +148,30 @@ def test_intword(test_args: list[str], expected: str) -> None:
+     assert humanize.intword(*test_args) == expected
+ 
+ 
++@pytest.mark.parametrize(
++    "exponent, previous_unit, next_unit",
++    [
++        (24, "sextillion", "septillion"),
++        (27, "septillion", "octillion"),
++        (30, "octillion", "nonillion"),
++        (33, "nonillion", "decillion"),
++    ],
++)
++@pytest.mark.parametrize("sign", [1, -1])
++@pytest.mark.parametrize("format", ["%.1f", "%.2f"])
++def test_intword_large_magnitude_rounding(
++    exponent: int, previous_unit: str, next_unit: str, sign: int, format: str
++) -> None:
++    prefix = "-" if sign < 0 else ""
++    assert humanize.intword(sign * (10**exponent - 1), format) == (
++        f"{prefix}{format % 1.0} {next_unit}"
++    )
++    value = 9999 * 10 ** (exponent - 4)
++    assert humanize.intword(sign * value, format) == (
++        f"{prefix}{format % 999.9} {previous_unit}"
++    )
++
++
+ @pytest.mark.parametrize(
+     "test_input, expected",
+     [

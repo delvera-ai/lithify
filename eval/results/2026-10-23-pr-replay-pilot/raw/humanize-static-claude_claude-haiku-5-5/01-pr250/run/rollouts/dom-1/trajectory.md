@@ -135,7 +135,7 @@ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) -> 
 [tool_result] The file ~/.cache/lithify/work/repo-591a89d5b953/20261023-142110-regression-when-gnu-is-false-hum/dom-1/tests/test_filesize.py has been updated successfully.
 [tool_use Bash] {"command": "ls <work>/env-humanize/bin/python && PYTHONPATH=src <work>/env-humanize/bin/python -m pytest -q -p no:cacheprovider --color=no 2>&1 | tail 
 …[47 chars elided]…
-ers-donovan-Coding-delvera-foundational-lithify/19d43989-6c6b-4090-9032-1fdbf9e87d20/scratchpad/pr-work/env-humanize/bin/python -c \"import humanize as h; print(h.naturalsize(1.0), '|', h.naturalsize('1'), '|', h.naturalsize(-1.0), '|', h.naturalsize(0.5))\"; grep -n '{bytes_}' src/humanize/filesize.py; echo \"grep exit: $?\"", "description": "Run project test suite and verify the reported cases"}
+ers-user-Coding-delvera-foundational-lithify/19d43989-6c6b-4090-9032-1fdbf9e87d20/scratchpad/pr-work/env-humanize/bin/python -c \"import humanize as h; print(h.naturalsize(1.0), '|', h.naturalsize('1'), '|', h.naturalsize(-1.0), '|', h.naturalsize(0.5))\"; grep -n '{bytes_}' src/humanize/filesize.py; echo \"grep exit: $?\"", "description": "Run project test suite and verify the reported cases"}
 [tool_result] <work>/env-humanize/bin/python
 ........................................................................ [ 11%]
 .sssssssssssssssssssssss......s......................................... [ 22%]

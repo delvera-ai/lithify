@@ -1,0 +1,23 @@
+{
+  "label": "adaptive-codex-s0",
+  "scratch_kept": false,
+  "lithify_commit": "a1815eb",
+  "run_cost_usd": 0.0,
+  "invariants": [
+    {
+      "task": "parse_age",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "task": "parse_email",
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ],
+  "commits_by_others": []
+}

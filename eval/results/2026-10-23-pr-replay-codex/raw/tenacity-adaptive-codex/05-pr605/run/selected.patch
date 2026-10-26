@@ -1,0 +1,67 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..a0111fa 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -201,6 +201,17 @@ class AttemptManager:
+     def __enter__(self) -> None:
+         pass
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+     def __exit__(
+         self,
+         exc_type: type[BaseException] | None,
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..9c6da70 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -176,6 +176,40 @@ class TestTrio(unittest.TestCase):
+ 
+ 
+ class TestContextManager(unittest.TestCase):
++    @asynctest
++    async def test_async_context_manager_success_after_retry(self) -> None:
++        attempts = 0
++        async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt as value:
++                assert value is None
++                attempts += 1
++                if attempts < 2:
++                    raise ValueError("retry")
++            assert attempt.retry_state.outcome is not None
++            assert attempt.retry_state.outcome.failed == (attempts < 2)
++        assert attempts == 2
++        assert attempt.retry_state.outcome.result() is None
++
++    @asynctest
++    async def test_async_context_manager_exhaustion(self) -> None:
++        error = ValueError("retry")
++        with pytest.raises(RetryError) as exc_info:
++            async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
++                async with attempt:
++                    raise error
++        assert exc_info.value.last_attempt.attempt_number == 3
++        assert exc_info.value.last_attempt.exception() is error
++
++    @asynctest
++    async def test_async_context_manager_with_sync_retrying(self) -> None:
++        error = ValueError("retry")
++        with pytest.raises(ValueError) as exc_info:
++            for attempt in tenacity.Retrying(stop=stop_after_attempt(2), reraise=True):
++                async with attempt:
++                    raise error
++        assert attempt.retry_state.attempt_number == 2
++        assert exc_info.value is error
++
+     @asynctest
+     async def test_do_max_attempts(self) -> None:
+         attempts = 0

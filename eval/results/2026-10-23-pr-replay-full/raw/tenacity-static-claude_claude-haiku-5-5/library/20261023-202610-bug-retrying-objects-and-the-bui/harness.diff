@@ -1,0 +1,59 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -81,6 +81,48 @@
+   `TYPE_CHECKING` as `SyncRetryBaseT` (see `tenacity/asyncio/__init__.py`). They are defined
+   after `retry_base`, so annotations that use them in the class body are quoted strings.
+ 
++## 1b2. Object state, pickling and copying (`Retrying`, strategies)
++Verified in `tenacity/__init__.py`, `retry.py`, `before*.py`, `after.py`, `stop.py`, `nap.py`.
++- `BaseRetrying.__init__` stores `self._local = threading.local()`. The `statistics` and
++  `iter_state` properties lazily create `_local.statistics` / `_local.iter_state`, so any
++  object rebuilt without going through `__init__` (unpickling, `copy.copy`) must get a fresh
++  `_local` before either property is read. `iter_state.actions` holds per-run lambdas and
++  closures from `_begin_iter`/`_post_stop_check_actions` (`exc_check`, `next_action`): it is
++  per-run state, never something to serialise.
++- Object-level hooks (`__getstate__`/`__setstate__`, `__copy__`) go on `BaseRetrying` once.
++  `Retrying`, `AsyncRetrying` and `TornadoRetrying` add no instance state of their own beyond
++  `sleep`, so they inherit them; no async copy needed.
++- `BaseRetrying.copy()` (used by `wraps`' per-call copy and `retry_with`) rebuilds through
++  `self.__class__(...)`, not the `copy` module, so it always starts with a fresh `_local` and
++  empty statistics; pickle hooks don't change it. `copy.copy(retrying)` DOES go through
++  `__getstate__`/`__setstate__` once they exist (before, the copy shared `_local`). State
++  that change in the final message.
++- INVARIANT for strategy classes (`retry.py`, `stop.py`, `wait.py`, `tenacity/asyncio/retry.py`):
++  store constructor arguments as plain attributes and compute in `__call__`
++  (`retry_if_exception_cause_type`, `stop_after_attempt`, `wait_fixed` do this). Never store a
++  lambda or nested `def` built in `__init__`: it cannot be pickled
++  (`Can't get local object '<cls>.__init__.<locals>.<lambda>'`). If an existing class must keep
++  a `predicate` attribute (`retry_if_exception` subclasses), bind a module-level function with
++  `functools.partial`. Check: `grep -nE "lambda|^ {8,}def " tenacity/retry.py tenacity/stop.py
++  tenacity/wait.py tenacity/asyncio/retry.py` (quote it; zsh). It should return no hit inside
++  an `__init__`. The `wait.py` hits at docstring examples (`wait_chained`, `http_error`,
++  `http_get_request`) are not code. At the base commit the hits are
++  `retry_if_exception_type`, `retry_if_not_exception_type`, `retry_unless_exception_type`,
++  `retry_if_exception_message` (`message_fnc`/`match_fnc`) and
++  `retry_if_not_exception_message`.
++- Unpicklable by design, because they hold user or OS objects: the closures that
++  `before_log`/`after_log`/`before_sleep_log` return (nested `log_it`), and the
++  `threading.Event` in `stop_when_event_set` (`stop.py`) and `sleep_using_event` (`nap.py`). The same
++  goes for user callables passed to `retry_if_result`, `retry_if_exception`, `wait_exception`,
++  and `_utils.wrap_to_async_func`'s `inner`. A task about "built-in strategies" doesn't cover
++  these. Name them as out of scope in the final message; don't redesign them.
++- A module-level `@retry` function pickles by reference (`functools.wraps` copies
++  `__qualname__`), so `Pool.map(fn, ...)` doesn't pickle the `Retrying`. Pickling is exercised
++  only when `fn.retry`, a `Retrying` or a strategy crosses the process boundary. Test those
++  objects directly with `pickle.loads(pickle.dumps(obj))`. Include a `Retrying` that has run
++  (non-empty `statistics`) and check that the restored object still runs. An existing pickle
++  test lives in `tests/test_tenacity.py::TestRetryException::test_retry_error_is_pickleable`.
++
+ ## 1c. CONTRACT: a new keyword on `Retrying`/`AsyncRetrying`/`@retry`
+ A constructor option is stored on `BaseRetrying` and must appear in every place below.
+ Check each with `grep -n "<existing kwarg, e.g. retry_error_callback>" tenacity/*.py tenacity/asyncio/__init__.py`;

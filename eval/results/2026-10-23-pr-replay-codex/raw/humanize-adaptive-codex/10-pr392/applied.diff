@@ -1,0 +1,69 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0813b21..0683e75 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 49.2,
+       "always_on_tokens": 196,
+       "stability_after": 0.9983
++    },
++    {
++      "task_id": "20261023-205535-bug-humanize-intcomma-10-400-123",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 19251,
++      "tokens_cached": 158464,
++      "tokens_out": 1168,
++      "cost_usd": 0.0,
++      "wall_s": 55.9,
++      "always_on_tokens": 196,
++      "stability_after": 0.9985
+     }
+   ]
+ }
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 727435f..8245d2d 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -160,7 +160,7 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
+                 value = float(value)
+             else:
+                 value = int(value)
+-        else:
++        elif not (isinstance(value, int) and ndigits is None):
+             if not math.isfinite(float(value)):
+                 return _format_not_finite(float(value))
+             float(value)
+diff --git a/tests/test_number.py b/tests/test_number.py
+index cf55ee1..8b267b7 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -83,6 +83,25 @@ def test_intcomma(
+     assert humanize.intcomma(*test_args) == expected
+ 
+ 
++@pytest.mark.parametrize("sign", [1, -1])
++def test_intcomma_large_integer(sign: int) -> None:
++    value = sign * (10**400 + 123)
++    assert humanize.intcomma(value) == f"{value:,}"
++    assert humanize.intcomma(value, None) == f"{value:,}"
++
++
++@pytest.mark.parametrize("sign", [1, -1])
++def test_intcomma_large_numeric_string(sign: int) -> None:
++    value = str(sign * (10**400 + 123))
++    assert humanize.intcomma(value) == ("+Inf" if sign > 0 else "-Inf")
++
++
++@pytest.mark.parametrize("sign", [1, -1])
++def test_intcomma_large_integer_explicit_ndigits(sign: int) -> None:
++    with pytest.raises(OverflowError):
++        humanize.intcomma(sign * (10**400 + 123), 2)
++
++
+ def test_intword_powers() -> None:
+     # make sure that powers & human_powers have the same number of items
+     assert len(number.powers) == len(number.human_powers)

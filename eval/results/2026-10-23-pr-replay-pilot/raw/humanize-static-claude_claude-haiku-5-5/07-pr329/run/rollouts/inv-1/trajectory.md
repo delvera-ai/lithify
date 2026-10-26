@@ -91,7 +91,7 @@ tool_guidance.md
 bcc6331 lithify: probe base
 [assistant] The skill confirms the checklist: keep the input guard first, keep one leading `-`, add cases to the existing parametrize list, and hand-edit any docstring example that changes. Next I'll reproduce the bug on the unmodified code with the harness script.
 [tool_use Bash] {"command": "PY=<work>/env-humanize/bin/python; ls -la $PY && $PY .lithify/harness/scripts/compare_outputs.py 'naturalsize(999999)' 'naturalsize(1024 ** 2 - 1, binary=True)' 'naturalsize(999999, gnu=True)' 'naturalsize(1024**2-1, gnu=True)' 'naturalsize(999999.9)' 'naturalsize(1024**10-1, binary=True)' 'naturalsize(1000**10-1)' 'naturalsize(-999999)' 'naturalsize(-1024**2+1, binary=True)' 'naturalsize(999, gnu=True)' 'naturalsize(1000**10)' 'naturalsize(1000**2-1)' 'naturalsize(999.95)' 'naturalsize(1023, binary=True)'", "description": "Reproduce bug on unmodified code with harness"}
-[tool_result] lrwxr-xr-x@ 1 donovan  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] lrwxr-xr-x@ 1 user  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 old = HEAD (/private/var/folders/5n/5k3tqbk921zc6rdrr10wc7th0000gn/T/tmp8v5l9x7v/old/src/humanize/__init__.py)
 new = working tree (~/.cache/lithify/work/repo-591a89d5b953/20261023-145531-bug-humaniz
 …[649 chars elided]…

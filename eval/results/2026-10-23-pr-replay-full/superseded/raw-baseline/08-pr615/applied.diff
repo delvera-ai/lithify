@@ -1,0 +1,258 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4fefc62..43579e9 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -105,6 +105,21 @@
+       "wall_s": 119.7,
+       "always_on_tokens": 186,
+       "stability_after": 0.8571
++    },
++    {
++      "task_id": "20261023-163641-bug-retrying-objects-and-the-bui",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 73561,
++      "tokens_cached": 1447587,
++      "tokens_out": 23802,
++      "cost_usd": 0.0411,
++      "wall_s": 152.4,
++      "always_on_tokens": 186,
++      "stability_after": 0.875
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 591f970..7fd49ea 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -256,6 +256,20 @@ class BaseRetrying(ABC):
+         self._name = name
+         self.enabled = enabled
+ 
++    def __getstate__(self) -> dict[str, t.Any]:
++        # threading.local cannot be pickled, so carry the statistics of the
++        # calling thread across instead and rebuild the local in __setstate__.
++        state = self.__dict__.copy()
++        del state["_local"]
++        state["_statistics"] = self.statistics
++        return state
++
++    def __setstate__(self, state: dict[str, t.Any]) -> None:
++        statistics = state.pop("_statistics")
++        self.__dict__.update(state)
++        self._local = threading.local()
++        self.statistics.update(statistics)
++
+     def copy(
+         self,
+         sleep: t.Callable[[int | float], None] | object = _unset,
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 6e9fc3e..41a8ca0 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import functools
+ import re
+ import typing
+ 
+@@ -22,6 +23,34 @@ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+ 
+ 
++def _is_instance(
++    exception_types: type[BaseException] | tuple[type[BaseException], ...],
++    exception: BaseException,
++) -> bool:
++    return isinstance(exception, exception_types)
++
++
++def _is_not_instance(
++    exception_types: type[BaseException] | tuple[type[BaseException], ...],
++    exception: BaseException,
++) -> bool:
++    return not isinstance(exception, exception_types)
++
++
++def _message_equals(message: str, exception: BaseException) -> bool:
++    return message == str(exception)
++
++
++def _message_matches(prog: re.Pattern[str], exception: BaseException) -> bool:
++    return bool(prog.match(str(exception)))
++
++
++def _negate(
++    predicate: typing.Callable[..., bool], *args: typing.Any, **kwargs: typing.Any
++) -> bool:
++    return not predicate(*args, **kwargs)
++
++
+ class retry_base(abc.ABC):
+     """Abstract base class for retry strategies."""
+ 
+@@ -108,7 +137,7 @@ class retry_if_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_instance, exception_types))
+ 
+ 
+ class retry_if_not_exception_type(retry_if_exception):
+@@ -120,7 +149,7 @@ class retry_if_not_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_not_instance, exception_types))
+ 
+ 
+ class retry_unless_exception_type(retry_if_exception):
+@@ -132,7 +161,7 @@ class retry_unless_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(functools.partial(_is_not_instance, exception_types))
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+@@ -221,18 +250,10 @@ class retry_if_exception_message(retry_if_exception):
+ 
+         # set predicate
+         if message:
+-
+-            def message_fnc(exception: BaseException) -> bool:
+-                return message == str(exception)
+-
+-            predicate = message_fnc
++            predicate = functools.partial(_message_equals, message)
+         elif match:
+             prog = re.compile(match)
+-
+-            def match_fnc(exception: BaseException) -> bool:
+-                return bool(prog.match(str(exception)))
+-
+-            predicate = match_fnc
++            predicate = functools.partial(_message_matches, prog)
+         else:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+@@ -252,7 +273,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+         super().__init__(message, match)
+         # invert predicate
+         if_predicate = self.predicate
+-        self.predicate = lambda *args_, **kwargs_: not if_predicate(*args_, **kwargs_)
++        self.predicate = functools.partial(_negate, if_predicate)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 80060a3..3a8e1db 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1933,6 +1933,98 @@ class TestRetryException(unittest.TestCase):
+         self.assertEqual(expected.last_attempt, actual.last_attempt)
+ 
+ 
++def _no_sleep(seconds: float) -> None:
++    pass
++
++
++class _FailTimes:
++    """Callable that raises ValueError for the first ``n`` calls."""
++
++    def __init__(self, n: int) -> None:
++        self.n = n
++        self.calls = 0
++
++    def __call__(self) -> None:
++        self.calls += 1
++        if self.calls <= self.n:
++            raise ValueError("fail")
++
++
++class TestPickling(unittest.TestCase):
++    def roundtrip(self, obj: typing.Any) -> typing.Any:
++        import pickle
++
++        return pickle.loads(pickle.dumps(obj))
++
++    def test_retrying_is_pickleable(self) -> None:
++        retry = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_fixed(1),
++            retry=tenacity.retry_if_exception_type(ValueError),
++            reraise=True,
++        )
++        actual = self.roundtrip(retry)
++
++        assert actual.stop.max_attempt_number == 2
++        assert actual.wait.wait_fixed == 1
++        assert actual.reraise is True
++        assert actual.statistics == {}
++
++    def test_used_retrying_keeps_statistics_and_still_works(self) -> None:
++        retry = Retrying(
++            sleep=_no_sleep,
++            stop=tenacity.stop_after_attempt(3),
++            retry=tenacity.retry_if_exception_type(ValueError),
++        )
++        assert retry(_FailTimes(1)) is None
++        expected_stats = dict(retry.statistics)
++        assert expected_stats["attempt_number"] == 2
++
++        actual = self.roundtrip(retry)
++
++        assert actual.statistics == expected_stats
++        assert actual.statistics is not retry.statistics
++        # The restored object retries like the original did.
++        f = _FailTimes(1)
++        assert actual(f) is None
++        assert f.calls == 2
++        assert actual.statistics["attempt_number"] == 2
++
++    def test_decorated_function_retry_object_is_pickleable(self) -> None:
++        @tenacity.retry(stop=tenacity.stop_after_attempt(2), wait=tenacity.wait_none())
++        def fn() -> int:
++            return 1
++
++        actual = self.roundtrip(fn.retry)
++
++        assert actual.stop.max_attempt_number == 2
++        assert actual.wait(None) == 0
++
++    def test_builtin_retry_strategies_are_pickleable(self) -> None:
++        exc = ValueError("boom")
++        strategies = [
++            (tenacity.retry_if_exception_type(), True),
++            (tenacity.retry_if_exception_type(KeyError), False),
++            (tenacity.retry_if_not_exception_type(ValueError), False),
++            (tenacity.retry_unless_exception_type(ValueError), False),
++            (tenacity.retry_if_exception_message(message="boom"), True),
++            (tenacity.retry_if_exception_message(match="bo"), True),
++            (tenacity.retry_if_not_exception_message(message="boom"), False),
++        ]
++        for strategy, expected in strategies:
++            actual = self.roundtrip(strategy)
++            state = RetryCallState(Retrying(), fn=None, args=(), kwargs={})
++            state.set_exception((type(exc), exc, None))
++            assert actual(state) is expected, strategy
++
++    def test_composed_retry_strategies_are_pickleable(self) -> None:
++        strategy = tenacity.retry_if_exception_type(
++            ValueError
++        ) | tenacity.retry_if_result(bool)
++        actual = self.roundtrip(strategy)
++        assert isinstance(actual, tenacity.retry_any)
++
++
+ class TestRetryTyping(unittest.TestCase):
+     def test_retry_type_annotations(self) -> None:
+         """The decorator should maintain types of decorated functions."""

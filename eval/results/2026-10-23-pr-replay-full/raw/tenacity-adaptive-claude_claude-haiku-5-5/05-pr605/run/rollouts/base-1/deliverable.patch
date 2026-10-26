@@ -1,0 +1,67 @@
+diff --git a/releasenotes/notes/attempt-manager-async-with-3f1c2a7d9e4b8c60.yaml b/releasenotes/notes/attempt-manager-async-with-3f1c2a7d9e4b8c60.yaml
+new file mode 100644
+index 0000000..d583d6f
+--- /dev/null
++++ b/releasenotes/notes/attempt-manager-async-with-3f1c2a7d9e4b8c60.yaml
+@@ -0,0 +1,6 @@
++---
++features:
++  - |
++    ``AttemptManager`` now supports the async context manager protocol, so
++    ``async with attempt:`` can be used inside ``async for`` loops over
++    ``AsyncRetrying``. It behaves exactly like ``with attempt:``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5f12c2b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..9a369d5 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -190,6 +190,28 @@ class TestContextManager(unittest.TestCase):
+ 
+         assert attempts == 3
+ 
++    @asynctest
++    async def test_do_max_attempts_async_with(self) -> None:
++        attempts = 0
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(3))
++        try:
++            async for attempt in retrying:
++                async with attempt:
++                    attempts += 1
++                    raise Exception
++        except RetryError:
++            pass
++
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_with_returns_result(self) -> None:
++        result = None
++        async for attempt in tasyncio.AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt:
++                result = "ok"
++        assert result == "ok"
++
+     @asynctest
+     async def test_reraise(self) -> None:
+         class CustomError(Exception):

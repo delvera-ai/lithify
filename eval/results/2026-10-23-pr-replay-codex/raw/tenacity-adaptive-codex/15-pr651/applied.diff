@@ -1,0 +1,109 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b16935c..aaa16a1 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -210,6 +210,21 @@
+       "wall_s": 91.4,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-201840-bug-retry-if-exception-message-m",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 13976,
++      "tokens_cached": 123776,
++      "tokens_out": 1235,
++      "cost_usd": 0.0,
++      "wall_s": 49.7,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index df0cc4d..e59f4c0 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -223,22 +223,22 @@ class retry_if_exception_message(retry_if_exception):
+         message: str | None = None,
+         match: None | str | re.Pattern[str] = None,
+     ) -> None:
+-        if message and match:
++        if message is not None and match is not None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+             )
+ 
+-        if not message and not match:
++        if message is None and match is None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+             )
+ 
+         self.message = message
+-        self.match = re.compile(match) if match else None
++        self.match = re.compile(match) if match is not None else None
+         super().__init__(self._check)
+ 
+     def _check(self, exception: BaseException) -> bool:
+-        if self.message:
++        if self.message is not None:
+             return self.message == str(exception)
+         assert self.match is not None
+         return bool(self.match.match(str(exception)))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 61fd8db..b6ccb09 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -926,6 +926,47 @@ class TestRetryConditions(unittest.TestCase):
+             tenacity.retry_if_exception_message(message="negative", match="negative")
+ 
+ 
++@pytest.mark.parametrize(
++    "strategy",
++    [tenacity.retry_if_exception_message, tenacity.retry_if_not_exception_message],
++)
++@pytest.mark.parametrize("argument", ["message", "match"])
++@pytest.mark.parametrize("exception_message", ["", "nonempty"])
++def test_retry_exception_message_empty_string(
++    strategy: typing.Any, argument: str, exception_message: str
++) -> None:
++    retry_strategy = strategy(**{argument: ""})
++    retry_state = make_retry_state(1, 0)
++    exception = RuntimeError(exception_message) if exception_message else RuntimeError()
++    retry_state.set_exception((RuntimeError, exception, None))
++
++    expected = argument == "match" or exception_message == ""
++    if strategy is tenacity.retry_if_not_exception_message:
++        expected = not expected
++    assert retry_strategy(retry_state) is expected
++
++
++@pytest.mark.parametrize(
++    "strategy",
++    [tenacity.retry_if_exception_message, tenacity.retry_if_not_exception_message],
++)
++@pytest.mark.parametrize(
++    "kwargs",
++    [
++        {},
++        {"message": None, "match": None},
++        {"message": "", "match": ""},
++        {"message": "", "match": "nonempty"},
++        {"message": "nonempty", "match": ""},
++    ],
++)
++def test_retry_exception_message_invalid_arguments(
++    strategy: typing.Any, kwargs: dict[str, typing.Any]
++) -> None:
++    with pytest.raises(TypeError):
++        strategy(**kwargs)
++
++
+ class NoneReturnUntilAfterCount:
+     """Holds counter state for invoking a method several times in a row."""
+ 

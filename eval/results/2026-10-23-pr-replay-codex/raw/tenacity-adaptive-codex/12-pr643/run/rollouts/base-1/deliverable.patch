@@ -1,0 +1,127 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c52d6ba..859b1bf 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -215,6 +215,8 @@ class AttemptManager:
+         exc_value: BaseException | None,
+         traceback: "types.TracebackType | None",
+     ) -> bool | None:
++        if not self.retry_state.retry_object.enabled:
++            return False
+         if exc_type is not None and exc_value is not None:
+             self.retry_state.set_exception((exc_type, exc_value, traceback))
+             return True  # Swallow exception.
+@@ -478,6 +480,9 @@ class BaseRetrying(ABC):
+         self.begin()
+ 
+         retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++        if not self.enabled:
++            yield AttemptManager(retry_state=retry_state)
++            return
+         while True:
+             do = self.iter(retry_state=retry_state)
+             if isinstance(do, DoAttempt):
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 214a7ae..cb85aef 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -168,9 +168,15 @@ class AsyncRetrying(BaseRetrying):
+     def __aiter__(self) -> "AsyncRetrying":
+         self.begin()
+         self._retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++        self._disabled_attempt_yielded = False
+         return self
+ 
+     async def __anext__(self) -> AttemptManager:
++        if not self.enabled:
++            if self._disabled_attempt_yielded:
++                raise StopAsyncIteration
++            self._disabled_attempt_yielded = True
++            return AttemptManager(retry_state=self._retry_state)
+         while True:
+             do = await self.iter(retry_state=self._retry_state)
+             if do is None:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c6d2786..64c3c34 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -161,6 +161,40 @@ class TestAsyncio(unittest.TestCase):
+ 
+ 
+ class TestAsyncEnabled(unittest.TestCase):
++    @asynctest
++    async def test_disabled_iterator(self) -> None:
++        for async_context in (False, True):
++            for error in (None, ValueError("fail"), tenacity.TryAgain()):
++                retrying = tasyncio.AsyncRetrying(
++                    enabled=False,
++                    stop=stop_after_attempt(3),
++                    retry=tenacity.retry_always,
++                )
++                for _ in range(2):
++                    attempts = 0
++
++                    async def run() -> None:
++                        nonlocal attempts
++                        async for attempt in retrying:
++                            if async_context:
++                                async with attempt:
++                                    attempts += 1
++                                    if error is not None:
++                                        raise error
++                            else:
++                                with attempt:
++                                    attempts += 1
++                                    if error is not None:
++                                        raise error
++
++                    if error is None:
++                        await run()
++                    else:
++                        with pytest.raises(type(error)) as exc_info:
++                            await run()
++                        assert exc_info.value is error
++                    assert attempts == 1
++
+     @asynctest
+     async def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, async function is called directly without retrying."""
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 31e7f43..ab177dc 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1505,6 +1505,34 @@ class TestStatisticsKeys:
+ 
+ 
+ class TestEnabled:
++    @pytest.mark.parametrize("error", [None, ValueError("fail"), tenacity.TryAgain()])
++    def test_disabled_iterator(self, error: Exception | None) -> None:
++        retrying = tenacity.Retrying(
++            enabled=False,
++            stop=tenacity.stop_after_attempt(3),
++            retry=tenacity.retry_always,
++        )
++
++        # Reusing the controller should still execute exactly one attempt each time.
++        for _ in range(2):
++            attempts = 0
++
++            def run() -> None:
++                nonlocal attempts
++                for attempt in retrying:
++                    with attempt:
++                        attempts += 1
++                        if error is not None:
++                            raise error
++
++            if error is None:
++                run()
++            else:
++                with pytest.raises(type(error)) as exc_info:
++                    run()
++                assert exc_info.value is error
++            assert attempts == 1
++
+     def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, the function is called directly without retrying."""
+         call_count = 0

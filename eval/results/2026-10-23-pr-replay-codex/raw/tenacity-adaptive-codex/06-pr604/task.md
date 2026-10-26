@@ -1,0 +1,1 @@
+Feature: add an `enabled` parameter (default `True`) to `Retrying`, `AsyncRetrying` and the `@retry` decorator. With `enabled=False` the decorated function is called directly, exactly once, with no retry logic, and any exception it raises propagates unchanged. This is useful during development and testing.

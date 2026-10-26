@@ -1,0 +1,36 @@
+{
+  "task": "Bug: `Retrying` objects and the built-in retry strategies cannot be pickled, so `@retry`-decorated functions cannot be used with `multiprocessing` (e.g. `Pool.map`). Make `Retrying` instances (including ones that have already been used and have statistics) and the retry strategy classes picklable with the standard `pickle` module, restoring an equivalent working object.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 0,
+    "cached": 0,
+    "out": 0,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 4
+  },
+  "stability_after": 0.6453,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": false,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": false,
+      "issues": []
+    }
+  }
+}

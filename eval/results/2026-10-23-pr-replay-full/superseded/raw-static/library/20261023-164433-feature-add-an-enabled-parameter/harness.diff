@@ -1,0 +1,79 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text, retry-loop or `statistics` behaviour, `|`/`&`/`+` composition of retry/stop/wait strategies or their type annotations) — lists the files such a change must touch in this repo (release note, regression test), the conventions they follow, how to prove the test fails on the old code, and the sync/async invariants of the retry loop.
++description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text, retry-loop or `statistics` behaviour, `|`/`&`/`+` composition of retry/stop/wait strategies or their type annotations, a new constructor parameter on `Retrying`/`AsyncRetrying`/`@retry`) — lists the files such a change must touch in this repo (release note, regression test), the conventions they follow, how to prove the test fails on the old code, and the sync/async invariants of the retry loop.
+ ---
+ 
+ # What a maintainer-complete tenacity change contains
+@@ -35,6 +35,35 @@
+ 
+ Pure refactors, CI, typing-only, or docs-only changes may skip the test; a user-visible change
+ should still get a note.
++
++## CONTRACT: new constructor parameter on `Retrying` / `AsyncRetrying` / `@retry`
++
++Precedent: `name` (#597, `git show 70083b8`). The parameter must appear in every place below;
++confirm with `grep -n "<param>" tenacity/__init__.py tenacity/asyncio/__init__.py`.
++
++1. `BaseRetrying.__init__` (`tenacity/__init__.py`): parameter + stored attribute.
++2. `BaseRetrying.copy()`: `<param>: <type> | object = _unset` and
++   `<param>=_first_set(<param>, self.<attr>)`. Not optional: `wraps()` runs every decorated
++   call on `self.copy()` and `retry_with` is `self.copy(*args, **kwargs).wraps(f)`, so a value
++   missing from `copy()` is silently dropped by `@retry(...)` and `retry_with(...)`.
++3. `AsyncRetrying.__init__` (`tenacity/asyncio/__init__.py`) re-declares every parameter and
++   forwards each one to `super().__init__` by keyword: add it in both places.
++   `TornadoRetrying.__init__` takes `**kwargs`, so it needs nothing.
++4. Both keyword overloads of `retry()` in `tenacity/__init__.py`: the async-`sleep` one
++   (defaults written `= ...`, returns `_AsyncRetryDecorator`) and the sync one (real defaults).
++   mypy strict covers `tests/`, so a test calling `@retry(<param>=...)` is a type error without
++   them. `name` is missing from these overloads today; don't copy that gap.
++5. `BaseRetrying.__repr__` lists the configuration (`name=` was added by #597); add the new
++   field there too.
++6. If the parameter changes how calls run, it must reach every execution path. Each has its own
++   loop: `Retrying.__call__`, `BaseRetrying.__iter__` (`for attempt in Retrying(...)`),
++   `AsyncRetrying.__call__`, `AsyncRetrying.__aiter__`/`__anext__`, and
++   `TornadoRetrying.__call__` (`tenacity/tornadoweb.py`; `retry()` picks it for tornado
++   coroutines). All of them drive `self.iter()` → `BaseRetrying._begin_iter`, which is shared,
++   so a change there reaches every iterator path. A short-circuit in one `__call__` does not.
++   Test each path you change: `tests/test_tenacity.py`, `tests/test_asyncio.py`,
++   `tests/test_tornado.py` (tornado is installed in the project interpreter; trio is not).
++7. Release note under `features:`; for the fail-on-base result to expect, see DONE step 1.
+ 
+ ## INVARIANTS that new code and tests must satisfy
+ 
+@@ -105,11 +134,17 @@
+ 
+ 1. **New tests fail on the old code** — one read-only call, from the repo root, with the
+    project interpreter from `memory.md`:
+-   `<project-python> .lithify/harness/skills/tenacity-change-contract/scripts/fails_on_base.py <new test node ids>`
+-   Exit 0 = fails on HEAD (read the printed failure and check it is the bug; quote it in the
++   `<project-python> .lithify/harness/skills/tenacity-change-contract/scripts/fails_on_base.py <new test node ids>; echo "exit=$?"`
++   Don't pipe it through `tail`: it already prints only the last 40 lines, and a pipe hides
++   its exit code. Exit 0 = fails on HEAD (read the printed failure and check it is the bug; quote it in the
+    final message). Exit 1 = test passes on HEAD: rework the test, rerun once. Exit 2 = the
+    check could not run: do not improvise a stash/revert round-trip; say in the final message
+    that fail-on-base was not verified.
++   For a **new parameter or name**, exit 0 with `TypeError: ... unexpected keyword argument` /
++   `ImportError` on HEAD is expected, but it only shows the name is new. It does not show the
++   behaviour is right. So each behaviour test must also prove it can tell the cases apart: in
++   the same test, run the scenario with the parameter's default value and assert the result
++   differs (e.g. it retries). Then a fix that ignored the new parameter would fail the test.
+ 2. **Full suite last**, once, after the final edit (command in `memory.md`).
+ 3. **`git status --short`** — confirms the untracked reno note is present and nothing else
+    stray is left.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -1,5 +1,7 @@
+-- The shell is zsh: an unquoted glob that matches nothing is an error (`no matches found`), not a
+-  literal. Quote glob arguments, e.g. `grep -rn name --include='*.py' .`.
++- The shell is zsh on macOS (BSD userland): an unquoted glob that matches nothing is an error
++  (`no matches found`), so quote globs (`grep -rn name --include='*.py' .`); `${PIPESTATUS[0]}` is
++  empty (zsh uses `$pipestatus[1]`), and GNU-only flags such as `cat -A` fail (use `cat -vet`).
++  To read a command's exit code, don't pipe it: `cmd; echo "exit=$?"`.
+ - For ad-hoc checks that import the package (`-c "from tenacity... import ..."`), run the project
+   interpreter from `memory.md` from the repo root, without `-I`: `-I` drops the current directory
+   from the import path, so the import fails with `ModuleNotFoundError: No module named 'tenacity'`.

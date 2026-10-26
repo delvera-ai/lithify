@@ -1,0 +1,75 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3c0fd66..bd15b0a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -285,6 +285,21 @@
+       "wall_s": 168.8,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-193113-bug-setting-the-module-global-te",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 20727,
++      "tokens_cached": 321800,
++      "tokens_out": 4663,
++      "cost_usd": 0.0097,
++      "wall_s": 44.0,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 51925ef..bcc3d61 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -786,7 +786,7 @@ def retry(*dargs: t.Any, **dkw: t.Any) -> t.Any:
+         ):
+             r = AsyncRetrying(*dargs, **dkw)
+         elif (
+-            _HAS_TORNADO
++            tornado is not None
+             and hasattr(tornado.gen, "is_coroutine_function")
+             and tornado.gen.is_coroutine_function(f)
+         ):
+diff --git a/tests/test_tornado.py b/tests/test_tornado.py
+index 9233cca..3c2520e 100644
+--- a/tests/test_tornado.py
++++ b/tests/test_tornado.py
+@@ -15,9 +15,11 @@
+ import unittest
+ from collections.abc import Generator
+ from typing import Any
++from unittest import mock
+ 
+ from tornado import gen, testing
+ 
++import tenacity
+ from tenacity import RetryError, retry, stop_after_attempt, tornadoweb
+ 
+ from .test_tenacity import NoIOErrorAfterCount
+@@ -73,6 +75,19 @@ class TestTornado(testing.AsyncTestCase):
+         finally:
+             gen.is_coroutine_function = old_attr
+ 
++    def test_tornado_global_unset_at_decoration_time(self) -> None:
++        # Tests often set tenacity.tornado to None to exercise the non-tornado
++        # path; decorating must read that live global, not an import-time flag.
++        with mock.patch.object(tenacity, "tornado", None):
++
++            @retry
++            def retryable(thing: NoIOErrorAfterCount) -> None:
++                thing.go()
++
++        thing = NoIOErrorAfterCount(2)
++        retryable(thing)
++        assert thing.counter == thing.count
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

@@ -1,0 +1,137 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index dccc210..4b8879a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 62.4,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-201304-api-cleanup-every-other-exponent",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 22062,
++      "tokens_cached": 109184,
++      "tokens_out": 1549,
++      "cost_usd": 0.0,
++      "wall_s": 50.4,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 92fa1f4..22c06fe 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -17,6 +17,7 @@
+ import abc
+ import random
+ import typing
++import warnings
+ 
+ from tenacity import _utils
+ 
+@@ -24,6 +25,9 @@ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+ 
+ 
++_unset = object()
++
++
+ class wait_base(abc.ABC):
+     """Abstract base class for wait strategies."""
+ 
+@@ -240,24 +244,40 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait, jitter and minimum.
++    It allows for a customized multiplier, maximum wait, jitter and minimum.
++    The multiplier defaults to 1. The initial parameter is deprecated;
++    use the keyword-only multiplier parameter instead.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is max(min, min(initial * 2**n + random.uniform(0, jitter), maximum))
++    The wait time is max(min, min(multiplier * 2**n + random.uniform(0, jitter), maximum))
+     where n is the retry count.
+     """
+ 
+     def __init__(
+         self,
+-        initial: float = 1,
++        initial: float = typing.cast(float, _unset),
+         max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+         jitter: _utils.time_unit_type = 1,
+         min: _utils.time_unit_type = 0,
++        *,
++        multiplier: float = typing.cast(float, _unset),
+     ) -> None:
+-        self.initial = initial
++        if initial is not _unset:
++            if multiplier is not _unset:
++                raise ValueError("initial and multiplier cannot both be specified")
++            warnings.warn(
++                "initial is deprecated; use multiplier instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            multiplier = initial
++        elif multiplier is _unset:
++            multiplier = 1
++        self.multiplier = multiplier
++        self.initial = multiplier
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+         self.jitter = _utils.to_seconds(jitter)
+@@ -267,7 +287,7 @@ class wait_exponential_jitter(wait_base):
+         jitter = random.uniform(0, self.jitter)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.initial * exp + jitter
++            result = self.multiplier * exp + jitter
+         except OverflowError:
+             result = self.max
+         return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 7061cd7..5a12006 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -617,6 +617,30 @@ class TestWaitConditions(unittest.TestCase):
+         fn = tenacity.wait_exponential_jitter()
+         fn(make_retry_state(0, 0))
+ 
++    def test_wait_exponential_jitter_multiplier(self) -> None:
++        fn = tenacity.wait_exponential_jitter(multiplier=3, jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 3)
++        self.assertEqual(fn(make_retry_state(3, 0)), 12)
++        fn = tenacity.wait_exponential_jitter(jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 1)
++
++    def test_wait_exponential_jitter_initial_deprecated(self) -> None:
++        with pytest.warns(DeprecationWarning, match="initial.*multiplier"):
++            positional = tenacity.wait_exponential_jitter(3, 20, 3, 0, 2)
++        with pytest.warns(DeprecationWarning, match="initial.*multiplier"):
++            keyword = tenacity.wait_exponential_jitter(initial=3, jitter=0)
++        self.assertEqual(positional(make_retry_state(3, 0)), 20)
++        self.assertEqual(keyword(make_retry_state(3, 0)), 12)
++        with pytest.warns(DeprecationWarning):
++            tenacity.wait_exponential_jitter(initial=1)
++
++    def test_wait_exponential_jitter_conflicting_parameters(self) -> None:
++        for value in (0, 1, 3):
++            with pytest.raises(ValueError, match="initial.*multiplier"):
++                tenacity.wait_exponential_jitter(initial=value, multiplier=1)
++            with pytest.raises(ValueError, match="initial.*multiplier"):
++                tenacity.wait_exponential_jitter(value, multiplier=1)
++
+     def test_wait_exponential_jitter_min(self) -> None:
+         fn = tenacity.wait_exponential_jitter(initial=1, max=60, jitter=1, min=5)
+         for _ in range(1000):

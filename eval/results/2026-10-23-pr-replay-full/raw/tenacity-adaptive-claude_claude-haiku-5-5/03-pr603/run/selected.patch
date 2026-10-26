@@ -1,0 +1,41 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..4873395 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1353,6 +1353,24 @@ class TestDecoratorWrapper(unittest.TestCase):
+             else:
+                 self.fail("RetryError should have been raised after 1 attempt")
+ 
++    def test_delay_since_first_attempt_present_before_first_retry(self) -> None:
++        seen: list[typing.Any] = []
++
++        def record_statistics(retry_state: RetryCallState) -> None:
++            seen.append(
++                retry_state.retry_object.statistics["delay_since_first_attempt"]
++            )
++
++        retrying = Retrying(
++            wait=tenacity.wait_fixed(0.01),
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_if_result(lambda result: result is None),
++            before=record_statistics,
++        )
++        self.assertTrue(retrying(lambda c: c.go(), NoneReturnUntilAfterCount(1)))
++        self.assertEqual(seen[0], 0)
++        self.assertGreater(seen[1], 0)
++
+ 
+ class TestRetryWith:
+     def test_redefine_wait(self) -> None:

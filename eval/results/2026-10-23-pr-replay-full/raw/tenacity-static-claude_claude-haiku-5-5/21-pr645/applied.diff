@@ -1,0 +1,151 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 0c8afdc..8e0794c 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261024-220928-bug-retrying-enabled-false-fn-an](20261024-220928-bug-retrying-enabled-false-fn-an/EXPERIENCE.md) — **when** A tenacity bug or fix about one option or surface (e.g. `enabled`, `statistics`, `reraise`) whose facts already sit in `skills/tenacity-change-contract`, but inside a section whose heading names something else (a "new keyword" or entry-point list). The fix also adds code next to an existing loop whose typing can't be checked here (mypy strict with `warn_unused_ignores`, mypy unavailable). **then** In `skills/tenacity-change-contract`, give the surface its own `## N.` heading that names it ("The `enabled` switch — which entry points honour it"), and leave a one-line pointer at the old location. Agents choose sections from `grep -n '^## '` and skip headings that don't name their subject. Under that heading, state the exact code shape to copy from the neighbouring loop, including its existing `# type: ignore[code]`. A generic "prefer a shape needing no ignore" hint in `scripts/check_changed.py` pushed the agent to `t.cast`, which is foreign to this codebase.
+ - [20261024-220150-bug-setting-the-module-global-te](20261024-220150-bug-setting-the-module-global-te/EXPERIENCE.md) — **when** A tenacity fix where the code next to the edit has a comment explaining a typing constraint (mypy strict, `warn_unreachable`/`redundant-expr`, an optional import kept "in a plain bool") that pytest gates cannot check and mypy cannot run to confirm. The obvious one-line fix quietly brings back the pattern the comment warns against. **then** In `system.md`, require loading `tenacity-change-contract` (headings plus the sections for the area) before the first edit under `tenacity/`, and require that any fix satisfy the reason given in a comment beside the changed code, or that the final message say why it does not. When the skill documents such a constraint, also name the concrete compliant shape (as comp-1's §1e does with the `_has_tornado() -> bool` helper). A bare prohibition led to an odd workaround (`globals().get`).
+ - [20261024-214815-three-regressions-that-only-appe](20261024-214815-three-regressions-that-only-appe/EXPERIENCE.md) — **when** A tenacity task restores behaviour that a recent typing/strictness commit removed or narrowed (git history shows a #677/#679/#682-style commit with a release note). The fix extends an operator or guard that the commit deliberately left rejecting some inputs, so a broad "everything else" branch would quietly undo the commit's stated promise. **then** In `skills/tenacity-change-contract`, put the strictness commit's stated invariant at the site the fix will touch, as an explicit branch condition with the commit and reno as source (e.g. "`__radd__`: combine only when `callable(other)`; a non-zero number still returns `NotImplemented`"). Add a grep that lists every annotation site to widen. Wherever the skill says "widen the annotation", say in the same place that an existing test's now-unused `# type: ignore` stays as it is and gets reported, not removed.
+ - [20261024-152742-bug-retry-if-exception-cause-typ](20261024-152742-bug-retry-if-exception-cause-typ/EXPERIENCE.md) — **when** A tenacity task reports a hang (infinite loop, 100% CPU, a strategy or chain walk that never returns), so the regression test can't fail by assertion on unfixed code. Each red run lasts at least `--timeout` seconds, may outlast the shell tool's foreground limit, and on this host can stretch far past its limit when the machine is descheduled. **then** Define what red means for a hang in the always-on `system.md` step 1: `run_tests.py --timeout 20 <one node id>` returning `exit=124` with `HUNG IN:` naming the new test. In the same paragraph, set the shell call's timeout above S, forbid `perl alarm`/raw-pytest/background fallbacks, and allow one fallback: wait for the completion notice without killing the run. Have `scripts/run_tests.py` print wall and CPU seconds, so a stall where wall time is much larger than CPU time is read as host descheduling, not a broken bound. Keep red-test recipes for hangs out of `skills/tenacity-change-contract`: in these rollouts the skill was read only after the fix was in, and a recipe there (a thread-based test) arrived too late and led to a revert of the fix.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4716082..65370c0 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -300,6 +300,21 @@
+       "wall_s": 457.8,
+       "always_on_tokens": 1568,
+       "stability_after": 0.7
++    },
++    {
++      "task_id": "20261024-220928-bug-retrying-enabled-false-fn-an",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 55,
++      "executions": 4,
++      "tokens_in": 411726,
++      "tokens_cached": 5032896,
++      "tokens_out": 70741,
++      "cost_usd": 3.0148,
++      "wall_s": 492.0,
++      "always_on_tokens": 1656,
++      "stability_after": 0.7
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 530b63a..e466003 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -538,6 +538,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index aa4a756..0f27a33 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -113,6 +113,13 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            if _utils.is_coroutine_callable(fn):
++                result = await fn(*args, **kwargs)
++            else:
++                result = fn(*args, **kwargs)
++            return result  # type: ignore[no-any-return]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index f4fded1..1b99d4a 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -243,6 +243,37 @@ class TestAsyncEnabled(unittest.TestCase):
+                 call_count += 1
+         assert call_count == 1
+ 
++    @asynctest
++    async def test_enabled_false_direct_call_raises_original_exception(self) -> None:
++        """When enabled=False, awaiting the AsyncRetrying object with a coroutine
++        function runs it once and propagates its exception unchanged."""
++        call_count = 0
++
++        async def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            await retrying(always_fails)
++        assert call_count == 1
++
++    @asynctest
++    async def test_enabled_false_direct_call_sync_fn_returns_result(self) -> None:
++        """When enabled=False, awaiting the AsyncRetrying object with a plain sync
++        function calls it once and returns its result."""
++        call_count = 0
++
++        def succeeds() -> str:
++            nonlocal call_count
++            call_count += 1
++            return "ok"
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        assert await retrying(succeeds) == "ok"
++        assert call_count == 1
++
+ 
+ @unittest.skipIf(not have_trio, "trio not installed")
+ class TestTrio(unittest.TestCase):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..aaddc29 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1736,6 +1736,34 @@ class TestEnabled:
+                 call_count += 1
+         assert call_count == 1
+ 
++    def test_enabled_false_direct_call_raises_original_exception(self) -> None:
++        """When enabled=False, calling the Retrying object with a function runs it
++        once and propagates its exception unchanged, not as a RetryError."""
++        call_count = 0
++
++        def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            retrying(always_fails)
++        assert call_count == 1
++
++    def test_enabled_false_direct_call_returns_result(self) -> None:
++        """When enabled=False, calling the Retrying object returns the result."""
++        call_count = 0
++
++        def succeeds() -> str:
++            nonlocal call_count
++            call_count += 1
++            return "ok"
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        assert retrying(succeeds) == "ok"
++        assert call_count == 1
++
+ 
+ class TestRetryWith:
+     def test_redefine_wait(self) -> None:

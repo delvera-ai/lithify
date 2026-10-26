@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0167c1a..01679b4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -225,6 +225,21 @@
+       "wall_s": 383.1,
+       "always_on_tokens": 1285,
+       "stability_after": 0.7022
++    },
++    {
++      "task_id": "20261024-124648-bug-wait-exponential-can-raise-v",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 10,
++      "executions": 4,
++      "tokens_in": 416027,
++      "tokens_cached": 4668600,
++      "tokens_out": 76619,
++      "cost_usd": 3.3599,
++      "wall_s": 9646.8,
++      "always_on_tokens": 1311,
++      "stability_after": 0.7202
+     }
+   ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index a662eef..0895b02 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -208,7 +208,12 @@ class wait_exponential(wait_base):
+             and self.max > 0
+             and self.exp_base > 1
+             and math.isfinite(self.max)
+-            and exponent > math.log(self.max / self.multiplier, self.exp_base)
++            # A ratio of 0.0 (max / multiplier underflows, or multiplier is inf)
++            # means multiplier > max, so the cap applies from the first attempt.
++            and (
++                self.max / self.multiplier == 0
++                or exponent > math.log(self.max / self.multiplier, self.exp_base)
++            )
+         ):
+             return max(max(0, self.min), self.max)
+         try:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index f6c15ce..135fd1a 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -367,6 +367,17 @@ class TestWaitConditions(unittest.TestCase):
+         r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=ExplodingPower(2)))
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_multiplier_much_larger_than_max(self) -> None:
++        # max / multiplier underflows to 0.0; the cap applies from the first attempt.
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=1e300, max=1e-100))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 1e-100)
++        self.assertEqual(r.wait(make_retry_state(5, 0)), 1e-100)
++
++    def test_exponential_infinite_multiplier(self) -> None:
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=float("inf"), max=40))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 40)
++        self.assertEqual(r.wait(make_retry_state(5, 0)), 40)
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

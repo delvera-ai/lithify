@@ -1,0 +1,2 @@
+- Never modify or skip existing tests, even to strengthen assertions. Add regression tests separately; fix code.
+- Never add credentials, tokens or secrets to the repository.

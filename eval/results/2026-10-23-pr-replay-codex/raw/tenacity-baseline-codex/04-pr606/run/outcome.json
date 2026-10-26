@@ -1,0 +1,27 @@
+{
+  "task": "Regression since 8.4.2: composing a `retry_base` instance with a plain function using `|` or `&` (e.g. `retry_if_exception_type(IOError) | my_predicate`, in either order) raises an exception instead of producing a `retry_any`/`retry_all`. Composition with plain callables worked in 8.3.0 and should work again for both sync and async retry strategies; type annotations should accept plain callables too.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 19559,
+    "cached": 234496,
+    "out": 2994,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

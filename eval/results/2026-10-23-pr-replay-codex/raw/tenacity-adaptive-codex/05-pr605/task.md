@@ -1,0 +1,1 @@
+Feature: `AttemptManager` (the object yielded by `for attempt in Retrying(...)` / `async for attempt in AsyncRetrying(...)`) should also support the async context-manager protocol, so `async with attempt:` works inside `async for` loops, behaving exactly like `with attempt:`.

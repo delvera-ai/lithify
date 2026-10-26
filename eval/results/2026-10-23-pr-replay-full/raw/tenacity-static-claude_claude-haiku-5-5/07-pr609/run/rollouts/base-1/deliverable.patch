@@ -1,0 +1,178 @@
+diff --git a/releasenotes/notes/flatten-retry-chains-a1b807578efa8090.yaml b/releasenotes/notes/flatten-retry-chains-a1b807578efa8090.yaml
+new file mode 100644
+index 0000000..6df3279
+--- /dev/null
++++ b/releasenotes/notes/flatten-retry-chains-a1b807578efa8090.yaml
+@@ -0,0 +1,6 @@
++---
++other:
++  - |
++    Chaining retry conditions with ``|`` or ``&`` now builds a single ``retry_any`` or
++    ``retry_all`` whose ``retries`` holds every member, instead of nesting one container
++    per operator. The combined condition's behaviour is unchanged.
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index 6a12678..a0c901d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -109,3 +109,18 @@ def wrap_to_async_func(
+         return call(*args, **kwargs)
+ 
+     return inner
++
++
++def flatten_retries(kind: type, *operands: typing.Any) -> list[typing.Any]:
++    """Return the members for ``kind(*...)``, splicing in operands of exactly ``kind``.
++
++    Only the exact type is spliced: a subclass may override ``__call__``, so it is kept
++    as a single member.
++    """
++    members: list[typing.Any] = []
++    for operand in operands:
++        if type(operand) is kind:
++            members.extend(operand.retries)
++        else:
++            members.append(operand)
++    return members
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..301ad27 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -32,22 +32,22 @@ class async_retry_base(retry_base):
+     def __and__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+-        return retry_all(self, other)
++        return retry_all(*_utils.flatten_retries(retry_all, self, other))
+ 
+     def __rand__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+-        return retry_all(other, self)
++        return retry_all(*_utils.flatten_retries(retry_all, other, self))
+ 
+     def __or__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+-        return retry_any(self, other)
++        return retry_any(*_utils.flatten_retries(retry_any, self, other))
+ 
+     def __ror__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+-        return retry_any(other, self)
++        return retry_any(*_utils.flatten_retries(retry_any, other, self))
+ 
+ 
+ RetryBaseT = (
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 4edbd1f..5a1f4a1 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -18,6 +18,8 @@ import abc
+ import re
+ import typing
+ 
++from tenacity import _utils
++
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+ 
+@@ -32,18 +34,18 @@ class retry_base(abc.ABC):
+     def __and__(self, other: "RetryBaseT") -> "retry_all":
+         if isinstance(other, retry_base):
+             return other.__rand__(self)
+-        return retry_all(self, other)
++        return retry_all(*_utils.flatten_retries(retry_all, self, other))
+ 
+     def __rand__(self, other: "RetryBaseT") -> "retry_all":
+-        return retry_all(other, self)
++        return retry_all(*_utils.flatten_retries(retry_all, other, self))
+ 
+     def __or__(self, other: "RetryBaseT") -> "retry_any":
+         if isinstance(other, retry_base):
+             return other.__ror__(self)
+-        return retry_any(self, other)
++        return retry_any(*_utils.flatten_retries(retry_any, self, other))
+ 
+     def __ror__(self, other: "RetryBaseT") -> "retry_any":
+-        return retry_any(other, self)
++        return retry_any(*_utils.flatten_retries(retry_any, other, self))
+ 
+ 
+ RetryBaseT = retry_base | typing.Callable[["RetryCallState"], bool]
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 749c883..d119e1b 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -432,6 +432,28 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    def test_async_retry_chains_are_flat(self) -> None:
++        async def is_one(x: float) -> bool:
++            return x == 1
++
++        async def is_two(x: float) -> bool:
++            return x == 2
++
++        async def is_three(x: float) -> bool:
++            return x == 3
++
++        a = tasyncio.retry_if_result(is_one)
++        b = tasyncio.retry_if_result(is_two)
++        c = tasyncio.retry_if_result(is_three)
++
++        retry_any_chain = a | b | c
++        self.assertIsInstance(retry_any_chain, tasyncio.retry_any)
++        self.assertEqual((a, b, c), retry_any_chain.retries)
++
++        retry_all_chain = a & b & c
++        self.assertIsInstance(retry_all_chain, tasyncio.retry_all)
++        self.assertEqual((a, b, c), retry_all_chain.retries)
++
+     @asynctest
+     async def test_async_retying_iterator(self) -> None:
+         thing = NoIOErrorAfterCount(5)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b72831e..4ddc28b 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -777,6 +777,38 @@ class TestRetryConditions(unittest.TestCase):
+         retry2 = my_retry & tenacity.retry_if_result(lambda x: x == 1)
+         self.assertTrue(retry2(retry_state))
+ 
++    def test_retry_or_chain_is_flat(self) -> None:
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: x == 2)
++        c = tenacity.retry_if_result(lambda x: x == 3)
++
++        retry = a | b | c
++
++        self.assertIsInstance(retry, tenacity.retry_any)
++        self.assertEqual((a, b, c), retry.retries)
++
++    def test_retry_and_chain_is_flat(self) -> None:
++        a = tenacity.retry_if_result(lambda x: isinstance(x, int))
++        b = tenacity.retry_if_result(lambda x: x > 0)
++        c = tenacity.retry_if_result(lambda x: x < 5)
++
++        retry = a & b & c
++
++        self.assertIsInstance(retry, tenacity.retry_all)
++        self.assertEqual((a, b, c), retry.retries)
++
++    def test_retry_chain_with_plain_function_is_flat(self) -> None:
++        def my_retry(retry_state: tenacity.RetryCallState) -> bool:
++            return True
++
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: x == 2)
++
++        retry = my_retry | a | b
++
++        self.assertIsInstance(retry, tenacity.retry_any)
++        self.assertEqual((my_retry, a, b), retry.retries)
++
+     def _raise_try_again(self) -> None:
+         self._attempts += 1
+         if self._attempts < 3:

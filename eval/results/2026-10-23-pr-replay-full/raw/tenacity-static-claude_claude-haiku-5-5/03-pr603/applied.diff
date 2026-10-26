@@ -1,0 +1,75 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 0d2a98e..8ee7352 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,5 +3,6 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-190929-bug-the-delay-since-first-attemp](20261023-190929-bug-the-delay-since-first-attemp/EXPERIENCE.md) — **when** A tenacity bug fix whose regression test has to observe state during an attempt (a `statistics` key, a `retry_state` field, a callback argument). The "first fail on unfixed code" run can be masked: an exception raised inside the decorated function is retried, and one raised in a callback is hidden by `suppress(Exception)`. So the red run either passes or fails for some other reason. **then** Put the exception-path facts in `skills/tenacity-change-contract`, the on-demand skill that loads for this kind of change: - which test class owns the area (e.g. `TestStatistics`) - read mid-attempt state from a `before`/`after` callback via `retry_state.retry_object` - callback exceptions propagate raw, while exceptions in the wrapped function get retried - only exhausted retries raise `RetryError`, so suppress only `RetryError` - which loop methods are shared through `BaseRetrying.begin()` and which are re-implemented in `tenacity/asyncio/` Don't rely on red-before-green alone to catch a test that fails for the wrong reason.
+ - [20261023-190230-bug-tenacity-after-log-crashes-w](20261023-190230-bug-tenacity-after-log-crashes-w/EXPERIENCE.md) — **when** A tenacity bug fix where the reported failure (an exception or wrong log text) can be reproduced from a unit test built with the existing `tests/test_tenacity.make_retry_state` helper, the gate runs only pytest, and ruff, mypy and PyYAML can't run in the environment. **then** Keep the red-before-green step in `system.md`: write the regression test, run it alone by node id against the unfixed code, and confirm it fails with the reported error before editing `tenacity/`. Don't add a `scripts/` checker that builds a /tmp venv to install lint tools; ensurepip aborts here. Put the "lint/types/YAML can't run, report them as not run" fact in `tool_guidance.md` instead.
+ - [20261023-185633-bug-tenacity-utils-find-ordinal](20261023-185633-bug-tenacity-utils-find-ordinal/EXPERIENCE.md) — **when** A tenacity task that changes behaviour a library user can notice (a bug fix, changed log or message text, new API, dropped Python version) where the gate only runs pytest. Repo conventions such as a reno release note in `releasenotes/notes/` are not enforced by CI or the gate, so a harness that only says "make the smallest change and pass the checks" leaves them out. **then** Write unenforced deliverable conventions into the on-demand skill `skills/tenacity-change-contract`, with the exact file path pattern, the YAML section key and the house entry style, and have it load for any user-visible change under `tenacity/`. Don't put them in always-on `system.md`. Keep the skill's lint-tooling advice to the known-working steps (throwaway `/tmp` venv, ruff on changed files only) so discovering the tooling doesn't take over the run.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index ed5b73a..1169e90 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -30,6 +30,21 @@
+       "wall_s": 418.3,
+       "always_on_tokens": 274,
+       "stability_after": 0.28
++    },
++    {
++      "task_id": "20261023-190929-bug-the-delay-since-first-attemp",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 246,
++      "executions": 4,
++      "tokens_in": 349716,
++      "tokens_cached": 4292071,
++      "tokens_out": 61626,
++      "cost_usd": 2.6311,
++      "wall_s": 485.5,
++      "always_on_tokens": 581,
++      "stability_after": 0.42
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..48511ae 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1634,6 +1634,21 @@ class TestStatistics(unittest.TestCase):
+             _foobar()
+         self.assertEqual(2, _foobar.statistics["attempt_number"])
+ 
++    def test_stats_delay_since_first_attempt_present_from_start(self) -> None:
++        seen: list[typing.Any] = []
++
++        def _record(retry_state: RetryCallState) -> None:
++            stats = retry_state.retry_object.statistics
++            seen.append(stats["delay_since_first_attempt"])
++
++        @retry(stop=tenacity.stop_after_attempt(2), before=_record)
++        def _foobar() -> None:
++            raise ValueError(42)
++
++        with contextlib.suppress(tenacity.RetryError):
++            _foobar()
++        self.assertEqual(0, seen[0])
++
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
+     def setUp(self) -> None:

@@ -1,0 +1,27 @@
+diff --git a/src/humanize/lists.py b/src/humanize/lists.py
+index 543a32f..76e8198 100644
+--- a/src/humanize/lists.py
++++ b/src/humanize/lists.py
+@@ -28,7 +28,9 @@ def natural_list(items: list[Any]) -> str:
+     Returns:
+         str: A string with commas and 'and' in the right places.
+     """
+-    if len(items) == 1:
++    if not items:
++        return ""
++    elif len(items) == 1:
+         return str(items[0])
+     elif len(items) == 2:
+         return f"{str(items[0])} and {str(items[1])}"
+diff --git a/tests/test_lists.py b/tests/test_lists.py
+index a39d344..ba96c75 100644
+--- a/tests/test_lists.py
++++ b/tests/test_lists.py
+@@ -8,6 +8,7 @@ import humanize
+ @pytest.mark.parametrize(
+     "test_args, expected",
+     [
++        ([[]], ""),
+         ([["1", "2", "3"]], "1, 2 and 3"),
+         ([["one", "two", "three"]], "one, two and three"),
+         ([["one", "two"]], "one and two"),

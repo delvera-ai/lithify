@@ -1,0 +1,19 @@
+lithify ▸ 20261023-200833-improvement-composing-several-re  k=0 (override k=0) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✓ probe base-1: test=pass
+  ✓ applied deliverable from base-1: cruise: gates passed on first execution
+lithify ◂ delivered=True first_pass=True S=1.00 executions=1 role_sessions=0 tokens(in/cached/out)=17586/258688/2795
+{
+  "task_id": "20261023-200833-improvement-composing-several-re",
+  "k": 0,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 1.0,
+  "executions": 1,
+  "role_sessions": 0
+}
+

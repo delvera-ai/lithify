@@ -1,0 +1,35 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-204305-regression-when-gnu-is-false-hum",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 40727,
+      "tokens_cached": 196224,
+      "tokens_out": 1448,
+      "cost_usd": 0.0,
+      "wall_s": 52.0,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-204358-humanize-i18n-raises-a-bare-exce",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 2,
+      "executions": 5,
+      "tokens_in": 200396,
+      "tokens_cached": 1318784,
+      "tokens_out": 9266,
+      "cost_usd": 0.0,
+      "wall_s": 271.5,
+      "always_on_tokens": 189,
+      "stability_after": 0.397
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-codex,baseline,codex,20261023-204305-regression-when-gnu-is-false-hum,humanize#250,0,1,0,override k=0,True,True,True,True,base-1,1,0,8659,68864,544,0.0,28.8,189,0.2,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204334-humanize-i18n-raises-a-bare-exce,humanize#286,0,2,0,override k=0,False,False,False,False,,1,0,13016,79360,552,0.0,29.9,189,0.2,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204405-bug-humanize-naturalday-and-huma,humanize#297,0,3,0,override k=0,True,True,True,True,base-1,1,0,13073,122240,1909,0.0,61.2,189,0.4,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204507-bug-humanize-natural-list-raises,humanize#318,0,4,0,override k=0,True,True,True,True,base-1,1,0,15364,79616,478,0.0,53.8,189,0.6,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204601-bug-humanize-fractional-1-3-retu,humanize#320,0,5,0,override k=0,True,True,True,True,base-1,1,0,16054,80384,631,0.0,38.6,189,0.8,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204641-bug-humanize-metric-can-output-a,humanize#328,0,6,0,override k=0,True,True,True,True,base-1,1,0,23723,105984,1141,0.0,59.8,189,0.8333,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204741-bug-humanize-naturalsize-can-sho,humanize#329,0,7,0,override k=0,True,True,True,True,base-1,1,0,21997,114048,1670,0.0,90.5,189,0.8571,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204912-bug-humanize-fractional-produces,humanize#354,0,8,0,override k=0,True,True,True,True,base-1,1,0,11301,89344,889,0.0,45.7,189,0.875,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-204958-bug-humanize-naturaldelta-docume,humanize#334,0,9,0,override k=0,True,True,True,True,base-1,1,0,27480,112640,909,0.0,48.4,189,0.8889,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205050-bug-humanize-intcomma-10-400-123,humanize#392,0,10,0,override k=0,True,True,True,True,base-1,1,0,13867,119552,819,0.0,46.8,189,0.9,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205137-bug-humanize-metric-can-show-one,humanize#359,0,11,0,override k=0,True,True,True,True,base-1,1,0,19098,82944,948,0.0,53.5,189,0.9,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205232-bug-running-the-translation-upda,humanize#391,0,12,0,override k=0,True,True,True,True,base-1,1,0,20965,196736,2779,0.0,84.7,189,1.0,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205357-humanize-natural-list-documents,humanize#381,0,13,0,override k=0,True,True,True,True,base-1,1,0,15207,129920,1244,0.0,58.7,189,1.0,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205456-bug-humanize-intword-fails-to-ca,humanize#346,0,14,0,override k=0,True,True,True,True,base-1,1,0,11366,112896,1246,0.0,60.4,189,1.0,,,,all,a1815eb
+pr-replay-codex,baseline,codex,20261023-205557-bug-humanize-naturaldelta-trunca,humanize#295,0,15,0,override k=0,True,True,True,True,base-1,1,0,25019,85632,1055,0.0,49.6,189,1.0,,,,all,a1815eb

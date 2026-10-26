@@ -1,0 +1,99 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e9532fc..8413920 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -369,7 +369,8 @@ class BaseRetrying(ABC):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            wrapped_f.statistics = copy.statistics  # type: ignore[attr-defined]
++            # Keep the dictionary shared with decorators using functools.wraps.
++            copy._local.statistics = wrapped_f.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return copy(f, *args, **kw)
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 6459894..fb82ff6 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -210,7 +210,8 @@ class AsyncRetrying(BaseRetrying):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            async_wrapped.statistics = copy.statistics  # type: ignore[attr-defined]
++            # Keep the dictionary shared with decorators using functools.wraps.
++            copy._local.statistics = async_wrapped.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return await copy(fn, *args, **kwargs)  # type: ignore[type-var]
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 20b320e..a2d69f7 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -494,6 +494,27 @@ class TestContextManager(unittest.TestCase):
+ 
+ 
+ class TestDecoratorWrapper(unittest.TestCase):
++    @asynctest
++    async def test_statistics_through_functools_wraps(self) -> None:
++        @retry(stop=stop_after_attempt(3))
++        async def inner(failures: int) -> str:
++            assert outer.statistics is inner.statistics
++            if inner.statistics["attempt_number"] <= failures:
++                raise ValueError("retry")
++            return "done"
++
++        @wraps(inner)
++        async def outer(failures: int) -> str:
++            return await inner(failures)
++
++        statistics = outer.statistics
++        assert statistics == {}
++        for failures in (2, 0):
++            assert await outer(failures) == "done"
++            assert outer.statistics is inner.statistics is statistics
++            assert inner.retry.statistics is statistics
++            assert statistics["attempt_number"] == failures + 1
++
+     @asynctest
+     async def test_retry_function_attributes(self) -> None:
+         """Test that the wrapped function attributes are exposed as intended.
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b2c0289..fd61e24 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ import contextlib
+ import datetime
++import functools
+ import logging
+ import pickle
+ import re
+@@ -1448,6 +1449,26 @@ class TestDecoratorWrapper(unittest.TestCase):
+         h = retrying.wraps(Hello())
+         self.assertEqual(h(), "Hello")
+ 
++    def test_statistics_through_functools_wraps(self) -> None:
++        @retry(stop=tenacity.stop_after_attempt(3))
++        def inner(failures: int) -> str:
++            assert outer.statistics is inner.statistics
++            if inner.statistics["attempt_number"] <= failures:
++                raise ValueError("retry")
++            return "done"
++
++        @functools.wraps(inner)
++        def outer(failures: int) -> str:
++            return inner(failures)
++
++        statistics = outer.statistics
++        assert statistics == {}
++        for failures in (2, 0):
++            assert outer(failures) == "done"
++            assert outer.statistics is inner.statistics is statistics
++            assert inner.retry.statistics is statistics
++            assert statistics["attempt_number"] == failures + 1
++
+     def test_retry_function_attributes(self) -> None:
+         """Test that the wrapped function attributes are exposed as intended.
+ 

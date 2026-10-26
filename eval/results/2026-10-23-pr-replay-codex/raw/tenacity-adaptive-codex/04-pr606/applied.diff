@@ -1,0 +1,132 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4251da7..99271a8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -45,6 +45,21 @@
+       "wall_s": 38.9,
+       "always_on_tokens": 186,
+       "stability_after": 0.6
++    },
++    {
++      "task_id": "20261023-200414-regression-since-8-4-2-composing",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 15583,
++      "tokens_cached": 240512,
++      "tokens_out": 2546,
++      "cost_usd": 0.0,
++      "wall_s": 94.1,
++      "always_on_tokens": 186,
++      "stability_after": 0.8
+     }
+   ]
+ }
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..2f6f251 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,7 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity.retry import RetryBaseT as SyncRetryBaseT
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -30,22 +31,22 @@ class async_retry_base(retry_base):
+         pass
+ 
+     def __and__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
+     def __rand__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
+     def __or__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
+     def __ror__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(other, self)
+ 
+@@ -95,7 +96,7 @@ class retry_if_result(async_retry_base):
+ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: SyncRetryBaseT | RetryBaseT) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+@@ -110,7 +111,7 @@ class retry_any(async_retry_base):
+ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: SyncRetryBaseT | RetryBaseT) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 593b252..533de43 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -29,16 +29,20 @@ class retry_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         pass
+ 
+-    def __and__(self, other: "retry_base") -> "retry_all":
+-        return other.__rand__(self)
++    def __and__(self, other: "RetryBaseT") -> "retry_all":
++        if isinstance(other, retry_base):
++            return other.__rand__(self)
++        return retry_all(self, other)
+ 
+-    def __rand__(self, other: "retry_base") -> "retry_all":
++    def __rand__(self, other: "RetryBaseT") -> "retry_all":
+         return retry_all(other, self)
+ 
+-    def __or__(self, other: "retry_base") -> "retry_any":
+-        return other.__ror__(self)
++    def __or__(self, other: "RetryBaseT") -> "retry_any":
++        if isinstance(other, retry_base):
++            return other.__ror__(self)
++        return retry_any(self, other)
+ 
+-    def __ror__(self, other: "retry_base") -> "retry_any":
++    def __ror__(self, other: "RetryBaseT") -> "retry_any":
+         return retry_any(other, self)
+ 
+ 
+@@ -254,7 +258,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: RetryBaseT) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+@@ -264,7 +268,7 @@ class retry_any(retry_base):
+ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: RetryBaseT) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:

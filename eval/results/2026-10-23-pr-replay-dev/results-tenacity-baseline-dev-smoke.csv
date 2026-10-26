@@ -1,0 +1,2 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-dev,baseline,claude@claude-haiku-5-5,20261023-154911-bug-wait-random-exponential-min,tenacity#425,0,1,0,override k=0,True,True,True,True,base-1,1,0,24303,160908,2953,0.0079,30.7,186,0.2,,,,all,2b01a9b

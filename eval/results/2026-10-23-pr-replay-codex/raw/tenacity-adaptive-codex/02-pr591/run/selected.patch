@@ -1,0 +1,45 @@
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..fa5e8e6 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,12 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        seconds_since_start = retry_state.seconds_since_start
++        elapsed = "?" if seconds_since_start is None else sec_format % seconds_since_start
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {elapsed}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..2338b48 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -23,6 +23,22 @@ class TestAfterLogFormat(unittest.TestCase):
+         )
+         self.previous_attempt_number = random.randint(1, 512)
+ 
++    def test_missing_outcome_timestamp(self) -> None:
++        retry_state = test_tenacity.make_retry_state(self.previous_attempt_number, 0)
++        retry_state.outcome_timestamp = None
++        self.assertIsNone(retry_state.seconds_since_start)
++
++        for sec_format in ("%.3g", "%.1f"):
++            with self.subTest(sec_format=sec_format):
++                logger = unittest.mock.MagicMock(spec=logging.Logger)
++                after_log(logger, self.log_level, sec_format)(retry_state)
++
++                logger.log.assert_called_once_with(
++                    self.log_level,
++                    "Finished call to '<unknown>' after ?(s), "
++                    f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
++                )
++
+     def test_01_default(self) -> None:
+         """Test log formatting."""
+         log = unittest.mock.MagicMock(spec="logging.Logger.log")

@@ -1,0 +1,127 @@
+diff --git a/doc/source/index.rst b/doc/source/index.rst
+index ba21fd9..24de778 100644
+--- a/doc/source/index.rst
++++ b/doc/source/index.rst
+@@ -622,7 +622,9 @@ Disabling Retries
+ ~~~~~~~~~~~~~~~~~
+ 
+ You can disable retrying entirely by passing ``enabled=False``. When disabled,
+-the decorated function is called directly without any retry logic. This is
++the decorated function is called directly without any retry logic. The iterator
++form (``for attempt in`` / ``async for``) also runs its body once, and any
++exception propagates unchanged. This is
+ useful during development or testing when you want fast feedback on failures:
+ 
+ .. testcode::
+diff --git a/releasenotes/notes/enabled-false-iterator-5e2d9b1f7a3c4e86.yaml b/releasenotes/notes/enabled-false-iterator-5e2d9b1f7a3c4e86.yaml
+new file mode 100644
+index 0000000..77940d5
+--- /dev/null
++++ b/releasenotes/notes/enabled-false-iterator-5e2d9b1f7a3c4e86.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    ``Retrying(enabled=False)`` is now honoured by the iterator pattern
++    (``for attempt in`` and ``async for``). The body runs once and any
++    exception propagates unchanged, instead of retrying and raising
++    ``RetryError``. This matches the decorator path.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c52d6ba..2d1b8c8 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -475,6 +475,15 @@ class BaseRetrying(ABC):
+         self._add_action_func(lambda rs: DoSleep(rs.upcoming_sleep))
+ 
+     def __iter__(self) -> t.Generator[AttemptManager, None, None]:
++        if not self.enabled:
++            # Like the decorator path: run the body once, no retry bookkeeping.
++            retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++            yield AttemptManager(retry_state=retry_state)
++            # AttemptManager swallowed any exception; re-raise it unchanged.
++            if retry_state.outcome is not None:
++                retry_state.outcome.result()
++            return
++
+         self.begin()
+ 
+         retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 214a7ae..d6237b2 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -166,11 +166,18 @@ class AsyncRetrying(BaseRetrying):
+         raise TypeError("AsyncRetrying object is not iterable")
+ 
+     def __aiter__(self) -> "AsyncRetrying":
+-        self.begin()
++        if self.enabled:
++            self.begin()
+         self._retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
+         return self
+ 
+     async def __anext__(self) -> AttemptManager:
++        if not self.enabled:
++            # Like the sync iterator: run the body once, then re-raise its failure.
++            if self._retry_state.outcome is not None:
++                self._retry_state.outcome.result()
++                raise StopAsyncIteration
++            return AttemptManager(retry_state=self._retry_state)
+         while True:
+             do = await self.iter(retry_state=self._retry_state)
+             if do is None:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c6d2786..66725df 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -176,6 +176,24 @@ class TestAsyncEnabled(unittest.TestCase):
+             await always_fails()
+         assert call_count == 1
+ 
++    @asynctest
++    async def test_enabled_false_iterator_propagates_exception_unchanged(
++        self,
++    ) -> None:
++        """When enabled=False, `async for` runs the body once and re-raises."""
++        call_count = 0
++        error = ValueError("fail")
++
++        with pytest.raises(ValueError) as exc_info:
++            async for attempt in tasyncio.AsyncRetrying(
++                enabled=False, stop=stop_after_attempt(3)
++            ):
++                with attempt:
++                    call_count += 1
++                    raise error
++        assert exc_info.value is error
++        assert call_count == 1
++
+ 
+ @unittest.skipIf(not have_trio, "trio not installed")
+ class TestTrio(unittest.TestCase):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 31e7f43..b0b82d2 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1546,6 +1546,21 @@ class TestEnabled:
+             disabled()
+         assert call_count == 1
+ 
++    def test_enabled_false_iterator_propagates_exception_unchanged(self) -> None:
++        """When enabled=False, `for attempt in` runs the body once and re-raises."""
++        call_count = 0
++        error = ValueError("fail")
++
++        with pytest.raises(ValueError) as exc_info:
++            for attempt in tenacity.Retrying(
++                enabled=False, stop=tenacity.stop_after_attempt(3)
++            ):
++                with attempt:
++                    call_count += 1
++                    raise error
++        assert exc_info.value is error
++        assert call_count == 1
++
+     def test_enabled_true_retries_normally(self) -> None:
+         """When enabled=True (default), retrying works as usual."""
+         call_count = 0

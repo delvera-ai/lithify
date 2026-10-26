@@ -1,0 +1,31 @@
+{
+  "task": "Bug: `tenacity._utils.find_ordinal` (used for \"1st attempt\"-style wording in log messages) returns the wrong suffix for numbers greater than 20 that end in 11, 12 or 13: for 111, 112 and 113 it gives \"st\", \"nd\" and \"rd\", so messages read \"111st\", \"112nd\", \"113rd\". They should get \"th\"; all other numbers keep their current suffixes.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "The two fixes behave identically: each adds a `pos_num % 100` check for 11\u201313 just before the `% 10` fallback, so 111\u2013113 get \"th\" and every other number keeps its old suffix. The tie was broken on fidelity and maintainability.\nc1 writes the check as `11 <= pos_num % 100 <= 13`, the same chained-range style as the existing `4 <= pos_num <= 20` branch. It also adds its test at the end of `tests/test_utils.py`, after the existing test.\nThe runner-up, c2, uses `in (11, 12, 13)`, which differs from the function's style, and puts its test before the existing test. It does also check 101\u2013103, which c1 skips, but that extra coverage doesn't outweigh the style mismatch.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 56621,
+    "cached": 344602,
+    "out": 5347,
+    "cost": 0.19640713999999998,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

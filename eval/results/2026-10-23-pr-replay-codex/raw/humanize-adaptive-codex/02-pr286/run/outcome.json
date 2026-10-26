@@ -1,0 +1,56 @@
+{
+  "task": "`humanize.i18n` raises a bare `Exception` when it cannot determine the default location of its locale folder. `Exception` is too broad: raise `FileNotFoundError` instead (keep the same message). This is not a breaking change, since `FileNotFoundError` is a subclass of `Exception`.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "inv-1",
+  "why": "c2 makes the requested exception and documentation changes, preserves the message, and adds a focused regression test following the surrounding importlib convention.\nRunner-up c1 provides equivalent coverage but departs from that convention by accessing humanize.i18n directly.\nc3 is correct and minimal, but leaves existing tests accepting any Exception without verifying the newly required type.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-204358-humanize-i18n-raises-a-bare-exce",
+  "usage": {
+    "in": 200396,
+    "cached": 1318784,
+    "out": 9266,
+    "cost": 0.0,
+    "exec": 5,
+    "roles": 8
+  },
+  "stability_after": 0.397,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": false,
+      "gates": "test=pass, edited-existing-tests=1"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-2": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "inv-2": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

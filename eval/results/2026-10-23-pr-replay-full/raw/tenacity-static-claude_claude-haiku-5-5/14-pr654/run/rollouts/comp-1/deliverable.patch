@@ -1,0 +1,78 @@
+diff --git a/releasenotes/notes/wait-exponential-cap-power-a3f09c2d7e51b848.yaml b/releasenotes/notes/wait-exponential-cap-power-a3f09c2d7e51b848.yaml
+new file mode 100644
+index 0000000..d5c670b
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-cap-power-a3f09c2d7e51b848.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    ``wait_exponential`` no longer computes the exponential power once the wait
++    has reached ``max``. Long-running retries with integer arguments previously
++    kept growing the power on every attempt, which made them progressively slower.
++    The returned waits are unchanged.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..09b1c9e 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
+ import typing
+ import warnings
+@@ -200,9 +201,26 @@ class wait_exponential(wait_base):
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+ 
++    def _cap_reached(self, exponent: int) -> bool:
++        # With an int base >= 2 and an int multiplier >= 1, the power is at least
++        # 2 ** exponent, so the result is above max once exponent exceeds
++        # log2(max / multiplier) + 1. Skipping the power there avoids an ever-growing
++        # int. Float arguments can overflow, so they keep the full computation.
++        return (
++            isinstance(self.exp_base, int)
++            and isinstance(self.multiplier, int)
++            and self.exp_base >= 2
++            and self.multiplier >= 1
++            and 0 < self.max < math.inf
++            and exponent > math.log2(self.max) - math.log2(self.multiplier) + 1
++        )
++
+     def __call__(self, retry_state: "RetryCallState") -> float:
++        exponent = retry_state.attempt_number - 1
++        if self._cap_reached(exponent):
++            return max(max(0, self.min), self.max)
+         try:
+-            exp = self.exp_base ** (retry_state.attempt_number - 1)
++            exp = self.exp_base ** exponent
+             result = self.multiplier * exp
+         except OverflowError:
+             return self.max
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..7b2abe6 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -413,6 +413,20 @@ class TestWaitConditions(unittest.TestCase):
+                 self.assertEqual(r.wait(make_retry_state(9, 0)), 100)
+                 self.assertEqual(r.wait(make_retry_state(20, 0)), 100)
+ 
++    def test_exponential_does_not_compute_power_past_max(self) -> None:
++        powers: list[typing.Any] = []
++
++        class CountingBase(int):
++            def __pow__(
++                self, other: typing.Any, modulo: typing.Any = None
++            ) -> typing.Any:
++                powers.append(other)
++                return int(self) ** int(other)
++
++        r = Retrying(wait=tenacity.wait_exponential(exp_base=CountingBase(2), max=40))
++        self.assertEqual(r.wait(make_retry_state(10_000, 0)), 40)
++        self.assertEqual(powers, [])
++
+     def test_legacy_explicit_wait_type(self) -> None:
+         Retrying(wait="exponential_sleep")  # type: ignore[arg-type]
+ 

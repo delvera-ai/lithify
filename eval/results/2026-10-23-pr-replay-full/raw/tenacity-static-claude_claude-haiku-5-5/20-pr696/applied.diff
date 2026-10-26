@@ -1,0 +1,86 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 85fb6b5..0c8afdc 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261024-220150-bug-setting-the-module-global-te](20261024-220150-bug-setting-the-module-global-te/EXPERIENCE.md) — **when** A tenacity fix where the code next to the edit has a comment explaining a typing constraint (mypy strict, `warn_unreachable`/`redundant-expr`, an optional import kept "in a plain bool") that pytest gates cannot check and mypy cannot run to confirm. The obvious one-line fix quietly brings back the pattern the comment warns against. **then** In `system.md`, require loading `tenacity-change-contract` (headings plus the sections for the area) before the first edit under `tenacity/`, and require that any fix satisfy the reason given in a comment beside the changed code, or that the final message say why it does not. When the skill documents such a constraint, also name the concrete compliant shape (as comp-1's §1e does with the `_has_tornado() -> bool` helper). A bare prohibition led to an odd workaround (`globals().get`).
+ - [20261024-214815-three-regressions-that-only-appe](20261024-214815-three-regressions-that-only-appe/EXPERIENCE.md) — **when** A tenacity task restores behaviour that a recent typing/strictness commit removed or narrowed (git history shows a #677/#679/#682-style commit with a release note). The fix extends an operator or guard that the commit deliberately left rejecting some inputs, so a broad "everything else" branch would quietly undo the commit's stated promise. **then** In `skills/tenacity-change-contract`, put the strictness commit's stated invariant at the site the fix will touch, as an explicit branch condition with the commit and reno as source (e.g. "`__radd__`: combine only when `callable(other)`; a non-zero number still returns `NotImplemented`"). Add a grep that lists every annotation site to widen. Wherever the skill says "widen the annotation", say in the same place that an existing test's now-unused `# type: ignore` stays as it is and gets reported, not removed.
+ - [20261024-152742-bug-retry-if-exception-cause-typ](20261024-152742-bug-retry-if-exception-cause-typ/EXPERIENCE.md) — **when** A tenacity task reports a hang (infinite loop, 100% CPU, a strategy or chain walk that never returns), so the regression test can't fail by assertion on unfixed code. Each red run lasts at least `--timeout` seconds, may outlast the shell tool's foreground limit, and on this host can stretch far past its limit when the machine is descheduled. **then** Define what red means for a hang in the always-on `system.md` step 1: `run_tests.py --timeout 20 <one node id>` returning `exit=124` with `HUNG IN:` naming the new test. In the same paragraph, set the shell call's timeout above S, forbid `perl alarm`/raw-pytest/background fallbacks, and allow one fallback: wait for the completion notice without killing the run. Have `scripts/run_tests.py` print wall and CPU seconds, so a stall where wall time is much larger than CPU time is read as host descheduling, not a broken bound. Keep red-test recipes for hangs out of `skills/tenacity-change-contract`: in these rollouts the skill was read only after the fix was in, and a recipe there (a thread-based test) arrived too late and led to a revert of the fix.
+ - [20261023-214407-bug-retry-if-exception-message-m](20261023-214407-bug-retry-if-exception-message-m/EXPERIENCE.md) — **when** A tenacity task in which the agent has to consult the large `tenacity-change-contract` skill (about 30 KB, many `## N.` sections) but needs only a few sections, typically §2 (reno note) and the docs/tests sections for a small user-visible fix. A whole-file read of a skill that size spills to persisted output and costs extra recovery calls. **then** In `tool_guidance.md`, tell the agent how to read a large harness skill rather than only where it is: name the skill as oversized and prescribe `grep -n '^## ' <SKILL.md>` followed by `sed -n 'A,Bp'` of the relevant sections, in place of `cat`. Reword the existing "where skills live" bullet instead of adding a new always-on line.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index bf5993c..4716082 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -285,6 +285,21 @@
+       "wall_s": 812.3,
+       "always_on_tokens": 1479,
+       "stability_after": 0.7
++    },
++    {
++      "task_id": "20261024-220150-bug-setting-the-module-global-te",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 100,
++      "executions": 4,
++      "tokens_in": 363206,
++      "tokens_cached": 4293869,
++      "tokens_out": 58786,
++      "cost_usd": 2.9932,
++      "wall_s": 457.8,
++      "always_on_tokens": 1568,
++      "stability_after": 0.7
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 51925ef..bbd8e0f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -94,6 +94,12 @@ except ImportError:
+ # Keep the availability answer in a plain bool instead.
+ _HAS_TORNADO = tornado is not None
+ 
++
++def _has_tornado() -> bool:
++    # Read the live `tornado` global, so tests that set it to None take effect.
++    return tornado is not None
++
++
+ if t.TYPE_CHECKING:
+     if sys.version_info >= (3, 11):
+         from typing import Self
+@@ -786,7 +792,7 @@ def retry(*dargs: t.Any, **dkw: t.Any) -> t.Any:
+         ):
+             r = AsyncRetrying(*dargs, **dkw)
+         elif (
+-            _HAS_TORNADO
++            _has_tornado()
+             and hasattr(tornado.gen, "is_coroutine_function")
+             and tornado.gen.is_coroutine_function(f)
+         ):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..b9eb5d2 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -2369,5 +2369,17 @@ class TestPickle(unittest.TestCase):
+         assert calls == 3
+ 
+ 
++class TestTornadoGlobalNone(unittest.TestCase):
++    def test_retry_decorates_when_tornado_global_is_none(self) -> None:
++        """Setting `tenacity.tornado = None` must not break `@retry` decoration."""
++        with mock.patch.object(tenacity, "tornado", None):
++
++            @retry(stop=tenacity.stop_after_attempt(2))
++            def succeed() -> str:
++                return "ok"
++
++            assert succeed() == "ok"
++
++
+ if __name__ == "__main__":
+     unittest.main()

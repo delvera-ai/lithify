@@ -1,0 +1,56 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -62,6 +62,35 @@
+   `TYPE_CHECKING` as `SyncRetryBaseT` (see `tenacity/asyncio/__init__.py`). They are defined
+   after `retry_base`, so annotations that use them in the class body are quoted strings.
+ 
++## 1c. CONTRACT: a new keyword on `Retrying`/`AsyncRetrying`/`@retry`
++A constructor option is stored on `BaseRetrying` and must appear in every place below.
++Check each with `grep -n "<existing kwarg, e.g. retry_error_callback>" tenacity/*.py tenacity/asyncio/__init__.py`;
++every hit list must gain the new name.
++- `BaseRetrying.__init__` (param + `self.<attr>`) and `BaseRetrying.copy()` (param typed
++  `<T> | object = _unset`, passed as `_first_set(<new>, self.<attr>)`). `copy()` is what
++  `wraps`' per-call copy and `fn.retry_with(...)` use, so an option missing there is
++  silently dropped by `retry_with`.
++- `AsyncRetrying.__init__` (`tenacity/asyncio/__init__.py`) re-lists every parameter
++  explicitly and forwards to `super().__init__`: add it there too. `TornadoRetrying.__init__`
++  forwards `**kwargs`, so it needs no edit.
++- `retry()` in `tenacity/__init__.py`: two keyword `@t.overload`s (the async one with
++  `sleep: Awaitable` and `= ...` defaults, the sync one with real defaults). The
++  implementation forwards `**dkw` unchanged, so only the overloads need the new param.
++- A run-time option is honoured on EVERY entry point that starts a run, each of which
++  calls `self.begin()` itself: `Retrying.__call__`, `BaseRetrying.__iter__`
++  (`for attempt in Retrying(...)`), `AsyncRetrying.__call__`, `AsyncRetrying.__aiter__`
++  (`async for`), `TornadoRetrying.__call__` (`tenacity/tornadoweb.py`). Handle each one, or
++  name the ones left out in the final message and the docs.
++- `AsyncRetrying.__call__` can be handed a SYNC `fn`: `@retry(sleep=<async fn>)` picks
++  `AsyncRetrying` for a plain function (see `TestSyncFunctionWithAsyncSleep`). A direct-call
++  path must branch on `_utils.is_coroutine_callable(fn)` (as the loop does) or go through
++  `_utils.wrap_to_async_func(fn)`; never a bare `await fn(...)`.
++- Tests: one per changed entry point, in the file that owns it: sync/`retry_with` →
++  `tests/test_tenacity.py`; async → `tests/test_asyncio.py` (`@asynctest`);
++  tornado → `tests/test_tornado.py` (`testing.AsyncTestCase` + `@testing.gen_test`, functions
++  decorated `@retry` over `@gen.coroutine`). Editing `tornadoweb.py` without a
++  `test_tornado.py` test leaves that path unexecuted.
++
+ ## 2. A release note in `releasenotes/notes/` (reno)
+ Maintainer commits that change behaviour ship a reno note alongside the code (e.g. #555, #551,
+ #552, #540). It is not CI-enforced, so it is easy to omit — do not omit it.
+@@ -93,7 +122,8 @@
+ 
+ ## 3. A regression test in the matching test file
+ - `tenacity/_utils.py` → `tests/test_utils.py`; callbacks/strategies/core → `tests/test_tenacity.py`
+-  (`tests/test_after.py` for `after_log`); async → `tests/test_asyncio.py`.
++  (`tests/test_after.py` for `after_log`); async → `tests/test_asyncio.py`;
++  `tenacity/tornadoweb.py` → `tests/test_tornado.py`.
+ - mypy runs `strict = true` over BOTH `tenacity` and `tests` (`pyproject.toml [tool.mypy]`), so
+   every new test function needs full parameter and `-> None` annotations.
+ - ruff (`line-length = 88`, `target-version = "py310"`) checks and format-checks the whole repo,

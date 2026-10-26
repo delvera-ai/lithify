@@ -1,0 +1,27 @@
+{
+  "task": "Three regressions that only appear once a retry actually happens:\n1. `Retrying(wait=None)`, `wait=0` and `wait=sum([])` now raise `TypeError: 'NoneType' object is not callable`; these values mean \"no wait\" and must work again (sync and async).\n2. Adding a plain callable to a wait strategy (`my_callable + wait_fixed(1)`) must produce a `wait_combine` that sums both.\n3. `wait_combine` must pass the retry state to its strategies positionally, so plain callables with any parameter name work.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 58237,
+    "cached": 1423425,
+    "out": 23080,
+    "cost": 0.03741604999999999,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

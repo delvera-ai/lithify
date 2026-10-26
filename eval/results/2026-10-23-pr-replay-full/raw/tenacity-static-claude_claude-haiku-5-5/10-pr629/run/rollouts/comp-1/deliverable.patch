@@ -1,0 +1,145 @@
+diff --git a/releasenotes/notes/wait-exponential-jitter-multiplier-3c9e0a7f1d52b8e4.yaml b/releasenotes/notes/wait-exponential-jitter-multiplier-3c9e0a7f1d52b8e4.yaml
+new file mode 100644
+index 0000000..8a55d97
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-jitter-multiplier-3c9e0a7f1d52b8e4.yaml
+@@ -0,0 +1,11 @@
++---
++features:
++  - |
++    Add ``multiplier`` parameter to ``wait_exponential_jitter``, with the same
++    meaning as in ``wait_exponential``. It defaults to 1.
++deprecations:
++  - |
++    The ``initial`` parameter of ``wait_exponential_jitter`` is deprecated in
++    favour of ``multiplier``. Passing ``initial`` still works, but emits a
++    ``DeprecationWarning``. Passing both ``initial`` and ``multiplier`` raises
++    ``ValueError``.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 92fa1f4..a35d956 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -17,6 +17,7 @@
+ import abc
+ import random
+ import typing
++import warnings
+ 
+ from tenacity import _utils
+ 
+@@ -240,34 +241,51 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait, jitter and minimum.
++    It allows for a customized multiplier, maximum wait, jitter and minimum.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is max(min, min(initial * 2**n + random.uniform(0, jitter), maximum))
+-    where n is the retry count.
++    The wait time is max(min, min(multiplier * 2**n + random.uniform(0, jitter),
++    maximum)) where n is the retry count.
++
++    The ``initial`` argument is deprecated; use ``multiplier`` instead.
+     """
+ 
+     def __init__(
+         self,
+-        initial: float = 1,
++        initial: float | None = None,
+         max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+         jitter: _utils.time_unit_type = 1,
+         min: _utils.time_unit_type = 0,
++        multiplier: float | None = None,
+     ) -> None:
+-        self.initial = initial
++        if initial is not None:
++            if multiplier is not None:
++                raise ValueError("pass either 'multiplier' or 'initial', not both")
++            warnings.warn(
++                "'initial' is deprecated, use 'multiplier' instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            multiplier = initial
++        self.multiplier = 1 if multiplier is None else multiplier
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+         self.jitter = _utils.to_seconds(jitter)
+         self.min = _utils.to_seconds(min)
+ 
++    @property
++    def initial(self) -> float:
++        """Deprecated alias of ``multiplier``, kept readable for old code."""
++        return self.multiplier
++
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         jitter = random.uniform(0, self.jitter)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.initial * exp + jitter
++            result = self.multiplier * exp + jitter
+         except OverflowError:
+             result = self.max
+         return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 7061cd7..5780a61 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -21,6 +21,7 @@ import re
+ import time
+ import typing
+ import unittest
++import warnings
+ from fractions import Fraction
+ from unittest import mock
+ 
+@@ -640,6 +641,45 @@ class TestWaitConditions(unittest.TestCase):
+             self._assert_inclusive_range(fn(make_retry_state(5, 0)), 16, 17)
+             self.assertEqual(fn(make_retry_state(7, 0)), 60)
+ 
++    def test_wait_exponential_jitter_multiplier(self) -> None:
++        with warnings.catch_warnings():
++            warnings.simplefilter("error")
++            fn = tenacity.wait_exponential_jitter(multiplier=2, max=60, jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_defaults_no_warning(self) -> None:
++        with warnings.catch_warnings():
++            warnings.simplefilter("error")
++            fn = tenacity.wait_exponential_jitter()
++        self._assert_inclusive_range(fn(make_retry_state(1, 0)), 1, 2)
++
++    def test_wait_exponential_jitter_initial_keyword_deprecated(self) -> None:
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(initial=2, max=60, jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_initial_positional_deprecated(self) -> None:
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(2, 60, 2, 0, 0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_initial_warning_points_at_caller(self) -> None:
++        with warnings.catch_warnings(record=True) as caught:
++            warnings.simplefilter("always")
++            tenacity.wait_exponential_jitter(initial=2)
++        deprecations = [w for w in caught if w.category is DeprecationWarning]
++        self.assertEqual(len(deprecations), 1)
++        self.assertEqual(deprecations[0].filename, __file__)
++
++    def test_wait_exponential_jitter_initial_and_multiplier_raise(self) -> None:
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(initial=1, multiplier=1)
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(1, multiplier=1)
++
+     def test_wait_retry_state_attributes(self) -> None:
+         class ExtractCallState(Exception):
+             pass

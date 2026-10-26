@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `wait_random_exponential(min=..., max=...)` can return a wait shorter than `min`. The `min` argument should be a lower bound on every sampled wait, not only on the upper end of the sampling range.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 24303,
+    "cached": 160908,
+    "out": 2953,
+    "cost": 0.00794498,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

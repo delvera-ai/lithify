@@ -1,0 +1,84 @@
+diff --git a/releasenotes/notes/fix-delay-since-first-attempt-b041f55c58c9d01b.yaml b/releasenotes/notes/fix-delay-since-first-attempt-b041f55c58c9d01b.yaml
+new file mode 100644
+index 0000000..9222d2f
+--- /dev/null
++++ b/releasenotes/notes/fix-delay-since-first-attempt-b041f55c58c9d01b.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    The ``delay_since_first_attempt`` key is now present in ``statistics`` from the
++    start of each run, with a value of ``0`` until the first delay has occurred.
++    Previously it was missing until after the first retry, so reading it during the
++    first attempt raised ``KeyError``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..e064486 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -13,6 +13,7 @@
+ # limitations under the License.
+ 
+ import asyncio
++import contextlib
+ import inspect
+ import unittest
+ from collections.abc import Callable, Coroutine
+@@ -190,6 +191,21 @@ class TestContextManager(unittest.TestCase):
+ 
+         assert attempts == 3
+ 
++    @asynctest
++    async def test_delay_since_first_attempt_present_before_first_retry(self) -> None:
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(2), reraise=True)
++        seen_delays: list[float] = []
++        with contextlib.suppress(ValueError):
++            async for attempt in retrying:
++                with attempt:
++                    seen_delays.append(
++                        retrying.statistics["delay_since_first_attempt"]
++                    )
++                    raise ValueError
++
++        assert seen_delays[0] == 0
++        assert len(seen_delays) == 2
++
+     @asynctest
+     async def test_reraise(self) -> None:
+         class CustomError(Exception):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..aa6b68f 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1634,6 +1634,20 @@ class TestStatistics(unittest.TestCase):
+             _foobar()
+         self.assertEqual(2, _foobar.statistics["attempt_number"])
+ 
++    def test_delay_since_first_attempt_present_before_first_retry(self) -> None:
++        retrying = Retrying(stop=tenacity.stop_after_attempt(2), reraise=True)
++        seen_delays: list[float] = []
++        with contextlib.suppress(ValueError):
++            for attempt in retrying:
++                with attempt:
++                    seen_delays.append(
++                        retrying.statistics["delay_since_first_attempt"]
++                    )
++                    raise ValueError
++
++        assert seen_delays[0] == 0
++        assert len(seen_delays) == 2
++
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
+     def setUp(self) -> None:

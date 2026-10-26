@@ -1,0 +1,1 @@
+Bug: `Retrying` objects and the built-in retry strategies cannot be pickled, so `@retry`-decorated functions cannot be used with `multiprocessing` (e.g. `Pool.map`). Make `Retrying` instances (including ones that have already been used and have statistics) and the retry strategy classes picklable with the standard `pickle` module, restoring an equivalent working object.

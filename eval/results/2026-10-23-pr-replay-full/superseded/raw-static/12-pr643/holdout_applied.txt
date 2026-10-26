@@ -1,0 +1,131 @@
+exit 1
+........F..s................................................ [ 38%]
+........................................................F............... [ 85%]
+......................                                                   [100%]
+=================================== FAILURES ===================================
+_____ TestAsyncEnabled.test_enabled_false_aiter_raises_original_exception ______
+
+self = <tests.test_asyncio.TestAsyncEnabled testMethod=test_enabled_false_aiter_raises_original_exception>
+
+    @asynctest
+    async def test_enabled_false_aiter_raises_original_exception(self) -> None:
+        """When enabled=False, the async iterator raises the original exception,
+        not a RetryError, and the body executes exactly once."""
+        call_count = 0
+        retrying = AsyncRetrying(
+            enabled=False,
+            stop=stop_after_attempt(5),
+        )
+        with pytest.raises(ValueError, match="fail"):
+            async for attempt in retrying:
+                with attempt:
+                    call_count += 1
+>                   raise ValueError("fail")
+E                   ValueError: fail
+
+tests/test_asyncio.py:192: ValueError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.test_asyncio.TestAsyncEnabled testMethod=test_enabled_false_aiter_raises_original_exception>
+
+    @asynctest
+    async def test_enabled_false_aiter_raises_original_exception(self) -> None:
+        """When enabled=False, the async iterator raises the original exception,
+        not a RetryError, and the body executes exactly once."""
+        call_count = 0
+        retrying = AsyncRetrying(
+            enabled=False,
+            stop=stop_after_attempt(5),
+        )
+        with pytest.raises(ValueError, match="fail"):
+>           async for attempt in retrying:
+
+tests/test_asyncio.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tenacity/asyncio/__init__.py:175: in __anext__
+    do = await self.iter(retry_state=self._retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/asyncio/__init__.py:162: in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/_utils.py:107: in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+rs = <RetryCallState 4383876176: attempt #5; slept for 0.0; last result: failed (ValueError fail)>
+
+    def exc_check(rs: "RetryCallState") -> None:
+        fut = t.cast("Future", rs.outcome)
+        retry_exc = self.retry_error_cls(fut)
+        if self.reraise:
+            retry_exc.reraise()
+>       raise retry_exc from fut.exception()
+E       tenacity.RetryError: RetryError[<Future at 0x10ab85940 state=finished raised ValueError>]
+
+tenacity/__init__.py:458: RetryError
+________ TestEnabled.test_enabled_false_iter_raises_original_exception _________
+
+self = <tests.test_tenacity.TestEnabled object at 0x10ab7de80>
+
+    def test_enabled_false_iter_raises_original_exception(self) -> None:
+        """When enabled=False, the iterator protocol raises the original exception,
+        not a RetryError, and the body executes exactly once."""
+        call_count = 0
+        retrying = Retrying(
+            enabled=False,
+            stop=tenacity.stop_after_attempt(5),
+            wait=tenacity.wait_none(),
+        )
+        with pytest.raises(ValueError, match="fail"):
+            for attempt in retrying:
+                with attempt:
+                    call_count += 1
+>                   raise ValueError("fail")
+E                   ValueError: fail
+
+tests/test_tenacity.py:1577: ValueError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.test_tenacity.TestEnabled object at 0x10ab7de80>
+
+    def test_enabled_false_iter_raises_original_exception(self) -> None:
+        """When enabled=False, the iterator protocol raises the original exception,
+        not a RetryError, and the body executes exactly once."""
+        call_count = 0
+        retrying = Retrying(
+            enabled=False,
+            stop=tenacity.stop_after_attempt(5),
+            wait=tenacity.wait_none(),
+        )
+        with pytest.raises(ValueError, match="fail"):
+>           for attempt in retrying:
+                           ^^^^^^^^
+
+tests/test_tenacity.py:1574: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tenacity/__init__.py:482: in __iter__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/__init__.py:415: in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+rs = <RetryCallState 4474841056: attempt #5; slept for 0.0; last result: failed (ValueError fail)>
+
+    def exc_check(rs: "RetryCallState") -> None:
+        fut = t.cast("Future", rs.outcome)
+        retry_exc = self.retry_error_cls(fut)
+        if self.reraise:
+            retry_exc.reraise()
+>       raise retry_exc from fut.exception()
+E       tenacity.RetryError: RetryError[<Future at 0x10ab89be0 state=finished raised ValueError>]
+
+tenacity/__init__.py:458: RetryError
+=========================== short test summary info ============================
+FAILED tests/test_asyncio.py::TestAsyncEnabled::test_enabled_false_aiter_raises_original_exception
+FAILED tests/test_tenacity.py::TestEnabled::test_enabled_false_iter_raises_original_exception
+2 failed, 151 passed, 1 skipped, 12 subtests passed in 1.85s

@@ -1,0 +1,133 @@
+diff --git a/releasenotes/notes/tryagain-reraise-underlying-error-3c9e1f0a7b2d4e68.yaml b/releasenotes/notes/tryagain-reraise-underlying-error-3c9e1f0a7b2d4e68.yaml
+new file mode 100644
+index 0000000..ff068fa
+--- /dev/null
++++ b/releasenotes/notes/tryagain-reraise-underlying-error-3c9e1f0a7b2d4e68.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    With ``reraise=True``, a ``TryAgain`` raised while handling an exception now
++    re-raises that underlying exception once the retries are exhausted, instead
++    of the ``TryAgain`` sentinel. This applies to sync and async retrying.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 282e6da..1b1f19d 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -185,6 +185,11 @@ class RetryError(Exception):
+ 
+     def reraise(self) -> t.NoReturn:
+         if self.last_attempt.failed:
++            exc = self.last_attempt.exception()
++            # A TryAgain raised while handling an error is only a retry signal:
++            # re-raise the error that caused it.
++            if isinstance(exc, TryAgain) and exc.__context__ is not None:
++                raise exc.__context__
+             raise self.last_attempt.result()
+         raise self
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 7b5c641..7903c62 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -83,6 +83,20 @@ class TestAsyncio(unittest.TestCase):
+         await _retryable_coroutine(thing)
+         assert thing.counter == thing.count
+ 
++    @asynctest
++    async def test_reraise_try_again_underlying_error_call(self) -> None:
++        async def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        retrying = AsyncRetrying(
++            stop=stop_after_attempt(2), retry=tenacity.retry_never, reraise=True
++        )
++        with pytest.raises(ValueError):
++            await retrying(_r)
++
+     @asynctest
+     async def test_iscoroutinefunction(self) -> None:
+         assert asyncio.iscoroutinefunction(_retryable_coroutine)
+@@ -238,6 +252,25 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_reraise_try_again_underlying_error(self) -> None:
++        async def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        try:
++            async for attempt in tasyncio.AsyncRetrying(
++                stop=stop_after_attempt(2), retry=tenacity.retry_never, reraise=True
++            ):
++                with attempt:
++                    await _r()
++        except ValueError:
++            pass
++        else:
++            raise Exception
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 6a39739..84c91c4 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -869,6 +869,49 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertRaises(tenacity.TryAgain, r, _r)
+         self.assertEqual(5, r.statistics["attempt_number"])
+ 
++    def test_retry_try_again_reraise_underlying_error(self) -> None:
++        def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        r = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        self.assertRaises(ValueError, r, _r)
++
++    def test_retry_try_again_reraise_underlying_error_iter(self) -> None:
++        def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        with self.assertRaises(ValueError):
++            for attempt in Retrying(
++                stop=tenacity.stop_after_attempt(2),
++                retry=tenacity.retry_never,
++                reraise=True,
++            ):
++                with attempt:
++                    _r()
++
++    def test_retry_error_reraise_unwraps_try_again(self) -> None:
++        try:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++        except tenacity.TryAgain as exc:
++            fut = tenacity.Future(1)
++            fut.set_exception(exc)
++
++        with self.assertRaises(ValueError):
++            tenacity.RetryError(fut).reraise()
++
+     def test_retry_if_exception_message_negative_no_inputs(self) -> None:
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message()

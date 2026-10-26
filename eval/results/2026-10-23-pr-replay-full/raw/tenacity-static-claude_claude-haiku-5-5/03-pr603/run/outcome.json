@@ -1,0 +1,52 @@
+{
+  "task": "Bug: the `delay_since_first_attempt` key is missing from a retrying object's `statistics` until after the first retry, so code that reads `statistics[\"delay_since_first_attempt\"]` during the first attempt raises `KeyError`. The key should be present from the start of each run, with value `0` until a delay has occurred.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The source fix is the same in all four, so the regression test decided it. c2's test sits in `TestStatistics` and copies that class's existing pattern: `@retry`, `stop_after_attempt(2)`, `contextlib.suppress`. It reads the key during the first attempt and asserts `0`, with nothing extra.\nRunner-up c4 has the tightest test of the exact scenario, but it puts it in `TestDecoratorWrapper` instead of next to the other statistics tests.\nc3 adds a needless `retry=` argument and an `[0, mock.ANY]` assertion. c1 adds a redundant `wait_fixed(0)` and a length check.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-190929-bug-the-delay-since-first-attemp",
+  "usage": {
+    "in": 349716,
+    "cached": 4292071,
+    "out": 61626,
+    "cost": 2.6311395699999998,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.42,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

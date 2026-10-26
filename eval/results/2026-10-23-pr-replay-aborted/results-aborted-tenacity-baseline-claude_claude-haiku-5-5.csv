@@ -1,0 +1,5 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-full,baseline,claude@claude-haiku-5-5,20261023-154952-bug-tenacity-utils-find-ordinal,tenacity#556,0,1,0,override k=0,True,True,True,True,base-1,1,0,19758,240312,2901,0.0078,32.5,186,0.2,,,,all,2b01a9b
+pr-replay-full,baseline,claude@claude-haiku-5-5,20261023-155025-bug-tenacity-after-log-crashes-w,tenacity#591,0,2,0,override k=0,True,True,True,True,base-1,1,0,20985,233125,3259,0.0082,32.6,186,0.4,,,,all,2b01a9b
+pr-replay-full,baseline,claude@claude-haiku-5-5,20261023-155058-bug-the-delay-since-first-attemp,tenacity#603,0,3,0,override k=0,True,True,True,True,base-1,1,0,25733,284612,4946,0.0105,38.4,186,0.6,,,,all,2b01a9b
+pr-replay-full,baseline,claude@claude-haiku-5-5,20261023-155139-regression-since-8-4-2-composing,tenacity#606,0,4,0,override k=0,False,False,False,False,,1,0,0,0,0,0.0,406.7,186,0.6,,,,all,2b01a9b

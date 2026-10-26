@@ -1,0 +1,25 @@
+lithify ▸ 20261023-204305-regression-when-gnu-is-false-hum  k=2 (genesis (S=0.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ▸ probe base-2: executing with codex
+  ✓ probe base-2: test=pass
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (codex)
+  ✓ applied deliverable from base-1: Both candidates make the same minimal, correct fix using the existing integer-formatting convention.
+c2 adds regression coverage for default arguments, binary mode, and unchanged GNU output, including
+lithify ◂ delivered=True first_pass=True S=0.20 executions=2 role_sessions=1 tokens(in/cached/out)=40727/196224/1448
+{
+  "task_id": "20261023-204305-regression-when-gnu-is-false-hum",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.2,
+  "executions": 2,
+  "role_sessions": 1
+}
+

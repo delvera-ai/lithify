@@ -1,0 +1,37 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 51925ef..bcc3d61 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -786,7 +786,7 @@ def retry(*dargs: t.Any, **dkw: t.Any) -> t.Any:
+         ):
+             r = AsyncRetrying(*dargs, **dkw)
+         elif (
+-            _HAS_TORNADO
++            tornado is not None
+             and hasattr(tornado.gen, "is_coroutine_function")
+             and tornado.gen.is_coroutine_function(f)
+         ):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..7044247 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -34,6 +34,19 @@ from tenacity.retry import retry_all, retry_any
+ _unset = object()
+ 
+ 
++@pytest.mark.parametrize("with_arguments", [False, True])
++def test_retry_without_tornado(with_arguments: bool) -> None:
++    decorator = retry() if with_arguments else retry
++    with mock.patch.object(tenacity, "tornado", None):
++
++        @decorator
++        def retryable() -> str:
++            return "success"
++
++        assert isinstance(retryable.retry, Retrying)
++        assert retryable() == "success"
++
++
+ def _make_unset_exception(func_name: str, **kwargs: typing.Any) -> TypeError:
+     missing = []
+     for k, v in kwargs.items():

@@ -1,0 +1,36 @@
+lithify ▸ 20261023-203956-feature-wait-exponential-jitter  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✓ probe dom-1: test=pass
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 4 gate-passing deliverables (claude)
+  ✓ applied deliverable from inv-1: All four have the same `wait.py` code, and it follows `wait_exponential` exactly (`_utils.time_unit_type`, `_utils.to_seconds`, the `max(max(0, self.min), ...)` floor). So docs, release notes and test
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 2 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-203956-feature-wait-exponential-jitter (system.md) — `lithify adopt 20261023-203956-feature-wait-exponential-jitter`
+lithify ◂ delivered=True first_pass=True S=0.62 executions=4 role_sessions=5 tokens(in/cached/out)=420987/4648804/72855 cost=$2.77
+{
+  "task_id": "20261023-203956-feature-wait-exponential-jitter",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "inv-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-203956-feature-wait-exponential-jitter",
+  "stability": 0.6222,
+  "executions": 4,
+  "role_sessions": 5
+}
+

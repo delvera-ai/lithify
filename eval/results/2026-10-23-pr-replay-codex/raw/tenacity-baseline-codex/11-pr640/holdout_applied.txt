@@ -1,0 +1,58 @@
+exit 1
+.........s.................................................. [ 40%]
+.............................F.......................................... [ 88%]
+..................                                                       [100%]
+=================================== FAILURES ===================================
+_________ TestRetryConditions.test_retry_try_again_from_cause_reraise __________
+tests.test_tenacity.TestRetryConditions.test_retry_try_again_from_cause_reraise.<locals>.UnderlyingError: boom
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_try_again_from_cause_reraise>
+
+    def test_retry_try_again_from_cause_reraise(self) -> None:
+        # An explicit "raise TryAgain from exc" should also be unwrapped.
+        class UnderlyingError(Exception):
+            pass
+    
+        def _r() -> None:
+            raise tenacity.TryAgain from UnderlyingError("boom")
+    
+        r = Retrying(
+            stop=tenacity.stop_after_attempt(5),
+            retry=tenacity.retry_never,
+            reraise=True,
+        )
+>       self.assertRaises(UnderlyingError, r, _r)
+
+tests/test_tenacity.py:894: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tenacity/__init__.py:509: in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/__init__.py:410: in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+tenacity/__init__.py:452: in exc_check
+    retry_exc.reraise()
+tenacity/__init__.py:191: in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+~/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+~/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+tenacity/__init__.py:512: in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _r() -> None:
+>       raise tenacity.TryAgain from UnderlyingError("boom")
+E       tenacity.TryAgain
+
+tests/test_tenacity.py:887: TryAgain
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_try_again_from_cause_reraise
+1 failed, 148 passed, 1 skipped, 12 subtests passed in 1.83s

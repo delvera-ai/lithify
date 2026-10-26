@@ -1,0 +1,67 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index dc5ec39..5e1a8ce 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -210,6 +210,21 @@
+       "wall_s": 57.4,
+       "always_on_tokens": 196,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-210103-bug-humanize-naturaldelta-trunca",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 24322,
++      "tokens_cached": 111872,
++      "tokens_out": 1059,
++      "cost_usd": 0.0,
++      "wall_s": 51.4,
++      "always_on_tokens": 196,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/src/humanize/time.py b/src/humanize/time.py
+index 303bed2..e7435e8 100644
+--- a/src/humanize/time.py
++++ b/src/humanize/time.py
+@@ -256,6 +256,7 @@ def naturaldelta(
+ 
+         return _ngettext("1 year, %d day", "1 year, %d days", days) % days
+ 
++    years = round(delta.total_seconds() / (365 * 24 * 60 * 60))
+     return _ngettext("%d year", "%d years", years).replace("%d", "%s") % intcomma(years)
+ 
+ 
+diff --git a/tests/test_time.py b/tests/test_time.py
+index c3743bb..3f848c7 100644
+--- a/tests/test_time.py
++++ b/tests/test_time.py
+@@ -151,6 +151,24 @@ def test_naturaldelta_non_finite(value: float, expected: str) -> None:
+     assert humanize.naturaldelta(value) == expected
+ 
+ 
++@pytest.mark.parametrize("months", [True, False])
++@pytest.mark.parametrize(
++    "days, expected",
++    [
++        (1058, "3 years"),
++        (365 * 2 + 182, "2 years"),
++        (365 * 2.5, "2 years"),
++        (365 * 2 + 183, "3 years"),
++        (365 * 3.5, "4 years"),
++        (365 * 1_141 + 300, "1,142 years"),
++    ],
++)
++def test_naturaldelta_round_years(days: float, expected: str, months: bool) -> None:
++    delta = dt.timedelta(days=days)
++    for value in (delta, -delta, delta.total_seconds(), -delta.total_seconds()):
++        assert humanize.naturaldelta(value, months=months) == expected
++
++
+ def test_naturaldelta_too_large_value_raises() -> None:
+     """A too-large *finite* value still raises OverflowError (unlike inf)."""
+     with pytest.raises(OverflowError):

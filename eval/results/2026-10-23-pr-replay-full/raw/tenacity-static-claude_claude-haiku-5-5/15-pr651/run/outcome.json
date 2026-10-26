@@ -1,0 +1,44 @@
+{
+  "task": "Bug: `retry_if_exception_message(message=\"\")` raises `TypeError` (\"missing 1 required argument 'message' or 'match'\"), even though an empty string is a valid message to match (e.g. `str(RuntimeError()) == \"\"`). An empty `message` (or empty `match`) must be accepted and matched correctly; passing neither or both must still raise `TypeError`. The same applies to `retry_if_not_exception_message`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The source change is the same in all three, so test correctness and coverage decided it. c3 is the only one that also checks the non-matching side: with `message=\"\"`, a `RuntimeError(\"boom\")` must not match, which flips the retry outcome for both classes. It also covers the case where both arguments are empty strings for `retry_if_not_exception_message`. That case should still raise `TypeError`, as the request says.\nRunner-up c1: it is smaller and correct, but its tests never check that `message=\"\"` rejects a non-empty message, so the negative path of the fix has no test.\nc2 lost because its test named `..._empty_message_and_match` actually passes `match=\"negative\"`, so the case where both are empty is never tested.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-214407-bug-retry-if-exception-message-m",
+  "usage": {
+    "in": 329492,
+    "cached": 3053096,
+    "out": 50151,
+    "cost": 2.39922743,
+    "exec": 3,
+    "roles": 5
+  },
+  "stability_after": 0.7022,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

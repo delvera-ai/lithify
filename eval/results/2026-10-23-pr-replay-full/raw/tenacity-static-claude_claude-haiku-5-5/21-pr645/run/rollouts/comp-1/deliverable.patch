@@ -1,0 +1,148 @@
+diff --git a/releasenotes/notes/fix-enabled-false-direct-call-b4c1c2fe94a8aef2.yaml b/releasenotes/notes/fix-enabled-false-direct-call-b4c1c2fe94a8aef2.yaml
+new file mode 100644
+index 0000000..5390199
+--- /dev/null
++++ b/releasenotes/notes/fix-enabled-false-direct-call-b4c1c2fe94a8aef2.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    Calling a ``Retrying`` or ``AsyncRetrying`` object directly with ``enabled=False``
++    (``Retrying(enabled=False)(fn)``) now calls ``fn`` once and re-raises its exception
++    unchanged, instead of running the full retry loop and raising ``RetryError``. This
++    matches the ``@retry`` decorator and iterator paths.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 530b63a..e466003 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -538,6 +538,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index aa4a756..b3699b3 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -113,10 +113,17 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        is_async = _utils.is_coroutine_callable(fn)
++        if not self.enabled:
++            if is_async:
++                result = await fn(*args, **kwargs)
++            else:
++                result = fn(*args, **kwargs)
++            return result  # type: ignore[no-any-return]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+-        is_async = _utils.is_coroutine_callable(fn)
+         while True:
+             do = await self.iter(retry_state=retry_state)
+             if isinstance(do, DoAttempt):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index f4fded1..ef0d1f5 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -214,6 +214,54 @@ class TestAsyncEnabled(unittest.TestCase):
+             await always_fails()
+         assert call_count == 1
+ 
++    @asynctest
++    async def test_enabled_false_direct_call_raises_original_exception(self) -> None:
++        """AsyncRetrying(enabled=False)(async fn) awaits fn once and re-raises its
++        exception unchanged, instead of retrying and wrapping it in RetryError."""
++        call_count = 0
++
++        async def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            await retrying(always_fails)
++        assert call_count == 1
++
++    @asynctest
++    async def test_enabled_false_direct_call_sync_fn_raises_original_exception(
++        self,
++    ) -> None:
++        """AsyncRetrying(enabled=False)(sync fn) calls fn once without awaiting it
++        and re-raises its exception unchanged."""
++        call_count = 0
++
++        def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            await retrying(always_fails)
++        assert call_count == 1
++
++    @asynctest
++    async def test_enabled_false_direct_call_sync_fn_returns_result(self) -> None:
++        """AsyncRetrying(enabled=False)(sync fn) returns the sync result."""
++        call_count = 0
++
++        def succeeds() -> str:
++            nonlocal call_count
++            call_count += 1
++            return "ok"
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        assert await retrying(succeeds) == "ok"
++        assert call_count == 1
++
+     @asynctest
+     async def test_enabled_false_aiter_raises_original_exception(self) -> None:
+         """When enabled=False, the async iterator raises the original exception,
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..036f12c 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1707,6 +1707,34 @@ class TestEnabled:
+         assert fails_twice() is True
+         assert call_count == 3
+ 
++    def test_enabled_false_direct_call_raises_original_exception(self) -> None:
++        """Retrying(enabled=False)(fn) calls fn once and re-raises its exception
++        unchanged, instead of retrying and wrapping it in RetryError."""
++        call_count = 0
++
++        def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            retrying(always_fails)
++        assert call_count == 1
++
++    def test_enabled_false_direct_call_returns_result(self) -> None:
++        """Retrying(enabled=False)(fn) returns fn's result on the single call."""
++        call_count = 0
++
++        def succeeds() -> str:
++            nonlocal call_count
++            call_count += 1
++            return "ok"
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        assert retrying(succeeds) == "ok"
++        assert call_count == 1
++
+     def test_enabled_false_iter_raises_original_exception(self) -> None:
+         """When enabled=False, the iterator protocol raises the original exception,
+         not a RetryError, and the body executes exactly once."""

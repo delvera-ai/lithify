@@ -1,0 +1,33 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9052e92..8d0dc9e 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 0,
++  "consecutive_failures": 1,
+   "history": [
+     {
+       "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
+@@ -315,6 +315,21 @@
+       "wall_s": 44.5,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-165744-bug-retrying-skips-the-wait-stra",
++      "k": 0,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 26219,
++      "tokens_cached": 241008,
++      "tokens_out": 5339,
++      "cost_usd": 0.0103,
++      "wall_s": 38.5,
++      "always_on_tokens": 186,
++      "stability_after": 0.9
+     }
+   ]
+ }

@@ -1,0 +1,1 @@
+Bug: `humanize.naturaldelta()` documents that values it cannot convert are returned unchanged, and `float("nan")` already is, but `float("inf")` and `float("-inf")` raise `OverflowError: cannot convert float infinity to integer`. Return non-finite values unchanged (`"inf"`, `"-inf"`). A finite value that is too large (e.g. `1e30`) must still raise `OverflowError`, as documented.

@@ -1,0 +1,36 @@
+{
+  "task": "Bug: `Retrying(enabled=False)` is ignored when used with the iterator pattern (`for attempt in retrying: with attempt: ...` and `async for attempt in AsyncRetrying(enabled=False)`): the full retry loop runs (several attempts) and a `RetryError` is raised. With `enabled=False` the body should run exactly once and any exception should propagate unchanged, matching the decorator path.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 0,
+    "cached": 0,
+    "out": 0,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 4
+  },
+  "stability_after": 0.4205,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": false,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": false,
+      "issues": []
+    }
+  }
+}
