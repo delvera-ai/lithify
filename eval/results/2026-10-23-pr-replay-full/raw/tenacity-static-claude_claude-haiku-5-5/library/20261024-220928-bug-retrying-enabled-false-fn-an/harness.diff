@@ -1,0 +1,78 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -327,16 +327,7 @@
+   (`async for`), `TornadoRetrying.__call__` (`tenacity/tornadoweb.py`). Handle each one, or
+   name the ones left out in the final message and the docs. `wraps` is not a run entry
+   point; it calls `copy()` then `copy(f, ...)` (`__call__`).
+-- `enabled` (base commit): checked only in `wraps` — sync `wrapped_f` and async
+-  `async_wrapped` (`tenacity/asyncio/__init__.py`) — as `if not self.enabled: return f(...)`
+-  BEFORE `self.copy()`. So the decorator's disabled path is a raw call: no `begin()`, no
+-  `before`/`after`/`before_sleep`/`retry_error_callback`, and `fn.statistics` stays the `{}`
+-  set at decoration. The five run entry points above do not check it. List which ones honour
+-  it with `grep -n "self.enabled" tenacity/*.py tenacity/asyncio/__init__.py`. Tests:
+-  `tests/test_tenacity.py::TestEnabled`, `tests/test_asyncio.py::TestAsyncEnabled`. A fix
+-  that claims to "match the decorator path" for another entry point must say in the final
+-  message whether that path still runs `begin()`/`before` (iterating starts with `iter()`,
+-  which runs `before`), since the decorator path runs neither.
++- `enabled`: see §1c1 (which entry points honour it and the disabled shape to copy).
+ - `AsyncRetrying.__call__` can be handed a SYNC `fn`: `@retry(sleep=<async fn>)` picks
+   `AsyncRetrying` for a plain function (see `TestSyncFunctionWithAsyncSleep`). A direct-call
+   path must branch on `_utils.is_coroutine_callable(fn)` (as the loop does) or go through
+@@ -346,6 +337,46 @@
+   tornado → `tests/test_tornado.py` (`testing.AsyncTestCase` + `@testing.gen_test`, functions
+   decorated `@retry` over `@gen.coroutine`). Editing `tornadoweb.py` without a
+   `test_tornado.py` test leaves that path unexecuted.
++
++## 1c1. The `enabled` switch (`enabled=False`) — which entry points honour it
++Verified at the current base (`grep -n "self.enabled" tenacity/*.py tenacity/asyncio/__init__.py`;
++re-run it, the list grows as fixes land). Read this for ANY `enabled` bug, not only a new keyword.
++- Honoured today, each before `begin()`: `wraps` (sync `wrapped_f`, async `async_wrapped`:
++  `if not self.enabled: return f(...)` before `self.copy()`); `BaseRetrying.__iter__` (#643:
++  yields one `AttemptManager` on a fresh `RetryCallState(self, fn=None, ...)`, then re-raises
++  `retry_state.outcome.exception()` if it failed); `AsyncRetrying.__aiter__`/`__anext__` (#643:
++  same, via the one-shot `self._disabled_iter_done` flag).
++- The shared disabled contract all of these keep: the body/function runs exactly once; its
++  exception propagates unchanged (never `RetryError`, `reraise` irrelevant); NO `begin()`, so
++  no `statistics` reset, and no `before`/`after`/`before_sleep`/`retry_error_callback`/
++  `stop`/`wait`. A new disabled path returns before `self.begin()` and before building the
++  loop's `RetryCallState`; do not put the check in shared `_begin_iter`/`iter()` (that runs
++  after `begin()` and `before`).
++- Not checking it at #696 base: `Retrying.__call__`, `AsyncRetrying.__call__`
++  (`tenacity/asyncio/__init__.py`) and `TornadoRetrying.__call__` (`tenacity/tornadoweb.py`,
++  `@gen.coroutine`: its disabled path would be `result = yield fn(*args, **kwargs)` then
++  `raise gen.Return(result)`, mirroring its loop). A task naming only some of these still
++  leaves the others: fix only what the task names, and the final message names each sibling
++  still unguarded (e.g. "`TornadoRetrying.__call__` still ignores `enabled`") — do not stay
++  silent about it.
++- `AsyncRetrying.__call__` disabled path: branch on `_utils.is_coroutine_callable(fn)` as the
++  loop below it does (sync `fn` is legal, see §1c); a bare `await fn(...)` breaks
++  `TestSyncFunctionWithAsyncSleep`-style callers. Typing (mypy strict + `warn_unused_ignores`,
++  not runnable here): `fn` is `WrappedFn` bound to `Callable[..., Awaitable[Any]]`, so the two
++  branches have different types. The existing loop body assigns both branches to one `result`
++  with no ignore and carries a single `# type: ignore[no-any-return]` on its `return`; copying
++  that shape (`result = ...` in each branch, one `return result  # type: ignore[no-any-return]`)
++  reuses an ignore code the file already proves, instead of guessing one per branch. Either
++  way, name every new `type: ignore` in the final message as unverified by mypy.
++- Ship-alongside: the maintainer fix #643 (iterators) shipped code + tests only — no reno,
++  no docs. This harness still requires a `fixes:` reno note (§2). Widening the "Disabling
++  Retries" sentence in `doc/source/index.rst` (it says only "the decorated function is called
++  directly") is optional for a bug fix; say in the final message which you chose.
++- Tests: sync in `tests/test_tenacity.py::TestEnabled`, async in
++  `tests/test_asyncio.py::TestAsyncEnabled` (`@asynctest`), next to the existing
++  `test_enabled_false_*` tests; a red test asserts the original exception type AND a call
++  count of 1 with a `stop=` that would otherwise retry. Async direct-call fixes also need a
++  SYNC `fn` handed to `AsyncRetrying(enabled=False)` (the `is_coroutine_callable` branch).
+ 
+ ## 1d. The iterator pattern: `for attempt in` / `async for` + `with attempt:`
+ Verified in `tenacity/__init__.py` and `tenacity/asyncio/__init__.py`.
+@@ -373,8 +404,8 @@
+   `__iter__` or `__anext__` affects iteration only. State which you chose and why.
+ - Docs: the iterator form is the "Retrying code block" section of `doc/source/index.rst`
+   (`grep -n "for attempt in" doc/source/index.rst`). The "Disabling Retries" section
+-  just above it describes only the decorated function; a change that makes `enabled=False`
+-  work for another usage form updates that section's sentence.
++  just above it describes only the decorated function (#643 left it so when the iterators
++  gained `enabled`; see §1c1).
+ 
+ ## 1e. Optional dependency detection: `tornado` in `tenacity/__init__.py`
+ Verified in `tenacity/__init__.py` (the `try: import tornado` block, `retry().wrap`, the

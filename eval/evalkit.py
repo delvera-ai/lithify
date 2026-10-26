@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import getpass
 import json
 import math
 import os
@@ -22,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 HOME = str(Path.home())
+USER = getpass.getuser()
 EVAL_GIT = ["-c", "user.name=lithify-eval", "-c", "user.email=eval@localhost", "-c", "commit.gpgsign=false"]
 SECRETISH = re.compile(r"(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,})")
 
@@ -83,7 +85,8 @@ def lithify_commit() -> str:
 def redact(text: str, extra: dict[str, str] | None = None) -> str:
     for src, dst in (extra or {}).items():
         text = text.replace(src, dst)
-    text = text.replace(HOME, "~")
+    text = text.replace(HOME, "~").replace(f"-Users-{USER}-", "-Users-user-")
+    text = re.sub(rf"(?<![\w-]){re.escape(USER)}(?![\w-])", "user", text)
     return SECRETISH.sub("<redacted>", text)
 
 

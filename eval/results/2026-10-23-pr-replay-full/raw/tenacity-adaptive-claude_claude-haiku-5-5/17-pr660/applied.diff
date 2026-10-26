@@ -1,0 +1,86 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 245454c..dd8c74b 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -240,6 +240,21 @@
+       "wall_s": 41.2,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-162745-bug-retry-if-exception-cause-typ",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 21054,
++      "tokens_cached": 352078,
++      "tokens_out": 5421,
++      "cost_usd": 0.0104,
++      "wall_s": 49.8,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..c9f968a 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -177,7 +177,10 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            # Track visited exceptions so a cyclic __cause__ chain (e.g. `raise e from e`) terminates.
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..7791e57 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1441,6 +1441,39 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_self_cause_terminates(self) -> None:
++        # Equivalent to `raise e from e` with e not matching the cause type.
++        err = ValueError("boom")
++        err.__cause__ = err
++
++        def fail() -> None:
++            raise err
++
++        retrying = Retrying(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(1),
++        )
++        with self.assertRaises(ValueError):
++            retrying(fail)
++
++    def test_retry_if_exception_cause_type_cycle_with_match(self) -> None:
++        top = ValueError("top")
++        mid = RuntimeError("mid")
++        cause = NameError("cause")
++        top.__cause__ = mid
++        mid.__cause__ = cause
++        cause.__cause__ = mid  # cycle back into the chain
++
++        def fail() -> None:
++            raise top
++
++        retrying = Retrying(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++        )
++        with self.assertRaises(RetryError):
++            retrying(fail)
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

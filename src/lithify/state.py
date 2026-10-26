@@ -40,6 +40,8 @@ class TaskRecord:
     wall_s: float = 0.0
     always_on_tokens: int = 0
     stability_after: float = 0.0
+    # Set by `lithify feedback`: the delivered work later failed a check (CI, review, a hidden test).
+    feedback_failed: bool = False
 
 
 @dataclass
@@ -106,6 +108,23 @@ def choose_k(st: State, sched: Schedule, max_k: int) -> tuple[int, str]:
     if phase == "build":
         return 1, f"build (S={s:.2f})"
     return 0, f"cruise (S={s:.2f})"
+
+
+def mark_feedback_failed(root: Path, task_id: str, sched: Schedule) -> bool:
+    """A delivered task failed after delivery: it no longer counts as a first-pass success, so
+    stability drops and the schedule explores again. Returns False if the task is not in history."""
+    st = load_state(root)
+    for i, h in enumerate(st.history):
+        if h.get("task_id") == task_id:
+            was_pass = bool(h.get("first_pass"))
+            h["first_pass"] = False
+            h["feedback_failed"] = True
+            if was_pass and i == len(st.history) - 1:
+                st.consecutive_failures += 1
+            st.history[-1]["stability_after"] = stability(st.history, sched)
+            save_state(root, st)
+            return True
+    return False
 
 
 def record_task(root: Path, st: State, rec: TaskRecord, sched: Schedule) -> State:

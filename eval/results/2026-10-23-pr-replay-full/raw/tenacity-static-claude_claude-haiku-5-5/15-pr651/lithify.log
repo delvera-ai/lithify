@@ -1,0 +1,34 @@
+lithify ▸ 20261023-214407-bug-retry-if-exception-message-m  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose dom-1 (claude)
+  ▸ propose inv-1 (claude)
+  ✓ dom-1: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 3 gate-passing deliverables (claude)
+  ✓ applied deliverable from comp-1: The source change is the same in all three, so test correctness and coverage decided it. c3 is the only one that also checks the non-matching side: with `message=""`, a `RuntimeError("boom")` must not
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 2 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-214407-bug-retry-if-exception-message-m (scripts/check_changed.py, tool_guidance.md) — `lithify adopt 20261023-214407-bug-retry-if-exception-message-m`
+lithify ◂ delivered=True first_pass=True S=0.70 executions=3 role_sessions=5 tokens(in/cached/out)=329492/3053096/50151 cost=$2.40
+{
+  "task_id": "20261023-214407-bug-retry-if-exception-message-m",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "comp-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-214407-bug-retry-if-exception-message-m",
+  "stability": 0.7022,
+  "executions": 3,
+  "role_sessions": 5
+}
+

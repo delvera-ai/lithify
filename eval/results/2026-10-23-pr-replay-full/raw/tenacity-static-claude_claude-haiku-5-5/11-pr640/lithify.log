@@ -1,0 +1,36 @@
+lithify ▸ 20261023-205644-bug-when-tryagain-is-raised-from  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✓ probe inv-1: test=pass
+  ✓ probe dom-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 4 gate-passing deliverables (claude)
+  ✓ applied deliverable from dom-1: Deciding criterion: correctness beyond the tests. c4 re-raises the real error whether `TryAgain` was raised inside an `except` block or with `raise TryAgain from exc`, in a 4-line change with a releas
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 3 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-205644-bug-when-tryagain-is-raised-from (skills/tenacity-change-contract) — `lithify adopt 20261023-205644-bug-when-tryagain-is-raised-from`
+lithify ◂ delivered=True first_pass=True S=0.63 executions=4 role_sessions=5 tokens(in/cached/out)=404865/5404676/70131 cost=$2.88
+{
+  "task_id": "20261023-205644-bug-when-tryagain-is-raised-from",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "dom-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-205644-bug-when-tryagain-is-raised-from",
+  "stability": 0.63,
+  "executions": 4,
+  "role_sessions": 5
+}
+

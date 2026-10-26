@@ -1,0 +1,79 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index bc72ab7..8bd7aa1 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -15,6 +15,21 @@
+       "wall_s": 19.2,
+       "always_on_tokens": 186,
+       "stability_after": 0.2
++    },
++    {
++      "task_id": "20261023-185653-bug-tenacity-after-log-crashes-w",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 20495,
++      "tokens_cached": 259331,
++      "tokens_out": 3163,
++      "cost_usd": 0.0083,
++      "wall_s": 28.3,
++      "always_on_tokens": 186,
++      "stability_after": 0.4
+     }
+   ]
+ }
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..7732146 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,14 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        if retry_state.seconds_since_start is None:
++            elapsed = "?"
++        else:
++            elapsed = sec_format % retry_state.seconds_since_start
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {elapsed}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..f108be6 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -74,3 +74,28 @@ class TestAfterLogFormat(unittest.TestCase):
+             f"after {sec_format % retry_state.seconds_since_start}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
++
++    def test_03_seconds_since_start_unset(self) -> None:
++        """Test log formatting when the outcome timestamp has not been set."""
++        log = unittest.mock.MagicMock(spec="logging.Logger.log")
++        logger = unittest.mock.MagicMock(spec="logging.Logger", log=log)
++
++        retry_state = test_tenacity.make_retry_state(
++            self.previous_attempt_number, 0.1
++        )
++        retry_state.outcome_timestamp = None
++        assert retry_state.seconds_since_start is None
++
++        fun = after_log(logger=logger, log_level=self.log_level)
++        fun(retry_state)
++        fn_name = (
++            "<unknown>"
++            if retry_state.fn is None
++            else _utils.get_callback_name(retry_state.fn)
++        )
++        log.assert_called_once_with(
++            self.log_level,
++            f"Finished call to '{fn_name}' "
++            f"after ?(s), "
++            f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
++        )

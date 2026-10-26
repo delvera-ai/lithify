@@ -1,0 +1,88 @@
+diff --git a/src/humanize/filesize.py b/src/humanize/filesize.py
+index c495fed..0c17338 100644
+--- a/src/humanize/filesize.py
++++ b/src/humanize/filesize.py
+@@ -98,5 +98,15 @@ def naturalsize(
+ 
+     exp = int(min(log(abs_bytes, base), len(suffix)))
+     space = "" if gnu else " "
+-    ret: str = format % (bytes_ / (base**exp)) + space + _(suffix[exp - 1])
+-    return ret
++    formatted = format % (bytes_ / (base**exp))
++    if exp < len(suffix):
++        try:
++            rounded = abs(float(formatted))
++        except ValueError:
++            # Custom formats may contain text as well as the number.
++            pass
++        else:
++            if rounded >= base:
++                exp += 1
++                formatted = format % (bytes_ / (base**exp))
++    return formatted + space + _(suffix[exp - 1])
+diff --git a/tests/test_filesize.py b/tests/test_filesize.py
+index 04774d9..fcfc0ee 100644
+--- a/tests/test_filesize.py
++++ b/tests/test_filesize.py
+@@ -7,6 +7,7 @@ from __future__ import annotations
+ import pytest
+ 
+ import humanize
++from humanize.filesize import suffixes
+ 
+ 
+ @pytest.mark.parametrize(
+@@ -94,3 +95,53 @@ def test_naturalsize(test_args: list[int] | list[int | bool], expected: str) ->
+         test_args[0] = f"-{test_args[0]}"
+ 
+     assert humanize.naturalsize(*test_args) == "-" + expected
++
++
++@pytest.mark.parametrize("binary, gnu", [(False, False), (True, False), (False, True)])
++@pytest.mark.parametrize("exp", range(1, 10))
++@pytest.mark.parametrize("sign", [1, -1])
++@pytest.mark.parametrize(
++    "format, near, below, one",
++    [
++        ("%.1f", 0.01, 0.1, "1.0"),
++        ("%.0f", 0.1, 1, "1"),
++        ("%.3f", 0.0001, 0.001, "1.000"),
++    ],
++)
++def test_naturalsize_rounding_boundary(
++    binary: bool,
++    gnu: bool,
++    exp: int,
++    sign: int,
++    format: str,
++    near: float,
++    below: float,
++    one: str,
++) -> None:
++    base = 1024 if binary or gnu else 1000
++    suffix = suffixes["gnu" if gnu else "binary" if binary else "decimal"]
++    space = "" if gnu else " "
++    prefix = "-" if sign < 0 else ""
++    value = sign * (base - near) * base**exp
++    assert humanize.naturalsize(value, binary, gnu, format) == (
++        prefix + one + space + suffix[exp]
++    )
++    value = sign * (base - below) * base**exp
++    assert humanize.naturalsize(value, binary, gnu, format) == (
++        format % (sign * (base - below)) + space + suffix[exp - 1]
++    )
++
++
++@pytest.mark.parametrize(
++    "binary, gnu, suffix",
++    [(False, False, " QB"), (True, False, " QiB"), (False, True, "Q")],
++)
++def test_naturalsize_largest_suffix(binary: bool, gnu: bool, suffix: str) -> None:
++    base = 1024 if binary or gnu else 1000
++    assert humanize.naturalsize((base - 0.01) * base**10, binary, gnu) == (
++        f"{base:.1f}" + suffix
++    )
++
++
++def test_naturalsize_decorated_format() -> None:
++    assert humanize.naturalsize(3000, format="size: %.1f") == "size: 3.0 kB"

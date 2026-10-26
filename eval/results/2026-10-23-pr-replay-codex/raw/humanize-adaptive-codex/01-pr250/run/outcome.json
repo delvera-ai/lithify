@@ -1,0 +1,31 @@
+{
+  "task": "Regression: when `gnu` is False, `humanize.naturalsize(1.0)` or `naturalsize(\"1\")` returns `\"1.0 Byte\"` instead of `\"1 Byte\"`, which was the return value until 4.12. Restore the previous output for float and numeric-string inputs that are below one kilobyte.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "Both candidates make the same minimal, correct fix using the existing integer-formatting convention.\nc2 adds regression coverage for default arguments, binary mode, and unchanged GNU output, including negative inputs through the existing test helper.\nc1 covers the reported regression but lacks the GNU compatibility cases, which costs it the pick.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 40727,
+    "cached": 196224,
+    "out": 1448,
+    "cost": 0.0,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

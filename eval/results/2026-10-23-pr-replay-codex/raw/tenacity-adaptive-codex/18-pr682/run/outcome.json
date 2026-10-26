@@ -1,0 +1,27 @@
+{
+  "task": "Refactor: mark every method that overrides a base-class method (on `retry_base`, `wait_base`, `stop_base`, `BaseRetrying` and their subclasses, and in the test helpers) with an `@override` decorator, so renaming a base method can no longer silently orphan subclass implementations. tenacity has no runtime dependencies and supports Python 3.10+, so provide `override` from `tenacity._utils`: use `typing.override` where available and a small PEP 698-compatible fallback (which sets `__override__ = True` and returns the function) otherwise. (Stated requirement: `from tenacity._utils import override` must work.)",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 40445,
+    "cached": 508800,
+    "out": 4264,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

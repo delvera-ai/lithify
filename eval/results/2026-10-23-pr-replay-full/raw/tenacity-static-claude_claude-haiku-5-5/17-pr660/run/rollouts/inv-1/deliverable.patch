@@ -1,0 +1,106 @@
+diff --git a/releasenotes/notes/retry-if-exception-cause-type-cycle-3f9c2a7d10b84e5c.yaml b/releasenotes/notes/retry-if-exception-cause-type-cycle-3f9c2a7d10b84e5c.yaml
+new file mode 100644
+index 0000000..285fb88
+--- /dev/null
++++ b/releasenotes/notes/retry-if-exception-cause-type-cycle-3f9c2a7d10b84e5c.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    `retry_if_exception_cause_type` no longer hangs forever when an exception's
++    ``__cause__`` chain is cyclic (e.g. ``raise e from e``, or two exceptions whose causes
++    point at each other). The walk now stops at a cycle, and a matching cause type is still
++    found anywhere in a non-cyclic chain.
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..6b2122b 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -177,7 +177,9 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..5342fca 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1441,6 +1441,73 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_self_cause(self) -> None:
++        # `raise e from e` with no matching type must give up, not loop forever.
++        @tenacity.retry(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_none(),
++        )
++        def fn() -> None:
++            e = OSError("self cause")
++            raise e from e
++
++        with self.assertRaises(OSError):
++            fn()
++
++    def test_retry_if_exception_cause_type_mutual_cause(self) -> None:
++        # Two exceptions whose causes point at each other, with no matching type.
++        @tenacity.retry(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_none(),
++        )
++        def fn() -> None:
++            a = OSError("a")
++            b = OSError("b")
++            a.__cause__ = b
++            b.__cause__ = a
++            raise a
++
++        with self.assertRaises(OSError):
++            fn()
++
++    def test_retry_if_exception_cause_type_match_in_cycle(self) -> None:
++        # A matching type reachable inside a cycle still triggers a retry.
++        @tenacity.retry(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_none(),
++        )
++        def fn() -> None:
++            a = OSError("a")
++            b = NameError("b")
++            a.__cause__ = b
++            b.__cause__ = a
++            raise a
++
++        with self.assertRaises(tenacity.RetryError):
++            fn()
++
++    def test_retry_if_exception_cause_type_deep_chain(self) -> None:
++        # A matching type deep in a non-cyclic chain still triggers a retry.
++        @tenacity.retry(
++            retry=tenacity.retry_if_exception_cause_type(NameError),
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_none(),
++        )
++        def fn() -> None:
++            try:
++                try:
++                    raise NameError("deep")
++                except NameError as e:
++                    raise ValueError("middle") from e
++            except ValueError as e:
++                raise OSError("top") from e
++
++        with self.assertRaises(tenacity.RetryError):
++            fn()
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

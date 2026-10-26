@@ -1,0 +1,70 @@
+diff --git a/releasenotes/notes/wait-exponential-max-cap-5c1e9a7d3b2f8e64.yaml b/releasenotes/notes/wait-exponential-max-cap-5c1e9a7d3b2f8e64.yaml
+new file mode 100644
+index 0000000..c21b6e7
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-max-cap-5c1e9a7d3b2f8e64.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    ``wait_exponential`` no longer computes the exponential once it has
++    passed ``max``. Long-running retries previously paid for an ever-growing
++    power on every attempt; the result is unchanged.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..4624fac 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
+ import typing
+ import warnings
+@@ -200,7 +201,20 @@ class wait_exponential(wait_base):
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+ 
++    def _is_past_max(self, exponent: int) -> bool:
++        # Decide in log space whether multiplier * exp_base ** exponent is above
++        # max, so the power is never computed once the cap is reached. The small
++        # margin keeps borderline values on the exact path.
++        if not (self.multiplier > 0 and self.exp_base > 1 and 0 < self.max < math.inf):
++            return False
++        return (
++            math.log(self.multiplier) + exponent * math.log(self.exp_base)
++            > math.log(self.max) + 1e-9
++        )
++
+     def __call__(self, retry_state: "RetryCallState") -> float:
++        if self._is_past_max(retry_state.attempt_number - 1):
++            return max(max(0, self.min), self.max)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+             result = self.multiplier * exp
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..48515f5 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -413,6 +413,20 @@ class TestWaitConditions(unittest.TestCase):
+                 self.assertEqual(r.wait(make_retry_state(9, 0)), 100)
+                 self.assertEqual(r.wait(make_retry_state(20, 0)), 100)
+ 
++    def test_exponential_past_max_skips_power(self) -> None:
++        class CountingBase(float):
++            pow_calls = 0
++
++            def __pow__(self, other: object) -> float:
++                CountingBase.pow_calls += 1
++                return float.__pow__(self, other)  # type: ignore[operator]
++
++        fn = tenacity.wait_exponential(max=60, exp_base=CountingBase(2))
++        for attempt in range(1, 1001):
++            expected = 60 if attempt > 6 else 2 ** (attempt - 1)
++            self.assertEqual(fn(make_retry_state(attempt, 0)), expected)
++        self.assertLess(CountingBase.pow_calls, 20)
++
+     def test_legacy_explicit_wait_type(self) -> None:
+         Retrying(wait="exponential_sleep")  # type: ignore[arg-type]
+ 

@@ -1,0 +1,88 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index cecb985..d6ab470 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 57.2,
+       "always_on_tokens": 186,
+       "stability_after": 0.8889
++    },
++    {
++      "task_id": "20261023-164015-api-cleanup-every-other-exponent",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 24570,
++      "tokens_cached": 343556,
++      "tokens_out": 6393,
++      "cost_usd": 0.0115,
++      "wall_s": 47.5,
++      "always_on_tokens": 186,
++      "stability_after": 0.9
+     }
+   ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 92fa1f4..89a7bac 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -17,6 +17,7 @@
+ import abc
+ import random
+ import typing
++import warnings
+ 
+ from tenacity import _utils
+ 
+@@ -240,24 +241,36 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait, jitter and minimum.
++    It allows for a customized multiplier, maximum wait, jitter and minimum.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is max(min, min(initial * 2**n + random.uniform(0, jitter), maximum))
++    The wait time is max(min, min(multiplier * 2**n + random.uniform(0, jitter), maximum))
+     where n is the retry count.
++
++    The ``initial`` argument is deprecated in favor of ``multiplier``.
+     """
+ 
+     def __init__(
+         self,
+-        initial: float = 1,
++        initial: typing.Optional[float] = None,
+         max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+         jitter: _utils.time_unit_type = 1,
+         min: _utils.time_unit_type = 0,
++        multiplier: typing.Optional[float] = None,
+     ) -> None:
+-        self.initial = initial
++        if initial is not None:
++            if multiplier is not None:
++                raise ValueError("Cannot pass both 'initial' and 'multiplier'")
++            warnings.warn(
++                "'initial' is deprecated, use 'multiplier' instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            multiplier = initial
++        self.multiplier = 1 if multiplier is None else multiplier
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+         self.jitter = _utils.to_seconds(jitter)
+@@ -267,7 +280,7 @@ class wait_exponential_jitter(wait_base):
+         jitter = random.uniform(0, self.jitter)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.initial * exp + jitter
++            result = self.multiplier * exp + jitter
+         except OverflowError:
+             result = self.max
+         return max(max(0, self.min), min(result, self.max))

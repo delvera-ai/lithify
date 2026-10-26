@@ -1,0 +1,208 @@
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..2f6f251 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,7 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity.retry import RetryBaseT as SyncRetryBaseT
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -30,22 +31,22 @@ class async_retry_base(retry_base):
+         pass
+ 
+     def __and__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
+     def __rand__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
+     def __or__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
+     def __ror__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(other, self)
+ 
+@@ -95,7 +96,7 @@ class retry_if_result(async_retry_base):
+ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: SyncRetryBaseT | RetryBaseT) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+@@ -110,7 +111,7 @@ class retry_any(async_retry_base):
+ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: SyncRetryBaseT | RetryBaseT) -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 593b252..533de43 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -29,16 +29,20 @@ class retry_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         pass
+ 
+-    def __and__(self, other: "retry_base") -> "retry_all":
+-        return other.__rand__(self)
++    def __and__(self, other: "RetryBaseT") -> "retry_all":
++        if isinstance(other, retry_base):
++            return other.__rand__(self)
++        return retry_all(self, other)
+ 
+-    def __rand__(self, other: "retry_base") -> "retry_all":
++    def __rand__(self, other: "RetryBaseT") -> "retry_all":
+         return retry_all(other, self)
+ 
+-    def __or__(self, other: "retry_base") -> "retry_any":
+-        return other.__ror__(self)
++    def __or__(self, other: "RetryBaseT") -> "retry_any":
++        if isinstance(other, retry_base):
++            return other.__ror__(self)
++        return retry_any(self, other)
+ 
+-    def __ror__(self, other: "retry_base") -> "retry_any":
++    def __ror__(self, other: "RetryBaseT") -> "retry_any":
+         return retry_any(other, self)
+ 
+ 
+@@ -254,7 +258,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: RetryBaseT) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+@@ -264,7 +268,7 @@ class retry_any(retry_base):
+ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: RetryBaseT) -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+diff --git a/tests/test_retry_composition.py b/tests/test_retry_composition.py
+new file mode 100644
+index 0000000..b3f2d83
+--- /dev/null
++++ b/tests/test_retry_composition.py
+@@ -0,0 +1,96 @@
++import asyncio
++from collections.abc import Awaitable, Callable
++
++import pytest
++
++from tenacity import RetryCallState, Retrying, retry_all, retry_any, retry_if_result
++from tenacity.asyncio import retry as async_retry
++
++
++@pytest.mark.parametrize("strategy_result", [False, True])
++@pytest.mark.parametrize("predicate_result", [False, True])
++@pytest.mark.parametrize("reverse", [False, True])
++@pytest.mark.parametrize("conjunction", [False, True])
++def test_sync_callable_composition(
++    strategy_result: bool, predicate_result: bool, reverse: bool, conjunction: bool
++) -> None:
++    state = RetryCallState(Retrying(), None, (), {})
++    state.set_result(None)
++    calls: list[str] = []
++
++    def strategy_predicate(result: object) -> bool:
++        calls.append("strategy")
++        return strategy_result
++
++    def predicate(retry_state: RetryCallState) -> bool:
++        assert retry_state is state
++        calls.append("predicate")
++        return predicate_result
++
++    strategy = retry_if_result(strategy_predicate)
++    if conjunction:
++        combined = predicate & strategy if reverse else strategy & predicate
++        assert isinstance(combined, retry_all)
++    else:
++        combined = predicate | strategy if reverse else strategy | predicate
++        assert isinstance(combined, retry_any)
++    assert combined(state) == (
++        strategy_result and predicate_result
++        if conjunction
++        else strategy_result or predicate_result
++    )
++    first = predicate_result if reverse else strategy_result
++    order = ["predicate", "strategy"] if reverse else ["strategy", "predicate"]
++    assert calls == (order if first == conjunction else order[:1])
++
++
++@pytest.mark.parametrize("strategy_result", [False, True])
++@pytest.mark.parametrize("predicate_result", [False, True])
++@pytest.mark.parametrize("reverse", [False, True])
++@pytest.mark.parametrize("conjunction", [False, True])
++@pytest.mark.parametrize("async_callable", [False, True])
++def test_async_callable_composition(
++    strategy_result: bool,
++    predicate_result: bool,
++    reverse: bool,
++    conjunction: bool,
++    async_callable: bool,
++) -> None:
++    state = RetryCallState(Retrying(), None, (), {})
++    state.set_result(None)
++    calls: list[str] = []
++
++    async def strategy_predicate(result: object) -> bool:
++        calls.append("strategy")
++        return strategy_result
++
++    def predicate(retry_state: RetryCallState) -> bool:
++        assert retry_state is state
++        calls.append("predicate")
++        return predicate_result
++
++    async def async_predicate(retry_state: RetryCallState) -> bool:
++        return predicate(retry_state)
++
++    callable_predicate: Callable[[RetryCallState], bool] | Callable[
++        [RetryCallState], Awaitable[bool]
++    ] = async_predicate if async_callable else predicate
++    strategy = async_retry.retry_if_result(strategy_predicate)
++    if conjunction:
++        combined = (
++            callable_predicate & strategy if reverse else strategy & callable_predicate
++        )
++        assert isinstance(combined, async_retry.retry_all)
++    else:
++        combined = (
++            callable_predicate | strategy if reverse else strategy | callable_predicate
++        )
++        assert isinstance(combined, async_retry.retry_any)
++    assert asyncio.run(combined(state)) == (
++        strategy_result and predicate_result
++        if conjunction
++        else strategy_result or predicate_result
++    )
++    first = predicate_result if reverse else strategy_result
++    order = ["predicate", "strategy"] if reverse else ["strategy", "predicate"]
++    assert calls == (order if first == conjunction else order[:1])

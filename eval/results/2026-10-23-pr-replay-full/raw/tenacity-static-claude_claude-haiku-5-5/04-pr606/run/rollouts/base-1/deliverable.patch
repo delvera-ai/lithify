@@ -1,0 +1,190 @@
+diff --git a/releasenotes/notes/fix-retry-composition-plain-callable-b0320d967e9e5b81.yaml b/releasenotes/notes/fix-retry-composition-plain-callable-b0320d967e9e5b81.yaml
+new file mode 100644
+index 0000000..b380d73
+--- /dev/null
++++ b/releasenotes/notes/fix-retry-composition-plain-callable-b0320d967e9e5b81.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    Fixed a regression since 8.4.2 where combining a retry strategy with a plain
++    callable using ``|`` or ``&`` (in either order) raised ``AttributeError``
++    instead of producing ``retry_any`` or ``retry_all``. Composition with plain
++    callables works again for both sync and async retry strategies.
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..32d19b5 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -20,6 +20,7 @@ from tenacity import _utils, retry_base
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
++    from tenacity.retry import RetryBaseT as SyncRetryBaseT
+ 
+ 
+ class async_retry_base(retry_base):
+@@ -30,22 +31,22 @@ class async_retry_base(retry_base):
+         pass
+ 
+     def __and__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
+     def __rand__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
+     def __or__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
+     def __ror__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(other, self)
+ 
+@@ -95,7 +96,7 @@ class retry_if_result(async_retry_base):
+ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: "SyncRetryBaseT | RetryBaseT") -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+@@ -110,7 +111,7 @@ class retry_any(async_retry_base):
+ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: "SyncRetryBaseT | RetryBaseT") -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 593b252..dfb55d1 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -29,16 +29,16 @@ class retry_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         pass
+ 
+-    def __and__(self, other: "retry_base") -> "retry_all":
+-        return other.__rand__(self)
++    def __and__(self, other: "RetryBaseT") -> "retry_all":
++        return retry_all(self, other)
+ 
+-    def __rand__(self, other: "retry_base") -> "retry_all":
++    def __rand__(self, other: "RetryBaseT") -> "retry_all":
+         return retry_all(other, self)
+ 
+-    def __or__(self, other: "retry_base") -> "retry_any":
+-        return other.__ror__(self)
++    def __or__(self, other: "RetryBaseT") -> "retry_any":
++        return retry_any(self, other)
+ 
+-    def __ror__(self, other: "retry_base") -> "retry_any":
++    def __ror__(self, other: "RetryBaseT") -> "retry_any":
+         return retry_any(other, self)
+ 
+ 
+@@ -254,7 +254,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+@@ -264,7 +264,7 @@ class retry_any(retry_base):
+ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..19fd3e3 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -400,6 +400,30 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    @asynctest
++    async def test_sync_retry_composed_with_plain_callable(self) -> None:
++        def lt_3(x: float) -> bool:
++            return x < 3
++
++        def under_five_attempts(retry_state: RetryCallState) -> bool:
++            return retry_state.attempt_number < 5
++
++        async def run(retry_strategy: Any) -> int:
++            attempts = 0
++            async for attempt in tasyncio.AsyncRetrying(retry=retry_strategy):
++                with attempt:
++                    attempts += 1
++                attempt.retry_state.set_result(attempts)
++
++            return attempts
++
++        # "or" keeps retrying while either condition holds
++        self.assertEqual(5, await run(retry_if_result(lt_3) | under_five_attempts))
++        self.assertEqual(5, await run(under_five_attempts | retry_if_result(lt_3)))
++        # "and" stops as soon as either condition fails
++        self.assertEqual(3, await run(retry_if_result(lt_3) & under_five_attempts))
++        self.assertEqual(3, await run(under_five_attempts & retry_if_result(lt_3)))
++
+     @asynctest
+     async def test_async_retying_iterator(self) -> None:
+         thing = NoIOErrorAfterCount(5)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 0645a83..cc60f74 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -743,6 +743,35 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertFalse(r(tenacity.Future.construct(1, 2.2, False)))
+         self.assertFalse(r(tenacity.Future.construct(1, 42, True)))
+ 
++    def test_retry_composed_with_plain_callable(self) -> None:
++        def is_foo(retry_state: tenacity.RetryCallState) -> bool:
++            assert retry_state.outcome is not None  # help mypy
++            return retry_state.outcome.result() == "foo"
++
++        def r(retry: tenacity.retry_base, value: str) -> bool:
++            retry_state = make_retry_state(
++                1, 1.0, last_result=tenacity.Future.construct(1, value, False)
++            )
++            return retry(retry_state)
++
++        or_retry = tenacity.retry_if_result(lambda x: x == "bar") | is_foo
++        ror_retry = is_foo | tenacity.retry_if_result(lambda x: x == "bar")
++        self.assertTrue(r(or_retry, "foo"))
++        self.assertTrue(r(or_retry, "bar"))
++        self.assertFalse(r(or_retry, "baz"))
++        self.assertTrue(r(ror_retry, "foo"))
++        self.assertTrue(r(ror_retry, "bar"))
++        self.assertFalse(r(ror_retry, "baz"))
++
++        and_retry = tenacity.retry_if_result(lambda x: isinstance(x, str)) & is_foo
++        rand_retry = is_foo & tenacity.retry_if_result(lambda x: isinstance(x, str))
++        self.assertTrue(r(and_retry, "foo"))
++        self.assertFalse(r(and_retry, "bar"))
++        self.assertFalse(r(and_retry, "baz"))
++        self.assertTrue(r(rand_retry, "foo"))
++        self.assertFalse(r(rand_retry, "bar"))
++        self.assertFalse(r(rand_retry, "baz"))
++
+     def _raise_try_again(self) -> None:
+         self._attempts += 1
+         if self._attempts < 3:

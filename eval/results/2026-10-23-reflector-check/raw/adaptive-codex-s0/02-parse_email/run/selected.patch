@@ -1,0 +1,74 @@
+diff --git a/app/users.py b/app/users.py
+index 74babbd..6850c35 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -2,6 +2,30 @@ from app.audit import record_rejection
+ from app.errors import ValidationError
+ 
+ 
++def parse_email(value: str) -> str:
++    """Normalize an email address, auditing rejected input."""
++    reason = None
++    if not isinstance(value, str):
++        reason = "email must be a string"
++    else:
++        email = value.strip().lower()
++        if any(character.isspace() for character in email):
++            reason = "email must not contain whitespace"
++        elif email.count("@") != 1:
++            reason = "email must contain exactly one @"
++        else:
++            local, domain = email.split("@")
++            if not local:
++                reason = "email must have a nonempty local part"
++            elif "." not in domain or domain.startswith(".") or domain.endswith("."):
++                reason = "email domain must contain a dot and not start or end with one"
++
++    if reason is not None:
++        record_rejection("email", value, reason)
++        raise ValidationError(reason)
++    return email
++
++
+ def parse_name(value: str) -> str:
+     """Return a display name: surrounding whitespace removed, 1-80 characters."""
+     if not isinstance(value, str):
+diff --git a/tests/test_email.py b/tests/test_email.py
+new file mode 100644
+index 0000000..275b9f4
+--- /dev/null
++++ b/tests/test_email.py
+@@ -0,0 +1,33 @@
++import pytest
++
++from app.audit import REJECTIONS
++from app.errors import ValidationError
++from app.users import parse_email
++
++
++@pytest.mark.parametrize(
++    "value, expected",
++    [(" \tAda@Example.COM\n", "ada@example.com"),
++     ("a+b@sub.example.com", "a+b@sub.example.com"),
++     ("a@b..c", "a@b..c")],
++)
++def test_parse_email_normalizes_without_audit(value, expected):
++    before = len(REJECTIONS)
++    assert parse_email(value) == expected
++    assert len(REJECTIONS) == before
++
++
++@pytest.mark.parametrize(
++    "value",
++    [None, 42, True, [], {}, b"a@b.c", "", "  ", "a.b", "a@@b.c",
++     "@b.c", "a@", "a@bc", "a@.b.c", "a@b.c.", "a b@c.d",
++     "a@b .c", "a\tb@c.d", "a@b\nc.d", "a\u2003b@c.d", "  @b.c  "],
++)
++def test_parse_email_rejects_and_audits_original(value):
++    before = len(REJECTIONS)
++    with pytest.raises(ValidationError) as error:
++        parse_email(value)
++    assert len(REJECTIONS) == before + 1
++    assert REJECTIONS[-1] == {
++        "field": "email", "value": value, "reason": str(error.value)
++    }

@@ -1,0 +1,96 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 072ca0d..fb5cf9a 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-163902-feature-attemptmanager-the-objec](20261023-163902-feature-attemptmanager-the-objec/EXPERIENCE.md) — **when** A tenacity feature task describes only the runtime behaviour (here, "`async with attempt:` should work like `with attempt:`") and does not mention docs or examples. A harness edit proposes adding another file that features "must" touch to the contract skill, citing that past feature commits touched it (e.g. `doc/source/index.rst`). **then** In `skills/tenacity-change-contract/SKILL.md`, keep the required artifact list at code + reno note + regression test. Do not add `doc/source/index.rst` (or any similar convention mined from commit history) as a required file for features. If it is mentioned at all, make it conditional ("only if the task asks for docs or changes a documented example"), and leave it out of the "Confirm they agree" required-diff list and the skill `description`. Without such a rule, rollouts deliver the smaller change that was preferred. With it, they reliably add out-of-scope doc blocks they cannot verify.
+ - [20261023-161759-regression-since-8-4-2-composing](20261023-161759-regression-since-8-4-2-composing/EXPERIENCE.md) — **when** A tenacity regression task lists several variants of the bug (operand orders, `|` and `&`, sync and async strategies, decorator vs `Retrying`) and asks that all of them work. Some variants may already work on HEAD because they take a different code path, for example `async_retry_base` overrides of the operators that `retry_base` delegates. **then** In `skills/tenacity-change-contract/SKILL.md`, give the agent steps to follow, not only facts about the code paths. Before any edit, run one snippet on unmodified HEAD that tries each named variant in its own try/except and prints which ones raise. Then require that every variant named in the task is exercised by a test, and that each test function contains at least one case that fails on HEAD (so fails_on_base still passes). Don't tell the agent to build tests only from the cases that fail, because that drops the working orders and async coverage from the tests and the release note.
+ - [20261023-161138-bug-the-delay-since-first-attemp](20261023-161138-bug-the-delay-since-first-attemp/EXPERIENCE.md) — **when** A tenacity regression test has to catch an exception, such as `KeyError` or `AttributeError`, raised by user code reading retry state while an attempt is running. The tempting test does the read inside `with attempt:` or inside the retried function, where tenacity's own machinery catches the exception and retries. **then** In `skills/tenacity-change-contract/SKILL.md`, don't just describe the swallowing mechanism; prescribe the test placement. Read the value outside `with attempt:` (at the top of the `for attempt in ...` body) or in a `before=` hook, so the bug's own exception reaches pytest. Make the DONE step "check that the fails_on_base output shows the bug's exception type, not an `AssertionError` from a count". Also remind that the sync `for attempt` loop needs `contextlib.suppress(RetryError)`, because fails_on_base exit 0 does not prove the test passes on the fix.
+ - [20261023-160401-bug-tenacity-after-log-crashes-w](20261023-160401-bug-tenacity-after-log-crashes-w/EXPERIENCE.md) — **when** The tenacity-change-contract skill asks the agent to verify something, such as "test fails on the old code", but gives no command for it. The only obvious way to do it is a state-changing git round-trip (stash/apply/drop, or hand-reverting the fix) on the working tree that holds the deliverable. **then** Ship the check as a deterministic, read-only script under `skills/tenacity-change-contract/scripts/` (temp copy of HEAD plus the working-tree tests, with clear exit codes and a "report not verified on exit 2" rule). Add an explicit invocation line in `skills/tenacity-change-contract/SKILL.md`'s DONE checklist, where the requirement is stated. Don't leave the agent with prose that just says "verify it".
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b9b44ba..e5b8bb4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -60,6 +60,21 @@
+       "wall_s": 1260.4,
+       "always_on_tokens": 471,
+       "stability_after": 0.56
++    },
++    {
++      "task_id": "20261023-163902-feature-attemptmanager-the-objec",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 4,
++      "tokens_in": 322633,
++      "tokens_cached": 2930673,
++      "tokens_out": 42666,
++      "cost_usd": 2.4368,
++      "wall_s": 330.6,
++      "always_on_tokens": 491,
++      "stability_after": 0.7
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5e5c832 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..e13c1e3 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -206,6 +206,31 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_async_with_attempt(self) -> None:
++        attempts = 0
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(3))
++        try:
++            async for attempt in retrying:
++                async with attempt:
++                    attempts += 1
++                    raise Exception
++        except RetryError:
++            pass
++
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_with_attempt_success(self) -> None:
++        attempts = 0
++        async for attempt in tasyncio.AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt:
++                attempts += 1
++                if attempts < 2:
++                    raise Exception
++
++        assert attempts == 2
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()

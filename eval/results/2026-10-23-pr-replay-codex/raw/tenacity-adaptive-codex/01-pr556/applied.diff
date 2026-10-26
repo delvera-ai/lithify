@@ -1,0 +1,81 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..dfca56d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-195940-bug-tenacity-utils-find-ordinal",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 28835,
++      "tokens_cached": 284032,
++      "tokens_out": 2589,
++      "cost_usd": 0.0,
++      "wall_s": 81.8,
++      "always_on_tokens": 186,
++      "stability_after": 0.2
++    }
++  ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..27dc81f 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -47,7 +47,7 @@ def find_ordinal(pos_num: int) -> str:
+         return "nd"
+     elif pos_num == 3:
+         return "rd"
+-    elif 4 <= pos_num <= 20:
++    elif 4 <= pos_num <= 20 or (pos_num > 20 and 11 <= pos_num % 100 <= 13):
+         return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..f8477a5 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -1,8 +1,37 @@
+ import functools
+ 
++import pytest
++
+ from tenacity import _utils
+ 
+ 
++@pytest.mark.parametrize("hundreds", [0, 100, 200, 1000])
++@pytest.mark.parametrize(
++    "number, suffix",
++    [
++        (0, "th"),
++        (1, "st"),
++        (2, "nd"),
++        (3, "rd"),
++        (4, "th"),
++        (10, "th"),
++        (11, "th"),
++        (12, "th"),
++        (13, "th"),
++        (14, "th"),
++        (20, "th"),
++        (21, "st"),
++        (22, "nd"),
++        (23, "rd"),
++        (24, "th"),
++    ],
++)
++def test_ordinal(hundreds: int, number: int, suffix: str) -> None:
++    number += hundreds
++    assert _utils.find_ordinal(number) == suffix
++    assert _utils.to_ordinal(number) == f"{number}{suffix}"
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

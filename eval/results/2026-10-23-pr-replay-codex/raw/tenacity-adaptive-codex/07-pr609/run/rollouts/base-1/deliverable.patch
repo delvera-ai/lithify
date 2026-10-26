@@ -1,0 +1,165 @@
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..9cb5c32 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,8 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity.retry import retry_all as sync_retry_all
++from tenacity.retry import retry_any as sync_retry_any
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -96,7 +98,11 @@ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) in (retry_any, sync_retry_any) else (retry,))
++        )
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = False
+@@ -111,7 +117,11 @@ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) in (retry_all, sync_retry_all) else (retry,))
++        )
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = True
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 4edbd1f..bd1423f 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -259,7 +259,11 @@ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+     def __init__(self, *retries: "RetryBaseT") -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) is retry_any else (retry,))
++        )
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return any(r(retry_state) for r in self.retries)
+@@ -269,7 +273,11 @@ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+     def __init__(self, *retries: "RetryBaseT") -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) is retry_all else (retry,))
++        )
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return all(r(retry_state) for r in self.retries)
+diff --git a/tests/test_retry_composition.py b/tests/test_retry_composition.py
+new file mode 100644
+index 0000000..e6efc43
+--- /dev/null
++++ b/tests/test_retry_composition.py
+@@ -0,0 +1,90 @@
++import asyncio
++import operator
++from collections.abc import Callable
++from typing import Any
++
++import pytest
++
++import tenacity
++from tenacity.asyncio import retry as async_retry
++
++from .test_tenacity import make_retry_state
++
++
++@pytest.mark.parametrize(
++    "op, container",
++    [(operator.or_, tenacity.retry_any), (operator.and_, tenacity.retry_all)],
++)
++def test_flatten_retry_composition(op: Any, container: Any) -> None:
++    a, b, c, d = [tenacity.retry_if_result(lambda value: True) for _ in range(4)]
++    for combined in (op(op(a, b), c), op(a, op(b, c))):
++        assert type(combined) is container
++        assert combined.retries == (a, b, c)
++    assert op(op(a, b), op(c, d)).retries == (a, b, c, d)
++    opposite = (a & b) if op is operator.or_ else (a | b)
++    assert op(opposite, c).retries == (opposite, c)
++
++
++@pytest.mark.parametrize(
++    "op, name", [(operator.or_, "retry_any"), (operator.and_, "retry_all")]
++)
++@pytest.mark.parametrize("async_position", range(3))
++def test_flatten_async_retry_composition(
++    op: Any, name: str, async_position: int
++) -> None:
++    async def predicate(value: Any) -> bool:
++        return True
++
++    members: list[Any] = [
++        tenacity.retry_if_result(lambda value: True) for _ in range(3)
++    ]
++    members[async_position] = async_retry.retry_if_result(predicate)
++    state = make_retry_state(
++        1, 1.0, last_result=tenacity.Future.construct(1, None, False)
++    )
++    for combined in (
++        op(op(members[0], members[1]), members[2]),
++        op(members[0], op(members[1], members[2])),
++    ):
++        assert type(combined) is getattr(async_retry, name)
++        assert combined.retries == tuple(members)
++        assert asyncio.run(combined(state))
++
++
++@pytest.mark.parametrize(
++    "op, stop_value", [(operator.or_, True), (operator.and_, False)]
++)
++@pytest.mark.parametrize("asynchronous", [False, True])
++def test_flatten_preserves_short_circuiting(
++    op: Any, stop_value: bool, asynchronous: bool
++) -> None:
++    calls: list[int] = []
++
++    def predicate(index: int, result: bool) -> Callable[[Any], bool]:
++        def check(value: Any) -> bool:
++            calls.append(index)
++            return result
++
++        return check
++
++    members: list[Any] = []
++    for index, result in enumerate((not stop_value, stop_value, not stop_value)):
++        check = predicate(index, result)
++        if asynchronous:
++
++            async def async_check(
++                value: Any, check: Callable[[Any], bool] = check
++            ) -> bool:
++                return check(value)
++
++            members.append(async_retry.retry_if_result(async_check))
++        else:
++            members.append(tenacity.retry_if_result(check))
++    combined = op(op(members[0], members[1]), members[2])
++    assert combined.retries == tuple(members)
++    state = make_retry_state(
++        1, 1.0, last_result=tenacity.Future.construct(1, None, False)
++    )
++    result = asyncio.run(combined(state)) if asynchronous else combined(state)
++    assert result is stop_value
++    assert calls == [0, 1]

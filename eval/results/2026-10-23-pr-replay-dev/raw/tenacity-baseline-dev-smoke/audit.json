@@ -1,0 +1,14 @@
+{
+  "label": "tenacity-baseline-dev-smoke",
+  "lithify_commit": "2b01a9b",
+  "run_cost_usd": 0.0079,
+  "invariants": [
+    {
+      "pr": 425,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}

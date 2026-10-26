@@ -1,0 +1,155 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 9ceaf16..584cca9 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -415,7 +415,7 @@ class BaseRetrying(ABC):
+         self.iter_state.retry_run_result = self.retry(retry_state)
+ 
+     def _run_wait(self, retry_state: "RetryCallState") -> None:
+-        retry_state.upcoming_sleep = self.wait(retry_state)
++        retry_state.upcoming_sleep = self.wait(retry_state) if self.wait else 0.0
+ 
+     def _run_stop(self, retry_state: "RetryCallState") -> None:
+         self.statistics["delay_since_first_attempt"] = retry_state.seconds_since_start
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index a6c2253..0e506b9 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -147,9 +147,12 @@ class AsyncRetrying(BaseRetrying):
+ 
+     @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+-        retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+-            retry_state
+-        )
++        if self.wait:
++            retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
++                retry_state
++            )
++        else:
++            retry_state.upcoming_sleep = 0.0
+ 
+     @override
+     async def _run_stop(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index e137b35..338902e 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -34,16 +34,16 @@ class wait_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         pass
+ 
+-    def __add__(self, other: "wait_base") -> "wait_combine":
++    def __add__(self, other: "WaitBaseT") -> "wait_combine":
+         return wait_combine(self, other)
+ 
+-    def __radd__(self, other: int) -> "wait_base":
+-        # `sum()` seeds its accumulator with the int 0, so tolerate that to
+-        # make summing waits work. Any other left operand is a `wait_base`,
+-        # whose `__add__` never defers to us.
+-        if other != 0:
+-            return NotImplemented
+-        return self
++    def __radd__(self, other: "WaitBaseT | int") -> "wait_base":
++        # `sum()` seeds its accumulator with the int 0.
++        if other == 0:
++            return self
++        if callable(other):
++            return wait_combine(other, self)
++        return NotImplemented
+ 
+ 
+ WaitBaseT = wait_base | typing.Callable[["RetryCallState"], float | int]
+@@ -86,12 +86,12 @@ class wait_random(wait_base):
+ class wait_combine(wait_base):
+     """Combine several waiting strategies."""
+ 
+-    def __init__(self, *strategies: wait_base) -> None:
++    def __init__(self, *strategies: WaitBaseT) -> None:
+         self.wait_funcs = strategies
+ 
+     @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        return sum(x(retry_state=retry_state) for x in self.wait_funcs)
++        return sum(x(retry_state) for x in self.wait_funcs)
+ 
+ 
+ class wait_chain(wait_base):
+diff --git a/tests/test_wait_regressions.py b/tests/test_wait_regressions.py
+new file mode 100644
+index 0000000..57c8402
+--- /dev/null
++++ b/tests/test_wait_regressions.py
+@@ -0,0 +1,72 @@
++import asyncio
++from typing import Any
++
++import pytest
++
++from tenacity import AsyncRetrying, Retrying, retry_if_result, stop_after_attempt
++from tenacity.wait import wait_combine, wait_fixed
++
++
++@pytest.mark.parametrize("wait", [None, 0, sum([])])
++@pytest.mark.parametrize("asynchronous", [False, True])
++def test_falsy_wait_retries_without_sleep(wait: Any, asynchronous: bool) -> None:
++    sleeps: list[float] = []
++    attempts: list[bool] = []
++
++    def attempt() -> int:
++        attempts.append(True)
++        return len(attempts)
++
++    options: dict[str, Any] = dict(
++        wait=wait,
++        retry=retry_if_result(lambda result: result == 1),
++        stop=stop_after_attempt(2),
++    )
++    if asynchronous:
++
++        async def sleep(delay: float) -> None:
++            sleeps.append(delay)
++
++        async def run() -> Any:
++            return await AsyncRetrying(sleep=sleep, **options)(attempt)
++
++        result = asyncio.run(run())
++    else:
++        result = Retrying(sleep=sleeps.append, **options)(attempt)
++
++    assert result == 2
++    assert len(attempts) == 2
++    assert sleeps == [0]
++
++
++@pytest.mark.parametrize("composition", ["left", "right", "explicit", "sum"])
++def test_wait_callable_receives_state_positionally(composition: str) -> None:
++    states: list[Any] = []
++
++    def custom_wait(state: Any, /) -> Any:
++        states.append(state)
++        return state.attempt_number * 2
++
++    fixed: Any = wait_fixed(1)
++    if composition == "left":
++        wait = custom_wait + fixed
++    elif composition == "right":
++        wait = fixed + custom_wait
++    elif composition == "explicit":
++        wait = wait_combine(custom_wait, fixed)
++    else:
++        wait = sum([fixed, custom_wait])
++
++    assert isinstance(wait, wait_combine)
++    sleeps: list[float] = []
++    retrying = Retrying(
++        wait=wait,
++        sleep=sleeps.append,
++        retry=retry_if_result(lambda result: result == 1),
++        stop=stop_after_attempt(2),
++    )
++    attempts = iter([1, 2])
++    assert retrying(lambda: next(attempts)) == 2
++    assert sleeps == [3]
++    assert len(states) == 1
++    assert states[0].attempt_number == 2

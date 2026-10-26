@@ -1,0 +1,48 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index a662eef..03e4b1c 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -208,7 +208,11 @@ class wait_exponential(wait_base):
+             and self.max > 0
+             and self.exp_base > 1
+             and math.isfinite(self.max)
+-            and exponent > math.log(self.max / self.multiplier, self.exp_base)
++            and math.isfinite(self.multiplier)
++            and (
++                self.max / self.multiplier == 0
++                or exponent > math.log(self.max / self.multiplier, self.exp_base)
++            )
+         ):
+             return max(max(0, self.min), self.max)
+         try:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index f6c15ce..d695b20 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -367,6 +367,26 @@ class TestWaitConditions(unittest.TestCase):
+         r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=ExplodingPower(2)))
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_with_underflowing_max_multiplier_ratio(self) -> None:
++        for min_, expected in ((0, 1e-100), (1, 1)):
++            with self.subTest(min=min_):
++                wait = tenacity.wait_exponential(
++                    multiplier=1e300, max=1e-100, min=min_
++                )
++                for attempt in (1, 2, 10000):
++                    self.assertEqual(wait(make_retry_state(attempt, 0)), expected)
++
++    def test_exponential_with_nonfinite_multiplier(self) -> None:
++        for multiplier, expected in (
++            (float("inf"), 40),
++            (float("-inf"), 0),
++            (float("nan"), 0),
++        ):
++            with self.subTest(multiplier=multiplier):
++                wait = tenacity.wait_exponential(multiplier=multiplier, max=40)
++                for attempt in (1, 2, 50):
++                    self.assertEqual(wait(make_retry_state(attempt, 0)), expected)
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

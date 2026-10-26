@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `tenacity.after_log` crashes with `TypeError` when `retry_state.seconds_since_start` is `None` (it is `None` when the outcome timestamp has not been set). The log message should still be emitted, showing \"?\" in place of the elapsed seconds.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "inv-1",
+  "why": "All four candidates make the same fix in `tenacity/after.py` (c4 only names the variable differently), so the choice came down to test quality and lint. c3 and c4 write `f\"after ?(s), \"`, an f-string with no placeholders. That is a pyflakes F541 error under the repo's ruff config (`select` includes \"F\"), which the test-only gates don't run. ruff isn't installed here, so I didn't run it; this is from reading the config.\nThe runner-up, c2, is lint-clean, but it adds `RetryCallState`/`Retrying` imports and builds the state by hand instead of using the existing `make_retry_state` helper.\nc1 uses the existing helper, sets `outcome_timestamp = None`, asserts the exact \"?\" message, and adds nothing else.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-190230-bug-tenacity-after-log-crashes-w",
+  "usage": {
+    "in": 333406,
+    "cached": 3163058,
+    "out": 54051,
+    "cost": 2.9141062999999994,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.28,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

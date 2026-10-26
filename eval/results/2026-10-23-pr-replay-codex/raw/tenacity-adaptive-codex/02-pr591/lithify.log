@@ -1,0 +1,26 @@
+lithify ▸ 20261023-200103-bug-tenacity-after-log-crashes-w  k=2 (genesis (S=0.20)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ▸ probe base-2: executing with codex
+  ✓ probe base-2: test=pass
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (codex)
+  ✓ applied deliverable from base-1: Both candidates correctly emit “?” for missing elapsed time and preserve numeric formatting.
+c1 wins on repository fidelity: its regression test reuses the existing retry-state helper and test setup.
+
+lithify ◂ delivered=True first_pass=True S=0.40 executions=2 role_sessions=1 tokens(in/cached/out)=47858/324608/2307
+{
+  "task_id": "20261023-200103-bug-tenacity-after-log-crashes-w",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.4,
+  "executions": 2,
+  "role_sessions": 1
+}
+

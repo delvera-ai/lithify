@@ -1,0 +1,52 @@
+{
+  "task": "Regression since 8.4.2: composing a `retry_base` instance with a plain function using `|` or `&` (e.g. `retry_if_exception_type(IOError) | my_predicate`, in either order) raises an exception instead of producing a `retry_any`/`retry_all`. Composition with plain callables worked in 8.3.0 and should work again for both sync and async retry strategies; type annotations should accept plain callables too.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Deciding criterion: fidelity and coverage. All four make the same runtime fix: in `retry_base.__or__`/`__and__`, a plain callable is wrapped directly in `retry_any`/`retry_all`. c1 and c3 type the parameters with the repo's existing `RetryBaseT` aliases (sync and async), while c2 and c4 write out new `Callable[..., Any]` unions by hand.\nc3 tests both operand orders with both `|` and `&`, through the sync retry loop and through `AsyncRetrying`. Its release note matches the request.\nRunner-up: c1 has the same annotations, but its tests only cover the strategy-on-the-left order and nothing async. Its release note also says the fix applies to \"sync strategies\" only, which undersells a request that asked for both orders and both sync and async.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-161759-regression-since-8-4-2-composing",
+  "usage": {
+    "in": 442014,
+    "cached": 5127327,
+    "out": 90634,
+    "cost": 3.8374932800000003,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.56,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

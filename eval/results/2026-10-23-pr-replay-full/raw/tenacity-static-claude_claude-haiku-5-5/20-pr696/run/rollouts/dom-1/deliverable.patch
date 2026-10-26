@@ -1,0 +1,63 @@
+diff --git a/releasenotes/notes/fix-tornado-global-none-3c9e0a7f5b1d8264.yaml b/releasenotes/notes/fix-tornado-global-none-3c9e0a7f5b1d8264.yaml
+new file mode 100644
+index 0000000..a1352df
+--- /dev/null
++++ b/releasenotes/notes/fix-tornado-global-none-3c9e0a7f5b1d8264.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    Decorating a function with ``@retry`` no longer raises ``AttributeError`` after
++    ``tenacity.tornado`` has been set to ``None``. Whether tornado is available is now
++    checked when the decorator is applied, not only at import time.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 51925ef..bca6cb8 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -781,12 +781,14 @@ def retry(*dargs: t.Any, **dkw: t.Any) -> t.Any:
+             )
+         r: BaseRetrying
+         sleep = dkw.get("sleep")
++        # Read the live global, not _HAS_TORNADO: tests set tenacity.tornado = None.
++        has_tornado = globals().get("tornado") is not None
+         if _utils.is_coroutine_callable(f) or (
+             sleep is not None and _utils.is_coroutine_callable(sleep)
+         ):
+             r = AsyncRetrying(*dargs, **dkw)
+         elif (
+-            _HAS_TORNADO
++            has_tornado
+             and hasattr(tornado.gen, "is_coroutine_function")
+             and tornado.gen.is_coroutine_function(f)
+         ):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..23b4fe8 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -2369,5 +2369,26 @@ class TestPickle(unittest.TestCase):
+         assert calls == 3
+ 
+ 
++class TestTornadoGlobalSwitch:
++    def test_retry_decorates_after_tornado_global_set_to_none(
++        self, monkeypatch: pytest.MonkeyPatch
++    ) -> None:
++        """Decorating works once tenacity.tornado is None (the non-tornado path)."""
++        monkeypatch.setattr(tenacity, "tornado", None)
++
++        calls = 0
++
++        @retry(stop=tenacity.stop_after_attempt(2), reraise=True)
++        def succeed_on_second() -> str:
++            nonlocal calls
++            calls += 1
++            if calls < 2:
++                raise ValueError("not yet")
++            return "ok"
++
++        assert succeed_on_second() == "ok"
++        assert calls == 2
++
++
+ if __name__ == "__main__":
+     unittest.main()

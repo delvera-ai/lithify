@@ -1,0 +1,33 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b389db4..767be2d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 3,
++  "consecutive_failures": 4,
+   "history": [
+     {
+       "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
+@@ -150,6 +150,21 @@
+       "wall_s": 11.2,
+       "always_on_tokens": 555,
+       "stability_after": 0.553
++    },
++    {
++      "task_id": "20261023-165927-bug-when-tryagain-is-raised-from",
++      "k": 1,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 0,
++      "tokens_cached": 0,
++      "tokens_out": 0,
++      "cost_usd": 0.0,
++      "wall_s": 11.0,
++      "always_on_tokens": 555,
++      "stability_after": 0.501
+     }
+   ]
+ }

@@ -1,0 +1,42 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -54,9 +54,28 @@
+   `isinstance(other, retry_base)` and build `retry_any(self, other)`/`retry_all(self, other)`
+   directly only for anything else (plain callables). A plain callable on the LEFT already
+   reaches `retry_base.__ror__`/`__rand__`.
++- INVARIANT (shape of a combined condition): `retry_any`/`retry_all` (sync and async) keep
++  their members in `self.retries`, a tuple, evaluated left to right with short-circuit. Code
++  that rewrites how operators build containers (e.g. flattening `a | b | c`) must keep that
++  member order and must not mutate an operand's `retries`; build a new container.
++- Absorbing a container's members is safe only in one direction. An ASYNC container may
++  splice in a SYNC `retry_any`/`retry_all`'s members (it awaits every member through
++  `wrap_to_async_func`, with the same short-circuit). A SYNC container must never splice in
++  an async container's members (see the hang above). Mixed chains reach the async operators:
++  `sync_a | sync_b | async_c` evaluates `(sync retry_any) | async_c`, which delegates to
++  `async_retry_base.__ror__`. If that path checks only for the async container type, this
++  chain stays nested. Handle it, or name it as left nested in the final message.
++- Subclasses of `retry_any`/`retry_all` may override `__call__`. Splice members only from
++  operands whose type is exactly the container (`type(x) is retry_any`), not `isinstance`.
+ - Guarding tests: `tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_or`
+   (and `_ror`, `_and`, `_rand`)
+   mix sync and async strategies. Run them by node id after touching either operator set.
++- Sync composition tests live in `tests/test_tenacity.py::TestRetryConditions`
++  (`test_retry_or`, `test_retry_and`, `test_retry_or_with_plain_function`, …); there is no
++  `TestRetry` class. Async composition tests are in `tests/test_asyncio.py::TestContextManager`.
++- `stop.py` (`stop_any`/`stop_all` via `|`/`&`) and `wait.py` (`wait_combine` via `+`) have
++  their own combinators. A task about retry composition does not cover them; leave them alone
++  unless the task names them.
+ - Type aliases: sync `RetryBaseT` (`tenacity/retry.py`) and async `RetryBaseT`
+   (`tenacity/asyncio/retry.py`). Inside `tenacity/asyncio/` the sync one is imported under
+   `TYPE_CHECKING` as `SyncRetryBaseT` (see `tenacity/asyncio/__init__.py`). They are defined
+@@ -97,7 +116,9 @@
+ - File name: `<short-kebab-slug>-<16 hex chars>.yaml` (what `reno new <slug>` produces; the
+   repo exposes it as `tox -e reno -- new <slug>`). Any unique hex suffix is acceptable.
+ - Content: a YAML doc starting with `---`, one section key, a list of entries. Bug fixes use
+-  `fixes:`; new API uses `features:`; dropped support uses `upgrade:`. House style:
++  `fixes:`; new API uses `features:`; dropped support uses `upgrade:`; changes that keep
++  behaviour (typing, packaging, `__all__`, internal structure) use `other:` (11 notes in the
++  repo use it). House style:
+   ```yaml
+   ---
+   fixes:

@@ -1,0 +1,70 @@
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..86e5bdc 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -161,7 +161,7 @@ class retry_if_exception_cause_type(retry_base):
+     """Retries if any of the causes of the raised exception is of one or more types.
+ 
+     The check on the type of the cause of the exception is done recursively (until finding
+-    an exception in the chain that has no `__cause__`)
++    an exception in the chain that has no `__cause__` or has already been visited).
+     """
+ 
+     def __init__(
+@@ -177,7 +177,9 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..b23185d 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1441,6 +1441,41 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_chains(self) -> None:
++        predicate = tenacity.retry_if_exception_cause_type(ValueError)
++        for cycle in (None, 0, 1, 2):
++            for match in (None, 0, 1, 2):
++                with self.subTest(cycle=cycle, match=match):
++                    exceptions = [
++                        ValueError() if index == match else RuntimeError()
++                        for index in range(3)
++                    ]
++                    exceptions[0].__cause__ = exceptions[1]
++                    exceptions[1].__cause__ = exceptions[2]
++                    if cycle is not None:
++                        exceptions[2].__cause__ = exceptions[cycle]
++                    state = make_retry_state(
++                        1, 0, tenacity.Future.construct(1, exceptions[0], True)
++                    )
++                    self.assertEqual(
++                        predicate(state),
++                        match in (1, 2) or (match == 0 and cycle == 0),
++                    )
++
++    def test_retry_if_exception_cause_type_cycle_stop(self) -> None:
++        error = ValueError()
++        retrying = Retrying(
++            retry=tenacity.retry_if_exception_cause_type(ValueError),
++            stop=tenacity.stop_after_attempt(2),
++        )
++
++        def fail() -> None:
++            raise error from error
++
++        with self.assertRaises(RetryError):
++            retrying(fail)
++        self.assertEqual(retrying.statistics["attempt_number"], 2)
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

@@ -1,0 +1,112 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index e31bba7..77e6176 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-205644-bug-when-tryagain-is-raised-from](20261023-205644-bug-when-tryagain-is-raised-from/EXPERIENCE.md) — **when** A tenacity bug fix where the fix reads a Python language mechanism that comes in several syntactic forms (exception chaining through `__context__`, `__cause__` or `from None`; or similar variant forms of one construct) and the task text shows only one form. The gate tests only the form the task shows, so a fix that covers that form alone passes. **then** In `skills/tenacity-change-contract`, for the code path the task touches, list the language-level forms of the mechanism the fix depends on. Point to existing repo code that already handles them (e.g. `retry_if_exception_cause_type` follows `__cause__`). Require the final message to state which forms the fix handles. A generic `system.md` rule ("fix in-scope cases instead of listing them") did not make the agent notice the other forms. Add next to the list that each form is checked by a test run through `run_tests.py --timeout`, never by a `python -c` probe.
+ - [20261023-204745-api-cleanup-every-other-exponent](20261023-204745-api-cleanup-every-other-exponent/EXPERIENCE.md) — **when** A tenacity task renames, replaces or deprecates a constructor argument of a public strategy or class: "add X with the same meaning, deprecate Y, Y must still work but warn, passing both raises". The class stores each argument as a same-named public attribute. **then** Give the agent an on-demand `skills/deprecate-parameter` skill, or a section in `skills/tenacity-change-contract`. It should require: keeping the old attribute readable as a read-only `@property` aliasing the new one, or naming its removal as a break; a call-form test matrix that includes "new name" and "no arguments" calls with no warning, asserted under `simplefilter("error")` because the pytest filter is `once`; and a check that the warning's filename is the caller's. Do not recommend `tenacity/__init__.py` helpers such as `_unset` for code in `wait.py`, because importing them is circular.
+ - [20261023-203956-feature-wait-exponential-jitter](20261023-203956-feature-wait-exponential-jitter/EXPERIENCE.md) — **when** A tenacity task asks for two or more separate additions to one API, where each can be missing on its own (a new keyword plus a newly accepted type for existing arguments, or several new options on one strategy). A single combined test would fail on whichever missing part it hits first. **then** Keep the clause in `system.md` step 1 that asks for one regression test per requested part, each shown failing for its own reason before the fix. Make it say that a test using an existing argument with a new type must not also pass the new keyword, because then its red run proves only that the keyword is missing.
+ - [20261023-202610-bug-retrying-objects-and-the-bui](20261023-202610-bug-retrying-objects-and-the-bui/EXPERIENCE.md) — **when** A tenacity task asks for a capability (pickling, copying, sending across processes or threads) that depends on hidden per-object state, such as `BaseRetrying._local`, lazily built `statistics`/`iter_state`, or lambdas and closures stored by strategy `__init__`s. The scenario the user names (for example `Pool.map(decorated_fn)`) may not exercise the object that actually fails, so a run without the facts either reads whole modules to find the state or tests the wrong path. **then** In `skills/tenacity-change-contract/SKILL.md`, add a section on object state. Name each piece of hidden state and say where it is created. Name the one base class whose hooks the subclasses inherit. Name which object actually crosses the boundary, so tests target `fn.retry` or a used `Retrying` directly. Include a grep that lists offending strategy classes, the out-of-scope unpicklables, and the side effects to report (e.g. `copy.copy` now going through the hooks). Explicitly separate state the task requires to survive (e.g. `statistics` of a used `Retrying`) from scratch state (`iter_state.actions`). Do not group them under "per-run state", because a carrier that read that wording dropped the required state. Keep this in the on-demand skill, not in `system.md`.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 82b2dc7..8632f8c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -150,6 +150,21 @@
+       "wall_s": 536.3,
+       "always_on_tokens": 1023,
+       "stability_after": 0.63
++    },
++    {
++      "task_id": "20261023-205644-bug-when-tryagain-is-raised-from",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 35,
++      "executions": 4,
++      "tokens_in": 404865,
++      "tokens_cached": 5404676,
++      "tokens_out": 70131,
++      "cost_usd": 2.883,
++      "wall_s": 644.2,
++      "always_on_tokens": 1147,
++      "stability_after": 0.63
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 282e6da..0579ebe 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -185,6 +185,14 @@ class RetryError(Exception):
+ 
+     def reraise(self) -> t.NoReturn:
+         if self.last_attempt.failed:
++            exc = self.last_attempt.exception()
++            # A bare TryAgain says nothing about the failure; the error that
++            # prompted it is its cause (`raise X from e`) or context (`raise X`
++            # inside an except block).
++            if isinstance(exc, TryAgain) and (
++                underlying := exc.__cause__ or exc.__context__
++            ):
++                raise underlying
+             raise self.last_attempt.result()
+         raise self
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 7b5c641..35b9996 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -238,6 +238,23 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_reraise_try_again_underlying_exception(self) -> None:
++        async def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        retrying = tasyncio.AsyncRetrying(
++            stop=stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            await retrying(_r)
++        assert retrying.statistics["attempt_number"] == 2
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 6a39739..89f5a76 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -869,6 +869,22 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertRaises(tenacity.TryAgain, r, _r)
+         self.assertEqual(5, r.statistics["attempt_number"])
+ 
++    def test_retry_try_again_reraise_underlying_exception(self) -> None:
++        def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        r = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            r(_r)
++        self.assertEqual(2, r.statistics["attempt_number"])
++
+     def test_retry_if_exception_message_negative_no_inputs(self) -> None:
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message()

@@ -1,0 +1,144 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d4ace75..a2dbf8d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -165,6 +165,21 @@
+       "wall_s": 54.1,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-201453-bug-retrying-enabled-false-is-ig",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 23639,
++      "tokens_cached": 197888,
++      "tokens_out": 2511,
++      "cost_usd": 0.0,
++      "wall_s": 81.9,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c52d6ba..9d8cff1 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -216,6 +216,8 @@ class AttemptManager:
+         traceback: "types.TracebackType | None",
+     ) -> bool | None:
+         if exc_type is not None and exc_value is not None:
++            if not self.retry_state.retry_object.enabled:
++                return False
+             self.retry_state.set_exception((exc_type, exc_value, traceback))
+             return True  # Swallow exception.
+         # We don't have the result, actually.
+@@ -419,6 +421,12 @@ class BaseRetrying(ABC):
+         self.iter_state.reset()
+ 
+         fut = retry_state.outcome
++        if not self.enabled:
++            if fut is None:
++                self._add_action_func(lambda rs: DoAttempt())
++            else:
++                self._add_action_func(lambda rs: rs.outcome.result())
++            return
+         if fut is None:
+             if self.before is not None:
+                 self._add_action_func(self.before)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c6d2786..a62b1fe 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -161,6 +161,41 @@ class TestAsyncio(unittest.TestCase):
+ 
+ 
+ class TestAsyncEnabled(unittest.TestCase):
++    @asynctest
++    async def test_disabled_iterator_propagates_exception(self) -> None:
++        for error in (ValueError("fail"), tenacity.TryAgain(), KeyboardInterrupt()):
++            attempts = 0
++            retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++            with pytest.raises(type(error)) as exc_info:
++                async for attempt in retrying:
++                    with attempt:
++                        attempts += 1
++                        raise error
++                    pytest.fail("The attempt swallowed the exception")
++            assert exc_info.value is error
++            assert attempts == 1
++
++    @asynctest
++    async def test_disabled_iterator_runs_once_without_hooks(self) -> None:
++        hook = mock.Mock(side_effect=AssertionError("Retry hook called"))
++        retrying = AsyncRetrying(
++            enabled=False,
++            before=hook,
++            after=hook,
++            before_sleep=hook,
++            retry=hook,
++            stop=hook,
++            wait=hook,
++            sleep=hook,
++        )
++        for _ in range(2):
++            attempts = 0
++            async for attempt in retrying:
++                with attempt:
++                    attempts += 1
++            assert attempts == 1
++        hook.assert_not_called()
++
+     @asynctest
+     async def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, async function is called directly without retrying."""
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 31e7f43..18294b9 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1505,6 +1505,41 @@ class TestStatisticsKeys:
+ 
+ 
+ class TestEnabled:
++    @pytest.mark.parametrize(
++        "error", [ValueError("fail"), tenacity.TryAgain(), KeyboardInterrupt()]
++    )
++    def test_disabled_iterator_propagates_exception(self, error: BaseException) -> None:
++        attempts = 0
++        retrying = tenacity.Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        with pytest.raises(type(error)) as exc_info:
++            for attempt in retrying:
++                with attempt:
++                    attempts += 1
++                    raise error
++                pytest.fail("The attempt swallowed the exception")
++        assert exc_info.value is error
++        assert attempts == 1
++
++    def test_disabled_iterator_runs_once_without_hooks(self) -> None:
++        hook = mock.Mock(side_effect=AssertionError("Retry hook called"))
++        retrying = tenacity.Retrying(
++            enabled=False,
++            before=hook,
++            after=hook,
++            before_sleep=hook,
++            retry=hook,
++            stop=hook,
++            wait=hook,
++            sleep=hook,
++        )
++        for _ in range(2):
++            attempts = 0
++            for attempt in retrying:
++                with attempt:
++                    attempts += 1
++            assert attempts == 1
++        hook.assert_not_called()
++
+     def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, the function is called directly without retrying."""
+         call_count = 0

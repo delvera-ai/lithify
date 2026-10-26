@@ -1,0 +1,6 @@
+--- a/guardrails.md
++++ b/guardrails.md
+@@ -1,2 +1,2 @@
+-- Never edit, skip or weaken an existing test to make it pass; fix the code instead.
++- Never modify or skip existing tests, even to strengthen assertions. Add regression tests separately; fix code.
+ - Never add credentials, tokens or secrets to the repository.

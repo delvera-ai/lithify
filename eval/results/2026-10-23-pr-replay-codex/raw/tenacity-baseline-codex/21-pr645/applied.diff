@@ -1,0 +1,130 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9893d9e..4eef321 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -300,6 +300,21 @@
+       "wall_s": 39.8,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-202514-bug-retrying-enabled-false-fn-an",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 22182,
++      "tokens_cached": 235776,
++      "tokens_out": 2256,
++      "cost_usd": 0.0,
++      "wall_s": 80.7,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 530b63a..e466003 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -538,6 +538,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index aa4a756..d0bf1e6 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -113,6 +113,9 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return await _utils.wrap_to_async_func(fn)(*args, **kwargs)  # type: ignore[no-any-return]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index f4fded1..9ea2a5b 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -199,6 +199,38 @@ class TestAsyncio(unittest.TestCase):
+ 
+ 
+ class TestAsyncEnabled(unittest.TestCase):
++    @asynctest
++    async def test_enabled_false_direct_call(self) -> None:
++        async def check_call(is_async: bool, fails: bool) -> None:
++            call_count = 0
++            error = ValueError("fail")
++            result = object()
++
++            def fn(value: object, *, fail: bool) -> object:
++                nonlocal call_count
++                call_count += 1
++                if fail:
++                    raise error
++                return value
++
++            async def async_fn(value: object, *, fail: bool) -> object:
++                await asyncio.sleep(0)
++                return fn(value, fail=fail)
++
++            target = async_fn if is_async else mock.Mock(side_effect=fn)
++            retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++            if fails:
++                with pytest.raises(ValueError) as exc_info:
++                    await retrying(target, result, fail=True)
++                assert exc_info.value is error
++            else:
++                assert await retrying(target, result, fail=False) is result
++            assert call_count == 1
++
++        for is_async in (False, True):
++            for fails in (False, True):
++                await check_call(is_async, fails)
++
+     @asynctest
+     async def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, async function is called directly without retrying."""
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..666dc2d 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1651,6 +1651,28 @@ class TestStatisticsKeys:
+ 
+ 
+ class TestEnabled:
++    @pytest.mark.parametrize("fails", [False, True])
++    def test_enabled_false_direct_call(self, fails: bool) -> None:
++        call_count = 0
++        error = ValueError("fail")
++        result = object()
++
++        def fn(value: object, *, fail: bool) -> object:
++            nonlocal call_count
++            call_count += 1
++            if fail:
++                raise error
++            return value
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        if fails:
++            with pytest.raises(ValueError) as exc_info:
++                retrying(fn, result, fail=True)
++            assert exc_info.value is error
++        else:
++            assert retrying(fn, result, fail=False) is result
++        assert call_count == 1
++
+     def test_enabled_false_skips_retry(self) -> None:
+         """When enabled=False, the function is called directly without retrying."""
+         call_count = 0

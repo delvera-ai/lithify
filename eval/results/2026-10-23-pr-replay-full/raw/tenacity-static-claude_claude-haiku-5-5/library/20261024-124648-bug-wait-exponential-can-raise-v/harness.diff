@@ -1,0 +1,19 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -237,6 +237,16 @@
+   change `wait_exponential_jitter` only if the task names it.
+ - `max` defaults to `_utils.MAX_WAIT` (`sys.maxsize / 2`, a float), so every
+   `wait_exponential()` has a finite cap; a cap short-circuit runs for default instances too.
++- `wait_exponential.__call__` already HAS a cap short-circuit (#654): guarded by
++  `multiplier > 0`, `max > 0`, `exp_base > 1`, `math.isfinite(max)`, it returns the cap when
++  `exponent > math.log(max / multiplier, exp_base)`. `math.log` raises `ValueError: math
++  domain error` on a ratio of 0.0, which the guards don't exclude: `multiplier=inf` or
++  `multiplier` so much larger than `max` that the division underflows. Ratio 0.0 means
++  `multiplier > max`, i.e. the cap applies from attempt 1. Other ratios are safe: a subnormal
++  ratio logs finitely, an overflowed ratio (`inf`) logs to `inf` and falls through, and a NaN
++  `multiplier` fails `> 0` and falls through (result is `0`, no exception). Any edit to this
++  guard keeps every input that reached `math.log` before on the same comparison, so ordinary
++  results stay identical; test the edge inputs in `TestWaitConditions`, one test per trigger.
+ - "Results unchanged" means matching BOTH existing exits of `wait_exponential.__call__`:
+   `except OverflowError: return self.max` returns `max` WITHOUT the `min` clamp, while the
+   normal path returns `max(max(0, self.min), min(result, self.max))`. They differ only when

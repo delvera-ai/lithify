@@ -1,0 +1,96 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index eb45099..58fb687 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-212750-performance-wait-exponential-max](20261023-212750-performance-wait-exponential-max/EXPERIENCE.md) — **when** A tenacity task frames the change as cost-only, such as a performance fix or a rewrite of a strategy's internals, and says results must stay unchanged. The agent then has to decide whether the change is "user-visible" enough to need the repository's ship-alongside files. **then** In `skills/tenacity-change-contract`, name results-preserving performance and refactor fixes in the `description` trigger. In §2, state that "results unchanged" is not an exemption from the reno note: a user-reported slowdown ships a `fixes:` note. Any other skill that handles results-preserving changes, such as `behavior-preserving-change`, should end with a pointer to load tenacity-change-contract. Without this, the agent rules itself out of the contract on the "not user-visible" reasoning.
+ - [20261023-211551-bug-when-a-retry-decorated-funct](20261023-211551-bug-when-a-retry-decorated-funct/EXPERIENCE.md) — **when** A tenacity fix changes how per-call or per-thread runtime state is exposed or shared, for example `fn.statistics` on a decorated function, through `functools.wraps`, `copy()`, `retry_with` or `threading.local`. The obvious fix (one shared object) quietly breaks an invariant that only a code comment or docstring mentions. **then** In `skills/tenacity-change-contract`, give that surface its own section. List its invariants explicitly, with where each comes from (a code comment, the property docstring, an issue number). Require the final message and reno note to keep each one or name it as changed. A one-line mention such as "statistics is per-thread" is not enough.
+ - [20261023-210731-bug-retrying-enabled-false-is-ig](20261023-210731-bug-retrying-enabled-false-is-ig/EXPERIENCE.md) — **when** A tenacity bug report says one usage form (the iterator `for`/`async for`, a direct `Retrying(...)(fn)` call, tornado) should "match" or "behave like" another path that already handles the option (usually the `@retry`/`wraps` decorator). The existing path does that by short-circuiting before the shared loop machinery (`begin()`, `before`/`after` hooks, statistics), so a fix can stop the retries and pass the gate while still running that machinery. **then** In `skills/tenacity-change-contract`, write down exactly what the reference path does and skips, as a verified fact with a grep to recheck it. For example: "`enabled` is checked in `wraps` before `copy()`, so there is no `begin()`, no `before`, and statistics stay `{}`". Also state whether a branch in shared `_begin_iter`/`iter()` would leak into `__call__`, and require the final message to say which of the skipped steps the new path still runs. Name the docs section that describes the reference path so its sentence gets widened too.
+ - [20261023-205644-bug-when-tryagain-is-raised-from](20261023-205644-bug-when-tryagain-is-raised-from/EXPERIENCE.md) — **when** A tenacity bug fix where the fix reads a Python language mechanism that comes in several syntactic forms (exception chaining through `__context__`, `__cause__` or `from None`; or similar variant forms of one construct) and the task text shows only one form. The gate tests only the form the task shows, so a fix that covers that form alone passes. **then** In `skills/tenacity-change-contract`, for the code path the task touches, list the language-level forms of the mechanism the fix depends on. Point to existing repo code that already handles them (e.g. `retry_if_exception_cause_type` follows `__cause__`). Require the final message to state which forms the fix handles. A generic `system.md` rule ("fix in-scope cases instead of listing them") did not make the agent notice the other forms. Add next to the list that each form is checked by a test run through `run_tests.py --timeout`, never by a `python -c` probe.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index cc930f1..fee7d85 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -195,6 +195,21 @@
+       "wall_s": 715.7,
+       "always_on_tokens": 1207,
+       "stability_after": 0.63
++    },
++    {
++      "task_id": "20261023-212750-performance-wait-exponential-max",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 32,
++      "executions": 4,
++      "tokens_in": 452147,
++      "tokens_cached": 5567762,
++      "tokens_out": 107007,
++      "cost_usd": 3.4825,
++      "wall_s": 974.0,
++      "always_on_tokens": 1242,
++      "stability_after": 0.7
+     }
+   ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..83f1304 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
+ import typing
+ import warnings
+@@ -200,7 +201,22 @@ class wait_exponential(wait_base):
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+ 
++    def _is_past_max(self, exponent: int) -> bool:
++        # True when multiplier * exp_base ** exponent is above max, so the power
++        # need not be computed. Checked in log space with a relative margin of
++        # 1e-9, so float rounding cannot flip the answer; only values within that
++        # margin of max still compute the power. Only applies when max >= max(0,
++        # min): then both exits of __call__ return max.
++        if not (self.exp_base > 1 and self.multiplier > 0):
++            return False
++        if not (0 < self.max and self.max >= max(0, self.min)):
++            return False
++        log_result = exponent * math.log(self.exp_base) + math.log(self.multiplier)
++        return log_result >= math.log(self.max) + 1e-9
++
+     def __call__(self, retry_state: "RetryCallState") -> float:
++        if self._is_past_max(retry_state.attempt_number - 1):
++            return self.max
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+             result = self.multiplier * exp
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..cbbe208 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -413,6 +413,18 @@ class TestWaitConditions(unittest.TestCase):
+                 self.assertEqual(r.wait(make_retry_state(9, 0)), 100)
+                 self.assertEqual(r.wait(make_retry_state(20, 0)), 100)
+ 
++    def test_exponential_does_not_compute_power_past_max(self) -> None:
++        pow_calls: typing.List[int] = []
++
++        class CountingBase(float):
++            def __pow__(self, other: typing.Any) -> typing.Any:
++                pow_calls.append(1)
++                return super().__pow__(other)
++
++        r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=CountingBase(2)))
++        self.assertEqual(r.wait(make_retry_state(100, 0)), 40)
++        self.assertEqual(pow_calls, [])
++
+     def test_legacy_explicit_wait_type(self) -> None:
+         Retrying(wait="exponential_sleep")  # type: ignore[arg-type]
+ 

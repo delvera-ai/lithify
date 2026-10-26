@@ -1,0 +1,52 @@
+{
+  "task": "Regression since 8.4.2: composing a `retry_base` instance with a plain function using `|` or `&` (e.g. `retry_if_exception_type(IOError) | my_predicate`, in either order) raises an exception instead of producing a `retry_any`/`retry_all`. Composition with plain callables worked in 8.3.0 and should work again for both sync and async retry strategies; type annotations should accept plain callables too.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "Fidelity decided it. c1 types the async operators and `retry_any`/`retry_all` as `\"SyncRetryBaseT | RetryBaseT\"`, which is exactly the pairing `tenacity/asyncio/__init__.py` already uses for `retry=`. It also reuses the existing aliases instead of inventing new types.\nThe runner-up, c2, spells out `retry_base | RetryBaseT | typing.Callable[[RetryCallState], bool]` by hand, which repeats the sync alias, and its signature lines are overlong. Its extra async test for the reversed order doesn't make up for that.\nc3 widens the type to `Callable[..., typing.Any]`, which is looser than both existing aliases and drifts from the repo's typing conventions.",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-191737-regression-since-8-4-2-composing",
+  "usage": {
+    "in": 414991,
+    "cached": 5326501,
+    "out": 100135,
+    "cost": 3.0646166700000004,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.42,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=FAIL(124)"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

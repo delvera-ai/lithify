@@ -1,0 +1,52 @@
+{
+  "task": "API cleanup: every other exponential wait class uses `multiplier`, but `wait_exponential_jitter` uses `initial`. Add a `multiplier` parameter (default 1) to `wait_exponential_jitter` with the same meaning, and deprecate `initial`: passing `initial` (by keyword or positionally) must still work but emit a `DeprecationWarning`, and passing both `initial` and `multiplier` must raise `ValueError`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "The decider was fidelity: existing callers that read `wait_exponential_jitter(...).initial` must keep working. c1 removes the `self.initial` attribute without a replacement, so code reading `obj.initial` would now get an `AttributeError`. c2, c3 and c4 keep it as a read-only alias of `multiplier`.\nc4 also edits `doc/source/index.rst`, adding a new documentation section and example that the task did not ask for.\nc3 and c2 have the same implementation. I picked c3 for its tests: they set `jitter=0` so the expected values are exact, and they also cover passing `initial` positionally together with `multiplier=`, and that the warning points at the caller's file. c2 is a near-tie runner-up; it lost only on those tests.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-204745-api-cleanup-every-other-exponent",
+  "usage": {
+    "in": 426038,
+    "cached": 5152777,
+    "out": 85752,
+    "cost": 2.83045482,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.63,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

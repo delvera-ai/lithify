@@ -1,0 +1,59 @@
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index e59f4c0..b11fcdb 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -177,7 +177,11 @@ class retry_if_exception_cause_type(retry_base):
+ 
+         if retry_state.outcome.failed:
+             exc = retry_state.outcome.exception()
+-            while exc is not None:
++            # Track visited exceptions so cyclic cause chains (e.g. `raise e from e`)
++            # terminate instead of looping forever.
++            seen: set[int] = set()
++            while exc is not None and id(exc) not in seen:
++                seen.add(id(exc))
+                 if isinstance(exc.__cause__, self.exception_cause_types):
+                     return True
+                 exc = exc.__cause__
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ba44b0c..698f2cf 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1441,6 +1441,37 @@ class TestDecoratorWrapper(unittest.TestCase):
+         except NameError:
+             pass
+ 
++    def test_retry_if_exception_cause_type_cyclic_cause(self) -> None:
++        # Call the predicate directly so a regression fails fast instead of hanging.
++        def retry_state_for(exc: BaseException) -> RetryCallState:
++            retry_state = RetryCallState(Retrying(), lambda: None, (), {})
++            retry_state.set_exception((type(exc), exc, None))
++            return retry_state
++
++        predicate = tenacity.retry_if_exception_cause_type(NameError)
++
++        self_cause = ValueError("self")
++        self_cause.__cause__ = self_cause
++        self.assertFalse(predicate(retry_state_for(self_cause)))
++
++        self_cause_name_error = NameError("self")
++        self_cause_name_error.__cause__ = self_cause_name_error
++        self.assertTrue(predicate(retry_state_for(self_cause_name_error)))
++
++        first = ValueError("first")
++        second = KeyError("second")
++        first.__cause__ = second
++        second.__cause__ = first
++        self.assertFalse(predicate(retry_state_for(first)))
++
++        # A matching cause deeper in a non-cyclic chain is still found.
++        deep_match = NameError("deep")
++        middle = ValueError("middle")
++        outer = RuntimeError("outer")
++        outer.__cause__ = middle
++        middle.__cause__ = deep_match
++        self.assertTrue(predicate(retry_state_for(outer)))
++
+     def test_retry_preserves_argument_defaults(self) -> None:
+         def function_with_defaults(a: int = 1) -> int:
+             return a

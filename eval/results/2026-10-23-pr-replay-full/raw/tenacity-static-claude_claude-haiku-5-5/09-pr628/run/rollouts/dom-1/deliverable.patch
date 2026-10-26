@@ -1,0 +1,134 @@
+diff --git a/doc/source/index.rst b/doc/source/index.rst
+index ba21fd9..c41068a 100644
+--- a/doc/source/index.rst
++++ b/doc/source/index.rst
+@@ -200,6 +200,22 @@ increasing jitter helps minimise collisions.
+         print("Randomly wait up to 2^x * 1 seconds between each retry until the range reaches 60 seconds, then randomly up to 60 seconds afterwards")
+         raise Exception
+ 
++``wait_exponential_jitter`` adds jitter to an exponential backoff. Like the other
++wait strategies, ``min``, ``max`` and ``jitter`` accept a number of seconds or a
++``datetime.timedelta``.
++
++.. testcode::
++
++    import datetime
++
++    @retry(wait=wait_exponential_jitter(initial=1,
++                                        min=datetime.timedelta(seconds=2),
++                                        max=60,
++                                        jitter=datetime.timedelta(seconds=1)))
++    def wait_exponential_jitter_min():
++        print("Wait at least 2 seconds, then an exponentially growing delay plus up to 1 second of jitter, capped at 60 seconds")
++        raise Exception
++
+ 
+ Sometimes it's necessary to build a chain of backoffs.
+ 
+diff --git a/releasenotes/notes/wait-exponential-jitter-min-timedelta-3f9c2a7e1b5d8046.yaml b/releasenotes/notes/wait-exponential-jitter-min-timedelta-3f9c2a7e1b5d8046.yaml
+new file mode 100644
+index 0000000..5e6b142
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-jitter-min-timedelta-3f9c2a7e1b5d8046.yaml
+@@ -0,0 +1,6 @@
++---
++features:
++  - |
++    ``wait_exponential_jitter`` gains a ``min`` argument that sets a floor on the
++    wait, matching ``wait_exponential``. Its ``max``, ``jitter`` and ``min``
++    arguments accept ``datetime.timedelta`` values as well as numbers of seconds.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index b28b788..2693717 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -240,26 +240,29 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait and jitter.
++    It allows for a customized initial wait, minimum wait, maximum wait and
++    jitter.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is min(initial * 2**n + random.uniform(0, jitter), maximum)
+-    where n is the retry count.
++    The wait time is max(minimum, min(initial * 2**n + random.uniform(0, jitter),
++    maximum)) where n is the retry count.
+     """
+ 
+     def __init__(
+         self,
+         initial: float = 1,
+-        max: float = _utils.MAX_WAIT,
++        max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+-        jitter: float = 1,
++        jitter: _utils.time_unit_type = 1,
++        min: _utils.time_unit_type = 0,
+     ) -> None:
+         self.initial = initial
+-        self.max = max
++        self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+-        self.jitter = jitter
++        self.jitter = _utils.to_seconds(jitter)
++        self.min = _utils.to_seconds(min)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         jitter = random.uniform(0, self.jitter)
+@@ -268,4 +271,4 @@ class wait_exponential_jitter(wait_base):
+             result = self.initial * exp + jitter
+         except OverflowError:
+             result = self.max
+-        return max(0, min(result, self.max))
++        return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index efefba8..2eb1908 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -617,6 +617,43 @@ class TestWaitConditions(unittest.TestCase):
+         fn = tenacity.wait_exponential_jitter()
+         fn(make_retry_state(0, 0))
+ 
++    def test_wait_exponential_jitter_min(self) -> None:
++        fn = tenacity.wait_exponential_jitter(initial=1, max=60, jitter=0, min=5)
++        self.assertEqual(fn(make_retry_state(1, 0)), 5)
++        self.assertEqual(fn(make_retry_state(2, 0)), 5)
++        self.assertEqual(fn(make_retry_state(4, 0)), 8)
++        self.assertEqual(fn(make_retry_state(8, 0)), 60)
++
++        fn = tenacity.wait_exponential_jitter(min=3)
++        for _ in range(1000):
++            self.assertEqual(fn(make_retry_state(1, 0)), 3)
++            self._assert_inclusive_range(fn(make_retry_state(3, 0)), 4, 5)
++
++    def test_wait_exponential_jitter_timedelta(self) -> None:
++        expected = tenacity.wait_exponential_jitter(max=60, jitter=0)
++        fn = tenacity.wait_exponential_jitter(
++            max=datetime.timedelta(seconds=60),
++            jitter=datetime.timedelta(seconds=0),
++        )
++        for attempt in range(1, 10):
++            with self.subTest(attempt=attempt):
++                self.assertEqual(
++                    fn(make_retry_state(attempt, 0)),
++                    expected(make_retry_state(attempt, 0)),
++                )
++
++        fn = tenacity.wait_exponential_jitter(jitter=datetime.timedelta(seconds=2))
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 1, 3)
++
++        fn = tenacity.wait_exponential_jitter(
++            max=datetime.timedelta(seconds=60),
++            jitter=0,
++            min=datetime.timedelta(seconds=5),
++        )
++        self.assertEqual(fn(make_retry_state(1, 0)), 5)
++        self.assertEqual(fn(make_retry_state(8, 0)), 60)
++
+     def test_wait_retry_state_attributes(self) -> None:
+         class ExtractCallState(Exception):
+             pass

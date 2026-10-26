@@ -1,0 +1,55 @@
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..559d868 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -1,8 +1,37 @@
+ import functools
+ 
++import pytest
++
+ from tenacity import _utils
+ 
+ 
++@pytest.mark.parametrize(
++    "pos_num, expected",
++    [
++        (0, "0th"),
++        (1, "1st"),
++        (2, "2nd"),
++        (3, "3rd"),
++        (4, "4th"),
++        (11, "11th"),
++        (12, "12th"),
++        (13, "13th"),
++        (21, "21st"),
++        (22, "22nd"),
++        (23, "23rd"),
++        (111, "111th"),
++        (112, "112th"),
++        (113, "113th"),
++        (1011, "1011th"),
++        (1012, "1012th"),
++        (1013, "1013th"),
++        (121, "121st"),
++    ],
++)
++def test_to_ordinal(pos_num: int, expected: str) -> None:
++    assert _utils.to_ordinal(pos_num) == expected
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

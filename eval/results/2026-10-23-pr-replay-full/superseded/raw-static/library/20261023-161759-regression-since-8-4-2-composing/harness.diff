@@ -1,0 +1,39 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text, retry-loop or `statistics` behaviour) — lists the files such a change must touch in this repo (release note, regression test), the conventions they follow, how to prove the test fails on the old code, and the sync/async invariants of the retry loop.
++description: Load before finishing any change that alters tenacity's runtime behaviour or public API (bug fix, new feature, changed default, changed log/error text, retry-loop or `statistics` behaviour, `|`/`&`/`+` composition of retry/stop/wait strategies or their type annotations) — lists the files such a change must touch in this repo (release note, regression test), the conventions they follow, how to prove the test fails on the old code, and the sync/async invariants of the retry loop.
+ ---
+ 
+ # What a maintainer-complete tenacity change contains
+@@ -74,6 +74,28 @@
+   dict as `wrapped_f.statistics` while `wrapped_f.retry.statistics` stays `{}`. The
+   `test_retry_function_attributes` tests compare the whole `statistics` dict, so adding or
+   removing a key is a change those tests pin down.
++- **Strategy composition lives on the base classes, and sync/async differ.**
++  - `retry_base` (`tenacity/retry.py`) defines `__and__`/`__or__` by delegating to
++    `other.__rand__(self)` / `other.__ror__(self)`; that is how `sync | async` ends up as the
++    async `retry_any`. Anything without those methods (a plain function) breaks the
++    delegation, so a fix has to handle non-`retry_base` operands. Don't drop the delegation.
++  - `async_retry_base` (`tenacity/asyncio/retry.py`) overrides all four operators to build
++    `tenacity.asyncio.retry_any`/`retry_all` directly. Those wrap each member with
++    `_utils.wrap_to_async_func`. Sync `retry_any`/`retry_all` call members directly.
++    `stop_base` (`stop.py`) and `wait_base` (`wait.py`, `__add__`/`__radd__`) build
++    `stop_any`/`stop_all`/`wait_combine` directly.
++  - A composition bug can be confined to one base class. Before writing the async test,
++    find which operand (sync `retry_base` or `async_retry_base`) takes the broken path. A
++    test built only from `tasyncio.*` strategies never reaches `retry_base.__or__`.
++  - Type aliases already exist: `RetryBaseT` (`retry.py`, `retry_base | Callable[[RetryCallState], bool]`),
++    async `RetryBaseT` (`asyncio/retry.py`), `StopBaseT`, `WaitBaseT`. When widening an
++    annotation to accept plain callables, use these aliases rather than a new
++    `Callable[..., Any]`. `asyncio/retry.py` shadows the name `RetryBaseT`, so
++    `asyncio/__init__.py` imports the sync one as `SyncRetryBaseT`.
++  - Tests: sync composition in `tests/test_tenacity.py` (`TestRetryConditions.test_retry_or`/
++    `test_retry_and`, `TestStopConditions`, `TestWaitConditions`). Mixed sync/async
++    composition run through `AsyncRetrying` in `tests/test_asyncio.py` (`TestContextManager`,
++    around the `retry_if_result(...) | tasyncio.retry_if_exception(...)` tests).
+ - **`with attempt:` swallows exceptions** (`AttemptManager.__exit__` records the exception as
+   the attempt's outcome). A `KeyError` raised inside the block becomes a failed, retried
+   attempt, not an error reaching the test: record values inside the block and assert after

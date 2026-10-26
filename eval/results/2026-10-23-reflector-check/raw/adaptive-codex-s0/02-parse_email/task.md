@@ -1,0 +1,1 @@
+Add `parse_email(value)` to app/users.py. It takes a string, strips surrounding whitespace, lowercases it and returns it. Reject with `ValidationError` anything that is not a string, contains whitespace inside, does not contain exactly one `@`, has an empty part before the `@`, or whose domain (the part after the `@`) has no `.` or starts or ends with a `.`.

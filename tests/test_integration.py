@@ -81,7 +81,7 @@ def test_cli_init_status_hook(repo):
     r = subprocess.run([*env_py, "init", "--executor", "mock", "--test-cmd", "true"], cwd=repo, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     st = json.loads(subprocess.run([*env_py, "status", "--json"], cwd=repo, capture_output=True, text=True).stdout)
-    assert st["initialized"] and st["next_k"] == 3 and st["phase"] == "genesis"
+    assert st["initialized"] and st["next_k"] == 2 and st["phase"] == "genesis"
     hook = subprocess.run([*env_py, "hook", "session-start"], cwd=repo, input="{}", capture_output=True, text=True)
     payload = json.loads(hook.stdout)
     assert "lithify" in payload["hookSpecificOutput"]["additionalContext"]
@@ -230,3 +230,39 @@ def test_agent_limit_stops_the_task_cleanly(tmp_path, monkeypatch):
     assert set(calls) == {"execute"} and len(calls) <= cfg.max_k
     assert load_state(repo).history == []
     assert git(repo, "worktree", "list").count("\n") == 1
+
+
+def test_post_delivery_feedback_hardens_harness_and_reheats(tmp_path, capsys, monkeypatch):
+    """`lithify feedback`: a task that passed its gates but failed a later check proposes a harness
+    edit from that failure, stops counting as first-pass, and never alters the delivered work."""
+    from lithify import cli
+    from lithify.config import load_config
+    from lithify.feedback import feedback
+    from lithify.state import choose_k, stability
+
+    repo = build_fixture(tmp_path / "fx", [("create_user", "api"), ("update_user", "api")])
+    ops.init_project(repo, executor="mock", test_cmd="true")  # the gate checks nothing
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "init")
+    cfg = load_config(repo)
+    out = Pipeline(repo, cfg, log=lambda m: None, seed=1).run_task(task_prompt("create_user", "api"), k_override=0)
+    assert out.delivered and out.first_pass
+    s_before = stability(load_state(repo).history, cfg.schedule)
+
+    ci = "FAIL create_user: missing `AppError` — errors must be raised as AppError from app/errors.py, never a bare Exception\n"
+    res = feedback(repo, out.task_id, ci, log=lambda m: None)
+    assert res["proposal"] and "guardrails.md" in res["components"] and res["marked"]
+    st = load_state(repo)
+    assert st.history[-1]["feedback_failed"] and not st.history[-1]["first_pass"]
+    assert stability(st.history, cfg.schedule) < s_before or s_before == 0
+    assert choose_k(st, cfg.schedule, cfg.max_k)[0] >= 1  # explores again
+    assert "AppError" not in (harness_dir(repo) / "guardrails.md").read_text()  # proposal, not promoted
+    assert git(repo, "worktree", "list").count("\n") == 1
+    assert ops.adopt(repo, f"{out.task_id}-feedback").startswith("adopted")
+    assert "AppError" in (harness_dir(repo) / "guardrails.md").read_text()
+
+    monkeypatch.chdir(repo)
+    log = tmp_path / "ci.txt"
+    log.write_text(ci)
+    assert cli.main(["feedback", "no-such-task", "--log", str(log)]) == 1
+    assert "no outcome" in capsys.readouterr().err

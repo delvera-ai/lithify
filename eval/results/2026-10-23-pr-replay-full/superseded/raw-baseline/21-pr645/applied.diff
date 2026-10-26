@@ -1,0 +1,114 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0f2bd3b..9052e92 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -300,6 +300,21 @@
+       "wall_s": 48.7,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-165658-bug-retrying-enabled-false-fn-an",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 25729,
++      "tokens_cached": 274650,
++      "tokens_out": 4924,
++      "cost_usd": 0.0104,
++      "wall_s": 44.5,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 530b63a..e466003 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -538,6 +538,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index aa4a756..741ae88 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -113,10 +113,15 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        is_async = _utils.is_coroutine_callable(fn)
++        if not self.enabled:
++            if is_async:
++                return await fn(*args, **kwargs)  # type: ignore[misc]
++            return fn(*args, **kwargs)  # type: ignore[no-any-return]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+-        is_async = _utils.is_coroutine_callable(fn)
+         while True:
+             do = await self.iter(retry_state=retry_state)
+             if isinstance(do, DoAttempt):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index f4fded1..c3511b1 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -214,6 +214,22 @@ class TestAsyncEnabled(unittest.TestCase):
+             await always_fails()
+         assert call_count == 1
+ 
++    @asynctest
++    async def test_enabled_false_call_raises_original_exception(self) -> None:
++        """When enabled=False, calling the AsyncRetrying object awaits fn once and
++        propagates its exception unchanged, not a RetryError."""
++        call_count = 0
++
++        async def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            await retrying(always_fails)
++        assert call_count == 1
++
+     @asynctest
+     async def test_enabled_false_aiter_raises_original_exception(self) -> None:
+         """When enabled=False, the async iterator raises the original exception,
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1ad9275..c02d207 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1692,6 +1692,21 @@ class TestEnabled:
+             disabled()
+         assert call_count == 1
+ 
++    def test_enabled_false_call_raises_original_exception(self) -> None:
++        """When enabled=False, calling the Retrying object runs fn once and
++        propagates its exception unchanged, not a RetryError."""
++        call_count = 0
++
++        def always_fails() -> None:
++            nonlocal call_count
++            call_count += 1
++            raise ValueError("fail")
++
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(3))
++        with pytest.raises(ValueError, match="fail"):
++            retrying(always_fails)
++        assert call_count == 1
++
+     def test_enabled_true_retries_normally(self) -> None:
+         """When enabled=True (default), retrying works as usual."""
+         call_count = 0

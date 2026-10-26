@@ -1,0 +1,113 @@
+exit 1
+ssssssssssssssssssssssssssssssssssssssssssssssssssss...FF.s              [100%]
+=================================== FAILURES ===================================
+______________ TestActivate.test_default_locale_path_null__spec__ ______________
+
+self = <tests.test_i18n.TestActivate object at 0x109528050>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109574650>
+
+    def test_default_locale_path_null__spec__(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        i18n = importlib.import_module("humanize.i18n")
+        monkeypatch.setattr(i18n, "__spec__", None)
+    
+        with pytest.raises(FileNotFoundError, match=self.expected_msg):
+>           i18n.activate("ru_RU")
+
+tests/test_i18n.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+locale = 'ru_RU', path = None
+
+    def activate(
+        locale: str | None, path: str | os.PathLike[str] | None = None
+    ) -> gettext_module.NullTranslations:
+        """Activate internationalisation.
+    
+        Set `locale` as current locale. Search for locale in directory `path`.
+    
+        Args:
+            locale (str | None): Language name, e.g. `en_GB`. If `None`, defaults to no
+                transaltion. Similar to calling ``deactivate()``.
+            path (str | pathlib.Path): Path to search for locales.
+    
+        Returns:
+            dict: Translations.
+    
+        Raises:
+            Exception: If humanize cannot find the locale folder.
+        """
+        if locale is None or locale.startswith("en"):
+            _CURRENT.locale = None
+            return _TRANSLATIONS[None]
+    
+        if path is None:
+            path = _get_default_locale_path()
+    
+        if path is None:
+            msg = (
+                "Humanize cannot determinate the default location of the 'locale' folder. "
+                "You need to pass the path explicitly."
+            )
+>           raise Exception(msg)
+E           Exception: Humanize cannot determinate the default location of the 'locale' folder. You need to pass the path explicitly.
+
+src/humanize/i18n.py:88: Exception
+___________ TestActivate.test_default_locale_path_undefined__spec__ ____________
+
+self = <tests.test_i18n.TestActivate object at 0x109528350>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109528ec0>
+
+    def test_default_locale_path_undefined__spec__(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        i18n = importlib.import_module("humanize.i18n")
+        monkeypatch.delattr(i18n, "__spec__")
+    
+        with pytest.raises(FileNotFoundError, match=self.expected_msg):
+>           i18n.activate("ru_RU")
+
+tests/test_i18n.py:247: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+locale = 'ru_RU', path = None
+
+    def activate(
+        locale: str | None, path: str | os.PathLike[str] | None = None
+    ) -> gettext_module.NullTranslations:
+        """Activate internationalisation.
+    
+        Set `locale` as current locale. Search for locale in directory `path`.
+    
+        Args:
+            locale (str | None): Language name, e.g. `en_GB`. If `None`, defaults to no
+                transaltion. Similar to calling ``deactivate()``.
+            path (str | pathlib.Path): Path to search for locales.
+    
+        Returns:
+            dict: Translations.
+    
+        Raises:
+            Exception: If humanize cannot find the locale folder.
+        """
+        if locale is None or locale.startswith("en"):
+            _CURRENT.locale = None
+            return _TRANSLATIONS[None]
+    
+        if path is None:
+            path = _get_default_locale_path()
+    
+        if path is None:
+            msg = (
+                "Humanize cannot determinate the default location of the 'locale' folder. "
+                "You need to pass the path explicitly."
+            )
+>           raise Exception(msg)
+E           Exception: Humanize cannot determinate the default location of the 'locale' folder. You need to pass the path explicitly.
+
+src/humanize/i18n.py:88: Exception
+=========================== short test summary info ============================
+FAILED tests/test_i18n.py::TestActivate::test_default_locale_path_null__spec__
+FAILED tests/test_i18n.py::TestActivate::test_default_locale_path_undefined__spec__
+2 failed, 4 passed, 53 skipped in 0.08s

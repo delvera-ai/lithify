@@ -1,0 +1,166 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 5a7123f..e31bba7 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-204745-api-cleanup-every-other-exponent](20261023-204745-api-cleanup-every-other-exponent/EXPERIENCE.md) — **when** A tenacity task renames, replaces or deprecates a constructor argument of a public strategy or class: "add X with the same meaning, deprecate Y, Y must still work but warn, passing both raises". The class stores each argument as a same-named public attribute. **then** Give the agent an on-demand `skills/deprecate-parameter` skill, or a section in `skills/tenacity-change-contract`. It should require: keeping the old attribute readable as a read-only `@property` aliasing the new one, or naming its removal as a break; a call-form test matrix that includes "new name" and "no arguments" calls with no warning, asserted under `simplefilter("error")` because the pytest filter is `once`; and a check that the warning's filename is the caller's. Do not recommend `tenacity/__init__.py` helpers such as `_unset` for code in `wait.py`, because importing them is circular.
+ - [20261023-203956-feature-wait-exponential-jitter](20261023-203956-feature-wait-exponential-jitter/EXPERIENCE.md) — **when** A tenacity task asks for two or more separate additions to one API, where each can be missing on its own (a new keyword plus a newly accepted type for existing arguments, or several new options on one strategy). A single combined test would fail on whichever missing part it hits first. **then** Keep the clause in `system.md` step 1 that asks for one regression test per requested part, each shown failing for its own reason before the fix. Make it say that a test using an existing argument with a new type must not also pass the new keyword, because then its red run proves only that the keyword is missing.
+ - [20261023-202610-bug-retrying-objects-and-the-bui](20261023-202610-bug-retrying-objects-and-the-bui/EXPERIENCE.md) — **when** A tenacity task asks for a capability (pickling, copying, sending across processes or threads) that depends on hidden per-object state, such as `BaseRetrying._local`, lazily built `statistics`/`iter_state`, or lambdas and closures stored by strategy `__init__`s. The scenario the user names (for example `Pool.map(decorated_fn)`) may not exercise the object that actually fails, so a run without the facts either reads whole modules to find the state or tests the wrong path. **then** In `skills/tenacity-change-contract/SKILL.md`, add a section on object state. Name each piece of hidden state and say where it is created. Name the one base class whose hooks the subclasses inherit. Name which object actually crosses the boundary, so tests target `fn.retry` or a used `Retrying` directly. Include a grep that lists offending strategy classes, the out-of-scope unpicklables, and the side effects to report (e.g. `copy.copy` now going through the hooks). Explicitly separate state the task requires to survive (e.g. `statistics` of a used `Retrying`) from scratch state (`iter_state.actions`). Do not group them under "per-run state", because a carrier that read that wording dropped the required state. Keep this in the on-demand skill, not in `system.md`.
+ - [20261023-201420-improvement-composing-several-re](20261023-201420-improvement-composing-several-re/EXPERIENCE.md) — **when** The change in this tenacity repo has to work for both the sync and the async variant of an operator or strategy (`retry_base` vs `async_retry_base`). Python's reflected-operator dispatch sends mixed sync/async operands to the async class's `__ror__`/`__rand__`, so a fix that only handles same-family operands passes the pure-sync and pure-async tests but leaves the mixed case behaving differently. **then** In `skills/tenacity-change-contract/SKILL.md`, give each operator the change touches a written rule stating which side of a mixed sync/async expression handles it (`sync_x | async_y` → `async_retry_base.__ror__`) and which direction of absorption is safe: an async container may take sync members, a sync container must never take async ones. Also list the operand mixes the tests must cover (all sync, all async, sync→async, async→sync, plain callable on each side). If the mixed case still behaves differently, it must be reported as unmet, not as a "choice to redirect".
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 230be6f..82b2dc7 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -135,6 +135,21 @@
+       "wall_s": 466.2,
+       "always_on_tokens": 978,
+       "stability_after": 0.6222
++    },
++    {
++      "task_id": "20261023-204745-api-cleanup-every-other-exponent",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 100,
++      "executions": 4,
++      "tokens_in": 426038,
++      "tokens_cached": 5152777,
++      "tokens_out": 85752,
++      "cost_usd": 2.8305,
++      "wall_s": 536.3,
++      "always_on_tokens": 1023,
++      "stability_after": 0.63
+     }
+   ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 92fa1f4..a35d956 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -17,6 +17,7 @@
+ import abc
+ import random
+ import typing
++import warnings
+ 
+ from tenacity import _utils
+ 
+@@ -240,34 +241,51 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait, jitter and minimum.
++    It allows for a customized multiplier, maximum wait, jitter and minimum.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is max(min, min(initial * 2**n + random.uniform(0, jitter), maximum))
+-    where n is the retry count.
++    The wait time is max(min, min(multiplier * 2**n + random.uniform(0, jitter),
++    maximum)) where n is the retry count.
++
++    The ``initial`` argument is deprecated; use ``multiplier`` instead.
+     """
+ 
+     def __init__(
+         self,
+-        initial: float = 1,
++        initial: float | None = None,
+         max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+         jitter: _utils.time_unit_type = 1,
+         min: _utils.time_unit_type = 0,
++        multiplier: float | None = None,
+     ) -> None:
+-        self.initial = initial
++        if initial is not None:
++            if multiplier is not None:
++                raise ValueError("pass either 'multiplier' or 'initial', not both")
++            warnings.warn(
++                "'initial' is deprecated, use 'multiplier' instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            multiplier = initial
++        self.multiplier = 1 if multiplier is None else multiplier
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+         self.jitter = _utils.to_seconds(jitter)
+         self.min = _utils.to_seconds(min)
+ 
++    @property
++    def initial(self) -> float:
++        """Deprecated alias of ``multiplier``, kept readable for old code."""
++        return self.multiplier
++
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         jitter = random.uniform(0, self.jitter)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.initial * exp + jitter
++            result = self.multiplier * exp + jitter
+         except OverflowError:
+             result = self.max
+         return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 7061cd7..5780a61 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -21,6 +21,7 @@ import re
+ import time
+ import typing
+ import unittest
++import warnings
+ from fractions import Fraction
+ from unittest import mock
+ 
+@@ -640,6 +641,45 @@ class TestWaitConditions(unittest.TestCase):
+             self._assert_inclusive_range(fn(make_retry_state(5, 0)), 16, 17)
+             self.assertEqual(fn(make_retry_state(7, 0)), 60)
+ 
++    def test_wait_exponential_jitter_multiplier(self) -> None:
++        with warnings.catch_warnings():
++            warnings.simplefilter("error")
++            fn = tenacity.wait_exponential_jitter(multiplier=2, max=60, jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_defaults_no_warning(self) -> None:
++        with warnings.catch_warnings():
++            warnings.simplefilter("error")
++            fn = tenacity.wait_exponential_jitter()
++        self._assert_inclusive_range(fn(make_retry_state(1, 0)), 1, 2)
++
++    def test_wait_exponential_jitter_initial_keyword_deprecated(self) -> None:
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(initial=2, max=60, jitter=0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_initial_positional_deprecated(self) -> None:
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(2, 60, 2, 0, 0)
++        self.assertEqual(fn(make_retry_state(1, 0)), 2)
++        self.assertEqual(fn(make_retry_state(3, 0)), 8)
++
++    def test_wait_exponential_jitter_initial_warning_points_at_caller(self) -> None:
++        with warnings.catch_warnings(record=True) as caught:
++            warnings.simplefilter("always")
++            tenacity.wait_exponential_jitter(initial=2)
++        deprecations = [w for w in caught if w.category is DeprecationWarning]
++        self.assertEqual(len(deprecations), 1)
++        self.assertEqual(deprecations[0].filename, __file__)
++
++    def test_wait_exponential_jitter_initial_and_multiplier_raise(self) -> None:
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(initial=1, multiplier=1)
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(1, multiplier=1)
++
+     def test_wait_retry_state_attributes(self) -> None:
+         class ExtractCallState(Exception):
+             pass

@@ -25,6 +25,19 @@ All notable changes to this project are documented here. The format follows
 - `eval/pr_select.py`, `eval/pr_replay.py`, `eval/repos.py`: PR-replay evaluation (post-hoc
   holdouts, per-strategy clones carrying `.lithify/`), humanize and tenacity PR lists, the
   development-set debug run and the humanize pilot (phase 3C).
+- `eval/audit.py`: automated safety audit across every live run (pipeline invariants, test-edit
+  flags, adopted harness edits, git writes, installs and paths outside the probe in trajectories).
+- In-process CLI tests (`tests/test_cli.py`): `cli.py` coverage 0% → 83%.
+- `needs-review.patch`: when every command gate passes but a rollout edited pre-existing tests, the
+  smallest such patch is saved for review and named in `outcome.json` (`needs_review`) instead of
+  being discarded (#15).
+- `eval/RELEASE_READINESS.md` and an Evaluation section in the README with the 0.1.0 PR-replay
+  results; `docs/benchmarking.md` documents the protocol actually used.
+
+### Changed
+- Default `max_k` is 2 (was 3), set from the evaluation data.
+- README safety model: isolation covers the repository, not the machine — Claude Code probes with
+  `--dangerously-skip-permissions` can write outside their worktree; Codex's sandbox prevented this.
 
 ### Fixed
 - Reflector prompt: `helped` is defined operationally and one rollout is enough evidence. The old

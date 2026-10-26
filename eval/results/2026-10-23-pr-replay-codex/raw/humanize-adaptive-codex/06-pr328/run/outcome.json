@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `humanize.metric()` can output a four-digit mantissa with a prefix that is too small, contradicting its docstring (the prefix is chosen so that non-significant zero digits are not needed):\n\n```python\n>>> metric(999.9, \"V\")\n'1000 V'      # expected '1.00 kV'\n>>> metric(999999, \"V\")\n'1000 kV'     # expected '1.00 MV'\n>>> metric(0.0009999, \"V\")\n'1000 \u03bcV'     # expected '1.00 mV'\n```\n\nWhen rounding reaches 1000, the result should move to the next SI prefix. Values already at the largest prefix should be unchanged.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 11569,
+    "cached": 111232,
+    "out": 1335,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9975,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

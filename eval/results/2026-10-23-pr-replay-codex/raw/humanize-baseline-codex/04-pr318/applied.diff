@@ -1,0 +1,53 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 51e80d3..dd09b68 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -45,6 +45,21 @@
+       "wall_s": 61.1,
+       "always_on_tokens": 189,
+       "stability_after": 0.4
++    },
++    {
++      "task_id": "20261023-204507-bug-humanize-natural-list-raises",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 15364,
++      "tokens_cached": 79616,
++      "tokens_out": 478,
++      "cost_usd": 0.0,
++      "wall_s": 53.7,
++      "always_on_tokens": 189,
++      "stability_after": 0.6
+     }
+   ]
+ }
+diff --git a/src/humanize/lists.py b/src/humanize/lists.py
+index 543a32f..76e8198 100644
+--- a/src/humanize/lists.py
++++ b/src/humanize/lists.py
+@@ -28,7 +28,9 @@ def natural_list(items: list[Any]) -> str:
+     Returns:
+         str: A string with commas and 'and' in the right places.
+     """
+-    if len(items) == 1:
++    if not items:
++        return ""
++    elif len(items) == 1:
+         return str(items[0])
+     elif len(items) == 2:
+         return f"{str(items[0])} and {str(items[1])}"
+diff --git a/tests/test_lists.py b/tests/test_lists.py
+index a39d344..ba96c75 100644
+--- a/tests/test_lists.py
++++ b/tests/test_lists.py
+@@ -8,6 +8,7 @@ import humanize
+ @pytest.mark.parametrize(
+     "test_args, expected",
+     [
++        ([[]], ""),
+         ([["1", "2", "3"]], "1, 2 and 3"),
+         ([["one", "two", "three"]], "one, two and three"),
+         ([["one", "two"]], "one and two"),

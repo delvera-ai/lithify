@@ -1,0 +1,83 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 26cc7e5..806c374 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,3 +3,4 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-154952-bug-tenacity-utils-find-ordinal](20261023-154952-bug-tenacity-utils-find-ordinal/EXPERIENCE.md) — **when** The task fixes a bug or changes behaviour in code under tenacity/, the task text only describes the code defect, and the only gate is the test suite. The repo's convention of adding a reno note for user-visible changes (releasenotes/notes/*.yaml, mostly under `fixes:`/`features:`) can't be seen from the task or the gate, so an agent that makes tests pass reports itself done without a note. **then** Keep an on-demand skill, skills/tenacity-change-conventions, whose description fires on any fix or behaviour change under tenacity/. It should state the release-note obligation concretely: the path `releasenotes/notes/<kebab-slug>-<16 hex>.yaml`, an existing note to copy, the `fixes:` YAML shape, and when no note is needed. Put repo facts that save probes in the same skill (ruff/mypy are not installed locally, so don't search for them and report them as not run), plus where in the matching test file a new test goes (append it after the existing tests). Leave the always-on system.md and memory.md unchanged.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..aa05fd4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-154952-bug-tenacity-utils-find-ordinal",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 47,
++      "executions": 4,
++      "tokens_in": 238288,
++      "tokens_cached": 1913087,
++      "tokens_out": 28755,
++      "cost_usd": 1.8228,
++      "wall_s": 266.2,
++      "always_on_tokens": 186,
++      "stability_after": 0.14
++    }
++  ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..b6c8659 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -39,3 +39,30 @@ def test_is_coroutine_callable() -> None:
+     assert _utils.is_coroutine_callable(partial_async_class) is True
+     assert _utils.is_coroutine_callable(partial_sync_class) is False
+     assert _utils.is_coroutine_callable(partial_lambda_fn) is False
++
++
++def test_to_ordinal() -> None:
++    expected = {
++        0: "0th",
++        1: "1st",
++        2: "2nd",
++        3: "3rd",
++        4: "4th",
++        11: "11th",
++        12: "12th",
++        13: "13th",
++        21: "21st",
++        22: "22nd",
++        23: "23rd",
++        101: "101st",
++        102: "102nd",
++        103: "103rd",
++        111: "111th",
++        112: "112th",
++        113: "113th",
++        121: "121st",
++        1011: "1011th",
++        1012: "1012th",
++    }
++    for number, ordinal in expected.items():
++        assert _utils.to_ordinal(number) == ordinal

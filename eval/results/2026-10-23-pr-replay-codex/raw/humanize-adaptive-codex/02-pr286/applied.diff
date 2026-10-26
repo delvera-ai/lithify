@@ -1,0 +1,79 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 26cc7e5..ebef3c5 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,3 +3,4 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-204358-humanize-i18n-raises-a-bare-exce](20261023-204358-humanize-i18n-raises-a-bare-exce/EXPERIENCE.md) — **when** A behavior change needs a more specific regression assertion, while existing tests must remain untouched. **then** In guardrails.md, explicitly prohibit modifying existing tests even to strengthen assertions, and direct the agent to add separate regression tests.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f8b6b7a..87481cb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -15,6 +15,21 @@
+       "wall_s": 52.0,
+       "always_on_tokens": 189,
+       "stability_after": 0.2
++    },
++    {
++      "task_id": "20261023-204358-humanize-i18n-raises-a-bare-exce",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 2,
++      "executions": 5,
++      "tokens_in": 200396,
++      "tokens_cached": 1318784,
++      "tokens_out": 9266,
++      "cost_usd": 0.0,
++      "wall_s": 271.5,
++      "always_on_tokens": 189,
++      "stability_after": 0.397
+     }
+   ]
+ }
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index 1d30d50..5308a13 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -71,7 +71,7 @@ def activate(
+         dict: Translations.
+ 
+     Raises:
+-        Exception: If humanize cannot find the locale folder.
++        FileNotFoundError: If humanize cannot find the locale folder.
+     """
+     if locale is None or locale.startswith("en"):
+         _CURRENT.locale = None
+@@ -85,7 +85,7 @@ def activate(
+             "Humanize cannot determinate the default location of the 'locale' folder. "
+             "You need to pass the path explicitly."
+         )
+-        raise Exception(msg)
++        raise FileNotFoundError(msg)
+     if locale not in _TRANSLATIONS:
+         translation = gettext_module.translation("humanize", path, [locale])
+         _TRANSLATIONS[locale] = translation
+diff --git a/tests/test_i18n.py b/tests/test_i18n.py
+index 319a55d..5efb238 100644
+--- a/tests/test_i18n.py
++++ b/tests/test_i18n.py
+@@ -228,6 +228,17 @@ class TestActivate:
+         " 'locale' folder. You need to pass the path explicitly."
+     )
+ 
++    def test_missing_default_locale_path_raises_file_not_found(
++        self, monkeypatch: pytest.MonkeyPatch
++    ) -> None:
++        i18n = importlib.import_module("humanize.i18n")
++        monkeypatch.setattr(i18n, "_get_default_locale_path", lambda: None)
++
++        with pytest.raises(FileNotFoundError) as exc_info:
++            i18n.activate("ru_RU")
++
++        assert str(exc_info.value) == self.expected_msg
++
+     def test_default_locale_path_null__spec__(
+         self, monkeypatch: pytest.MonkeyPatch
+     ) -> None:

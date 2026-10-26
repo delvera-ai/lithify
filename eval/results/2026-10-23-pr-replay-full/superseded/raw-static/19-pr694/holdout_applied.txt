@@ -1,0 +1,128 @@
+exit 1
+last result: failed (ValueError boom)>
+
+    def _run_wait(self, retry_state: "RetryCallState") -> None:
+>       retry_state.upcoming_sleep = self.wait(retry_state)
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not callable
+
+tenacity/__init__.py:418: TypeError
+_______ TestWaitConditions.test_wait_falsy_values_mean_no_wait (wait=0) ________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_falsy_values_mean_no_wait>
+
+    def test_wait_falsy_values_mean_no_wait(self) -> None:
+        # Untyped callers pass None or 0 to mean "no wait", and `sum([])`
+        # over an empty list of strategies yields the int 0. All must reach
+        # the retry path without blowing up inside iter().
+        def make_flaky() -> typing.Callable[[], str]:
+            attempts = []
+    
+            def flaky() -> str:
+                attempts.append(1)
+                if len(attempts) < 2:
+                    raise ValueError("boom")
+                return "ok"
+    
+            return flaky
+    
+        for wait in (None, 0, sum([])):
+            with self.subTest(wait=wait):
+                flaky = make_flaky()
+                r = Retrying(
+                    wait=wait,  # type: ignore[arg-type]
+                    stop=tenacity.stop_after_attempt(3),
+                )
+>               self.assertEqual(r(flaky), "ok")
+                                 ^^^^^^^^
+
+tests/test_tenacity.py:531: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tenacity/__init__.py:535: in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/__init__.py:428: in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Retrying object at 0x10b4b4d10 (stop=<tenacity.stop.stop_after_attempt object at 0x10b4b5280>, wait=0, sleep=<functio...10b329640>, before=<function before_nothing at 0x10b4954e0>, after=<function after_nothing at 0x10b494f40>, name=None)>
+retry_state = <RetryCallState 4385934464: attempt #1; slept for 0.0; last result: failed (ValueError boom)>
+
+    def _run_wait(self, retry_state: "RetryCallState") -> None:
+>       retry_state.upcoming_sleep = self.wait(retry_state)
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'int' object is not callable
+
+tenacity/__init__.py:418: TypeError
+_______ TestWaitConditions.test_wait_falsy_values_mean_no_wait (wait=0) ________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_falsy_values_mean_no_wait>
+
+    def test_wait_falsy_values_mean_no_wait(self) -> None:
+        # Untyped callers pass None or 0 to mean "no wait", and `sum([])`
+        # over an empty list of strategies yields the int 0. All must reach
+        # the retry path without blowing up inside iter().
+        def make_flaky() -> typing.Callable[[], str]:
+            attempts = []
+    
+            def flaky() -> str:
+                attempts.append(1)
+                if len(attempts) < 2:
+                    raise ValueError("boom")
+                return "ok"
+    
+            return flaky
+    
+        for wait in (None, 0, sum([])):
+            with self.subTest(wait=wait):
+                flaky = make_flaky()
+                r = Retrying(
+                    wait=wait,  # type: ignore[arg-type]
+                    stop=tenacity.stop_after_attempt(3),
+                )
+>               self.assertEqual(r(flaky), "ok")
+                                 ^^^^^^^^
+
+tests/test_tenacity.py:531: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tenacity/__init__.py:535: in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tenacity/__init__.py:428: in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Retrying object at 0x10b4069f0 (stop=<tenacity.stop.stop_after_attempt object at 0x10b407b90>, wait=0, sleep=<functio...10b329640>, before=<function before_nothing at 0x10b4954e0>, after=<function after_nothing at 0x10b494f40>, name=None)>
+retry_state = <RetryCallState 4483814736: attempt #1; slept for 0.0; last result: failed (ValueError boom)>
+
+    def _run_wait(self, retry_state: "RetryCallState") -> None:
+>       retry_state.upcoming_sleep = self.wait(retry_state)
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'int' object is not callable
+
+tenacity/__init__.py:418: TypeError
+_______________ TestWaitConditions.test_wait_radd_plain_callable _______________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_radd_plain_callable>
+
+    def test_wait_radd_plain_callable(self) -> None:
+        # A plain callable is a valid WaitBaseT, and functions have no
+        # __add__, so `callable + strategy` goes through wait_base.__radd__.
+        def cb(retry_state: RetryCallState) -> float:
+            return 2.0
+    
+>       combined = cb + tenacity.wait_fixed(1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for +: 'function' and 'wait_fixed'
+
+tests/test_tenacity.py:539: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_asyncio.py::TestAsyncio::test_wait_falsy_values_mean_no_wait
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_combine_passes_state_positionally
+SUBFAILED(wait=None) tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_values_mean_no_wait
+SUBFAILED(wait=0) tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_values_mean_no_wait
+SUBFAILED(wait=0) tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_values_mean_no_wait
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_radd_plain_callable
+6 failed, 164 passed, 1 skipped, 12 subtests passed in 1.91s

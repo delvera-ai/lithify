@@ -1,0 +1,56 @@
+diff --git a/releasenotes/notes/delay-since-first-attempt-26e6e80f02dc0258.yaml b/releasenotes/notes/delay-since-first-attempt-26e6e80f02dc0258.yaml
+new file mode 100644
+index 0000000..ac81d41
+--- /dev/null
++++ b/releasenotes/notes/delay-since-first-attempt-26e6e80f02dc0258.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    The ``delay_since_first_attempt`` key is now present in the ``statistics``
++    dictionary from the start of each run, with the value ``0`` until a delay
++    has occurred. Previously it was missing until after the first retry, so
++    reading it during the first attempt raised ``KeyError``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..9491487 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1634,6 +1634,26 @@ class TestStatistics(unittest.TestCase):
+             _foobar()
+         self.assertEqual(2, _foobar.statistics["attempt_number"])
+ 
++    def test_stats_delay_since_first_attempt_present_from_start(self) -> None:
++        seen: list[typing.Any] = []
++
++        def _record(retry_state: RetryCallState) -> None:
++            seen.append(retry_state.retry_object.statistics["delay_since_first_attempt"])
++
++        retrying = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            wait=tenacity.wait_fixed(0),
++            before=_record,
++            retry=tenacity.retry_if_exception_type(ValueError),
++        )
++
++        def _fail() -> None:
++            raise ValueError(42)
++
++        with contextlib.suppress(RetryError):
++            retrying(_fail)
++        self.assertEqual([0, mock.ANY], seen)
++
+ 
+ class TestRetryErrorCallback(unittest.TestCase):
+     def setUp(self) -> None:

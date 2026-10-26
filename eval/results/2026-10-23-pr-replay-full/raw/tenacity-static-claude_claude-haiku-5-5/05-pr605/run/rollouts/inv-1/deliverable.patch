@@ -1,0 +1,72 @@
+diff --git a/releasenotes/notes/attempt-manager-async-context-manager-5c1e8a7d2b9f4a60.yaml b/releasenotes/notes/attempt-manager-async-context-manager-5c1e8a7d2b9f4a60.yaml
+new file mode 100644
+index 0000000..dec9d63
+--- /dev/null
++++ b/releasenotes/notes/attempt-manager-async-context-manager-5c1e8a7d2b9f4a60.yaml
+@@ -0,0 +1,6 @@
++---
++features:
++  - |
++    ``AttemptManager`` now supports the async context manager protocol, so
++    ``async with attempt:`` works inside ``async for attempt in AsyncRetrying(...)``
++    loops. It behaves exactly like ``with attempt:``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5e5c832 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..9fad878 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -206,6 +206,33 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_async_context_manager_retry_one(self) -> None:
++        raise_ = True
++
++        async for attempt in tasyncio.AsyncRetrying():
++            async with attempt:
++                if raise_:
++                    raise_ = False
++                    raise Exception("Retry it!")
++
++    @asynctest
++    async def test_async_context_manager_on_error(self) -> None:
++        class CustomError(Exception):
++            pass
++
++        retrying = tasyncio.AsyncRetrying(
++            retry=tenacity.retry_if_exception_type(IOError)
++        )
++
++        async def test() -> None:
++            async for attempt in retrying:
++                async with attempt:
++                    raise CustomError("Don't retry!")
++
++        with self.assertRaises(CustomError):
++            await test()
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()

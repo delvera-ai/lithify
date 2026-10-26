@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `tenacity.after_log` crashes with `TypeError` when `retry_state.seconds_since_start` is `None` (it is `None` when the outcome timestamp has not been set). The log message should still be emitted, showing \"?\" in place of the elapsed seconds.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 20985,
+    "cached": 233125,
+    "out": 3259,
+    "cost": 0.008156150000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

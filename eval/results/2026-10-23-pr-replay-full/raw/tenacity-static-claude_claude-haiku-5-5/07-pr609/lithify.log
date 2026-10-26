@@ -1,0 +1,36 @@
+lithify ▸ 20261023-201420-improvement-composing-several-re  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose dom-1 (claude)
+  ▸ propose inv-1 (claude)
+  ✓ dom-1: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✓ probe dom-1: test=pass
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 4 gate-passing deliverables (claude)
+  ✓ applied deliverable from dom-1: Decided on scope: c4 only splices containers of exactly the async type, so a mixed chain such as `sync_a | sync_b | async_c` still nests a sync `retry_any` inside the async one, which breaks the async
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 3 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261023-201420-improvement-composing-several-re (skills/tenacity-change-contract) — `lithify adopt 20261023-201420-improvement-composing-several-re`
+lithify ◂ delivered=True first_pass=True S=0.60 executions=4 role_sessions=5 tokens(in/cached/out)=486286/6497568/134164 cost=$3.02
+{
+  "task_id": "20261023-201420-improvement-composing-several-re",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "dom-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-201420-improvement-composing-several-re",
+  "stability": 0.6,
+  "executions": 4,
+  "role_sessions": 5
+}
+

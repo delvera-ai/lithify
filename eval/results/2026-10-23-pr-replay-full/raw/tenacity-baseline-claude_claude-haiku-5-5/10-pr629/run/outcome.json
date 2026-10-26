@@ -1,0 +1,27 @@
+{
+  "task": "API cleanup: every other exponential wait class uses `multiplier`, but `wait_exponential_jitter` uses `initial`. Add a `multiplier` parameter (default 1) to `wait_exponential_jitter` with the same meaning, and deprecate `initial`: passing `initial` (by keyword or positionally) must still work but emit a `DeprecationWarning`, and passing both `initial` and `multiplier` must raise `ValueError`.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 30471,
+    "cached": 612496,
+    "out": 10368,
+    "cost": 0.01739976,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

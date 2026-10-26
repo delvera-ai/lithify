@@ -1,0 +1,98 @@
+diff --git a/releasenotes/notes/wait-exponential-jitter-min-timedelta-3c1f9e2a7b8d4f60.yaml b/releasenotes/notes/wait-exponential-jitter-min-timedelta-3c1f9e2a7b8d4f60.yaml
+new file mode 100644
+index 0000000..5b7a637
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-jitter-min-timedelta-3c1f9e2a7b8d4f60.yaml
+@@ -0,0 +1,8 @@
++---
++features:
++  - |
++    Add a ``min`` argument to ``wait_exponential_jitter``, matching
++    ``wait_exponential``, to set a floor on the wait time.
++  - |
++    ``wait_exponential_jitter`` now accepts ``datetime.timedelta`` values for
++    ``max``, ``jitter`` and ``min``, as well as numbers of seconds.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index b28b788..c68ad71 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -240,26 +240,31 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait and jitter.
++    It allows for a customized initial wait, maximum wait, jitter and minimum
++    wait. The max, jitter and min arguments accept numbers of seconds or
++    ``datetime.timedelta`` values.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is min(initial * 2**n + random.uniform(0, jitter), maximum)
++    The wait time is clamped to [min, max] of
++    initial * 2**n + random.uniform(0, jitter)
+     where n is the retry count.
+     """
+ 
+     def __init__(
+         self,
+         initial: float = 1,
+-        max: float = _utils.MAX_WAIT,
++        max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+-        jitter: float = 1,
++        jitter: _utils.time_unit_type = 1,
++        min: _utils.time_unit_type = 0,
+     ) -> None:
+         self.initial = initial
+-        self.max = max
++        self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+-        self.jitter = jitter
++        self.jitter = _utils.to_seconds(jitter)
++        self.min = _utils.to_seconds(min)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         jitter = random.uniform(0, self.jitter)
+@@ -268,4 +273,4 @@ class wait_exponential_jitter(wait_base):
+             result = self.initial * exp + jitter
+         except OverflowError:
+             result = self.max
+-        return max(0, min(result, self.max))
++        return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index efefba8..ef3939f 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -617,6 +617,31 @@ class TestWaitConditions(unittest.TestCase):
+         fn = tenacity.wait_exponential_jitter()
+         fn(make_retry_state(0, 0))
+ 
++    def test_wait_exponential_jitter_min(self) -> None:
++        fn = tenacity.wait_exponential_jitter(initial=1, max=60, min=5)
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 5, 5)
++            self._assert_inclusive_range(fn(make_retry_state(3, 0)), 5, 5)
++            self._assert_inclusive_range(fn(make_retry_state(4, 0)), 8, 9)
++            self.assertEqual(fn(make_retry_state(9, 0)), 60)
++
++    def test_wait_exponential_jitter_timedelta(self) -> None:
++        fn = tenacity.wait_exponential_jitter(
++            max=datetime.timedelta(seconds=60),
++            jitter=datetime.timedelta(seconds=1),
++            min=datetime.timedelta(seconds=2),
++        )
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 2, 2)
++            self._assert_inclusive_range(fn(make_retry_state(4, 0)), 8, 9)
++            self.assertEqual(fn(make_retry_state(9, 0)), 60)
++
++        fn = tenacity.wait_exponential_jitter(
++            initial=10, max=datetime.timedelta(seconds=5)
++        )
++        for _ in range(1000):
++            self.assertEqual(fn(make_retry_state(1, 0)), 5)
++
+     def test_wait_retry_state_attributes(self) -> None:
+         class ExtractCallState(Exception):
+             pass

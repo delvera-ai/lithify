@@ -1,0 +1,25 @@
+lithify ▸ 20261023-204830-bug-humanize-naturalday-and-huma  k=2 (genesis (S=0.40)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ▸ probe base-2: executing with codex
+  ✓ probe base-1: test=pass
+  ✓ probe base-2: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (codex)
+  ✓ applied deliverable from base-2: c1 and c2 implement the same correct timezone handling while preserving naive datetime and plain date behavior.
+c1 wins through stronger regression coverage: it tests both sides of the year-format cut
+lithify ◂ delivered=True first_pass=True S=0.60 executions=2 role_sessions=1 tokens(in/cached/out)=69029/402816/4332
+{
+  "task_id": "20261023-204830-bug-humanize-naturalday-and-huma",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-2",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.597,
+  "executions": 2,
+  "role_sessions": 1
+}
+

@@ -1,0 +1,31 @@
+{
+  "task": "Bug: `humanize.naturalday()` and `humanize.naturaldate()` give the wrong answer for timezone-aware datetimes. They compare against the system's local date, so when the date in the datetime's own timezone differs from the system date the result is off by a day. Example: if it is currently `2023-10-15 23:00 UTC`, a datetime 7 hours later expressed in AEDT (`+11:00`) is still \"today\" in AEDT, but humanize reports \"tomorrow\". For tz-aware datetimes, \"today\" must be determined in that datetime's timezone; behaviour for naive datetimes and plain dates must not change.",
+  "k": 2,
+  "reason": "genesis (S=0.40)",
+  "selected": "base-2",
+  "why": "c1 and c2 implement the same correct timezone handling while preserving naive datetime and plain date behavior.\nc1 wins through stronger regression coverage: it tests both sides of the year-format cutoff, in past and future, and documents the timezone semantics.\nRunner-up c2 tests only one year-cutoff case and omits that documentation.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 69029,
+    "cached": 402816,
+    "out": 4332,
+    "cost": 0.0,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.597,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}
