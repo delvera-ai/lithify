@@ -40,6 +40,7 @@ git add .lithify CLAUDE.md AGENTS.md .claude .agents .gitignore && git commit -m
 
 # 4. run work through it
 lithify run "add rate limiting to the public API"
+lithify feedback <task-id> --log ci.txt   # a delivered task later failed CI/review: learn from it
 lithify status        # stability, phase, next k, pending proposals
 lithify report        # per-task cost and the stability curve
 ```
