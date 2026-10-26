@@ -207,6 +207,23 @@ def cmd_adopt(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_feedback(a: argparse.Namespace) -> int:
+    from .feedback import feedback
+
+    text = sys.stdin.read() if a.log == "-" else Path(a.log).read_text(encoding="utf-8", errors="replace")
+    log = (lambda _m: None) if a.json else (lambda m: print(m, flush=True))
+    try:
+        res = feedback(Path.cwd(), a.id, text, log=log)
+    except RuntimeError as e:
+        _err(f"lithify feedback failed: {e}")
+        return 1
+    if a.json:
+        print(json.dumps(res, indent=2))
+    elif res["proposal"]:
+        print(f"review with: lithify adopt {a.id}-feedback")
+    return 0
+
+
 def cmd_compact(a: argparse.Namespace) -> int:
     print(ops.compact(Path.cwd(), cli=a.cli))
     return 0
@@ -343,6 +360,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--reject", action="store_true")
     s.set_defaults(fn=cmd_adopt)
 
+    s = sub.add_parser("feedback", help="harden the harness from a check that failed after a task was delivered")
+    s.add_argument("id", help="task id of the delivered run (see `lithify logs` / `lithify report`)")
+    s.add_argument("--log", required=True, help="file with the failing check's output, or - for stdin")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(fn=cmd_feedback)
     s = sub.add_parser("compact", help="janitor pass: shrink the always-on harness into a proposal")
     s.add_argument("--cli", choices=clis)
     s.set_defaults(fn=cmd_compact)
