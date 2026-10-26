@@ -2,6 +2,7 @@
 
 import io
 import json
+import re
 
 import pytest
 
@@ -25,7 +26,7 @@ def fx(tmp_path, capsys, monkeypatch):
     rc, out, _ = run(capsys, monkeypatch, repo, "init", "--executor", "mock", "--test-cmd", "python3 tests/check.py")
     assert rc == 0 and "lithify initialised" in out
     cfgp = repo / ".lithify" / "config.toml"
-    cfgp.write_text(cfgp.read_text().replace("max_k = 3", "max_k = 1"))
+    cfgp.write_text(re.sub(r"(?m)^max_k = \d+", "max_k = 1", cfgp.read_text()))  # independent of the default
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "init")
     return repo

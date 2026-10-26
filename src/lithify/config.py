@@ -34,7 +34,7 @@ class Config:
     lint_cmd: str = ""
     typecheck_cmd: str = ""
     holdout_cmd: str = ""
-    max_k: int = 3
+    max_k: int = 2
     mode: str = "parallel"
     auto_adopt: bool = False
     allow_test_edits: bool = False
