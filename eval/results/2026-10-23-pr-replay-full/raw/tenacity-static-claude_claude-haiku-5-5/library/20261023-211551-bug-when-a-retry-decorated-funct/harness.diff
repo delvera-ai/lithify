@@ -1,0 +1,70 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the attributes of a decorated function (`fn.statistics`/`fn.retry`/`fn.retry_with`, also seen through an outer `functools.wraps` decorator), the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -30,7 +30,7 @@
+   `statistics.clear()`; later updates happen in `_run_stop` (`delay_since_first_attempt`)
+   and `next_action` (`idle_for`, `attempt_number`). A key that must exist "from the start"
+   belongs in `begin()`. Decorated functions expose the running copy's dict as
+-  `fn.statistics` (`wraps` does `wrapped_f.statistics = copy.statistics`), not
++  `fn.statistics` (base commit: `wraps` does `wrapped_f.statistics = copy.statistics`; see §1a1), not
+   `fn.retry.statistics`.
+ - Statistics tests live in `TestStatistics` (`tests/test_tenacity.py`). To observe a value
+   during an attempt, read `retry_state.retry_object.statistics[...]` from a `before`/`after`
+@@ -40,6 +40,39 @@
+   `RetryError`. So a test that lets retries exhaust must use
+   `contextlib.suppress(RetryError)` (or `assertRaises(RetryError)`), never
+   `suppress(Exception)`, which hides the very `KeyError`/`TypeError` under test.
++
++## 1a1. Attributes of a `@retry`-decorated function (`fn.statistics`, `fn.retry`, `fn.retry_with`)
++Verified in `tenacity/__init__.py` (`BaseRetrying.wraps`, `_RetryDecorated`) and
++`tenacity/asyncio/__init__.py` (`AsyncRetrying.wraps`). Use when a task is about what these
++attributes show, including through another decorator (`functools.wraps`) or `retry_with`.
++- The attribute surface is the `_RetryDecorated` protocol (`retry`, `statistics: dict`,
++  `retry_with`). Both `wraps` set all three once at decoration (`statistics = {}`). Sync
++  `wrapped_f` and async `async_wrapped` are separate code; a change to one must be mirrored.
++- At the base commit, each call does `copy = self.copy()` (comment: so calls of the same
++  function "multiple times in the same stack" don't overwrite each other), then REBINDS
++  `wrapped_f.statistics = copy.statistics` and points `self._local.statistics` at it
++  (#614, so `fn.retry.statistics` matches). `copy()` always starts with a fresh `_local`, so
++  each call gets a new dict.
++- `functools.wraps` (`WRAPPER_UPDATES`) copies the inner function's `__dict__` into an outer
++  wrapper ONCE, at decoration. An attribute the inner wrapper later rebinds is stale on the
++  outer one. Only objects that stay the same and are mutated in place stay visible there.
++  `fn.retry` (the original `Retrying`) and `fn.retry_with` are never rebound, so
++  `mock.patch.object(outer.retry, ...)` already works.
++- INVARIANTS a change here must keep, or name as changed in the final message and reno note:
++  per-thread statistics (the `statistics` property docstring says each thread has its own
++  view); per-call isolation (a recursive or concurrent call of the same function must not
++  `begin()`/`clear()` a dict that another running call is updating); `fn.retry.statistics is
++  fn.statistics` after a call (#614); `enabled=False` returns before `self.copy()`, so it runs no
++  `begin()` and leaves `fn.statistics` as it was (`{}` if never run; tests only assert the
++  attribute exists); `fn.retry_with(...)` returns a new wrapped
++  function with its own `statistics`. Sharing one dict across calls breaks per-call isolation
++  and the per-thread note. If the fix does that, the final message must say so as a behaviour
++  change, not leave it as an open question.
++- Tests: the decorated-attribute tests are `TestDecoratorWrapper::test_retry_function_attributes`
++  in BOTH `tests/test_tenacity.py` and `tests/test_asyncio.py`. Put the sync and async
++  regression tests in the matching `TestDecoratorWrapper` classes. `tests/test_asyncio.py`
++  already does `from functools import wraps`; `tests/test_tenacity.py` doesn't import
++  `functools`.
+ 
+ ## 1a2. Give-up path: `TryAgain`, `reraise`, `RetryError` (`tenacity/__init__.py`)
+ Use this when a task is about which exception escapes once retries stop.
+@@ -300,7 +333,9 @@
+ - mypy runs `strict = true` over BOTH `tenacity` and `tests` (`pyproject.toml [tool.mypy]`), so
+   every new test function needs full parameter and `-> None` annotations.
+ - ruff (`line-length = 88`, `target-version = "py310"`) checks and format-checks the whole repo,
+-  tests included (`tox -e pep8`).
++  tests included (`tox -e pep8`). ruff format puts NO blank line between a decorator and its
++  `def`, including a multi-line `@retry(...)` call whose last line is `)`. Separate a nested
++  decorated def from the code above it with a blank line before the `@`, never after the `)`.
+ - Check items 2 and 3 with `<project python> .lithify/harness/scripts/check_changed.py`; it
+   checks the reno note's shape, the changed lines' length/spacing and that new defs are fully
+   annotated (ruff/mypy can't run here).

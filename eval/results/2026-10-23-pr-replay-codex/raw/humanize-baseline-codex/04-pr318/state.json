@@ -1,0 +1,65 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-204305-regression-when-gnu-is-false-hum",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 8659,
+      "tokens_cached": 68864,
+      "tokens_out": 544,
+      "cost_usd": 0.0,
+      "wall_s": 28.7,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-204334-humanize-i18n-raises-a-bare-exce",
+      "k": 0,
+      "first_pass": false,
+      "delivered": false,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 13016,
+      "tokens_cached": 79360,
+      "tokens_out": 552,
+      "cost_usd": 0.0,
+      "wall_s": 29.8,
+      "always_on_tokens": 189,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-204405-bug-humanize-naturalday-and-huma",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 13073,
+      "tokens_cached": 122240,
+      "tokens_out": 1909,
+      "cost_usd": 0.0,
+      "wall_s": 61.1,
+      "always_on_tokens": 189,
+      "stability_after": 0.4
+    },
+    {
+      "task_id": "20261023-204507-bug-humanize-natural-list-raises",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 15364,
+      "tokens_cached": 79616,
+      "tokens_out": 478,
+      "cost_usd": 0.0,
+      "wall_s": 53.7,
+      "always_on_tokens": 189,
+      "stability_after": 0.6
+    }
+  ]
+}

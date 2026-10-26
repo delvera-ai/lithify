@@ -1,0 +1,101 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index cd1a0d0..17b73aa 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -210,6 +210,21 @@
+       "wall_s": 380.3,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-162552-bug-retry-if-exception-message-m",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 23838,
++      "tokens_cached": 372488,
++      "tokens_out": 6169,
++      "cost_usd": 0.0116,
++      "wall_s": 67.0,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index df0cc4d..c75055e 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -223,24 +223,23 @@ class retry_if_exception_message(retry_if_exception):
+         message: str | None = None,
+         match: None | str | re.Pattern[str] = None,
+     ) -> None:
+-        if message and match:
++        if message is not None and match is not None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+             )
+ 
+-        if not message and not match:
++        if message is None and match is None:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+             )
+ 
+         self.message = message
+-        self.match = re.compile(match) if match else None
++        self.match = re.compile(match) if match is not None else None
+         super().__init__(self._check)
+ 
+     def _check(self, exception: BaseException) -> bool:
+-        if self.message:
++        if self.match is None:
+             return self.message == str(exception)
+-        assert self.match is not None
+         return bool(self.match.match(str(exception)))
+ 
+ 
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 61fd8db..f2be72a 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -925,6 +925,37 @@ class TestRetryConditions(unittest.TestCase):
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message(message="negative", match="negative")
+ 
++    def test_retry_if_exception_message_negative_empty_message_and_match(self) -> None:
++        with self.assertRaises(TypeError):
++            tenacity.retry_if_exception_message(message="", match="negative")
++
++    def test_retry_if_exception_message_empty_message(self) -> None:
++        retry = tenacity.retry_if_exception_message(message="")
++        assert _call_with_exception(retry, RuntimeError()) is True
++        assert _call_with_exception(retry, RuntimeError("boom")) is False
++
++    def test_retry_if_not_exception_message_empty_message(self) -> None:
++        retry = tenacity.retry_if_not_exception_message(message="")
++        assert _call_with_exception(retry, RuntimeError()) is False
++        assert _call_with_exception(retry, RuntimeError("boom")) is True
++
++    def test_retry_if_exception_message_empty_match(self) -> None:
++        retry = tenacity.retry_if_exception_message(match="")
++        assert _call_with_exception(retry, RuntimeError()) is True
++        assert _call_with_exception(retry, RuntimeError("boom")) is True
++
++    def test_retry_if_not_exception_message_empty_match(self) -> None:
++        retry = tenacity.retry_if_not_exception_message(match="")
++        assert _call_with_exception(retry, RuntimeError()) is False
++        assert _call_with_exception(retry, RuntimeError("boom")) is False
++
++
++def _call_with_exception(retry: typing.Any, exc: BaseException) -> typing.Any:
++    """Invoke a retry predicate as if the attempt had raised ``exc``."""
++    retry_state = RetryCallState(None, None, (), {})  # type: ignore[arg-type]
++    retry_state.set_exception((type(exc), exc, None))
++    return retry(retry_state)
++
+ 
+ class NoneReturnUntilAfterCount:
+     """Holds counter state for invoking a method several times in a row."""

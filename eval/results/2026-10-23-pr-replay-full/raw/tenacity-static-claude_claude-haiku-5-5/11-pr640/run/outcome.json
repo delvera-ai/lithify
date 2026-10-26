@@ -1,0 +1,52 @@
+{
+  "task": "Bug: when `TryAgain` is raised from inside an `except` block to drive a manual retry (e.g. with `retry=retry_never`) and `reraise=True`, the error raised after the attempts are exhausted is the opaque `TryAgain` sentinel instead of the underlying exception that caused the retry:\n\n```python\ndef call():\n    try:\n        raise ValueError(\"the real error\")\n    except ValueError:\n        raise tenacity.TryAgain\n\nRetrying(stop=stop_after_attempt(2), retry=retry_never, reraise=True)(call)\n# raises tenacity.TryAgain; expected the ValueError\n```\n\nWith `reraise=True`, the underlying exception should be re-raised; this must work for sync and async retrying.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Deciding criterion: correctness beyond the tests. c4 re-raises the real error whether `TryAgain` was raised inside an `except` block or with `raise TryAgain from exc`, in a 4-line change with a release note and a sync and an async test.\nRunner-up c1 is just as small, but it only looks at the implicit chain (`__context__`), so `raise TryAgain from exc` outside an `except` block still raises the sentinel.\nc3 handles the same cases as c4 but also needlessly rewrites the existing `raise self.last_attempt.result()` line.\nc2 has the most tests but the same `__context__`-only gap as c1.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-205644-bug-when-tryagain-is-raised-from",
+  "usage": {
+    "in": 404865,
+    "cached": 5404676,
+    "out": 70131,
+    "cost": 2.8830237599999995,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.63,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

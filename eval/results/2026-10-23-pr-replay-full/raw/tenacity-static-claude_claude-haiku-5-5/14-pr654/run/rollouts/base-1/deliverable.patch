@@ -1,0 +1,70 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..3953723 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
+ import typing
+ import warnings
+@@ -201,13 +202,27 @@ class wait_exponential(wait_base):
+         self.exp_base = exp_base
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        try:
+-            exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.multiplier * exp
+-        except OverflowError:
+-            return self.max
++        exp_n = retry_state.attempt_number - 1
++        if self._exceeds_max(exp_n):
++            result = self.max
++        else:
++            try:
++                exp = self.exp_base ** exp_n
++                result = self.multiplier * exp
++            except OverflowError:
++                return self.max
+         return max(max(0, self.min), min(result, self.max))
+ 
++    def _exceeds_max(self, n: int) -> bool:
++        """Whether multiplier * exp_base ** n is clearly above max.
++
++        Decided in log space so the power is never computed past the cap. The
++        small margin keeps values near max on the exact path.
++        """
++        if self.multiplier <= 0 or self.exp_base <= 1 or self.max <= 0:
++            return False
++        return n * math.log(self.exp_base) > math.log(self.max / self.multiplier) + 1e-9
++
+ 
+ class wait_random_exponential(wait_exponential):
+     """Random wait with exponentially widening window.
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..2a52da2 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -413,6 +413,20 @@ class TestWaitConditions(unittest.TestCase):
+                 self.assertEqual(r.wait(make_retry_state(9, 0)), 100)
+                 self.assertEqual(r.wait(make_retry_state(20, 0)), 100)
+ 
++    def test_exponential_with_max_wait_does_not_compute_power_past_cap(self) -> None:
++        powers: list[typing.Any] = []
++
++        class RecordingBase(float):
++            def __pow__(self, other: typing.Any) -> typing.Any:
++                powers.append(other)
++                return super().__pow__(other)
++
++        r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=RecordingBase(2)))
++        self.assertEqual(r.wait(make_retry_state(7, 0)), 40)
++        powers.clear()
++        self.assertEqual(r.wait(make_retry_state(10**6, 0)), 40)
++        self.assertEqual(powers, [])
++
+     def test_legacy_explicit_wait_type(self) -> None:
+         Retrying(wait="exponential_sleep")  # type: ignore[arg-type]
+ 

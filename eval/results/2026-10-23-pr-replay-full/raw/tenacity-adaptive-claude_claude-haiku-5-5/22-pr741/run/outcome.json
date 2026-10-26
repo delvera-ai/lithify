@@ -1,0 +1,27 @@
+{
+  "task": "Bug: retrying skips the wait strategy whenever the strategy object is falsy, so a callable wait strategy that is an empty container or defines `__bool__` returning False is never called. Only the \"no wait\" values (`None`, `0`, and `sum([])` over no strategies) should mean no wait; any other wait strategy must be called, in both the sync and async retry loops.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 25019,
+    "cached": 336274,
+    "out": 6529,
+    "cost": 0.011628840000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

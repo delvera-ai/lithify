@@ -1,0 +1,39 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..bc72ab7 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-185633-bug-tenacity-utils-find-ordinal",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 18921,
++      "tokens_cached": 94876,
++      "tokens_out": 1725,
++      "cost_usd": 0.0056,
++      "wall_s": 19.2,
++      "always_on_tokens": 186,
++      "stability_after": 0.2
++    }
++  ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 

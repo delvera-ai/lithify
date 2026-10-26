@@ -1,0 +1,91 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..cd5f288 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,7 +15,9 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
++import sys
+ import typing
+ import warnings
+ 
+@@ -201,13 +203,48 @@ class wait_exponential(wait_base):
+         self.exp_base = exp_base
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
++        exponent = retry_state.attempt_number - 1
++        capped = self._capped_result(exponent)
++        if capped is not None:
++            return capped
+         try:
+-            exp = self.exp_base ** (retry_state.attempt_number - 1)
++            exp = self.exp_base ** exponent
+             result = self.multiplier * exp
+         except OverflowError:
+             return self.max
+         return max(max(0, self.min), min(result, self.max))
+ 
++    def _capped_result(self, exponent: int) -> typing.Optional[float]:
++        """Return the wait for an exponent past ``max``, without computing the power.
++
++        Returns None when the power has to be computed: the wait is not past ``max``,
++        or it is too close to a boundary to decide from logarithms.
++        """
++        base, multiplier, cap = self.exp_base, self.multiplier, self.max
++        for value in (base, multiplier, cap):
++            if not isinstance(value, (int, float)):
++                return None
++            if isinstance(value, float) and not math.isfinite(value):
++                return None
++        if not (base > 1 and multiplier > 0 and cap > 0):
++            return None
++
++        log_power = exponent * math.log(base)
++        log_cap = math.log(cap) - math.log(multiplier)
++        if isinstance(base, float) or isinstance(multiplier, float):
++            # The power (or its conversion to float) raises OverflowError past the float
++            # range, and the old code returned self.max unclamped in that case.
++            log_float_max = math.log(sys.float_info.max)
++            if abs(log_power - log_float_max) <= 1e-9 * (1 + log_float_max):
++                return None
++            if log_power > log_float_max:
++                return self.max
++        if abs(log_power - log_cap) <= 1e-9 * (1 + abs(log_cap)):
++            return None
++        if log_power > log_cap:
++            return max(max(0, self.min), cap)
++        return None
++
+ 
+ class wait_random_exponential(wait_exponential):
+     """Random wait with exponentially widening window.
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..1c8dc9f 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -359,6 +359,22 @@ class TestWaitConditions(unittest.TestCase):
+         self.assertEqual(r.wait(make_retry_state(8, 0)), 40)
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_max_skips_power_past_cap(self) -> None:
++        powers: typing.List[typing.Any] = []
++
++        class CountingBase(float):
++            def __pow__(self, other: typing.Any) -> typing.Any:
++                powers.append(other)
++                return float.__pow__(self, other)
++
++        fn = tenacity.wait_exponential(max=40, exp_base=CountingBase(2))
++        self.assertEqual(fn(make_retry_state(3, 0)), 4)
++        self.assertEqual(len(powers), 1)
++        del powers[:]
++        self.assertEqual(fn(make_retry_state(50, 0)), 40)
++        self.assertEqual(fn(make_retry_state(10**9, 0)), 40)
++        self.assertEqual(powers, [])
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

@@ -1,0 +1,83 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3b53da2..e62e661 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ 
+ import abc
++import math
+ import random
+ import typing
+ import warnings
+@@ -201,6 +202,23 @@ class wait_exponential(wait_base):
+         self.exp_base = exp_base
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
++        # Compare logarithms before computing a potentially enormous integer.
++        # Other parameter ranges need the original calculation (for example,
++        # a base below one produces decreasing waits).
++        if (
++            self.exp_base > 1
++            and self.multiplier > 0
++            and math.isfinite(self.exp_base)
++            and math.isfinite(self.multiplier)
++            and math.isfinite(self.max)
++            and (
++                self.max <= 0
++                or retry_state.attempt_number - 1
++                > (math.log(self.max) - math.log(self.multiplier))
++                / math.log(self.exp_base)
++            )
++        ):
++            return max(max(0, self.min), self.max)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+             result = self.multiplier * exp
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b117061..0cc1735 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -359,6 +359,42 @@ class TestWaitConditions(unittest.TestCase):
+         self.assertEqual(r.wait(make_retry_state(8, 0)), 40)
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_skips_power_above_max(self) -> None:
++        class PowerSpy(int):
++            def __pow__(self, exponent: int) -> int:
++                if exponent > 5:
++                    raise AssertionError("power computed beyond the cap")
++                return int(self) ** exponent
++
++        for multiplier, maximum in ((1, 40), (1, 32), (0.5, 20), (2, 80)):
++            wait = tenacity.wait_exponential(
++                multiplier=multiplier, max=maximum, exp_base=PowerSpy(2)
++            )
++            self.assertEqual(wait(make_retry_state(6, 0)), multiplier * 32)
++            for attempt in (7, 50, 10**100):
++                self.assertEqual(wait(make_retry_state(attempt, 0)), maximum)
++
++    def test_exponential_cap_preserves_parameter_ranges(self) -> None:
++        for base, multiplier, minimum, maximum in (
++            (2, 1, 100, 40),
++            (0.5, 10, 0, 4),
++            (1, 10, 0, 4),
++            (2, 0, 0, 4),
++            (2, -1, 0, 4),
++            (2, 1, 0, 0),
++            (2, 1, 0, -1),
++            (2, 1, 0, float("inf")),
++        ):
++            wait = tenacity.wait_exponential(
++                multiplier=multiplier, exp_base=base, min=minimum, max=maximum
++            )
++            for attempt in range(1, 20):
++                expected = max(
++                    max(0, minimum),
++                    min(multiplier * base ** (attempt - 1), maximum),
++                )
++                self.assertEqual(wait(make_retry_state(attempt, 0)), expected)
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

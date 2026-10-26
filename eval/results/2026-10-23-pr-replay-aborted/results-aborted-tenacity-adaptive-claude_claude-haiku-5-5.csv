@@ -1,0 +1,8 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-154952-bug-tenacity-utils-find-ordinal,tenacity#556,0,1,2,genesis (S=0.00),True,True,True,True,base-2,2,1,60355,502480,7402,0.2144,45.9,186,0.2,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-155039-bug-tenacity-after-log-crashes-w,tenacity#591,0,2,2,genesis (S=0.20),True,True,True,True,base-2,2,1,56014,412731,6160,0.2053,41.9,186,0.4,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-155121-bug-the-delay-since-first-attemp,tenacity#603,0,3,1,build (S=0.40),True,True,True,True,base-1,1,0,21803,265464,3407,0.0087,34.4,186,0.6,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-155157-regression-since-8-4-2-composing,tenacity#606,0,4,1,build (S=0.60),True,True,True,True,base-1,1,0,44966,990001,17846,0.0278,107.7,186,0.8,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-155347-feature-attemptmanager-the-objec,tenacity#605,0,5,0,cruise (S=0.80),True,True,True,True,base-1,1,0,19739,345194,3990,0.0094,38.3,186,1.0,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,20261023-155426-feature-add-an-enabled-parameter,tenacity#604,0,6,0,cruise (S=1.00),True,True,True,True,base-1,1,0,57295,1137503,20910,0.0333,131.1,186,1.0,,,,all,2b01a9b
+pr-replay-full,adaptive,claude@claude-haiku-5-5,,tenacity#609,0,7,,,False,False,False,False,,0,0,0,0,0,0.0,106.3,,,,,,all,2b01a9b

@@ -1,0 +1,144 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8fe899e..6b3c640 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -105,6 +105,21 @@
+       "wall_s": 109.7,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-201025-bug-retrying-objects-and-the-bui",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 20211,
++      "tokens_cached": 212864,
++      "tokens_out": 2788,
++      "cost_usd": 0.0,
++      "wall_s": 92.2,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 591f970..a157555 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -256,6 +256,20 @@ class BaseRetrying(ABC):
+         self._name = name
+         self.enabled = enabled
+ 
++    def __getstate__(self) -> dict[str, t.Any]:
++        state = self.__dict__.copy()
++        # Iteration actions contain closures and are rebuilt on the next call.
++        # Only preserve the current thread's statistics from the local context.
++        state.pop("_local")
++        state["_statistics"] = self.statistics.copy()
++        return state
++
++    def __setstate__(self, state: dict[str, t.Any]) -> None:
++        statistics = state.pop("_statistics")
++        self.__dict__.update(state)
++        self._local = threading.local()
++        self._local.statistics = statistics
++
+     def copy(
+         self,
+         sleep: t.Callable[[int | float], None] | object = _unset,
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 6e9fc3e..96b49c6 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -108,7 +108,10 @@ class retry_if_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: isinstance(e, exception_types))
++        super().__init__(self._predicate)
++
++    def _predicate(self, exception: BaseException) -> bool:
++        return isinstance(exception, self.exception_types)
+ 
+ 
+ class retry_if_not_exception_type(retry_if_exception):
+@@ -120,7 +123,10 @@ class retry_if_not_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(self._predicate)
++
++    def _predicate(self, exception: BaseException) -> bool:
++        return not isinstance(exception, self.exception_types)
+ 
+ 
+ class retry_unless_exception_type(retry_if_exception):
+@@ -132,7 +138,10 @@ class retry_unless_exception_type(retry_if_exception):
+         | tuple[type[BaseException], ...] = Exception,
+     ) -> None:
+         self.exception_types = exception_types
+-        super().__init__(lambda e: not isinstance(e, exception_types))
++        super().__init__(self._predicate)
++
++    def _predicate(self, exception: BaseException) -> bool:
++        return not isinstance(exception, self.exception_types)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:
+@@ -219,40 +228,27 @@ class retry_if_exception_message(retry_if_exception):
+                 f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+             )
+ 
+-        # set predicate
+-        if message:
+-
+-            def message_fnc(exception: BaseException) -> bool:
+-                return message == str(exception)
+-
+-            predicate = message_fnc
+-        elif match:
+-            prog = re.compile(match)
+-
+-            def match_fnc(exception: BaseException) -> bool:
+-                return bool(prog.match(str(exception)))
+-
+-            predicate = match_fnc
+-        else:
++        if not message and not match:
+             raise TypeError(
+                 f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+             )
+ 
+-        super().__init__(predicate)
++        self.message = message
++        self.match = re.compile(match) if match else None
++        super().__init__(self._predicate)
++
++    def _predicate(self, exception: BaseException) -> bool:
++        if self.message:
++            return self.message == str(exception)
++        assert self.match is not None
++        return bool(self.match.match(str(exception)))
+ 
+ 
+ class retry_if_not_exception_message(retry_if_exception_message):
+     """Retries until an exception message equals or matches."""
+ 
+-    def __init__(
+-        self,
+-        message: str | None = None,
+-        match: None | str | re.Pattern[str] = None,
+-    ) -> None:
+-        super().__init__(message, match)
+-        # invert predicate
+-        if_predicate = self.predicate
+-        self.predicate = lambda *args_, **kwargs_: not if_predicate(*args_, **kwargs_)
++    def _predicate(self, exception: BaseException) -> bool:
++        return not super()._predicate(exception)
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         if retry_state.outcome is None:

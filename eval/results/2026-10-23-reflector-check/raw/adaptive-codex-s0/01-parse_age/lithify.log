@@ -1,0 +1,35 @@
+lithify ▸ 20261023-204306-add-parse-age-value-to-app-users  k=1 (genesis (S=0.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✗ probe base-1: test=pass, holdout=FAIL(1)
+  ▸ propose dom-1 (codex)
+  ▸ propose inv-1 (codex)
+  ✓ dom-1: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with codex
+  ▸ probe dom-1: executing with codex
+  ✗ probe inv-1: test=pass, holdout=FAIL(1)
+  ✓ probe dom-1: test=pass, holdout=pass
+  ▸ compose comp-1 (codex)
+  ✓ comp-1: candidate harness ready
+  base rollout base-1: failed on first execution
+  ✓ applied deliverable from dom-1: only one distinct deliverable passed the gates (no LLM judge needed)
+  ▸ reflect (codex)
+  ✎ library: lesson recorded; 2 edit row(s)
+  ⬆ promoted (evidence: helped): skills/input-validation
+lithify ◂ delivered=True first_pass=False S=0.00 executions=3 role_sessions=4 tokens(in/cached/out)=99275/761216/7335
+{
+  "task_id": "20261023-204306-add-parse-age-value-to-app-users",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": false,
+  "selected": "dom-1",
+  "promoted": [
+    "skills/input-validation"
+  ],
+  "proposal": null,
+  "stability": 0.0,
+  "executions": 3,
+  "role_sessions": 4
+}
+

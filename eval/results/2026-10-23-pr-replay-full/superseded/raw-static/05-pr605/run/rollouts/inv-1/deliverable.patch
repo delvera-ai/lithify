@@ -1,0 +1,85 @@
+diff --git a/releasenotes/notes/async-with-attempt-3f9c1a7e5b2d8046.yaml b/releasenotes/notes/async-with-attempt-3f9c1a7e5b2d8046.yaml
+new file mode 100644
+index 0000000..a50c46e
+--- /dev/null
++++ b/releasenotes/notes/async-with-attempt-3f9c1a7e5b2d8046.yaml
+@@ -0,0 +1,8 @@
++---
++features:
++  - |
++    ``AttemptManager`` now supports the asynchronous context manager protocol.
++    ``async with attempt:`` can be used inside ``async for attempt in
++    AsyncRetrying(...)`` loops and behaves exactly like ``with attempt:``:
++    a raised exception marks the attempt as failed and is retried, and
++    the final ``RetryError`` or re-raised exception is handled as before.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5f12c2b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..945ae80 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -206,6 +206,44 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_async_with_do_max_attempts(self) -> None:
++        attempts = 0
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(3))
++        try:
++            async for attempt in retrying:
++                async with attempt:
++                    attempts += 1
++                    raise Exception
++        except RetryError:
++            pass
++
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_with_reraise(self) -> None:
++        class CustomError(Exception):
++            pass
++
++        try:
++            async for attempt in tasyncio.AsyncRetrying(
++                stop=stop_after_attempt(1), reraise=True
++            ):
++                async with attempt:
++                    raise CustomError()
++        except CustomError:
++            pass
++        else:
++            raise Exception
++
++    @asynctest
++    async def test_async_with_success_sets_result(self) -> None:
++        attempts = 0
++        async for attempt in tasyncio.AsyncRetrying(stop=stop_after_attempt(3)):
++            async with attempt:
++                attempts += 1
++        assert attempts == 1
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()

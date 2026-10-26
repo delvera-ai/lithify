@@ -1,0 +1,95 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 973c1ff..06ab42b 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -90,6 +90,21 @@
+       "wall_s": 92.2,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-200807-improvement-composing-several-re",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 13053,
++      "tokens_cached": 202624,
++      "tokens_out": 3098,
++      "cost_usd": 0.0,
++      "wall_s": 100.9,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..9cb5c32 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,8 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity.retry import retry_all as sync_retry_all
++from tenacity.retry import retry_any as sync_retry_any
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -96,7 +98,11 @@ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) in (retry_any, sync_retry_any) else (retry,))
++        )
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = False
+@@ -111,7 +117,11 @@ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+     def __init__(self, *retries: retry_base | async_retry_base) -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) in (retry_all, sync_retry_all) else (retry,))
++        )
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+         result = True
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 4edbd1f..bd1423f 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -259,7 +259,11 @@ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+     def __init__(self, *retries: "RetryBaseT") -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) is retry_any else (retry,))
++        )
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return any(r(retry_state) for r in self.retries)
+@@ -269,7 +273,11 @@ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+     def __init__(self, *retries: "RetryBaseT") -> None:
+-        self.retries = retries
++        self.retries = tuple(
++            member
++            for retry in retries
++            for member in (retry.retries if type(retry) is retry_all else (retry,))
++        )
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         return all(r(retry_state) for r in self.retries)

@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `Retrying(enabled=False)(fn)` and `AsyncRetrying(enabled=False)(fn)` ignore `enabled=False` when called directly: they run the full retry loop and wrap the original exception in `RetryError`. With `enabled=False`, calling the retrying object with a function should call it exactly once and propagate its exception unchanged (awaiting coroutine functions for the async version), matching the decorator and iterator paths.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Fidelity and minimal diff decided it. c3 adds an early return when `enabled=False` in both `__call__` methods. The async branch copies the existing loop's `is_coroutine_callable` / `result = \u2026` / `# type: ignore[no-any-return]` pattern. It leaves the surrounding code untouched, and its tests cover raise and return for sync callers, plus coroutine and plain functions passed to `AsyncRetrying`.\nRunner-up: c2 has the same logic and broader tests, but it moves the existing `is_async` line, which changes code the fix didn't need to touch. c1 is the smallest change but uses `t.cast`, which this codebase doesn't use (it uses `type: ignore`), and its tests skip the success path and plain functions passed to `AsyncRetrying`. c4 also moves `is_async` and needs two different ignore codes.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261024-220928-bug-retrying-enabled-false-fn-an",
+  "usage": {
+    "in": 411726,
+    "cached": 5032896,
+    "out": 70741,
+    "cost": 3.01477698,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

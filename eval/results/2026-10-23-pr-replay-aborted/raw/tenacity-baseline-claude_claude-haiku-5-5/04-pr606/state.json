@@ -1,0 +1,65 @@
+{
+  "consecutive_failures": 1,
+  "history": [
+    {
+      "task_id": "20261023-154952-bug-tenacity-utils-find-ordinal",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 19758,
+      "tokens_cached": 240312,
+      "tokens_out": 2901,
+      "cost_usd": 0.0078,
+      "wall_s": 32.3,
+      "always_on_tokens": 186,
+      "stability_after": 0.2
+    },
+    {
+      "task_id": "20261023-155025-bug-tenacity-after-log-crashes-w",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 20985,
+      "tokens_cached": 233125,
+      "tokens_out": 3259,
+      "cost_usd": 0.0082,
+      "wall_s": 32.5,
+      "always_on_tokens": 186,
+      "stability_after": 0.4
+    },
+    {
+      "task_id": "20261023-155058-bug-the-delay-since-first-attemp",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 25733,
+      "tokens_cached": 284612,
+      "tokens_out": 4946,
+      "cost_usd": 0.0105,
+      "wall_s": 38.4,
+      "always_on_tokens": 186,
+      "stability_after": 0.6
+    },
+    {
+      "task_id": "20261023-155139-regression-since-8-4-2-composing",
+      "k": 0,
+      "first_pass": false,
+      "delivered": false,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 0,
+      "tokens_cached": 0,
+      "tokens_out": 0,
+      "cost_usd": 0.0,
+      "wall_s": 406.6,
+      "always_on_tokens": 186,
+      "stability_after": 0.6
+    }
+  ]
+}

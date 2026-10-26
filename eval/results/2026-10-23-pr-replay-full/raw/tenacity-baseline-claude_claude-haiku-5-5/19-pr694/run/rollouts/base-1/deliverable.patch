@@ -1,0 +1,145 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 9ceaf16..6487149 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -415,7 +415,14 @@ class BaseRetrying(ABC):
+         self.iter_state.retry_run_result = self.retry(retry_state)
+ 
+     def _run_wait(self, retry_state: "RetryCallState") -> None:
+-        retry_state.upcoming_sleep = self.wait(retry_state)
++        # `wait=None`, `wait=0` and `sum([])` are all accepted to mean "no wait",
++        # which `WaitBaseT` does not express, so the truthiness check is deliberate.
++        if self.wait:  # type: ignore[truthy-bool]
++            sleep = self.wait(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     def _run_stop(self, retry_state: "RetryCallState") -> None:
+         self.statistics["delay_since_first_attempt"] = retry_state.seconds_since_start
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index a6c2253..2f57b8b 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -147,9 +147,14 @@ class AsyncRetrying(BaseRetrying):
+ 
+     @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+-        retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+-            retry_state
+-        )
++        # `wait=None`, `wait=0` and `sum([])` are all accepted to mean "no wait",
++        # which `WaitBaseT` does not express, so the truthiness check is deliberate.
++        if self.wait:  # type: ignore[truthy-bool]
++            sleep = await _utils.wrap_to_async_func(self.wait)(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     @override
+     async def _run_stop(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index e137b35..c828cfb 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -34,13 +34,15 @@ class wait_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         pass
+ 
+-    def __add__(self, other: "wait_base") -> "wait_combine":
++    def __add__(self, other: "WaitBaseT") -> "wait_combine":
+         return wait_combine(self, other)
+ 
+-    def __radd__(self, other: int) -> "wait_base":
+-        # `sum()` seeds its accumulator with the int 0, so tolerate that to
+-        # make summing waits work. Any other left operand is a `wait_base`,
+-        # whose `__add__` never defers to us.
++    def __radd__(self, other: "WaitBaseT | int") -> "wait_base":
++        # A plain callable on the left has no `__add__` to defer to, so combine
++        # it here. `sum()` seeds its accumulator with the int 0, so tolerate
++        # that to make summing waits work. Anything else is not addable.
++        if callable(other):
++            return wait_combine(other, self)
+         if other != 0:
+             return NotImplemented
+         return self
+@@ -86,12 +88,13 @@ class wait_random(wait_base):
+ class wait_combine(wait_base):
+     """Combine several waiting strategies."""
+ 
+-    def __init__(self, *strategies: wait_base) -> None:
++    def __init__(self, *strategies: WaitBaseT) -> None:
+         self.wait_funcs = strategies
+ 
+     @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        return sum(x(retry_state=retry_state) for x in self.wait_funcs)
++        # Passed positionally: plain callables may name their parameter anything.
++        return sum(x(retry_state) for x in self.wait_funcs)
+ 
+ 
+ class wait_chain(wait_base):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c9d5802..b633fe0 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -102,6 +102,19 @@ class TestAsyncio(unittest.TestCase):
+         except RetryError:
+             assert thing.counter == 2
+ 
++    @asynctest
++    async def test_falsy_wait_means_no_wait(self) -> None:
++        for wait in (None, 0, sum([])):
++            thing = NoIOErrorAfterCount(1)
++            sleep = mock.AsyncMock()
++            retrying = AsyncRetrying(
++                wait=wait,  # type: ignore[arg-type]
++                stop=stop_after_attempt(2),
++                sleep=sleep,
++            )
++            assert await retrying(_async_function, thing) == thing.go()
++            sleep.assert_awaited_once_with(0.0)
++
+     def test_repr(self) -> None:
+         repr(tasyncio.AsyncRetrying())
+ 
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1acd3f8..83fbb08 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -506,6 +506,33 @@ class TestWaitConditions(unittest.TestCase):
+             self.assertLess(w, 9)
+             self.assertGreaterEqual(w, 6)
+ 
++    def test_falsy_wait_means_no_wait(self) -> None:
++        for wait in (None, 0, sum([])):
++            sleep = mock.Mock()
++            flaky = mock.Mock(side_effect=[ValueError(), "ok"])
++            r = Retrying(
++                wait=wait,  # type: ignore[arg-type]
++                stop=tenacity.stop_after_attempt(2),
++                sleep=sleep,
++            )
++            self.assertEqual(r(flaky), "ok")
++            sleep.assert_called_once_with(0.0)
++
++    def test_plain_callable_added_to_wait_strategy(self) -> None:
++        def extra(retry_state: RetryCallState) -> float:
++            return 2.5
++
++        r = Retrying(wait=extra + tenacity.wait_fixed(1))
++        self.assertIsInstance(r.wait, tenacity.wait_combine)
++        self.assertEqual(r.wait(make_retry_state(1, 5)), 3.5)
++
++    def test_wait_combine_passes_retry_state_positionally(self) -> None:
++        def odd_name(state: RetryCallState) -> float:
++            return 1.0
++
++        r = Retrying(wait=tenacity.wait_combine(odd_name, tenacity.wait_fixed(2)))
++        self.assertEqual(r.wait(make_retry_state(1, 5)), 3.0)
++
+     def _assert_range(self, wait: float, min_: float, max_: float) -> None:
+         self.assertLess(wait, max_)
+         self.assertGreaterEqual(wait, min_)

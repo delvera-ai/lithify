@@ -1,0 +1,38 @@
+exit 1
+................................................F........ [ 40%]
+........................................................................ [ 90%]
+.............                                                            [100%]
+=================================== FAILURES ===================================
+____________ TestWaitConditions.test_wait_falsy_callable_is_called _____________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_falsy_callable_is_called>
+
+    def test_wait_falsy_callable_is_called(self) -> None:
+        # Only None and 0 mean "no wait": a strategy that happens to be falsy
+        # (empty container, custom __bool__) is still a strategy.
+        class EmptyWait(list[int]):
+            def __call__(self, retry_state: RetryCallState) -> float:
+                return 1
+    
+        sleeps: list[float] = []
+        r = Retrying(
+            wait=EmptyWait(),
+            sleep=sleeps.append,
+            stop=tenacity.stop_after_attempt(2),
+            retry_error_callback=lambda rs: None,
+        )
+        r(lambda: 1 / 0)
+>       self.assertEqual(sleeps, [1])
+E       AssertionError: Lists differ: [0.0] != [1]
+E       
+E       First differing element 0:
+E       0.0
+E       1
+E       
+E       - [0.0]
+E       + [1]
+
+tests/test_tenacity.py:548: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_callable_is_called
+1 failed, 141 passed, 15 subtests passed in 1.84s

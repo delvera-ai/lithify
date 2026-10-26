@@ -1,0 +1,46 @@
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..27dc81f 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -47,7 +47,7 @@ def find_ordinal(pos_num: int) -> str:
+         return "nd"
+     elif pos_num == 3:
+         return "rd"
+-    elif 4 <= pos_num <= 20:
++    elif 4 <= pos_num <= 20 or (pos_num > 20 and 11 <= pos_num % 100 <= 13):
+         return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..31ee981 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -1,8 +1,28 @@
+ import functools
+ 
++import pytest
++
+ from tenacity import _utils
+ 
+ 
++@pytest.mark.parametrize(
++    "number, suffix",
++    [
++        (number, "th")
++        for number in (
++            0, 4, 10, 11, 12, 13, 20, 100, 110, 111, 112, 113, 114,
++            211, 212, 213, 1011, 1012, 1013,
++        )
++    ]
++    + [(number, "st") for number in (1, 21, 101, 121)]
++    + [(number, "nd") for number in (2, 22, 102, 122)]
++    + [(number, "rd") for number in (3, 23, 103, 123)],
++)
++def test_ordinal(number: int, suffix: str) -> None:
++    assert _utils.find_ordinal(number) == suffix
++    assert _utils.to_ordinal(number) == f"{number}{suffix}"
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

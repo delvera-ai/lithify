@@ -1,0 +1,27 @@
+{
+  "task": "Bug: running the translation update script (`scripts/update-translations.sh`) loses translations: the words produced by `humanize.apnumber()` (e.g. \"one\" \u2026 \"nine\") and the gender-specific suffixes produced by `humanize.ordinal(..., gender=...)` are no longer extracted into the message catalogs, so after an update they fall back to English in locales such as de_DE and fr_FR. Make these strings extractable again so that updating the catalogs keeps their existing translations, keeping the existing translation keys and runtime locale switching working. Update the README if the extraction markers change.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 44196,
+    "cached": 227328,
+    "out": 2757,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

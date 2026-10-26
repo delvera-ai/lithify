@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `wait_exponential` can raise `ValueError: math domain error` instead of returning a wait time when `multiplier` and `max` are finite and positive but `max / multiplier` underflows to 0.0 (e.g. `wait_exponential(multiplier=1e300, max=1e-100)`), or when `multiplier` is not finite. It should return the capped wait instead; results for ordinary values must not change.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "I decided on correctness and how small the change is. c2, c3 and c4 make the same minimal fix: when `max / multiplier == 0`, the cap applies, and the existing `math.log` comparison stays as it is. Because of the existing `multiplier > 0` guard, a 0.0 ratio can only mean that multiplier is far larger than max, so returning the cap is correct and ordinary values are unaffected.\nc3 puts its tests next to the related `ExplodingPower` cap test and has the tightest comment and release note. c4 uses single backticks in its release note, which is inconsistent RST. c2 is equivalent but its comment cites only the inf case.\nc1, the runner-up, is also correct, but it adds an `exponent >= 0 if ... else ...` branch that gives the same result. That makes the condition harder to read for no gain.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261024-124648-bug-wait-exponential-can-raise-v",
+  "usage": {
+    "in": 416027,
+    "cached": 4668600,
+    "out": 76619,
+    "cost": 3.35991797,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.7202,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

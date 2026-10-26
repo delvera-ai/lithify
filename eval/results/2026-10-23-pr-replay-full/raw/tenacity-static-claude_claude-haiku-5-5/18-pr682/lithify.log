@@ -1,0 +1,36 @@
+lithify ▸ 20261024-204339-refactor-mark-every-method-that  k=1 (override k=1) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ▸ propose dom-1 (claude)
+  ▸ propose inv-1 (claude)
+  ✓ dom-1: candidate harness ready
+  ✓ inv-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✓ probe inv-1: test=pass
+  ✓ probe dom-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✓ probe comp-1: test=pass
+  base rollout base-1: passed on first execution
+  ▸ blind select among 4 gate-passing deliverables (claude)
+  ✓ applied deliverable from inv-1: Scope and fidelity decided it. c1 misses `ConcreteRetrying.__call__` (a `BaseRetrying` subclass) and `ExplodingPower.__pow__` in the test helpers. c2's fallback writes to `method.__dict__`, and its on
+  ▸ reflect (claude)
+  ✎ library: NO_ENTRY; 0 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261024-204339-refactor-mark-every-method-that (scripts/check_changed.py, scripts/list_overrides.py, skills/sweeping-refactor, skills/tenacity-change-contract) — `lithify adopt 20261024-204339-refactor-mark-every-method-that`
+lithify ◂ delivered=True first_pass=True S=0.70 executions=4 role_sessions=5 tokens(in/cached/out)=653125/11960503/201529 cost=$5.41
+{
+  "task_id": "20261024-204339-refactor-mark-every-method-that",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "inv-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261024-204339-refactor-mark-every-method-that",
+  "stability": 0.7,
+  "executions": 4,
+  "role_sessions": 5
+}
+

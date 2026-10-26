@@ -1,0 +1,16 @@
+---
+name: input-validation
+description: Load when adding or changing user-input parsers or validation in this accounts service.
+---
+
+# Input rejection contract
+
+`app/audit.py` owns the rejection audit policy: every rejected piece of user input must be recorded with `record_rejection(field, value, reason)` before raising the error. Use that helper; it appends records with `field`, `value`, and `reason` keys to `app.audit.REJECTIONS`.
+
+For each rejection path in a new or changed validator:
+
+- Call `app.audit.record_rejection` with the input field name, the original supplied value, and the rejection reason before raising `ValidationError` from `app.errors`.
+- Preserve the original value before stripping strings or converting types; the audit trail must show what the user supplied.
+- Confirm that every rejection branch both records the rejected input and raises the required error, and that successful parsing does not record a rejection.
+
+The older `parse_name` in `app/users.py` and `parse_quantity` in `app/orders.py` raise errors without recording them. `app/audit.py` explicitly identifies older validators as predating the policy; their omission is not the contract for new validation. Keep changes within the task's scope rather than migrating unrelated validators.

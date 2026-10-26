@@ -1,0 +1,31 @@
+{
+  "task": "Bug: `tenacity.after_log` crashes with `TypeError` when `retry_state.seconds_since_start` is `None` (it is `None` when the outcome timestamp has not been set). The log message should still be emitted, showing \"?\" in place of the elapsed seconds.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-1",
+  "why": "Both candidates correctly emit \u201c?\u201d for missing elapsed time and preserve numeric formatting.\nc1 wins on repository fidelity: its regression test reuses the existing retry-state helper and test setup.\nRunner-up c2 bypasses those conventions with direct construction and fixed values, without adding coverage.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 47858,
+    "cached": 324608,
+    "out": 2307,
+    "cost": 0.0,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

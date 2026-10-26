@@ -1,0 +1,118 @@
+diff --git a/releasenotes/notes/wait-exponential-jitter-multiplier-5c7d2e9a1f40b813.yaml b/releasenotes/notes/wait-exponential-jitter-multiplier-5c7d2e9a1f40b813.yaml
+new file mode 100644
+index 0000000..bee53f3
+--- /dev/null
++++ b/releasenotes/notes/wait-exponential-jitter-multiplier-5c7d2e9a1f40b813.yaml
+@@ -0,0 +1,12 @@
++---
++features:
++  - |
++    Add ``multiplier`` parameter to ``wait_exponential_jitter`` (default 1),
++    with the same meaning as in ``wait_exponential`` and the other exponential
++    wait strategies.
++deprecations:
++  - |
++    The ``initial`` parameter of ``wait_exponential_jitter`` is deprecated in
++    favour of ``multiplier``. Passing ``initial`` (by keyword or positionally)
++    still works but emits a ``DeprecationWarning``. Passing both ``initial`` and
++    ``multiplier`` raises ``ValueError``.
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 92fa1f4..1436424 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -17,6 +17,7 @@
+ import abc
+ import random
+ import typing
++import warnings
+ 
+ from tenacity import _utils
+ 
+@@ -240,24 +241,39 @@ class wait_random_exponential(wait_exponential):
+ class wait_exponential_jitter(wait_base):
+     """Wait strategy that applies exponential backoff and jitter.
+ 
+-    It allows for a customized initial wait, maximum wait, jitter and minimum.
++    It allows for a customized multiplier, maximum wait, jitter and minimum.
+ 
+     This implements the strategy described here:
+     https://cloud.google.com/storage/docs/retry-strategy
+ 
+-    The wait time is max(min, min(initial * 2**n + random.uniform(0, jitter), maximum))
+-    where n is the retry count.
++    The wait time is max(min, min(multiplier * 2**n + random.uniform(0, jitter),
++    maximum)) where n is the retry count.
++
++    The ``initial`` argument is deprecated in favour of ``multiplier``; it is
++    still accepted, but passing both raises ``ValueError``.
+     """
+ 
+     def __init__(
+         self,
+-        initial: float = 1,
++        initial: float | None = None,
+         max: _utils.time_unit_type = _utils.MAX_WAIT,
+         exp_base: float = 2,
+         jitter: _utils.time_unit_type = 1,
+         min: _utils.time_unit_type = 0,
++        multiplier: float | None = None,
+     ) -> None:
+-        self.initial = initial
++        if initial is not None:
++            if multiplier is not None:
++                raise ValueError(
++                    "'initial' is deprecated; cannot be passed together with 'multiplier'"
++                )
++            warnings.warn(
++                "'initial' is deprecated, use 'multiplier' instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            multiplier = initial
++        self.multiplier = 1 if multiplier is None else multiplier
+         self.max = _utils.to_seconds(max)
+         self.exp_base = exp_base
+         self.jitter = _utils.to_seconds(jitter)
+@@ -267,7 +283,7 @@ class wait_exponential_jitter(wait_base):
+         jitter = random.uniform(0, self.jitter)
+         try:
+             exp = self.exp_base ** (retry_state.attempt_number - 1)
+-            result = self.initial * exp + jitter
++            result = self.multiplier * exp + jitter
+         except OverflowError:
+             result = self.max
+         return max(max(0, self.min), min(result, self.max))
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 7061cd7..c539170 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -640,6 +640,29 @@ class TestWaitConditions(unittest.TestCase):
+             self._assert_inclusive_range(fn(make_retry_state(5, 0)), 16, 17)
+             self.assertEqual(fn(make_retry_state(7, 0)), 60)
+ 
++    def test_wait_exponential_jitter_multiplier(self) -> None:
++        fn = tenacity.wait_exponential_jitter(multiplier=2, max=60)
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 2, 3)
++            self._assert_inclusive_range(fn(make_retry_state(3, 0)), 8, 9)
++
++    def test_wait_exponential_jitter_initial_is_deprecated(self) -> None:
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(initial=2, max=60)
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 2, 3)
++
++        with self.assertWarns(DeprecationWarning):
++            fn = tenacity.wait_exponential_jitter(2, 60)
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 2, 3)
++
++    def test_wait_exponential_jitter_initial_and_multiplier_conflict(self) -> None:
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(initial=1, multiplier=1)
++        with self.assertRaises(ValueError):
++            tenacity.wait_exponential_jitter(1, 60, 2, 1, 0, 1)
++
+     def test_wait_retry_state_attributes(self) -> None:
+         class ExtractCallState(Exception):
+             pass

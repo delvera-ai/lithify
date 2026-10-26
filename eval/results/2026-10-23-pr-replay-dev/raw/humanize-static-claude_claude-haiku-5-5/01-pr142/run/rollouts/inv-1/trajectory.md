@@ -77,7 +77,7 @@ or=no`.
 <!-- lithify:end -->
 [assistant] The existing tests and one docstring example pin `10**26 * 30` and `10**28` to YB/YiB output, which this change will alter. I'll get a baseline run first, then check the new values.
 [tool_use Bash] {"command": "VENV=<work>/env-humanize/bin/python; ls -la $VENV 2>&1; PYTHONPATH=src $VENV -m pytest -q -p no:cacheprovider --color=no 2>&1 | tail -3; PYTHONPATH=src $VENV -m pytest -q -p no:cacheprovider --color=no --doctest-modules src/humanize/filesize.py 2>&1 | tail -3", "description": "Run baseline test suite and doctests"}
-[tool_result] lrwxr-xr-x@ 1 donovan  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] lrwxr-xr-x@ 1 user  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 ........................................................................ [ 88%]
 ....................................................................     [100%]
 549 passed, 23 skipped in 0.55s

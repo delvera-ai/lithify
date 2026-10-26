@@ -1,0 +1,268 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b11ebd7..5cd24cd 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -75,6 +75,21 @@
+       "wall_s": 38.3,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-155426-feature-add-an-enabled-parameter",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 57295,
++      "tokens_cached": 1137503,
++      "tokens_out": 20910,
++      "cost_usd": 0.0333,
++      "wall_s": 131.0,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 57af68a..bb6529b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -240,6 +240,7 @@ class BaseRetrying(ABC):
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -253,6 +254,7 @@ class BaseRetrying(ABC):
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
+         self._name = name
++        self.enabled = enabled
+ 
+     def copy(
+         self,
+@@ -269,6 +271,7 @@ class BaseRetrying(ABC):
+         | None
+         | object = _unset,
+         name: str | None | object = _unset,
++        enabled: bool | object = _unset,
+     ) -> "Self":
+         """Copy this object with some parameters changed if needed."""
+         return self.__class__(
+@@ -285,6 +288,7 @@ class BaseRetrying(ABC):
+                 retry_error_callback, self.retry_error_callback
+             ),
+             name=_first_set(name, self._name),
++            enabled=_first_set(enabled, self.enabled),
+         )
+ 
+     def __str__(self) -> str:
+@@ -484,6 +488,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+@@ -667,6 +674,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = ...,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = ...,
++    enabled: bool = ...,
+ ) -> _AsyncRetryDecorator: ...
+ 
+ 
+@@ -684,6 +692,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = RetryError,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = None,
++    enabled: bool = True,
+ ) -> t.Callable[[t.Callable[P, R]], _RetryDecorated[P, R]]: ...
+ 
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 85b216a..b4751c1 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -91,6 +91,7 @@ class AsyncRetrying(BaseRetrying):
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+         | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ) -> None:
+         super().__init__(
+             sleep=sleep,  # type: ignore[arg-type]
+@@ -104,11 +105,17 @@ class AsyncRetrying(BaseRetrying):
+             retry_error_cls=retry_error_cls,
+             retry_error_callback=retry_error_callback,
+             name=name,
++            enabled=enabled,
+         )
+ 
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            if _utils.is_coroutine_callable(fn):
++                return await fn(*args, **kwargs)
++            return fn(*args, **kwargs)  # type: ignore[return-value]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/tornadoweb.py b/tenacity/tornadoweb.py
+index 0d46ed7..7067ac7 100644
+--- a/tenacity/tornadoweb.py
++++ b/tenacity/tornadoweb.py
+@@ -43,6 +43,10 @@ class TornadoRetrying(BaseRetrying):
+         *args: typing.Any,
+         **kwargs: typing.Any,
+     ) -> "typing.Generator[typing.Any, typing.Any, _RetValT]":
++        if not self.enabled:
++            result = yield fn(*args, **kwargs)
++            raise gen.Return(result)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 0cdb8ba..9020359 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -106,6 +106,24 @@ class TestAsyncio(unittest.TestCase):
+     def test_repr(self) -> None:
+         repr(tasyncio.AsyncRetrying())
+ 
++    @asynctest
++    async def test_disabled_calls_once_and_propagates(self) -> None:
++        calls = []
++
++        @retry(enabled=False, stop=stop_after_attempt(5))
++        async def _fail() -> None:
++            calls.append("x")
++            raise KeyError("Bad key")
++
++        with pytest.raises(KeyError):
++            await _fail()
++        assert len(calls) == 1
++
++    @asynctest
++    async def test_disabled_async_retrying_with_sync_fn(self) -> None:
++        retrying = AsyncRetrying(enabled=False, stop=stop_after_attempt(5))
++        assert await retrying(lambda x: x * 2, 21) == 42
++
+     def test_retry_attributes(self) -> None:
+         assert hasattr(_retryable_coroutine, "retry")
+         assert hasattr(_retryable_coroutine, "retry_with")
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 5a90a46..5c6879b 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1930,5 +1930,73 @@ class TestMockingSleep:
+         assert mock_sleep.call_count == 1
+ 
+ 
++class TestEnabled(unittest.TestCase):
++    def test_retrying_disabled_calls_once_and_propagates(self) -> None:
++        calls = []
++        sleep = mock.Mock()
++
++        def _fail() -> None:
++            calls.append("x")
++            raise KeyError("Bad key")
++
++        retrying = Retrying(
++            enabled=False, sleep=sleep, stop=tenacity.stop_after_attempt(5)
++        )
++        with pytest.raises(KeyError):
++            retrying(_fail)
++        assert len(calls) == 1
++        sleep.assert_not_called()
++
++    def test_retrying_disabled_returns_result(self) -> None:
++        retrying = Retrying(enabled=False, stop=tenacity.stop_after_attempt(5))
++        assert retrying(lambda x: x * 2, 21) == 42
++
++    def test_decorator_disabled_calls_once_and_propagates(self) -> None:
++        calls = []
++
++        @retry(enabled=False, stop=tenacity.stop_after_attempt(5))
++        def _fail() -> None:
++            calls.append("x")
++            raise KeyError("Bad key")
++
++        with pytest.raises(KeyError):
++            _fail()
++        assert len(calls) == 1
++
++    def test_decorator_disabled_returns_result(self) -> None:
++        @retry(enabled=False)
++        def _add(a: int, b: int) -> int:
++            return a + b
++
++        assert _add(1, b=2) == 3
++
++    def test_enabled_by_default(self) -> None:
++        assert Retrying().enabled is True
++        assert retry()(lambda: None).retry.enabled is True
++
++    def test_disabled_survives_retry_with(self) -> None:
++        @retry(enabled=False)
++        def _fail() -> None:
++            raise KeyError("Bad key")
++
++        fail_faster = _fail.retry_with(stop=tenacity.stop_after_attempt(2))
++        with pytest.raises(KeyError):
++            fail_faster()
++        assert fail_faster.retry.enabled is False
++
++    def test_retry_with_can_reenable(self) -> None:
++        calls = []
++
++        @retry(enabled=False, stop=tenacity.stop_after_attempt(3))
++        def _fail() -> None:
++            calls.append("x")
++            raise KeyError("Bad key")
++
++        reenabled = _fail.retry_with(enabled=True, wait=tenacity.wait_fixed(0))
++        with pytest.raises(RetryError):
++            reenabled()
++        assert len(calls) == 3
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_tornado.py b/tests/test_tornado.py
+index 9233cca..2361bce 100644
+--- a/tests/test_tornado.py
++++ b/tests/test_tornado.py
+@@ -56,6 +56,23 @@ class TestTornado(testing.AsyncTestCase):
+         except RetryError:
+             assert thing.counter == 2
+ 
++    @testing.gen_test
++    def test_disabled_calls_once_and_propagates(self) -> Generator[Any, Any, None]:
++        calls = []
++
++        @gen.coroutine
++        def _fail() -> Generator[Any, Any, None]:
++            calls.append("x")
++            yield gen.moment
++            raise KeyError("Bad key")
++
++        retrying = tornadoweb.TornadoRetrying(
++            enabled=False, stop=stop_after_attempt(5)
++        )
++        with self.assertRaises(KeyError):
++            yield retrying(_fail)
++        assert len(calls) == 1
++
+     def test_repr(self) -> None:
+         repr(tornadoweb.TornadoRetrying())
+ 

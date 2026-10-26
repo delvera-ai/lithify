@@ -1,0 +1,44 @@
+diff --git a/src/humanize/i18n.py b/src/humanize/i18n.py
+index 1d30d50..5308a13 100644
+--- a/src/humanize/i18n.py
++++ b/src/humanize/i18n.py
+@@ -71,7 +71,7 @@ def activate(
+         dict: Translations.
+ 
+     Raises:
+-        Exception: If humanize cannot find the locale folder.
++        FileNotFoundError: If humanize cannot find the locale folder.
+     """
+     if locale is None or locale.startswith("en"):
+         _CURRENT.locale = None
+@@ -85,7 +85,7 @@ def activate(
+             "Humanize cannot determinate the default location of the 'locale' folder. "
+             "You need to pass the path explicitly."
+         )
+-        raise Exception(msg)
++        raise FileNotFoundError(msg)
+     if locale not in _TRANSLATIONS:
+         translation = gettext_module.translation("humanize", path, [locale])
+         _TRANSLATIONS[locale] = translation
+diff --git a/tests/test_i18n.py b/tests/test_i18n.py
+index 319a55d..5efb238 100644
+--- a/tests/test_i18n.py
++++ b/tests/test_i18n.py
+@@ -228,6 +228,17 @@ class TestActivate:
+         " 'locale' folder. You need to pass the path explicitly."
+     )
+ 
++    def test_missing_default_locale_path_raises_file_not_found(
++        self, monkeypatch: pytest.MonkeyPatch
++    ) -> None:
++        i18n = importlib.import_module("humanize.i18n")
++        monkeypatch.setattr(i18n, "_get_default_locale_path", lambda: None)
++
++        with pytest.raises(FileNotFoundError) as exc_info:
++            i18n.activate("ru_RU")
++
++        assert str(exc_info.value) == self.expected_msg
++
+     def test_default_locale_path_null__spec__(
+         self, monkeypatch: pytest.MonkeyPatch
+     ) -> None:

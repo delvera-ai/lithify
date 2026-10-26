@@ -1,0 +1,54 @@
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the attributes of a decorated function (`fn.statistics`/`fn.retry`/`fn.retry_with`, also seen through an outer `functools.wraps` decorator), the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, a new keyword/option on `Retrying`/`AsyncRetrying`/`@retry`, changed log/message text, retry-loop or `statistics` behaviour, the attributes of a decorated function (`fn.statistics`/`fn.retry`/`fn.retry_with`, also seen through an outer `functools.wraps` decorator), the `for attempt in`/`async for`/`with attempt:` iterator pattern or `AttemptManager`, the `enabled` switch, which exception escapes on give-up (`TryAgain`, `reraise=True`, `RetryError.reraise()`, `retry_error_cls`/`retry_error_callback`), adding, renaming or deprecating an argument of a wait/stop strategy (e.g. `wait_exponential_jitter`), emitting a `DeprecationWarning`, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version, pickling/copying/`multiprocessing` support or `threading.local`/statistics state on `Retrying`, adding or changing a strategy class, a performance/efficiency fix or rewrite of a strategy's arithmetic where results must stay the same (e.g. `wait_exponential` `exp_base ** n` past `max`)) — i.e. any edit under tenacity/ that a user of the library could notice, including speed. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -226,6 +226,29 @@
+   so any example of the class placed AFTER that block calls the function instead and fails.
+   Put a new example above that block.
+ 
++## 1b4. Exponential wait arithmetic (`tenacity/wait.py`)
++Verified in `tenacity/wait.py`, `tenacity/_utils.py`, `tests/test_tenacity.py`.
++- Exponential classes and where the power `self.exp_base ** (attempt_number - 1)` lives:
++  `wait_exponential.__call__`; `wait_random_exponential` has no power of its own (it calls
++  `super().__call__` and draws `random.uniform(self.min, high)`), so a change to
++  `wait_exponential` covers it; `wait_exponential_jitter.__call__` has its OWN copy (adds
++  `jitter`, and its `except OverflowError` sets `result = self.max` then clamps). A change to
++  the power/cap logic of one must name in the final message whether the other copy got it;
++  change `wait_exponential_jitter` only if the task names it.
++- `max` defaults to `_utils.MAX_WAIT` (`sys.maxsize / 2`, a float), so every
++  `wait_exponential()` has a finite cap; a cap short-circuit runs for default instances too.
++- "Results unchanged" means matching BOTH existing exits of `wait_exponential.__call__`:
++  `except OverflowError: return self.max` returns `max` WITHOUT the `min` clamp, while the
++  normal path returns `max(max(0, self.min), min(result, self.max))`. They differ only when
++  `min > max`. `OverflowError` comes from a float power or from `multiplier * <huge int>`
++  (int→float conversion); an int base with int multiplier never overflows. A new cap
++  short-circuit that returns through a different exit than the old code took for the same
++  inputs changes the result: keep the old exit or name the `min > max` difference in the
++  final message and the reno note.
++- Tests: wait strategies are tested in `tests/test_tenacity.py::TestWaitConditions`
++  (there is no `TestTenacity` class), calling `Retrying(wait=...).wait(make_retry_state(n, 0))`;
++  `make_retry_state(previous_attempt_number, delay_since_first_attempt)` is the module helper.
++
+ ## 1c. CONTRACT: a new keyword on `Retrying`/`AsyncRetrying`/`@retry`
+ A constructor option is stored on `BaseRetrying` and must appear in every place below.
+ Check each with `grep -n "<existing kwarg, e.g. retry_error_callback>" tenacity/*.py tenacity/asyncio/__init__.py`;
+@@ -297,7 +320,12 @@
+ 
+ ## 2. A release note in `releasenotes/notes/` (reno)
+ Maintainer commits that change behaviour ship a reno note alongside the code (e.g. #555, #551,
+-#552, #540). It is not CI-enforced, so it is easy to omit — do not omit it.
++#552, #540). It is not CI-enforced, so it is easy to omit — do not omit it. "Results are
++unchanged" is not an exemption: `tenacity/wait.py` fixes that keep every result ship one
++(#646 `ValueError` vs `IndexError`, and the annotation-only #392 `fix-wait-typing-*.yaml`).
++A user-reported performance problem (e.g. a strategy that gets slower over a long run) is a
++fix: use `fixes:`. The `wait.py` commits without a note are ruff/lint/typing-syntax refactors
++(#571, #584, #616, #619) and docstring fixes (#372, #548).
+ - File name: `<short-kebab-slug>-<16 hex chars>.yaml` (what `reno new <slug>` produces; the
+   repo exposes it as `tox -e reno -- new <slug>`). Any unique hex suffix is acceptable.
+ - Content: a YAML doc starting with `---`, one section key, a list of entries. Bug fixes use

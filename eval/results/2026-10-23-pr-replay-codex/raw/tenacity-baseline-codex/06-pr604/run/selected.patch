@@ -1,0 +1,229 @@
+diff --git a/doc/source/index.rst b/doc/source/index.rst
+index 2d1e9f8..bffeb6a 100644
+--- a/doc/source/index.rst
++++ b/doc/source/index.rst
+@@ -618,6 +618,23 @@ statistics should be read from the function `statistics` attribute.
+ 
+    ...
+ 
++Disabling retries
++~~~~~~~~~~~~~~~~~
++
++Pass ``enabled=False`` to call a function exactly once, without retry policies,
++callbacks, or sleeps. Any exception propagates unchanged. This is useful during
++development and testing, and works with synchronous and asynchronous functions.
++
++.. code-block:: python
++
++    @retry(enabled=False)
++    def fetch_data():
++        return load_data()
++
++You can also pass ``enabled=False`` to ``Retrying`` or ``AsyncRetrying`` when
++calling a function directly, or use ``fetch_data.retry_with(enabled=False)()``
++to disable retries for a particular call. Retries are enabled by default.
++
+ Retrying code block
+ ~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/releasenotes/notes/enabled-parameter.yaml b/releasenotes/notes/enabled-parameter.yaml
+new file mode 100644
+index 0000000..6d320e9
+--- /dev/null
++++ b/releasenotes/notes/enabled-parameter.yaml
+@@ -0,0 +1,4 @@
++features:
++  - Add an enabled parameter, defaulting to True, to retry controllers and the
++    retry decorator. With enabled=False, functions are called once without retry
++    processing and exceptions propagate unchanged.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 57af68a..bb6529b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -240,6 +240,7 @@ class BaseRetrying(ABC):
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -253,6 +254,7 @@ class BaseRetrying(ABC):
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
+         self._name = name
++        self.enabled = enabled
+ 
+     def copy(
+         self,
+@@ -269,6 +271,7 @@ class BaseRetrying(ABC):
+         | None
+         | object = _unset,
+         name: str | None | object = _unset,
++        enabled: bool | object = _unset,
+     ) -> "Self":
+         """Copy this object with some parameters changed if needed."""
+         return self.__class__(
+@@ -285,6 +288,7 @@ class BaseRetrying(ABC):
+                 retry_error_callback, self.retry_error_callback
+             ),
+             name=_first_set(name, self._name),
++            enabled=_first_set(enabled, self.enabled),
+         )
+ 
+     def __str__(self) -> str:
+@@ -484,6 +488,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+@@ -667,6 +674,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = ...,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = ...,
++    enabled: bool = ...,
+ ) -> _AsyncRetryDecorator: ...
+ 
+ 
+@@ -684,6 +692,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = RetryError,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = None,
++    enabled: bool = True,
+ ) -> t.Callable[[t.Callable[P, R]], _RetryDecorated[P, R]]: ...
+ 
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 85b216a..a12f64f 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -91,6 +91,7 @@ class AsyncRetrying(BaseRetrying):
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+         | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ) -> None:
+         super().__init__(
+             sleep=sleep,  # type: ignore[arg-type]
+@@ -104,11 +105,15 @@ class AsyncRetrying(BaseRetrying):
+             retry_error_cls=retry_error_cls,
+             retry_error_callback=retry_error_callback,
+             name=name,
++            enabled=enabled,
+         )
+ 
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return await _utils.wrap_to_async_func(fn)(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/tornadoweb.py b/tenacity/tornadoweb.py
+index 0d46ed7..4c14528 100644
+--- a/tenacity/tornadoweb.py
++++ b/tenacity/tornadoweb.py
+@@ -43,6 +43,10 @@ class TornadoRetrying(BaseRetrying):
+         *args: typing.Any,
+         **kwargs: typing.Any,
+     ) -> "typing.Generator[typing.Any, typing.Any, _RetValT]":
++        if not self.enabled:
++            result = yield fn(*args, **kwargs)
++            return result
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tests/test_enabled.py b/tests/test_enabled.py
+new file mode 100644
+index 0000000..19dd046
+--- /dev/null
++++ b/tests/test_enabled.py
+@@ -0,0 +1,80 @@
++import asyncio
++from typing import Any
++from unittest import mock
++
++import pytest
++
++from tenacity import AsyncRetrying, Retrying, TryAgain, retry, stop_after_attempt
++
++
++@pytest.mark.parametrize("asynchronous", [False, True])
++@pytest.mark.parametrize("decorated", [False, True])
++@pytest.mark.parametrize("exception", [None, ValueError("failure"), TryAgain()])
++def test_disabled_calls_once(
++    asynchronous: bool, decorated: bool, exception: BaseException | None
++) -> None:
++    callback = mock.Mock(side_effect=AssertionError("retry logic was called"))
++    target = mock.Mock(return_value=object(), side_effect=exception)
++
++    def sync_fn(*args: Any, **kwargs: Any) -> Any:
++        return target(*args, **kwargs)
++
++    async def async_fn(*args: Any, **kwargs: Any) -> Any:
++        return target(*args, **kwargs)
++
++    options: Any = dict(
++        enabled=False,
++        sleep=callback,
++        stop=callback,
++        wait=callback,
++        retry=callback,
++        before=callback,
++        after=callback,
++        before_sleep=callback,
++        retry_error_callback=callback,
++    )
++    fn = async_fn if asynchronous else sync_fn
++    controller = AsyncRetrying(**options) if asynchronous else Retrying(**options)
++    wrapped = retry(**options)(fn) if decorated else None
++
++    def invoke() -> Any:
++        result = wrapped(1, key=2) if wrapped else controller(fn, 1, key=2)
++        if asynchronous:
++            return asyncio.run(result)
++        return result
++
++    if exception is None:
++        assert invoke() is target.return_value
++    else:
++        with pytest.raises(type(exception)) as raised:
++            invoke()
++        assert raised.value is exception
++    target.assert_called_once_with(1, key=2)
++    callback.assert_not_called()
++    assert (wrapped.statistics if wrapped else controller.statistics) == {}
++
++
++@pytest.mark.parametrize("controller_cls", [Retrying, AsyncRetrying])
++def test_enabled_copy(controller_cls: Any) -> None:
++    controller = controller_cls(enabled=False)
++    assert controller.copy().enabled is False
++    assert controller.copy(enabled=True).enabled is True
++    assert controller_cls().enabled is True
++
++
++def test_retry_with_enabled() -> None:
++    target = mock.Mock(side_effect=ValueError("failure"))
++    wrapped = retry(stop=stop_after_attempt(3), reraise=True)(target)
++    with pytest.raises(ValueError):
++        wrapped.retry_with(enabled=False)()
++    assert target.call_count == 1
++    target.reset_mock()
++    with pytest.raises(ValueError):
++        wrapped()
++    assert target.call_count == 3
++
++
++def test_async_retrying_disabled_sync_function() -> None:
++    target = mock.Mock(return_value=42)
++    assert asyncio.run(AsyncRetrying(enabled=False)(target, 1)) == 42
++    target.assert_called_once_with(1)

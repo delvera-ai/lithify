@@ -1,0 +1,246 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 5b17322..ddde4a6 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-201420-improvement-composing-several-re](20261023-201420-improvement-composing-several-re/EXPERIENCE.md) — **when** The change in this tenacity repo has to work for both the sync and the async variant of an operator or strategy (`retry_base` vs `async_retry_base`). Python's reflected-operator dispatch sends mixed sync/async operands to the async class's `__ror__`/`__rand__`, so a fix that only handles same-family operands passes the pure-sync and pure-async tests but leaves the mixed case behaving differently. **then** In `skills/tenacity-change-contract/SKILL.md`, give each operator the change touches a written rule stating which side of a mixed sync/async expression handles it (`sync_x | async_y` → `async_retry_base.__ror__`) and which direction of absorption is safe: an async container may take sync members, a sync container must never take async ones. Also list the operand mixes the tests must cover (all sync, all async, sync→async, async→sync, plain callable on each side). If the mixed case still behaves differently, it must be reported as unmet, not as a "choice to redirect".
+ - [20261023-200259-feature-add-an-enabled-parameter](20261023-200259-feature-add-an-enabled-parameter/EXPERIENCE.md) — **when** A tenacity task adds a run-time option or behaviour switch to `Retrying`/`AsyncRetrying`/`@retry`, where the request is worded around the decorated call but users can also start a run through `for attempt in Retrying(...)`, `async for`, or `TornadoRetrying`. **then** In `skills/tenacity-change-contract` (SKILL.md), name every run entry point explicitly (`Retrying.__call__`, `BaseRetrying.__iter__`, `AsyncRetrying.__call__`, `AsyncRetrying.__aiter__`, `TornadoRetrying.__call__`) and require each to be handled or listed as left out. Saying in general that `BaseRetrying`/`_begin_iter` owns the loop is not enough: agents that had only that sentence still guarded just the `__call__` methods.
+ - [20261023-195627-feature-attemptmanager-the-objec](20261023-195627-feature-attemptmanager-the-objec/EXPERIENCE.md) — **when** A tenacity feature task that adds API or a new way to use existing API (a new protocol on an existing object, a new keyword, async/trio variant) where the user docs show the existing usage form without naming the class, so a grep for the class or method name over doc/ finds nothing and the change ships code+test+reno but no docs. **then** In the on-demand skill `skills/tenacity-change-contract`, list user docs as a required touch for features: edit `doc/source/index.rst` (README.rst symlinks to it) next to the existing example. Locate the section by grepping the existing usage snippet (e.g. `with attempt:`), not the class name. Write the example as a `.. testcode::` block that defines but doesn't run async functions. Name it in the skill description so it loads for the change. Keep it out of always-on system.md.
+ - [20261023-190929-bug-the-delay-since-first-attemp](20261023-190929-bug-the-delay-since-first-attemp/EXPERIENCE.md) — **when** A tenacity bug fix whose regression test has to observe state during an attempt (a `statistics` key, a `retry_state` field, a callback argument). The "first fail on unfixed code" run can be masked: an exception raised inside the decorated function is retried, and one raised in a callback is hidden by `suppress(Exception)`. So the red run either passes or fails for some other reason. **then** Put the exception-path facts in `skills/tenacity-change-contract`, the on-demand skill that loads for this kind of change: - which test class owns the area (e.g. `TestStatistics`) - read mid-attempt state from a `before`/`after` callback via `retry_state.retry_object` - callback exceptions propagate raw, while exceptions in the wrapped function get retried - only exhausted retries raise `RetryError`, so suppress only `RetryError` - which loop methods are shared through `BaseRetrying.begin()` and which are re-implemented in `tenacity/asyncio/` Don't rely on red-before-green alone to catch a test that fails for the wrong reason.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3291f58..e73765d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -90,6 +90,21 @@
+       "wall_s": 677.9,
+       "always_on_tokens": 930,
+       "stability_after": 0.5833
++    },
++    {
++      "task_id": "20261023-201420-improvement-composing-several-re",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 23,
++      "executions": 4,
++      "tokens_in": 486286,
++      "tokens_cached": 6497568,
++      "tokens_out": 134164,
++      "cost_usd": 3.018,
++      "wall_s": 707.1,
++      "always_on_tokens": 945,
++      "stability_after": 0.6
+     }
+   ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index 6a12678..83bd8d7 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -109,3 +109,20 @@ def wrap_to_async_func(
+         return call(*args, **kwargs)
+ 
+     return inner
++
++
++def flatten_operands(
++    kinds: tuple[type, ...], operands: tuple[typing.Any, ...]
++) -> tuple[typing.Any, ...]:
++    """Replace each operand whose exact type is in ``kinds`` by its ``retries``.
++
++    Used by the ``|`` and ``&`` operators so that a chain builds one container.
++    Subclasses are left alone because they may override ``__call__``.
++    """
++    members: list[typing.Any] = []
++    for operand in operands:
++        if type(operand) in kinds:
++            members.extend(operand.retries)
++        else:
++            members.append(operand)
++    return tuple(members)
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..655ac9d 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -17,6 +17,8 @@ import abc
+ import typing
+ 
+ from tenacity import _utils, retry_base
++from tenacity import retry_all as sync_retry_all
++from tenacity import retry_any as sync_retry_any
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+@@ -32,22 +34,30 @@ class async_retry_base(retry_base):
+     def __and__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+-        return retry_all(self, other)
++        return retry_all(
++            *_utils.flatten_operands((retry_all, sync_retry_all), (self, other))
++        )
+ 
+     def __rand__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_all":
+-        return retry_all(other, self)
++        return retry_all(
++            *_utils.flatten_operands((retry_all, sync_retry_all), (other, self))
++        )
+ 
+     def __or__(  # type: ignore[override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+-        return retry_any(self, other)
++        return retry_any(
++            *_utils.flatten_operands((retry_any, sync_retry_any), (self, other))
++        )
+ 
+     def __ror__(  # type: ignore[misc,override]
+         self, other: "retry_base | async_retry_base"
+     ) -> "retry_any":
+-        return retry_any(other, self)
++        return retry_any(
++            *_utils.flatten_operands((retry_any, sync_retry_any), (other, self))
++        )
+ 
+ 
+ RetryBaseT = (
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 4edbd1f..232580a 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -18,6 +18,8 @@ import abc
+ import re
+ import typing
+ 
++from tenacity import _utils
++
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
+ 
+@@ -32,18 +34,18 @@ class retry_base(abc.ABC):
+     def __and__(self, other: "RetryBaseT") -> "retry_all":
+         if isinstance(other, retry_base):
+             return other.__rand__(self)
+-        return retry_all(self, other)
++        return retry_all(*_utils.flatten_operands((retry_all,), (self, other)))
+ 
+     def __rand__(self, other: "RetryBaseT") -> "retry_all":
+-        return retry_all(other, self)
++        return retry_all(*_utils.flatten_operands((retry_all,), (other, self)))
+ 
+     def __or__(self, other: "RetryBaseT") -> "retry_any":
+         if isinstance(other, retry_base):
+             return other.__ror__(self)
+-        return retry_any(self, other)
++        return retry_any(*_utils.flatten_operands((retry_any,), (self, other)))
+ 
+     def __ror__(self, other: "RetryBaseT") -> "retry_any":
+-        return retry_any(other, self)
++        return retry_any(*_utils.flatten_operands((retry_any,), (other, self)))
+ 
+ 
+ RetryBaseT = retry_base | typing.Callable[["RetryCallState"], bool]
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 749c883..13bf877 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -432,6 +432,42 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    def test_async_retry_or_flattens_chain(self) -> None:
++        sync_a = tenacity.retry_if_result(lambda x: x == 1)
++        async_b = tasyncio.retry_if_result(lambda x: x == 2)
++        sync_c = tenacity.retry_if_result(lambda x: x == 3)
++        async_d = tasyncio.retry_if_result(lambda x: x == 4)
++
++        all_async = async_b | async_d | sync_c
++        self.assertIsInstance(all_async, tasyncio.retry_any)
++        self.assertEqual((async_b, async_d, sync_c), all_async.retries)
++
++        sync_first = sync_a | sync_c | async_b
++        self.assertIsInstance(sync_first, tasyncio.retry_any)
++        self.assertEqual((sync_a, sync_c, async_b), sync_first.retries)
++
++        mixed = sync_a | async_b | sync_c
++        self.assertIsInstance(mixed, tasyncio.retry_any)
++        self.assertEqual((sync_a, async_b, sync_c), mixed.retries)
++
++    def test_async_retry_and_flattens_chain(self) -> None:
++        sync_a = tenacity.retry_if_result(lambda x: x == 1)
++        async_b = tasyncio.retry_if_result(lambda x: x == 2)
++        sync_c = tenacity.retry_if_result(lambda x: x == 3)
++        async_d = tasyncio.retry_if_result(lambda x: x == 4)
++
++        all_async = async_b & async_d & sync_c
++        self.assertIsInstance(all_async, tasyncio.retry_all)
++        self.assertEqual((async_b, async_d, sync_c), all_async.retries)
++
++        sync_first = sync_a & sync_c & async_b
++        self.assertIsInstance(sync_first, tasyncio.retry_all)
++        self.assertEqual((sync_a, sync_c, async_b), sync_first.retries)
++
++        mixed = sync_a & async_b & sync_c
++        self.assertIsInstance(mixed, tasyncio.retry_all)
++        self.assertEqual((sync_a, async_b, sync_c), mixed.retries)
++
+     @asynctest
+     async def test_async_retying_iterator(self) -> None:
+         thing = NoIOErrorAfterCount(5)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b72831e..f9cf1e4 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -729,6 +729,47 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertFalse(r(tenacity.Future.construct(1, 3, False)))
+         self.assertFalse(r(tenacity.Future.construct(1, 1, True)))
+ 
++    def test_retry_or_flattens_chain(self) -> None:
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: x == 2)
++        c = tenacity.retry_if_result(lambda x: x == 3)
++
++        for retry in (a | b | c, a | (b | c), (a | b) | c):
++            self.assertIsInstance(retry, tenacity.retry_any)
++            self.assertEqual((a, b, c), retry.retries)
++
++    def test_retry_and_flattens_chain(self) -> None:
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: isinstance(x, int))
++        c = tenacity.retry_if_result(lambda x: x > 0)
++
++        for retry in (a & b & c, a & (b & c), (a & b) & c):
++            self.assertIsInstance(retry, tenacity.retry_all)
++            self.assertEqual((a, b, c), retry.retries)
++
++    def test_retry_composition_does_not_mutate_operands(self) -> None:
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: x == 2)
++        c = tenacity.retry_if_result(lambda x: x == 3)
++
++        ab = a | b
++        abc = ab | c
++
++        self.assertEqual((a, b), ab.retries)
++        self.assertEqual((a, b, c), abc.retries)
++
++    def test_retry_mixed_operators_stay_nested(self) -> None:
++        a = tenacity.retry_if_result(lambda x: x == 1)
++        b = tenacity.retry_if_result(lambda x: x == 2)
++        c = tenacity.retry_if_result(lambda x: x == 3)
++
++        retry = (a | b) & c
++
++        self.assertIsInstance(retry, tenacity.retry_all)
++        self.assertEqual(2, len(retry.retries))
++        self.assertIsInstance(retry.retries[0], tenacity.retry_any)
++        self.assertEqual((a, b), retry.retries[0].retries)
++
+     def test_retry_or(self) -> None:
+         retry = tenacity.retry_if_result(
+             lambda x: x == "foo"

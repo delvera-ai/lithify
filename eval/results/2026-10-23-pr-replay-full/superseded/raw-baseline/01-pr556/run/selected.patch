@@ -1,0 +1,36 @@
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..babd07b 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -39,3 +39,18 @@ def test_is_coroutine_callable() -> None:
+     assert _utils.is_coroutine_callable(partial_async_class) is True
+     assert _utils.is_coroutine_callable(partial_sync_class) is False
+     assert _utils.is_coroutine_callable(partial_lambda_fn) is False
++
++
++def test_to_ordinal() -> None:
++    assert _utils.to_ordinal(1) == "1st"
++    assert _utils.to_ordinal(2) == "2nd"
++    assert _utils.to_ordinal(3) == "3rd"
++    assert _utils.to_ordinal(11) == "11th"
++    assert _utils.to_ordinal(12) == "12th"
++    assert _utils.to_ordinal(13) == "13th"
++    assert _utils.to_ordinal(21) == "21st"
++    assert _utils.to_ordinal(111) == "111th"
++    assert _utils.to_ordinal(112) == "112th"
++    assert _utils.to_ordinal(113) == "113th"
++    assert _utils.to_ordinal(121) == "121st"
++    assert _utils.to_ordinal(1011) == "1011th"

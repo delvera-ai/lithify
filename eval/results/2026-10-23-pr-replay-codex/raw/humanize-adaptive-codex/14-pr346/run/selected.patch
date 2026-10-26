@@ -1,0 +1,49 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index ebccfb9..4303944 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -282,7 +282,7 @@ def intword(value: NumberOrString, format: str = "%.1f") -> str:
+     chopped = value / power
+     rounded_value = float(format % chopped)
+ 
+-    if not largest_ordinal and rounded_value * power == powers[ordinal + 1]:
++    if not largest_ordinal and rounded_value == powers[ordinal + 1] / power:
+         # After rounding, we end up just at the next power
+         ordinal += 1
+         rounded_value = 1.0
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 755e29e..d7f7a22 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -148,6 +148,31 @@ def test_intword(test_args: list[str], expected: str) -> None:
+     assert humanize.intword(*test_args) == expected
+ 
+ 
++@pytest.mark.parametrize(
++    "exponent, lower_unit, upper_unit",
++    [
++        (24, "sextillion", "septillion"),
++        (27, "septillion", "octillion"),
++        (30, "octillion", "nonillion"),
++        (33, "nonillion", "decillion"),
++    ],
++)
++@pytest.mark.parametrize("sign", [1, -1])
++@pytest.mark.parametrize("precision", [0, 1, 2])
++def test_intword_large_magnitude_rounding(
++    exponent: int, lower_unit: str, upper_unit: str, sign: int, precision: int
++) -> None:
++    prefix = "-" if sign < 0 else ""
++    format = f"%.{precision}f"
++    assert humanize.intword(sign * (10**exponent - 1), format) == (
++        f"{prefix}{format % 1} {upper_unit}"
++    )
++    below_rounding = 10**exponent - 10 ** (exponent - 3 - precision)
++    assert humanize.intword(sign * below_rounding, format) == (
++        f"{prefix}{format % (1000 - 10**-precision)} {lower_unit}"
++    )
++
++
+ @pytest.mark.parametrize(
+     "test_input, expected",
+     [

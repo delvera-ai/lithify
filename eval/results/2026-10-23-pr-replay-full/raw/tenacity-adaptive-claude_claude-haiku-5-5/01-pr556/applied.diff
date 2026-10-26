@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..faefd41 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 56621,
++      "tokens_cached": 344602,
++      "tokens_out": 5347,
++      "cost_usd": 0.1964,
++      "wall_s": 47.6,
++      "always_on_tokens": 186,
++      "stability_after": 0.2
++    }
++  ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..b15b31c 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -39,3 +39,22 @@ def test_is_coroutine_callable() -> None:
+     assert _utils.is_coroutine_callable(partial_async_class) is True
+     assert _utils.is_coroutine_callable(partial_sync_class) is False
+     assert _utils.is_coroutine_callable(partial_lambda_fn) is False
++
++
++def test_find_ordinal() -> None:
++    assert _utils.find_ordinal(0) == "th"
++    assert _utils.find_ordinal(1) == "st"
++    assert _utils.find_ordinal(2) == "nd"
++    assert _utils.find_ordinal(3) == "rd"
++    assert _utils.find_ordinal(4) == "th"
++    assert _utils.find_ordinal(11) == "th"
++    assert _utils.find_ordinal(12) == "th"
++    assert _utils.find_ordinal(13) == "th"
++    assert _utils.find_ordinal(21) == "st"
++    assert _utils.find_ordinal(22) == "nd"
++    assert _utils.find_ordinal(23) == "rd"
++    assert _utils.find_ordinal(111) == "th"
++    assert _utils.find_ordinal(112) == "th"
++    assert _utils.find_ordinal(113) == "th"
++    assert _utils.find_ordinal(121) == "st"
++    assert _utils.find_ordinal(1011) == "th"

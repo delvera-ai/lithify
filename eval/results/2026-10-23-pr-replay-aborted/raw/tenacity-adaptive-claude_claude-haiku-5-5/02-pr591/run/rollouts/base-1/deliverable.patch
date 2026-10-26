@@ -1,0 +1,47 @@
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..4769895 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,12 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        seconds = retry_state.seconds_since_start
++        elapsed = "?" if seconds is None else sec_format % seconds
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {elapsed}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..3dff8c0 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -74,3 +74,24 @@ class TestAfterLogFormat(unittest.TestCase):
+             f"after {sec_format % retry_state.seconds_since_start}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
++
++    def test_03_seconds_since_start_unset(self) -> None:
++        """Test log formatting when the outcome timestamp has not been set."""
++        log = unittest.mock.MagicMock(spec="logging.Logger.log")
++        logger = unittest.mock.MagicMock(spec="logging.Logger", log=log)
++
++        retry_state = test_tenacity.make_retry_state(self.previous_attempt_number, 0.1)
++        retry_state.outcome_timestamp = None
++        fun = after_log(logger=logger, log_level=self.log_level)
++        fun(retry_state)
++        fn_name = (
++            "<unknown>"
++            if retry_state.fn is None
++            else _utils.get_callback_name(retry_state.fn)
++        )
++        log.assert_called_once_with(
++            self.log_level,
++            f"Finished call to '{fn_name}' "
++            "after ?(s), "
++            f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
++        )

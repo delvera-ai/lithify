@@ -1,0 +1,57 @@
+diff --git a/releasenotes/notes/find-ordinal-teens-7c1e4a9b2d305f18.yaml b/releasenotes/notes/find-ordinal-teens-7c1e4a9b2d305f18.yaml
+new file mode 100644
+index 0000000..36219f1
+--- /dev/null
++++ b/releasenotes/notes/find-ordinal-teens-7c1e4a9b2d305f18.yaml
+@@ -0,0 +1,7 @@
++---
++fixes:
++  - |
++    Log messages now use the correct ordinal suffix for attempt numbers ending
++    in 11, 12 or 13 above 20. For example, attempt 111 is written as
++    ``111th`` instead of ``111st``, and 112 and 113 are written as ``112th``
++    and ``113th``.
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..cf0e11d 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -3,6 +3,26 @@ import functools
+ from tenacity import _utils
+ 
+ 
++def test_find_ordinal() -> None:
++    assert _utils.find_ordinal(0) == "th"
++    assert _utils.find_ordinal(1) == "st"
++    assert _utils.find_ordinal(2) == "nd"
++    assert _utils.find_ordinal(3) == "rd"
++    assert _utils.find_ordinal(4) == "th"
++    assert _utils.find_ordinal(11) == "th"
++    assert _utils.find_ordinal(12) == "th"
++    assert _utils.find_ordinal(13) == "th"
++    assert _utils.find_ordinal(21) == "st"
++    assert _utils.find_ordinal(22) == "nd"
++    assert _utils.find_ordinal(23) == "rd"
++    assert _utils.find_ordinal(101) == "st"
++    assert _utils.find_ordinal(111) == "th"
++    assert _utils.find_ordinal(112) == "th"
++    assert _utils.find_ordinal(113) == "th"
++    assert _utils.find_ordinal(121) == "st"
++    assert _utils.find_ordinal(1011) == "th"
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

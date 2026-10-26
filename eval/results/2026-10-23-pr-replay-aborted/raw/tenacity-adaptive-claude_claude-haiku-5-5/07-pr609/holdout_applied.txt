@@ -1,0 +1,40 @@
+exit 1
+..............................................F.......F..... [ 53%]
+....................................................                     [100%]
+=================================== FAILURES ===================================
+_________________ TestRetryConditions.test_retry_and_coalesces _________________
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_and_coalesces>
+
+    def test_retry_and_coalesces(self) -> None:
+        """Multiple & operations flatten into a single retry_all."""
+        a = tenacity.retry_if_result(lambda x: x == 1)
+        b = tenacity.retry_if_result(lambda x: x > 0)
+        c = tenacity.retry_if_result(lambda x: x < 10)
+    
+        combined = a & b & c
+        self.assertIsInstance(combined, retry_all)
+>       self.assertEqual(len(combined.retries), 3)
+E       AssertionError: 2 != 3
+
+tests/test_tenacity.py:799: AssertionError
+_________________ TestRetryConditions.test_retry_or_coalesces __________________
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_or_coalesces>
+
+    def test_retry_or_coalesces(self) -> None:
+        """Multiple | operations flatten into a single retry_any."""
+        a = tenacity.retry_if_exception_type(IOError)
+        b = tenacity.retry_if_exception_type(OSError)
+        c = tenacity.retry_if_exception_type(ValueError)
+    
+        combined = a | b | c
+        self.assertIsInstance(combined, retry_any)
+>       self.assertEqual(len(combined.retries), 3)
+E       AssertionError: 2 != 3
+
+tests/test_tenacity.py:789: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_and_coalesces
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_or_coalesces
+2 failed, 110 passed, 12 subtests passed in 1.86s

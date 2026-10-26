@@ -1,0 +1,52 @@
+{
+  "task": "Feature: `AttemptManager` (the object yielded by `for attempt in Retrying(...)` / `async for attempt in AsyncRetrying(...)`) should also support the async context-manager protocol, so `async with attempt:` works inside `async for` loops, behaving exactly like `with attempt:`.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "All four make the same core change: `__aenter__` and `__aexit__` hand off to the existing `__enter__` and `__exit__`, so `async with attempt:` behaves exactly like `with attempt:`. All four add a release note and pass the test suite, so the decision came down to docs and tests.\n- **Docs:** only c1 and c3 add an `async with attempt:` example to the \"Retrying code block\" section of `index.rst`, which is where `with attempt:` is already documented. c2 and c4 leave the new feature undocumented.\n- **Pick, c1:** its tests check the attempt count and also that the final result (`outcome.result() == 3`) is set in the `retry_if_result` flow.\n- **Runner-up, c3:** its `retry_if_result` test only checks a local variable (`result == 3`). It never checks how many attempts ran or the stored result, so it would still pass if the result handling were wrong.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-195627-feature-attemptmanager-the-objec",
+  "usage": {
+    "in": 325105,
+    "cached": 3388843,
+    "out": 47783,
+    "cost": 2.44720027,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.56,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

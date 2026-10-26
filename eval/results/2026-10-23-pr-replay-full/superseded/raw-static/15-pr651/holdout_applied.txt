@@ -1,0 +1,73 @@
+exit 1
+........................................................F..F [ 45%]
+........................................................................ [100%]
+=================================== FAILURES ===================================
+______ TestRetryConditions.test_retry_if_exception_message_empty_message _______
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_if_exception_message_empty_message>
+
+    def test_retry_if_exception_message_empty_message(self) -> None:
+        # An exception whose str() is empty (e.g. a bare ``RuntimeError()``) is
+        # a valid target. ``message=""`` must be accepted and match it, rather
+        # than being treated as "no message given" by a truthiness check.
+>       r = tenacity.retry_if_exception_message(message="")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:932: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tenacity.retry.retry_if_exception_message object at 0x109356bd0>
+message = '', match = None
+
+    def __init__(
+        self,
+        message: str | None = None,
+        match: None | str | re.Pattern[str] = None,
+    ) -> None:
+        if message and match:
+            raise TypeError(
+                f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+            )
+    
+        if not message and not match:
+>           raise TypeError(
+                f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+            )
+E           TypeError: retry_if_exception_message() missing 1 required argument 'message' or 'match'
+
+tenacity/retry.py:232: TypeError
+____ TestRetryConditions.test_retry_if_not_exception_message_empty_message _____
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_if_not_exception_message_empty_message>
+
+    def test_retry_if_not_exception_message_empty_message(self) -> None:
+>       r = tenacity.retry_if_not_exception_message(message="")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:944: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tenacity.retry.retry_if_not_exception_message object at 0x109357410>
+message = '', match = None
+
+    def __init__(
+        self,
+        message: str | None = None,
+        match: None | str | re.Pattern[str] = None,
+    ) -> None:
+        if message and match:
+            raise TypeError(
+                f"{self.__class__.__name__}() takes either 'message' or 'match', not both"
+            )
+    
+        if not message and not match:
+>           raise TypeError(
+                f"{self.__class__.__name__}() missing 1 required argument 'message' or 'match'"
+            )
+E           TypeError: retry_if_not_exception_message() missing 1 required argument 'message' or 'match'
+
+tenacity/retry.py:232: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_if_exception_message_empty_message
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_if_not_exception_message_empty_message
+2 failed, 130 passed, 12 subtests passed in 1.86s

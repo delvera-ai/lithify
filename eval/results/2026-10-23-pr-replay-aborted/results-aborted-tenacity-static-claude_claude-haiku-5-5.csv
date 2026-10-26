@@ -1,0 +1,2 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,adopt_policy,lithify_commit
+pr-replay-full,static,claude@claude-haiku-5-5,20261023-154952-bug-tenacity-utils-find-ordinal,tenacity#556,0,1,1,override k=1,True,True,True,True,dom-1,4,5,238288,1913087,28755,1.8228,266.4,186,0.14,,skills/tenacity-change-conventions,skills/tenacity-change-conventions,all,2b01a9b

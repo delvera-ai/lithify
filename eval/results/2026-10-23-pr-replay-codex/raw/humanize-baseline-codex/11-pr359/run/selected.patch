@@ -1,0 +1,35 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 2dfeffe..3963139 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -556,6 +556,9 @@ def metric(value: float, unit: str = "", precision: int = 3) -> str:
+         value /= 10 ** (new_bucket - old_bucket)
+         digits = int(max(0, precision - exponent % 3 - 1))
+ 
++    if digits > 0 and round(abs(value), digits) >= 10 ** (exponent % 3 + 1):
++        digits -= 1
++
+     if exponent >= 3:
+         ordinal_ = "kMGTPEZYRQ"[exponent // 3 - 1]
+     elif exponent < 0:
+diff --git a/tests/test_number.py b/tests/test_number.py
+index 6f0a664..7ce15f4 100644
+--- a/tests/test_number.py
++++ b/tests/test_number.py
+@@ -270,6 +270,16 @@ def test_clamp(test_args: list[typing.Any], expected: str) -> None:
+         ([1234.56], "1.23 k"),
+         ([12345, "", 6], "12.3450 k"),
+         ([200_000], "200 k"),
++        ([9999], "10.0 k"),
++        ([99999], "100 k"),
++        ([9.99999], "10.0"),
++        ([99.9999], "100"),
++        ([-9999, "V"], "-10.0 kV"),
++        ([-99999], "-100 k"),
++        ([0.00999999, "V"], "10.0 mV"),
++        ([0.0999999], "100 m"),
++        ([9.99999, "", 4], "10.00"),
++        ([99.9999, "", 4], "100.0"),
+         ([999.9, "V"], "1.00 kV"),
+         ([999.99, "V"], "1.00 kV"),
+         ([999_999, "V"], "1.00 MV"),

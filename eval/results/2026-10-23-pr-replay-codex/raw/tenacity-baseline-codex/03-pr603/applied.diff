@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4d37b2b..b7c35ce 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -30,6 +30,21 @@
+       "wall_s": 39.2,
+       "always_on_tokens": 186,
+       "stability_after": 0.4
++    },
++    {
++      "task_id": "20261023-200333-bug-the-delay-since-first-attemp",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 15169,
++      "tokens_cached": 136704,
++      "tokens_out": 1108,
++      "cost_usd": 0.0,
++      "wall_s": 57.5,
++      "always_on_tokens": 186,
++      "stability_after": 0.6
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c43475c..079740f 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -354,6 +354,7 @@ class BaseRetrying(ABC):
+         self.statistics["start_time"] = time.monotonic()
+         self.statistics["attempt_number"] = 1
+         self.statistics["idle_for"] = 0
++        self.statistics["delay_since_first_attempt"] = 0
+ 
+     def _add_action_func(self, fn: t.Callable[..., t.Any]) -> None:
+         self.iter_state.actions.append(fn)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 017e683..c085908 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -1615,6 +1615,18 @@ class TestReraiseExceptions(unittest.TestCase):
+ 
+ 
+ class TestStatistics(unittest.TestCase):
++    def test_delay_since_first_attempt_starts_at_zero_each_run(self) -> None:
++        retrying = Retrying(stop=tenacity.stop_after_attempt(1), reraise=True)
++
++        def check_delay() -> None:
++            self.assertEqual(0, retrying.statistics["delay_since_first_attempt"])
++
++        retrying(check_delay)
++        self.assertEqual(0, retrying.statistics["delay_since_first_attempt"])
++        retrying.statistics["delay_since_first_attempt"] = 1
++        retrying(check_delay)
++        self.assertEqual(0, retrying.statistics["delay_since_first_attempt"])
++
+     def test_stats(self) -> None:
+         @retry()
+         def _foobar() -> int:

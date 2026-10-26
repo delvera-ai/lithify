@@ -1,0 +1,33 @@
+exit 1
+.......................................FF................... [ 50%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+_____________ TestWaitConditions.test_wait_exponential_jitter_min ______________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter_min>
+
+    def test_wait_exponential_jitter_min(self) -> None:
+>       fn = tenacity.wait_exponential_jitter(initial=1, max=60, jitter=1, min=5)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: wait_exponential_jitter.__init__() got an unexpected keyword argument 'min'
+
+tests/test_tenacity.py:621: TypeError
+__________ TestWaitConditions.test_wait_exponential_jitter_timedelta ___________
+
+self = <tests.test_tenacity.TestWaitConditions testMethod=test_wait_exponential_jitter_timedelta>
+
+    def test_wait_exponential_jitter_timedelta(self) -> None:
+        from datetime import timedelta
+    
+>       fn = tenacity.wait_exponential_jitter(
+            max=timedelta(seconds=60),
+            jitter=timedelta(seconds=1),
+            min=timedelta(seconds=5),
+        )
+E       TypeError: wait_exponential_jitter.__init__() got an unexpected keyword argument 'min'
+
+tests/test_tenacity.py:633: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter_min
+FAILED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter_timedelta
+2 failed, 118 passed, 12 subtests passed in 1.80s

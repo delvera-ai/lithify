@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `Retrying(enabled=False)` is ignored when used with the iterator pattern (`for attempt in retrying: with attempt: ...` and `async for attempt in AsyncRetrying(enabled=False)`): the full retry loop runs (several attempts) and a `RetryError` is raised. With `enabled=False` the body should run exactly once and any exception should propagate unchanged, matching the decorator path.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Deciding criterion: fidelity to the existing decorator path (`wraps`), which with `enabled=False` calls the function directly with no `begin()`, no `before` hook and no retry bookkeeping. c2 does the same in the sync `__iter__` and the async `__aiter__`/`__anext__`: the body runs once and the original exception is re-raised. It changes only those methods and updates the \"Disabling Retries\" docs. The other candidates also touch shared code (c1 the `_begin_iter` step, c3 and c4 `AttemptManager.__exit__`).\nRunner-up c3: it is smaller, but it still calls `begin()` and the `before` hook when disabled, and it makes `AttemptManager.__exit__` swallow or not depending on `enabled`, under a comment that no longer matches the code.\nc1 puts the fix in `_begin_iter`, so it also changes `Retrying.__call__` and runs `before` (out of scope). c4 does what c2 does but changes both `AttemptManager` and the iterators, and adds an extra state flag.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-210731-bug-retrying-enabled-false-is-ig",
+  "usage": {
+    "in": 451880,
+    "cached": 4457703,
+    "out": 76745,
+    "cost": 3.0000136200000003,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.63,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

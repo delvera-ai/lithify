@@ -1,0 +1,19 @@
+lithify ▸ 20261023-205349-bug-humanize-fractional-produces  k=0 (cruise (S=1.00)) mode=parallel executor=codex
+  ▸ probe base-1: executing with codex
+  ✓ probe base-1: test=pass
+  ✓ applied deliverable from base-1: cruise: gates passed on first execution
+lithify ◂ delivered=True first_pass=True S=1.00 executions=1 role_sessions=0 tokens(in/cached/out)=19781/121856/930
+{
+  "task_id": "20261023-205349-bug-humanize-fractional-produces",
+  "k": 0,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.9981,
+  "executions": 1,
+  "role_sessions": 0
+}
+

@@ -1,0 +1,1 @@
+Bug: `tenacity._utils.find_ordinal` (used for "1st attempt"-style wording in log messages) returns the wrong suffix for numbers greater than 20 that end in 11, 12 or 13: for 111, 112 and 113 it gives "st", "nd" and "rd", so messages read "111st", "112nd", "113rd". They should get "th"; all other numbers keep their current suffixes.

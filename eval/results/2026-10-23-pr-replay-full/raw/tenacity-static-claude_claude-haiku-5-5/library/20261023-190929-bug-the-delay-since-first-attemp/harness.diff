@@ -1,0 +1,324 @@
+--- a/scripts/check_changed.py
++++ b/scripts/check_changed.py
+@@ -1,34 +1,36 @@
+ #!/usr/bin/env python3
+-"""Lint/type/YAML checks for the files changed in the working tree.
++"""Stdlib-only style/shape checks for the files changed in the working tree.
+ 
+-The project venv (the one that runs pytest) has no pip, ruff, mypy or PyYAML,
+-and `uv`/`uvx` are absent. This script makes ONE throwaway venv in /tmp with
+-those tools, then checks only the changed files:
++ruff, mypy and PyYAML cannot run here: the project venv has no pip, and
++building a /tmp venv dies in ensurepip (SIGABRT). So this script installs
++nothing. It mechanically checks what the tools would most often catch:
+ 
+-  - changed *.py            -> ruff check, ruff format --check, mypy (strict,
+-                               from pyproject, resolving imports against the
+-                               project interpreter)
+-  - releasenotes/notes/*.yaml -> must parse as a YAML mapping of reno sections
++  - changed *.py (added lines only; whole file if untracked)
++      * compiles (syntax)
++      * line length <= 88 (ruff line-length; do NOT eyeball this)
++      * no tabs / trailing whitespace
++      * a nested `def`/`class` is preceded by a blank line (ruff format)
++  - releasenotes/notes/*.yaml
++      * starts with `---`, top-level keys are reno sections, each section
++        holds `- ` list entries, no tabs
+ 
+ Usage (from the repo root):
+     <project python> .lithify/harness/scripts/check_changed.py
+ 
+ Exit codes:
+-    0  every check ran and passed
+-    1  a check ran and failed -- fix the reported lines, then re-run once
+-    2  tooling unavailable (venv/pip install failed) -- do NOT retry; report
+-       lint/type/YAML as "not run" with the printed reason
++    0  all checks above passed (ruff/mypy themselves still NOT run -- say so)
++    1  a check failed -- fix the reported file:line, then re-run once
++    2  could not determine changed files (git failed) -- report as not run
+ """
+ 
+ from __future__ import annotations
+ 
+ import os
++import re
+ import subprocess
+ import sys
+-import venv
+ 
+-VENV = "/tmp/tenacity-check-venv"
+-TOOLS = ["ruff", "mypy", "pyyaml"]
++MAX_LEN = 88
+ RENO_SECTIONS = {
+     "prelude",
+     "features",
+@@ -40,94 +42,112 @@
+     "fixes",
+     "other",
+ }
++DEF_RE = re.compile(r"^(\s+)(async\s+def|def|class)\s")
+ 
+ 
+-def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+-    return subprocess.run(cmd, capture_output=True, text=True)
++def git(*args: str) -> str:
++    res = subprocess.run(["git", *args], capture_output=True, text=True)
++    if res.returncode != 0:
++        print(f"UNAVAILABLE: git {' '.join(args)} failed: {res.stderr.strip()}")
++        sys.exit(2)
++    return res.stdout
+ 
+ 
+-def changed_files() -> list[str]:
+-    tracked = run(["git", "diff", "--name-only", "HEAD"])
+-    untracked = run(["git", "ls-files", "--others", "--exclude-standard"])
+-    if tracked.returncode != 0:
+-        print("UNAVAILABLE: git diff failed:", tracked.stderr.strip())
+-        sys.exit(2)
+-    names = set(tracked.stdout.split()) | set(untracked.stdout.split())
+-    return sorted(n for n in names if os.path.exists(n))
++def added_lines(path: str, untracked: bool) -> set[int]:
++    """1-based line numbers added/changed in the working tree."""
++    if untracked:
++        with open(path, encoding="utf-8") as fh:
++            return set(range(1, sum(1 for _ in fh) + 1))
++    out = git("diff", "-U0", "HEAD", "--", path)
++    lines: set[int] = set()
++    for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", out, re.M):
++        start, count = int(m.group(1)), int(m.group(2) or "1")
++        lines.update(range(start, start + count))
++    return lines
+ 
+ 
+-def ensure_venv() -> str:
+-    py = os.path.join(VENV, "bin", "python")
+-    if os.path.exists(py) and run([py, "-c", "import ruff, mypy, yaml"]).returncode == 0:
+-        return py
++def check_py(path: str, changed: set[int]) -> list[str]:
++    errs: list[str] = []
++    with open(path, encoding="utf-8") as fh:
++        src = fh.read()
+     try:
+-        venv.EnvBuilder(with_pip=True, clear=True).create(VENV)
+-    except Exception as exc:  # ensurepip missing, disk, permissions
+-        print(f"UNAVAILABLE: could not create {VENV}: {exc}")
+-        sys.exit(2)
+-    res = run([py, "-m", "pip", "install", "-q", *TOOLS])
+-    if res.returncode != 0:
+-        print("UNAVAILABLE: pip install failed (offline?):")
+-        print(res.stderr.strip()[-2000:])
+-        sys.exit(2)
+-    return py
++        compile(src, path, "exec")
++    except SyntaxError as exc:
++        errs.append(f"{path}:{exc.lineno}: syntax error: {exc.msg}")
++    lines = src.splitlines()
++    for no in sorted(changed):
++        if no > len(lines):
++            continue
++        line = lines[no - 1]
++        if len(line) > MAX_LEN:
++            errs.append(f"{path}:{no}: line is {len(line)} columns (max {MAX_LEN})")
++        if "\t" in line:
++            errs.append(f"{path}:{no}: tab character")
++        if line != line.rstrip():
++            errs.append(f"{path}:{no}: trailing whitespace")
++        m = DEF_RE.match(line)
++        if m and no >= 2:
++            prev = lines[no - 2]
++            prev_s = prev.strip()
++            opener = prev_s.endswith(":") or prev_s.startswith(("@", "#"))
++            if prev_s and not opener:
++                errs.append(
++                    f"{path}:{no}: nested {m.group(2)} needs a blank line before it"
++                )
++    return errs
++
++
++def check_reno(path: str) -> list[str]:
++    errs: list[str] = []
++    with open(path, encoding="utf-8") as fh:
++        lines = fh.read().splitlines()
++    if not lines or lines[0].strip() != "---":
++        errs.append(f"{path}:1: must start with '---'")
++    section = None
++    has_entry: dict[str, bool] = {}
++    for no, line in enumerate(lines, 1):
++        if "\t" in line:
++            errs.append(f"{path}:{no}: tab character")
++        if not line.strip() or line.strip() == "---":
++            continue
++        if not line.startswith(" "):
++            key = line.split(":", 1)[0].strip()
++            if not line.rstrip().endswith(":") and key != "prelude":
++                errs.append(f"{path}:{no}: top-level line must be '<section>:'")
++            if key not in RENO_SECTIONS:
++                errs.append(f"{path}:{no}: unknown reno section {key!r}")
++            section = key
++            has_entry.setdefault(key, False)
++        elif section and line.lstrip().startswith("- "):
++            has_entry[section] = True
++    if not has_entry:
++        errs.append(f"{path}: no reno section found")
++    for key, ok in has_entry.items():
++        if not ok and key != "prelude":
++            errs.append(f"{path}: section {key!r} has no '- ' entry")
++    return errs
+ 
+ 
+ def main() -> int:
+-    files = changed_files()
+-    py_files = [f for f in files if f.endswith(".py") and not f.startswith(".lithify/")]
+-    notes = [
++    tracked = set(git("diff", "--name-only", "HEAD").split())
++    untracked = set(git("ls-files", "--others", "--exclude-standard").split())
++    files = sorted(
+         f
+-        for f in files
+-        if f.startswith("releasenotes/notes/") and f.endswith((".yaml", ".yml"))
+-    ]
++        for f in tracked | untracked
++        if os.path.exists(f) and not f.startswith(".lithify/")
++    )
+     print("changed:", ", ".join(files) or "(none)")
+-    if not py_files and not notes:
+-        print("nothing to check")
+-        return 0
+-
+-    tool_py = ensure_venv()
+-    failed = False
+-
+-    if py_files:
+-        checks = [
+-            ("ruff check", [tool_py, "-m", "ruff", "check", *py_files]),
+-            ("ruff format --check", [tool_py, "-m", "ruff", "format", "--check", *py_files]),
+-            (
+-                "mypy",
+-                [tool_py, "-m", "mypy", "--python-executable", sys.executable, *py_files],
+-            ),
+-        ]
+-        for label, cmd in checks:
+-            res = run(cmd)
+-            status = "PASS" if res.returncode == 0 else "FAIL"
+-            failed |= res.returncode != 0
+-            print(f"[{status}] {label}")
+-            if res.returncode != 0:
+-                print((res.stdout + res.stderr).strip()[-4000:])
+-
+-    for note in notes:
+-        code = (
+-            "import sys, yaml\n"
+-            "d = yaml.safe_load(open(sys.argv[1]))\n"
+-            "assert isinstance(d, dict) and d, 'not a non-empty mapping'\n"
+-            "bad = set(d) - set(sys.argv[2].split(','))\n"
+-            "assert not bad, f'unknown reno sections: {sorted(bad)}'\n"
+-            "for k, v in d.items():\n"
+-            "    if k == 'prelude':\n"
+-            "        assert isinstance(v, str), 'prelude: must be a string'\n"
+-            "        continue\n"
+-            "    assert isinstance(v, list) and all(isinstance(e, str) for e in v),"
+-            " f'{k}: must be a list of strings'\n"
+-        )
+-        res = run([tool_py, "-c", code, note, ",".join(sorted(RENO_SECTIONS))])
+-        status = "PASS" if res.returncode == 0 else "FAIL"
+-        failed |= res.returncode != 0
+-        print(f"[{status}] reno yaml {note}")
+-        if res.returncode != 0:
+-            print(res.stderr.strip().splitlines()[-1])
+-
+-    return 1 if failed else 0
++    errs: list[str] = []
++    for f in files:
++        if f.endswith(".py"):
++            errs += check_py(f, added_lines(f, f in untracked))
++        elif f.startswith("releasenotes/notes/") and f.endswith((".yaml", ".yml")):
++            errs += check_reno(f)
++    for e in errs:
++        print("FAIL", e)
++    print(f"{'FAIL' if errs else 'PASS'}: {len(errs)} problem(s)")
++    print("NOT RUN: ruff, mypy, PyYAML (unavailable here) -- report them as not run")
++    return 1 if errs else 0
+ 
+ 
+ if __name__ == "__main__":
+
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code.
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code.
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -15,6 +15,31 @@
+ - Strategies live in `tenacity/wait.py`, `tenacity/stop.py`, `tenacity/retry.py`; the
+   `Retrying`/`retry()` core and its type overloads in `tenacity/__init__.py`; async in
+   `tenacity/asyncio/`.
++
++## 1a. Retry-loop and `statistics` invariants (`tenacity/__init__.py`)
++- `BaseRetrying` owns the loop once: `begin()` (start of every run), `_begin_iter`,
++  `_post_retry_check_actions`, `_post_stop_check_actions` are shared by sync, async and
++  tornado (`tenacity/tornadoweb.py`); `AsyncRetrying` and `TornadoRetrying` call
++  `self.begin()` and do not override it. A fix in one of these shared methods needs no async
++  copy — say so rather than editing `tenacity/asyncio/`.
++- `AsyncRetrying` (`tenacity/asyncio/__init__.py`) re-implements `_run_retry`, `_run_wait`,
++  `_run_stop`, `iter`, `__call__`, `__aiter__`/`__anext__` and `wraps` as async copies. A
++  change to the sync version of any of these must be mirrored there (check with
++  `grep -n "<changed line>" tenacity/__init__.py tenacity/asyncio/__init__.py`).
++- `statistics` is per-thread (`self._local`). Per-run keys are seeded in `begin()` after
++  `statistics.clear()`; later updates happen in `_run_stop` (`delay_since_first_attempt`)
++  and `next_action` (`idle_for`, `attempt_number`). A key that must exist "from the start"
++  belongs in `begin()`. Decorated functions expose the running copy's dict as
++  `fn.statistics` (`wraps` does `wrapped_f.statistics = copy.statistics`), not
++  `fn.retry.statistics`.
++- Statistics tests live in `TestStatistics` (`tests/test_tenacity.py`). To observe a value
++  during an attempt, read `retry_state.retry_object.statistics[...]` from a `before`/`after`
++  callback.
++- An exception raised inside a callback (`before`, `after`, `stop`, `wait`, …) is not
++  retried or wrapped: it propagates raw out of the call. Only exhausted retries raise
++  `RetryError`. So a test that lets retries exhaust must use
++  `contextlib.suppress(RetryError)` (or `assertRaises(RetryError)`), never
++  `suppress(Exception)`, which hides the very `KeyError`/`TypeError` under test.
+ 
+ ## 2. A release note in `releasenotes/notes/` (reno)
+ Maintainer commits that change behaviour ship a reno note alongside the code (e.g. #555, #551,
+@@ -39,7 +64,7 @@
+ - ruff (`line-length = 88`, `target-version = "py310"`) checks and format-checks the whole repo,
+   tests included (`tox -e pep8`).
+ - Check items 2 and 3 with `<project python> .lithify/harness/scripts/check_changed.py`; it
+-  parses the reno YAML and runs ruff + mypy on the changed files.
++  checks the reno note's shape and the changed lines' length/spacing (ruff/mypy can't run here).
+ 
+ ## 4. Keep the change surface minimal
+ Do not edit `AGENTS.md`/`CLAUDE.md` (generated by `lithify sync`).
+
+--- a/system.md
++++ b/system.md
+@@ -7,7 +7,8 @@
+    the reported reason (the error or wrong output the task describes, not an
+    import or typo error). Then fix and re-run it green.
+ 2. Run the full check command from memory.md; read the exit code and summary line.
+-3. Run `<project python> .lithify/harness/scripts/check_changed.py` (ruff, mypy, reno YAML on
+-   changed files). Exit 1: fix and re-run once. Exit 2: tooling unavailable, so don't hunt for
+-   other installs; report those checks as not run, quoting the printed reason.
++3. Run `<project python> .lithify/harness/scripts/check_changed.py` (stdlib: line length,
++   nested-def spacing, syntax, reno note shape on changed files). Exit 1: fix each printed
++   file:line and re-run. Never state a line length or format verdict from reading; quote this
++   script. ruff/mypy can't run here: report them as not run.
+ A successful edit or file write is not evidence. In the final message, list every step skipped.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -1,5 +1,7 @@
+-- The project venv (python in memory.md) runs pytest but has no pip, ruff, mypy or PyYAML, and
+-  `uv`/`uvx` are not on PATH. Don't probe for them; `.lithify/harness/scripts/check_changed.py`
+-  builds the one throwaway `/tmp` venv that has them.
++- The project venv (python in memory.md) runs pytest but has no pip, ruff, mypy or PyYAML;
++  `uv`/`uvx` are not on PATH, and a new `/tmp` venv dies in ensurepip (SIGABRT). Don't probe or
++  build one; `.lithify/harness/scripts/check_changed.py` is the stdlib substitute.
+ - The shell is zsh: quote globs (`--include='*.py'`), or the command fails with "no matches found".
++  `${PIPESTATUS[0]}` prints empty; use `cmd > /tmp/out.txt 2>&1; echo "exit=$?"; tail /tmp/out.txt`.
++  A word starting with `=` (e.g. `echo ===`) aborts the command ("== not found"); use `echo ---`.
+ - Run one test by node id: `<project python> -m pytest -q -p no:cacheprovider tests/test_x.py::Class::test_name`.

@@ -1,0 +1,68 @@
+diff --git a/releasenotes/notes/fix-after-log-unset-timestamp-31263354d941f325.yaml b/releasenotes/notes/fix-after-log-unset-timestamp-31263354d941f325.yaml
+new file mode 100644
+index 0000000..92fcbd5
+--- /dev/null
++++ b/releasenotes/notes/fix-after-log-unset-timestamp-31263354d941f325.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    ``after_log`` no longer raises ``TypeError`` when the retry state has no
++    outcome timestamp, which makes ``seconds_since_start`` ``None``. The log
++    message is still emitted, with ``?`` in place of the elapsed seconds.
+diff --git a/tenacity/after.py b/tenacity/after.py
+index a4b8922..4b27390 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -39,10 +39,14 @@ def after_log(
+             fn_name = "<unknown>"
+         else:
+             fn_name = _utils.get_callback_name(retry_state.fn)
++        if retry_state.seconds_since_start is None:
++            seconds = "?"
++        else:
++            seconds = sec_format % retry_state.seconds_since_start
+         logger.log(
+             log_level,
+             f"Finished call to '{fn_name}' "
+-            f"after {sec_format % retry_state.seconds_since_start}(s), "
++            f"after {seconds}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
+ 
+diff --git a/tests/test_after.py b/tests/test_after.py
+index 25d8a7c..523c43c 100644
+--- a/tests/test_after.py
++++ b/tests/test_after.py
+@@ -3,6 +3,7 @@ import random
+ import unittest.mock
+ 
+ from tenacity import (
++    RetryCallState,
+     _utils,
+     after_log,
+ )
+@@ -74,3 +75,23 @@ class TestAfterLogFormat(unittest.TestCase):
+             f"after {sec_format % retry_state.seconds_since_start}(s), "
+             f"this was the {_utils.to_ordinal(retry_state.attempt_number)} time calling it.",
+         )
++
++
++class TestAfterLogUnsetTimestamp(unittest.TestCase):
++    def test_seconds_since_start_none_logs_question_mark(self) -> None:
++        """Test log formatting when the outcome timestamp has not been set."""
++        log = unittest.mock.MagicMock(spec="logging.Logger.log")
++        logger = unittest.mock.MagicMock(spec="logging.Logger", log=log)
++
++        retry_state = RetryCallState(None, None, (), {})  # type: ignore[arg-type]
++        retry_state.attempt_number = 1
++        assert retry_state.seconds_since_start is None
++
++        fun = after_log(logger=logger, log_level=logging.INFO)
++        fun(retry_state)
++        log.assert_called_once_with(
++            logging.INFO,
++            "Finished call to '<unknown>' "
++            "after ?(s), "
++            "this was the 1st time calling it.",
++        )

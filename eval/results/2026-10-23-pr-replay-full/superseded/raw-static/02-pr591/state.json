@@ -1,0 +1,35 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 60,
+      "executions": 4,
+      "tokens_in": 232347,
+      "tokens_cached": 2063413,
+      "tokens_out": 27668,
+      "cost_usd": 1.796,
+      "wall_s": 255.0,
+      "always_on_tokens": 186,
+      "stability_after": 0.14
+    },
+    {
+      "task_id": "20261023-160401-bug-tenacity-after-log-crashes-w",
+      "k": 1,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 8,
+      "executions": 4,
+      "tokens_in": 297723,
+      "tokens_cached": 2564991,
+      "tokens_out": 42469,
+      "cost_usd": 2.4268,
+      "wall_s": 456.1,
+      "always_on_tokens": 439,
+      "stability_after": 0.298
+    }
+  ]
+}

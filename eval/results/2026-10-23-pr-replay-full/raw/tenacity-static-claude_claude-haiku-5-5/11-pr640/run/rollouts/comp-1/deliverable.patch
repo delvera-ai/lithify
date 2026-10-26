@@ -1,0 +1,108 @@
+diff --git a/releasenotes/notes/fix-tryagain-reraise-5c2e9d7a1f384b06.yaml b/releasenotes/notes/fix-tryagain-reraise-5c2e9d7a1f384b06.yaml
+new file mode 100644
+index 0000000..ca66a42
+--- /dev/null
++++ b/releasenotes/notes/fix-tryagain-reraise-5c2e9d7a1f384b06.yaml
+@@ -0,0 +1,8 @@
++---
++fixes:
++  - |
++    When ``TryAgain`` was raised from an ``except`` block and ``reraise=True`` was set,
++    giving up now re-raises the underlying exception that caused the retry, instead of
++    the ``TryAgain`` sentinel. This applies to sync and async retrying, and to
++    ``RetryError.reraise()``. A bare ``TryAgain`` with no underlying error still raises
++    ``TryAgain``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 282e6da..e6c8112 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -185,7 +185,14 @@ class RetryError(Exception):
+ 
+     def reraise(self) -> t.NoReturn:
+         if self.last_attempt.failed:
+-            raise self.last_attempt.result()
++            exc = self.last_attempt.exception()
++            # A TryAgain raised from an except block carries the real error only
++            # as its cause/context; re-raise that instead of the sentinel.
++            if isinstance(exc, TryAgain):
++                underlying = exc.__cause__ or exc.__context__
++                if underlying is not None:
++                    raise underlying
++            raise exc
+         raise self
+ 
+     def __str__(self) -> str:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 7b5c641..1b7f446 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -37,6 +37,7 @@ from tenacity import (
+     retry,
+     retry_if_exception,
+     retry_if_result,
++    retry_never,
+     stop_after_attempt,
+ )
+ from tenacity import asyncio as tasyncio
+@@ -238,6 +239,22 @@ class TestContextManager(unittest.TestCase):
+         else:
+             raise Exception
+ 
++    @asynctest
++    async def test_reraise_try_again_underlying_error(self) -> None:
++        async def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        retrying = tasyncio.AsyncRetrying(
++            stop=stop_after_attempt(2),
++            retry=retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            await retrying(_r)
++
+     @asynctest
+     async def test_sleeps(self) -> None:
+         start = current_time_ms()
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 6a39739..8d98939 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -869,6 +869,34 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertRaises(tenacity.TryAgain, r, _r)
+         self.assertEqual(5, r.statistics["attempt_number"])
+ 
++    def test_retry_try_again_reraises_underlying_error(self) -> None:
++        def _r() -> None:
++            try:
++                raise ValueError("the real error")
++            except ValueError:
++                raise tenacity.TryAgain
++
++        r = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        self.assertRaisesRegex(ValueError, "the real error", r, _r)
++
++    def test_retry_try_again_reraises_underlying_error_for_attempt(self) -> None:
++        r = Retrying(
++            stop=tenacity.stop_after_attempt(2),
++            retry=tenacity.retry_never,
++            reraise=True,
++        )
++        with self.assertRaisesRegex(ValueError, "the real error"):
++            for attempt in r:
++                with attempt:
++                    try:
++                        raise ValueError("the real error")
++                    except ValueError:
++                        raise tenacity.TryAgain
++
+     def test_retry_if_exception_message_negative_no_inputs(self) -> None:
+         with self.assertRaises(TypeError):
+             tenacity.retry_if_exception_message()

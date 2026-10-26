@@ -194,7 +194,7 @@ sssssssss............................................................... [ 23%]
 ........................................................................ [ 70%]
 .............
 …[387 chars elided]…
--donovan-Coding-delvera-foundational-lithify/19d43989-6c6b-4090-9032-1fdbf9e87d20/scratchpad/pr-work/env-humanize/bin/python: No module named mypy
+-user-Coding-delvera-foundational-lithify/19d43989-6c6b-4090-9032-1fdbf9e87d20/scratchpad/pr-work/env-humanize/bin/python: No module named mypy
 <work>/env-humanize/bin/python: No module named ruff
 <work>/env-humanize/bin/python: No module named ruff
 [assistant] Large integer inputs now roll over to the next unit. `naturalsize(10**24)` and `naturalsize(10**24 + 50331648)` both return `'1.0 YB'`, and the project's test run passes (587 passed, 23 skipped).

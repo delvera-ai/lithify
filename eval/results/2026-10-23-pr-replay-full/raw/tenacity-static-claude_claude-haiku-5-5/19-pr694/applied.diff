@@ -1,0 +1,239 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 61943d5..85fb6b5 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261024-214815-three-regressions-that-only-appe](20261024-214815-three-regressions-that-only-appe/EXPERIENCE.md) — **when** A tenacity task restores behaviour that a recent typing/strictness commit removed or narrowed (git history shows a #677/#679/#682-style commit with a release note). The fix extends an operator or guard that the commit deliberately left rejecting some inputs, so a broad "everything else" branch would quietly undo the commit's stated promise. **then** In `skills/tenacity-change-contract`, put the strictness commit's stated invariant at the site the fix will touch, as an explicit branch condition with the commit and reno as source (e.g. "`__radd__`: combine only when `callable(other)`; a non-zero number still returns `NotImplemented`"). Add a grep that lists every annotation site to widen. Wherever the skill says "widen the annotation", say in the same place that an existing test's now-unused `# type: ignore` stays as it is and gets reported, not removed.
+ - [20261024-152742-bug-retry-if-exception-cause-typ](20261024-152742-bug-retry-if-exception-cause-typ/EXPERIENCE.md) — **when** A tenacity task reports a hang (infinite loop, 100% CPU, a strategy or chain walk that never returns), so the regression test can't fail by assertion on unfixed code. Each red run lasts at least `--timeout` seconds, may outlast the shell tool's foreground limit, and on this host can stretch far past its limit when the machine is descheduled. **then** Define what red means for a hang in the always-on `system.md` step 1: `run_tests.py --timeout 20 <one node id>` returning `exit=124` with `HUNG IN:` naming the new test. In the same paragraph, set the shell call's timeout above S, forbid `perl alarm`/raw-pytest/background fallbacks, and allow one fallback: wait for the completion notice without killing the run. Have `scripts/run_tests.py` print wall and CPU seconds, so a stall where wall time is much larger than CPU time is read as host descheduling, not a broken bound. Keep red-test recipes for hangs out of `skills/tenacity-change-contract`: in these rollouts the skill was read only after the fix was in, and a recipe there (a thread-based test) arrived too late and led to a revert of the fix.
+ - [20261023-214407-bug-retry-if-exception-message-m](20261023-214407-bug-retry-if-exception-message-m/EXPERIENCE.md) — **when** A tenacity task in which the agent has to consult the large `tenacity-change-contract` skill (about 30 KB, many `## N.` sections) but needs only a few sections, typically §2 (reno note) and the docs/tests sections for a small user-visible fix. A whole-file read of a skill that size spills to persisted output and costs extra recovery calls. **then** In `tool_guidance.md`, tell the agent how to read a large harness skill rather than only where it is: name the skill as oversized and prescribe `grep -n '^## ' <SKILL.md>` followed by `sed -n 'A,Bp'` of the relevant sections, in place of `cat`. Reword the existing "where skills live" bullet instead of adding a new always-on line.
+ - [20261023-212750-performance-wait-exponential-max](20261023-212750-performance-wait-exponential-max/EXPERIENCE.md) — **when** A tenacity task frames the change as cost-only, such as a performance fix or a rewrite of a strategy's internals, and says results must stay unchanged. The agent then has to decide whether the change is "user-visible" enough to need the repository's ship-alongside files. **then** In `skills/tenacity-change-contract`, name results-preserving performance and refactor fixes in the `description` trigger. In §2, state that "results unchanged" is not an exemption from the reno note: a user-reported slowdown ships a `fixes:` note. Any other skill that handles results-preserving changes, such as `behavior-preserving-change`, should end with a pointer to load tenacity-change-contract. Without this, the agent rules itself out of the contract on the "not user-visible" reasoning.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9e3cd9a..bf5993c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -270,6 +270,21 @@
+       "wall_s": 3873.2,
+       "always_on_tokens": 1311,
+       "stability_after": 0.7
++    },
++    {
++      "task_id": "20261024-214815-three-regressions-that-only-appe",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 60,
++      "executions": 3,
++      "tokens_in": 470014,
++      "tokens_cached": 5777047,
++      "tokens_out": 125649,
++      "cost_usd": 2.9499,
++      "wall_s": 812.3,
++      "always_on_tokens": 1479,
++      "stability_after": 0.7
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 9ceaf16..1e3a25a 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -248,7 +248,7 @@ class BaseRetrying(ABC):
+         self,
+         sleep: t.Callable[[int | float], None] = sleep,
+         stop: "StopBaseT" = stop_never,
+-        wait: "WaitBaseT" = wait_none(),
++        wait: "WaitBaseT | None | int" = wait_none(),
+         retry: "RetryBaseT" = retry_if_exception_type(),
+         before: t.Callable[["RetryCallState"], None] = before_nothing,
+         after: t.Callable[["RetryCallState"], None] = after_nothing,
+@@ -415,7 +415,12 @@ class BaseRetrying(ABC):
+         self.iter_state.retry_run_result = self.retry(retry_state)
+ 
+     def _run_wait(self, retry_state: "RetryCallState") -> None:
+-        retry_state.upcoming_sleep = self.wait(retry_state)
++        if self.wait:
++            sleep = self.wait(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     def _run_stop(self, retry_state: "RetryCallState") -> None:
+         self.statistics["delay_since_first_attempt"] = retry_state.seconds_since_start
+@@ -724,7 +729,7 @@ def retry(
+     *,
+     sleep: t.Callable[[int | float], t.Awaitable[None]],
+     stop: "StopBaseT" = ...,
+-    wait: "WaitBaseT" = ...,
++    wait: "WaitBaseT | None | int" = ...,
+     retry: "RetryBaseT | tasyncio.retry.RetryBaseT" = ...,
+     before: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = ...,
+     after: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = ...,
+@@ -741,7 +746,7 @@ def retry(
+ def retry(
+     sleep: t.Callable[[int | float], None] = sleep,
+     stop: "StopBaseT" = stop_never,
+-    wait: "WaitBaseT" = wait_none(),
++    wait: "WaitBaseT | None | int" = wait_none(),
+     retry: "RetryBaseT | tasyncio.retry.RetryBaseT" = retry_if_exception_type(),
+     before: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = before_nothing,
+     after: t.Callable[["RetryCallState"], t.Awaitable[None] | None] = after_nothing,
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index a6c2253..23e0bb9 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -79,7 +79,7 @@ class AsyncRetrying(BaseRetrying):
+             [int | float], t.Awaitable[None] | None
+         ] = _portable_async_sleep,
+         stop: "StopBaseT" = tenacity.stop.stop_never,
+-        wait: "WaitBaseT" = tenacity.wait.wait_none(),
++        wait: "WaitBaseT | None | int" = tenacity.wait.wait_none(),
+         retry: "SyncRetryBaseT | RetryBaseT" = tenacity.retry_if_exception_type(),
+         before: t.Callable[
+             ["RetryCallState"], t.Awaitable[None] | None
+@@ -147,9 +147,12 @@ class AsyncRetrying(BaseRetrying):
+ 
+     @override
+     async def _run_wait(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+-        retry_state.upcoming_sleep = await _utils.wrap_to_async_func(self.wait)(
+-            retry_state
+-        )
++        if self.wait:
++            sleep = await _utils.wrap_to_async_func(self.wait)(retry_state)
++        else:
++            sleep = 0.0
++
++        retry_state.upcoming_sleep = sleep
+ 
+     @override
+     async def _run_stop(self, retry_state: "RetryCallState") -> None:  # type: ignore[override]
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index e137b35..7ec79ff 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -34,16 +34,18 @@ class wait_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         pass
+ 
+-    def __add__(self, other: "wait_base") -> "wait_combine":
++    def __add__(self, other: "WaitBaseT") -> "wait_combine":
+         return wait_combine(self, other)
+ 
+-    def __radd__(self, other: int) -> "wait_base":
+-        # `sum()` seeds its accumulator with the int 0, so tolerate that to
+-        # make summing waits work. Any other left operand is a `wait_base`,
+-        # whose `__add__` never defers to us.
+-        if other != 0:
++    def __radd__(self, other: "WaitBaseT | int") -> "wait_base":
++        # `sum()` seeds its accumulator with the int 0, which adds nothing.
++        if other == 0:
++            return self
++        # A plain callable has no `__add__`, so Python falls back to us for it.
++        # Any other non-zero left operand (a number) is not a wait strategy.
++        if not callable(other):
+             return NotImplemented
+-        return self
++        return wait_combine(other, self)
+ 
+ 
+ WaitBaseT = wait_base | typing.Callable[["RetryCallState"], float | int]
+@@ -86,12 +88,13 @@ class wait_random(wait_base):
+ class wait_combine(wait_base):
+     """Combine several waiting strategies."""
+ 
+-    def __init__(self, *strategies: wait_base) -> None:
++    def __init__(self, *strategies: WaitBaseT) -> None:
+         self.wait_funcs = strategies
+ 
+     @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        return sum(x(retry_state=retry_state) for x in self.wait_funcs)
++        # Positional: a plain callable may name its parameter anything.
++        return sum(x(retry_state) for x in self.wait_funcs)
+ 
+ 
+ class wait_chain(wait_base):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c9d5802..27cfff1 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -185,6 +185,30 @@ class TestAsyncio(unittest.TestCase):
+         assert list(attempt_nos2) == [1, 2, 3]
+ 
+ 
++class TestAsyncNoWaitValues(unittest.TestCase):
++    @asynctest
++    async def test_no_wait_values_mean_no_sleep_on_retry(self) -> None:
++        # None, 0 and sum([]) (which is the int 0) all mean "no wait".
++        for wait in (None, 0, sum([])):
++            with self.subTest(wait=wait):
++                sleeps: list[float] = []
++                attempts = 0
++
++                async def record_sleep(seconds: float) -> None:
++                    sleeps.append(seconds)
++
++                async def fails_once() -> str:
++                    nonlocal attempts
++                    attempts += 1
++                    if attempts == 1:
++                        raise ValueError
++                    return "ok"
++
++                retrying = tasyncio.AsyncRetrying(sleep=record_sleep, wait=wait)
++                self.assertEqual(await retrying(fails_once), "ok")
++                self.assertEqual(sleeps, [0])
++
++
+ class TestAsyncEnabled(unittest.TestCase):
+     @asynctest
+     async def test_enabled_false_skips_retry(self) -> None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1acd3f8..32e2ca4 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -506,6 +506,41 @@ class TestWaitConditions(unittest.TestCase):
+             self.assertLess(w, 9)
+             self.assertGreaterEqual(w, 6)
+ 
++    def test_no_wait_values_mean_no_sleep_on_retry(self) -> None:
++        # None, 0 and sum([]) (which is the int 0) all mean "no wait".
++        for wait in (None, 0, sum([])):
++            with self.subTest(wait=wait):
++                sleeps: list[float] = []
++                attempts = 0
++
++                def fails_once() -> str:
++                    nonlocal attempts
++                    attempts += 1
++                    if attempts == 1:
++                        raise ValueError
++                    return "ok"
++
++                r = Retrying(sleep=sleeps.append, wait=wait)
++                self.assertEqual(r(fails_once), "ok")
++                self.assertEqual(sleeps, [0])
++
++    def test_plain_callable_plus_wait_builds_combine(self) -> None:
++        def two_seconds(retry_state: RetryCallState) -> float:
++            return 2
++
++        combined = two_seconds + tenacity.wait_fixed(1)
++        self.assertIsInstance(combined, tenacity.wait_combine)
++        self.assertEqual(combined(make_retry_state(1, 5)), 3)
++
++    def test_wait_combine_passes_retry_state_positionally(self) -> None:
++        # The parameter name is deliberately not `retry_state`.
++        def attempt_seconds(current: RetryCallState) -> float:
++            return current.attempt_number
++
++        state = make_retry_state(3, 5)
++        combined = tenacity.wait_combine(attempt_seconds, tenacity.wait_fixed(1))
++        self.assertEqual(combined(state), state.attempt_number + 1)
++
+     def _assert_range(self, wait: float, min_: float, max_: float) -> None:
+         self.assertLess(wait, max_)
+         self.assertGreaterEqual(wait, min_)

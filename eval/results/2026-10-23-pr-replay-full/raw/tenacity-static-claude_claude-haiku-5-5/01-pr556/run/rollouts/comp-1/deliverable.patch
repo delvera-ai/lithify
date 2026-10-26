@@ -1,0 +1,45 @@
+diff --git a/releasenotes/notes/fix-find-ordinal-teen-suffix-615c32eeb096ce30.yaml b/releasenotes/notes/fix-find-ordinal-teen-suffix-615c32eeb096ce30.yaml
+new file mode 100644
+index 0000000..6d144ef
+--- /dev/null
++++ b/releasenotes/notes/fix-find-ordinal-teen-suffix-615c32eeb096ce30.yaml
+@@ -0,0 +1,6 @@
++---
++fixes:
++  - |
++    Fix the ordinal suffix of numbers greater than 20 ending in 11, 12 or 13
++    used in log messages, e.g. "111th" instead of "111st", "112th" instead of
++    "112nd" and "113th" instead of "113rd".
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..d673b24 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -47,7 +47,7 @@ def find_ordinal(pos_num: int) -> str:
+         return "nd"
+     elif pos_num == 3:
+         return "rd"
+-    elif 4 <= pos_num <= 20:
++    elif 4 <= pos_num <= 20 or 11 <= pos_num % 100 <= 13:
+         return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..3640017 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -1,8 +1,15 @@
+ import functools
+ 
++import pytest
++
+ from tenacity import _utils
+ 
+ 
++@pytest.mark.parametrize("pos_num", [111, 112, 113, 211, 1011])
++def test_to_ordinal_teen_suffix_after_twenty(pos_num: int) -> None:
++    assert _utils.to_ordinal(pos_num) == f"{pos_num}th"
++
++
+ def test_is_coroutine_callable() -> None:
+     async def async_func() -> None:
+         pass

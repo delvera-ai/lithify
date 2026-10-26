@@ -1,0 +1,187 @@
+diff --git a/releasenotes/notes/fix-statistics-through-wrapper-3b9f1d6a2c7e4480.yaml b/releasenotes/notes/fix-statistics-through-wrapper-3b9f1d6a2c7e4480.yaml
+new file mode 100644
+index 0000000..ec2fb2a
+--- /dev/null
++++ b/releasenotes/notes/fix-statistics-through-wrapper-3b9f1d6a2c7e4480.yaml
+@@ -0,0 +1,11 @@
++---
++fixes:
++  - |
++    ``func.statistics`` is now kept up to date when a ``@retry``-decorated
++    function is wrapped by another decorator that uses ``functools.wraps``.
++    Previously the outer wrapper's ``statistics`` stayed as an empty ``{}``.
++    The outer and inner wrappers now share the same ``statistics`` object,
++    for both sync and async functions. Note that ``func.statistics`` is now a
++    live view of the calling thread's statistics rather than a plain
++    ``dict``: it compares equal to a dict and supports the usual mapping
++    operations, but ``isinstance(func.statistics, dict)`` is now ``False``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index e9532fc..8be61ba 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -15,6 +15,7 @@
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
++import collections.abc
+ import dataclasses
+ import functools
+ import sys
+@@ -234,6 +235,36 @@ class AttemptManager:
+         return self.__exit__(exc_type, exc_value, traceback)
+ 
+ 
++class _StatisticsView(collections.abc.MutableMapping[str, t.Any]):
++    """Live view of the statistics of the calling thread's most recent run.
++
++    ``functools.wraps`` copies a wrapper's ``__dict__`` when another decorator wraps
++    it, so an outer wrapper keeps the object that was there at that moment. Giving
++    every wrapper one stable view keeps the outer wrapper reading the current run.
++    """
++
++    def __init__(self, retry: "BaseRetrying") -> None:
++        self._retry = retry
++
++    def __getitem__(self, key: str) -> t.Any:
++        return self._retry.statistics[key]
++
++    def __setitem__(self, key: str, value: t.Any) -> None:
++        self._retry.statistics[key] = value
++
++    def __delitem__(self, key: str) -> None:
++        del self._retry.statistics[key]
++
++    def __iter__(self) -> t.Iterator[str]:
++        return iter(self._retry.statistics)
++
++    def __len__(self) -> int:
++        return len(self._retry.statistics)
++
++    def __repr__(self) -> str:
++        return repr(self._retry.statistics)
++
++
+ class BaseRetrying(ABC):
+     def __init__(
+         self,
+@@ -369,7 +400,6 @@ class BaseRetrying(ABC):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            wrapped_f.statistics = copy.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return copy(f, *args, **kw)
+ 
+@@ -379,7 +409,7 @@ class BaseRetrying(ABC):
+         # Preserve attributes
+         wrapped_f.retry = self  # type: ignore[attr-defined]
+         wrapped_f.retry_with = retry_with  # type: ignore[attr-defined]
+-        wrapped_f.statistics = {}  # type: ignore[attr-defined]
++        wrapped_f.statistics = _StatisticsView(self)  # type: ignore[attr-defined]
+ 
+         return t.cast("_RetryDecorated[P, R]", wrapped_f)
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 6459894..b04f46e 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -210,14 +210,13 @@ class AsyncRetrying(BaseRetrying):
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+-            async_wrapped.statistics = copy.statistics  # type: ignore[attr-defined]
+             self._local.statistics = copy.statistics
+             return await copy(fn, *args, **kwargs)  # type: ignore[type-var]
+ 
+         # Preserve attributes
+         async_wrapped.retry = self  # type: ignore[attr-defined]
+         async_wrapped.retry_with = wrapped.retry_with  # type: ignore[attr-defined]
+-        async_wrapped.statistics = {}  # type: ignore[attr-defined]
++        async_wrapped.statistics = wrapped.statistics  # type: ignore[attr-defined]
+ 
+         return t.cast("_RetryDecorated[P, R]", async_wrapped)
+ 
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 20b320e..73409f2 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -13,6 +13,7 @@
+ # limitations under the License.
+ 
+ import asyncio
++import contextlib
+ import inspect
+ import unittest
+ from collections.abc import Callable, Coroutine
+@@ -562,6 +563,29 @@ async def foo() -> None:
+     pass
+ 
+ 
++class TestStatisticsThroughWrapper(unittest.IsolatedAsyncioTestCase):
++    async def test_stats_visible_through_wrapping_decorator(self) -> None:
++        """An async function wrapped by functools.wraps exposes live statistics."""
++
++        def timing(f: Callable[..., Any]) -> Callable[..., Any]:
++            @wraps(f)
++            async def wrapper(*args: Any, **kwargs: Any) -> Any:
++                return await f(*args, **kwargs)
++
++            return wrapper
++
++        @timing
++        @retry(stop=tenacity.stop_after_attempt(2))
++        async def _foobar() -> None:
++            raise ValueError(42)
++
++        self.assertIs(_foobar.__wrapped__.statistics, _foobar.statistics)
++        with contextlib.suppress(tenacity.RetryError):
++            await _foobar()
++        self.assertIs(_foobar.__wrapped__.statistics, _foobar.statistics)
++        self.assertEqual(2, _foobar.statistics["attempt_number"])
++
++
+ class TestSyncFunctionWithAsyncSleep(unittest.TestCase):
+     @asynctest
+     async def test_sync_function_with_async_sleep(self) -> None:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index b2c0289..e97f14a 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -15,6 +15,7 @@
+ # limitations under the License.
+ import contextlib
+ import datetime
++import functools
+ import logging
+ import pickle
+ import re
+@@ -1887,6 +1888,29 @@ class TestStatistics(unittest.TestCase):
+             _foobar.statistics["attempt_number"],
+         )
+ 
++    def test_stats_visible_through_wrapping_decorator(self) -> None:
++        """A decorator using functools.wraps must expose the live statistics."""
++
++        def timing(
++            f: typing.Callable[..., typing.Any],
++        ) -> typing.Callable[..., typing.Any]:
++            @functools.wraps(f)
++            def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
++                return f(*args, **kwargs)
++
++            return wrapper
++
++        @timing
++        @retry(stop=tenacity.stop_after_attempt(2))
++        def _foobar() -> None:
++            raise ValueError(42)
++
++        self.assertIs(_foobar.__wrapped__.statistics, _foobar.statistics)
++        with contextlib.suppress(RetryError):
++            _foobar()
++        self.assertIs(_foobar.__wrapped__.statistics, _foobar.statistics)
++        self.assertEqual(2, _foobar.statistics["attempt_number"])
++
+     def test_retry_object_statistics_during_execution(self) -> None:
+         """Test that func.retry.statistics is accessible during execution."""
+         attempts: list[int] = []

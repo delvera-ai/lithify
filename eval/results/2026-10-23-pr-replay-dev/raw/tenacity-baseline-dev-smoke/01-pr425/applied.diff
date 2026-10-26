@@ -1,0 +1,59 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..2a1056d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-154911-bug-wait-random-exponential-min",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 24303,
++      "tokens_cached": 160908,
++      "tokens_out": 2953,
++      "cost_usd": 0.0079,
++      "wall_s": 30.6,
++      "always_on_tokens": 186,
++      "stability_after": 0.2
++    }
++  ]
+ }
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index 3addbb9..dc3c850 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -197,7 +197,7 @@ class wait_random_exponential(wait_exponential):
+ 
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         high = super().__call__(retry_state=retry_state)
+-        return random.uniform(0, high)
++        return random.uniform(self.min, high)
+ 
+ 
+ class wait_exponential_jitter(wait_base):
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index ecc0312..abb0ebf 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -480,6 +480,15 @@ class TestWaitConditions(unittest.TestCase):
+         fn = tenacity.wait_random_exponential()
+         fn(make_retry_state(0, 0))
+ 
++    def test_wait_random_exponential_respects_min(self):
++        fn = tenacity.wait_random_exponential(multiplier=1, max=60, min=2)
++
++        for _ in range(1000):
++            self._assert_inclusive_range(fn(make_retry_state(1, 0)), 2.0, 2.0)
++            self._assert_inclusive_range(fn(make_retry_state(2, 0)), 2.0, 2.0)
++            self._assert_inclusive_range(fn(make_retry_state(4, 0)), 2.0, 8.0)
++            self._assert_inclusive_range(fn(make_retry_state(9, 0)), 2.0, 60.0)
++
+     def test_wait_random_exponential_statistically(self):
+         fn = tenacity.wait_random_exponential(0.5, 60.0)
+ 

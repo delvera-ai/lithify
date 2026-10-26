@@ -1,0 +1,46 @@
+{
+  "task": "Add `parse_age(value)` to app/users.py. It accepts an int, or a string of decimal digits with optional surrounding whitespace, and returns the age as an int. Valid ages are 0 to 150 inclusive. Anything else (other types, booleans, non-digit strings, negative numbers, ages over 150) must be rejected with `ValidationError`.",
+  "k": 1,
+  "reason": "genesis (S=0.00)",
+  "selected": "dom-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [
+    "skills/input-validation"
+  ],
+  "proposal": null,
+  "usage": {
+    "in": 99275,
+    "cached": 761216,
+    "out": 7335,
+    "cost": 0.0,
+    "exec": 3,
+    "roles": 4
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "inv-1": {
+      "passed": false,
+      "gates": "test=pass, holdout=FAIL(1)"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass, holdout=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

@@ -1,0 +1,41 @@
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index a662eef..1a04ddd 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -208,9 +208,12 @@ class wait_exponential(wait_base):
+             and self.max > 0
+             and self.exp_base > 1
+             and math.isfinite(self.max)
+-            and exponent > math.log(self.max / self.multiplier, self.exp_base)
+         ):
+-            return max(max(0, self.min), self.max)
++            # A zero ratio means max/multiplier underflowed (e.g. multiplier is
++            # inf or huge), so the cap is reached on every attempt.
++            ratio = self.max / self.multiplier
++            if ratio == 0 or exponent > math.log(ratio, self.exp_base):
++                return max(max(0, self.min), self.max)
+         try:
+             exp = self.exp_base**exponent
+             result = self.multiplier * exp
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index f6c15ce..87d7161 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -367,6 +367,17 @@ class TestWaitConditions(unittest.TestCase):
+         r = Retrying(wait=tenacity.wait_exponential(max=40, exp_base=ExplodingPower(2)))
+         self.assertEqual(r.wait(make_retry_state(50, 0)), 40)
+ 
++    def test_exponential_multiplier_ratio_underflows_to_max(self) -> None:
++        # max / multiplier underflows to 0.0, so the cap applies on every attempt.
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=1e300, max=1e-100))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 1e-100)
++        self.assertEqual(r.wait(make_retry_state(5, 0)), 1e-100)
++
++    def test_exponential_infinite_multiplier_returns_max(self) -> None:
++        r = Retrying(wait=tenacity.wait_exponential(multiplier=float("inf"), max=40))
++        self.assertEqual(r.wait(make_retry_state(1, 0)), 40)
++        self.assertEqual(r.wait(make_retry_state(5, 0)), 40)
++
+     def test_exponential_with_min_wait(self) -> None:
+         r = Retrying(wait=tenacity.wait_exponential(min=20))
+         self.assertEqual(r.wait(make_retry_state(1, 0)), 20)

@@ -1,0 +1,36 @@
+{
+  "task": "Bug: when a `@retry`-decorated function is further wrapped by another decorator that uses `functools.wraps` (for example a timing decorator), `func.statistics` on the outer wrapper is an empty `{}` instead of the real runtime statistics. The statistics must stay visible through such wrappers, for sync and async functions (the outer wrapper's `statistics` should be the same object as the inner one's).",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 0,
+    "cached": 0,
+    "out": 0,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 4
+  },
+  "stability_after": 0.3787,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": false,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": false,
+      "issues": []
+    }
+  }
+}

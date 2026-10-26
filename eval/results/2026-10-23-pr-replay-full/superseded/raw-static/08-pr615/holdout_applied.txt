@@ -1,0 +1,71 @@
+exit 1
+............................................................ [ 51%]
+....................................................FFFF                 [100%]
+=================================== FAILURES ===================================
+__________________ TestPickle.test_retry_strategies_picklable __________________
+
+self = <tests.test_tenacity.TestPickle testMethod=test_retry_strategies_picklable>
+
+    def test_retry_strategies_picklable(self) -> None:
+        """All built-in retry strategies can be pickled."""
+        strategies = [
+            tenacity.retry_if_exception_type(ValueError),
+            tenacity.retry_if_not_exception_type(ValueError),
+            tenacity.retry_if_exception_message(message="fail"),
+            tenacity.retry_if_exception_message(match="fail.*"),
+            tenacity.retry_if_not_exception_message(message="fail"),
+        ]
+        for strategy in strategies:
+>           restored = pickle.loads(pickle.dumps(strategy))
+                                    ^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: Can't get local object 'retry_if_exception_type.__init__.<locals>.<lambda>'
+
+tests/test_tenacity.py:2043: AttributeError
+______________________ TestPickle.test_retrying_picklable ______________________
+
+self = <tests.test_tenacity.TestPickle testMethod=test_retrying_picklable>
+
+    def test_retrying_picklable(self) -> None:
+        """Retrying objects can be pickled for multiprocessing support."""
+        retrying = Retrying(stop=tenacity.stop_after_attempt(3))
+>       pickled = pickle.dumps(retrying)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: Can't get local object 'retry_if_exception_type.__init__.<locals>.<lambda>'
+
+tests/test_tenacity.py:2017: AttributeError
+_________________ TestPickle.test_retrying_picklable_after_run _________________
+
+self = <tests.test_tenacity.TestPickle testMethod=test_retrying_picklable_after_run>
+
+    def test_retrying_picklable_after_run(self) -> None:
+        """Retrying objects can be pickled even after being used."""
+        retrying = Retrying(stop=tenacity.stop_after_attempt(3))
+        # Access statistics to populate _local
+        _ = retrying.statistics
+>       pickled = pickle.dumps(retrying)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: Can't get local object 'retry_if_exception_type.__init__.<locals>.<lambda>'
+
+tests/test_tenacity.py:2027: AttributeError
+_______________ TestPickle.test_retrying_pickle_round_trip_works _______________
+
+self = <tests.test_tenacity.TestPickle testMethod=test_retrying_pickle_round_trip_works>
+
+    def test_retrying_pickle_round_trip_works(self) -> None:
+        """A pickled-then-restored Retrying object retries correctly."""
+        retrying = Retrying(
+            stop=tenacity.stop_after_attempt(3),
+            retry=tenacity.retry_if_exception_type(ValueError),
+            reraise=True,
+        )
+>       restored = pickle.loads(pickle.dumps(retrying))
+                                ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: Can't get local object 'retry_if_exception_type.__init__.<locals>.<lambda>'
+
+tests/test_tenacity.py:2053: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestPickle::test_retry_strategies_picklable - ...
+FAILED tests/test_tenacity.py::TestPickle::test_retrying_picklable - Attribut...
+FAILED tests/test_tenacity.py::TestPickle::test_retrying_picklable_after_run
+FAILED tests/test_tenacity.py::TestPickle::test_retrying_pickle_round_trip_works
+4 failed, 112 passed, 12 subtests passed in 1.81s

@@ -1,0 +1,60 @@
+exit 1
+..............................................F......F...... [ 56%]
+..............................................                           [100%]
+=================================== FAILURES ===================================
+____________ TestRetryConditions.test_retry_and_with_plain_function ____________
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_and_with_plain_function>
+
+    def test_retry_and_with_plain_function(self) -> None:
+        """Plain callables can be composed with retry_base via &."""
+    
+        def my_retry(retry_state: tenacity.RetryCallState) -> bool:
+            return True
+    
+        # retry_base & plain_callable (exercises __and__ fallback)
+>       retry = tenacity.retry_if_result(lambda x: x == 1) & my_retry
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:770: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tenacity.retry.retry_if_result object at 0x10afd95e0>
+other = <function TestRetryConditions.test_retry_and_with_plain_function.<locals>.my_retry at 0x10aeddb20>
+
+    def __and__(self, other: "retry_base") -> "retry_all":
+>       return other.__rand__(self)
+               ^^^^^^^^^^^^^^
+E       AttributeError: 'function' object has no attribute '__rand__'. Did you mean: '__call__'?
+
+tenacity/retry.py:33: AttributeError
+____________ TestRetryConditions.test_retry_or_with_plain_function _____________
+
+self = <tests.test_tenacity.TestRetryConditions testMethod=test_retry_or_with_plain_function>
+
+    def test_retry_or_with_plain_function(self) -> None:
+        """Plain callables can be composed with retry_base via |."""
+    
+        def my_retry(retry_state: tenacity.RetryCallState) -> bool:
+            return retry_state.outcome is not None and not retry_state.outcome.failed
+    
+        # retry_base | plain_callable (exercises __or__ fallback)
+>       retry = tenacity.retry_if_exception_type(Exception) | my_retry
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:753: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tenacity.retry.retry_if_exception_type object at 0x10afd8e30>
+other = <function TestRetryConditions.test_retry_or_with_plain_function.<locals>.my_retry at 0x10af9a700>
+
+    def __or__(self, other: "retry_base") -> "retry_any":
+>       return other.__ror__(self)
+               ^^^^^^^^^^^^^
+E       AttributeError: 'function' object has no attribute '__ror__'. Did you mean: '__dir__'?
+
+tenacity/retry.py:39: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_and_with_plain_function
+FAILED tests/test_tenacity.py::TestRetryConditions::test_retry_or_with_plain_function
+2 failed, 104 passed, 12 subtests passed in 1.81s

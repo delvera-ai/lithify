@@ -1,0 +1,149 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 161a39c..1d663bc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -270,6 +270,21 @@
+       "wall_s": 145.5,
+       "always_on_tokens": 186,
+       "stability_after": 1.0
++    },
++    {
++      "task_id": "20261023-165328-three-regressions-that-only-appe",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 60610,
++      "tokens_cached": 1316844,
++      "tokens_out": 26027,
++      "cost_usd": 0.0383,
++      "wall_s": 157.7,
++      "always_on_tokens": 186,
++      "stability_after": 1.0
+     }
+   ]
+ }
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 9ceaf16..2c2b1b6 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -261,7 +261,8 @@ class BaseRetrying(ABC):
+     ) -> None:
+         self.sleep = sleep
+         self.stop = stop
+-        self.wait = wait
++        # `None`, `0` and `sum([])` all mean "no wait".
++        self.wait = wait if callable(wait) else wait_none()
+         self.retry = retry
+         self.before = before
+         self.after = after
+diff --git a/tenacity/wait.py b/tenacity/wait.py
+index e137b35..be3114d 100644
+--- a/tenacity/wait.py
++++ b/tenacity/wait.py
+@@ -34,16 +34,19 @@ class wait_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> float:
+         pass
+ 
+-    def __add__(self, other: "wait_base") -> "wait_combine":
++    def __add__(self, other: "WaitBaseT") -> "wait_combine":
+         return wait_combine(self, other)
+ 
+-    def __radd__(self, other: int) -> "wait_base":
++    def __radd__(self, other: "int | WaitBaseT") -> "wait_base":
+         # `sum()` seeds its accumulator with the int 0, so tolerate that to
+-        # make summing waits work. Any other left operand is a `wait_base`,
+-        # whose `__add__` never defers to us.
+-        if other != 0:
+-            return NotImplemented
+-        return self
++        # make summing waits work.
++        if other == 0:
++            return self
++        # A plain callable on the left has no `__add__` that accepts a wait
++        # strategy, so Python falls back to this reflected operator.
++        if callable(other):
++            return wait_combine(other, self)
++        return NotImplemented
+ 
+ 
+ WaitBaseT = wait_base | typing.Callable[["RetryCallState"], float | int]
+@@ -86,12 +89,13 @@ class wait_random(wait_base):
+ class wait_combine(wait_base):
+     """Combine several waiting strategies."""
+ 
+-    def __init__(self, *strategies: wait_base) -> None:
++    def __init__(self, *strategies: WaitBaseT) -> None:
+         self.wait_funcs = strategies
+ 
+     @override
+     def __call__(self, retry_state: "RetryCallState") -> float:
+-        return sum(x(retry_state=retry_state) for x in self.wait_funcs)
++        # Pass positionally so plain callables may name their parameter freely.
++        return sum(x(retry_state) for x in self.wait_funcs)
+ 
+ 
+ class wait_chain(wait_base):
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index c9d5802..c2e48ce 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -94,6 +94,19 @@ class TestAsyncio(unittest.TestCase):
+         await retrying(_async_function, thing)
+         assert thing.counter == thing.count
+ 
++    @asynctest
++    async def test_wait_falsy_values_mean_no_wait(self) -> None:
++        for wait in (None, 0, sum([])):
++            sleep = mock.AsyncMock()
++            retrying = AsyncRetrying(
++                wait=wait,  # type: ignore[arg-type]
++                stop=stop_after_attempt(2),
++                sleep=sleep,
++            )
++            with self.assertRaises(RetryError):
++                await retrying(mock.AsyncMock(side_effect=ValueError))
++            sleep.assert_awaited_once_with(0)
++
+     @asynctest
+     async def test_stop_after_attempt(self) -> None:
+         thing = NoIOErrorAfterCount(2)
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 1acd3f8..1f03c84 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -506,6 +506,33 @@ class TestWaitConditions(unittest.TestCase):
+             self.assertLess(w, 9)
+             self.assertGreaterEqual(w, 6)
+ 
++    def test_wait_falsy_values_mean_no_wait(self) -> None:
++        for wait in (None, 0, sum([])):
++            sleep = mock.Mock()
++            r = Retrying(
++                wait=wait,  # type: ignore[arg-type]
++                stop=tenacity.stop_after_attempt(2),
++                sleep=sleep,
++            )
++            with self.assertRaises(RetryError):
++                r(mock.Mock(side_effect=ValueError))
++            sleep.assert_called_once_with(0)
++
++    def test_wait_plain_callable_sum(self) -> None:
++        def custom(retry_state: RetryCallState) -> float:
++            return 2.0
++
++        w = custom + tenacity.wait_fixed(1)
++        self.assertIsInstance(w, tenacity.wait_combine)
++        self.assertEqual(w(make_retry_state(1, 5)), 3.0)
++
++    def test_wait_combine_plain_callable_any_param_name(self) -> None:
++        def custom(state: RetryCallState) -> float:
++            return 2.0
++
++        w = tenacity.wait_combine(custom, tenacity.wait_fixed(1))
++        self.assertEqual(w(make_retry_state(1, 5)), 3.0)
++
+     def _assert_range(self, wait: float, min_: float, max_: float) -> None:
+         self.assertLess(wait, max_)
+         self.assertGreaterEqual(wait, min_)

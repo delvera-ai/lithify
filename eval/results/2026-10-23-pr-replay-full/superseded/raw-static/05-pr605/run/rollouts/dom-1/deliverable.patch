@@ -1,0 +1,121 @@
+diff --git a/doc/source/index.rst b/doc/source/index.rst
+index 2d1e9f8..6c14851 100644
+--- a/doc/source/index.rst
++++ b/doc/source/index.rst
+@@ -653,6 +653,21 @@ With async code you can use AsyncRetrying.
+       except RetryError:
+           pass
+ 
++Inside an ``async for`` loop, the attempt can also be used as an async context
++manager, with ``async with attempt:``. It behaves exactly like ``with attempt:``.
++
++.. testcode::
++
++   from tenacity import AsyncRetrying, RetryError, stop_after_attempt
++
++   async def function():
++      try:
++          async for attempt in AsyncRetrying(stop=stop_after_attempt(3)):
++              async with attempt:
++                  raise Exception('My code is failing!')
++      except RetryError:
++          pass
++
+ In both cases, you may want to set the result to the attempt so it's available
+ in retry strategies like ``retry_if_result``. This can be done accessing the
+ ``retry_state`` property:
+diff --git a/releasenotes/notes/async-with-attempt-d109fa2535e12d98.yaml b/releasenotes/notes/async-with-attempt-d109fa2535e12d98.yaml
+new file mode 100644
+index 0000000..33fb88d
+--- /dev/null
++++ b/releasenotes/notes/async-with-attempt-d109fa2535e12d98.yaml
+@@ -0,0 +1,7 @@
++---
++features:
++  - |
++    The attempt object yielded by ``AsyncRetrying`` now supports the async
++    context manager protocol, so ``async with attempt:`` can be used inside
++    ``async for attempt in AsyncRetrying(...)`` loops. It behaves exactly like
++    ``with attempt:``.
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 079740f..5f12c2b 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -214,6 +214,17 @@ class AttemptManager:
+         self.retry_state.set_result(None)
+         return None
+ 
++    async def __aenter__(self) -> None:
++        return self.__enter__()
++
++    async def __aexit__(
++        self,
++        exc_type: type[BaseException] | None,
++        exc_value: BaseException | None,
++        traceback: t.Optional["types.TracebackType"],
++    ) -> bool | None:
++        return self.__exit__(exc_type, exc_value, traceback)
++
+ 
+ class BaseRetrying(ABC):
+     def __init__(
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..9e8a36e 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -239,6 +239,55 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    @asynctest
++    async def test_async_with_do_max_attempts(self) -> None:
++        attempts = 0
++        retrying = tasyncio.AsyncRetrying(stop=stop_after_attempt(3))
++        try:
++            async for attempt in retrying:
++                async with attempt:
++                    attempts += 1
++                    raise Exception
++        except RetryError:
++            pass
++
++        assert attempts == 3
++
++    @asynctest
++    async def test_async_with_reraise(self) -> None:
++        class CustomError(Exception):
++            pass
++
++        try:
++            async for attempt in tasyncio.AsyncRetrying(
++                stop=stop_after_attempt(1), reraise=True
++            ):
++                async with attempt:
++                    raise CustomError()
++        except CustomError:
++            pass
++        else:
++            raise Exception
++
++    @asynctest
++    async def test_async_with_retry_with_result(self) -> None:
++        async def test() -> int:
++            attempts = 0
++
++            # mypy doesn't have great lambda support
++            def lt_3(x: float) -> bool:
++                return x < 3
++
++            async for attempt in tasyncio.AsyncRetrying(retry=retry_if_result(lt_3)):
++                async with attempt:
++                    attempts += 1
++                attempt.retry_state.set_result(attempts)
++            return attempts
++
++        result = await test()
++
++        self.assertEqual(3, result)
++
+     @asynctest
+     async def test_retry_with_async_result(self) -> None:
+         async def test() -> int:

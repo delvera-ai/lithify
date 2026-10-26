@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `Retrying` objects and the built-in retry strategies cannot be pickled, so `@retry`-decorated functions cannot be used with `multiprocessing` (e.g. `Pool.map`). Make `Retrying` instances (including ones that have already been used and have statistics) and the retry strategy classes picklable with the standard `pickle` module, restoring an equivalent working object.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "dom-1",
+  "why": "Scope decided it first. The task says a `Retrying` that has already been used, statistics included, must come back as an equivalent object. c3 drops the statistics on purpose, so it misses part of the request. c1, c2 and c4 all keep them and replace the lambdas and closures with picklable `functools.partial` wrappers around module-level functions.\nc4 stores the live statistics dict in its pickled state instead of a copy, so `copy.copy()` on a `Retrying` would share one dict between the original and the copy.\nRunner-up is c2, which has the same code as c1 and slightly better type hints. Its strategy tests only check that the type and attribute names survive pickling, while c1 checks that each restored strategy gives the same answer as the original for every outcome.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-202610-bug-retrying-objects-and-the-bui",
+  "usage": {
+    "in": 588561,
+    "cached": 9893251,
+    "out": 145170,
+    "cost": 3.8535239199999998,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.6125,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

@@ -123,7 +123,7 @@ src/humanize/filesize.py:38:        >>> naturalsize(-4096, True)
 42	
 [assistant] Baseline first, using the project's test command from CLAUDE.md.
 [tool_use Bash] {"command": "PY=<work>/env-humanize/bin/python; ls -la $PY 2>&1; PYTHONPATH=src $PY -m pytest -q -p no:cacheprovider --color=no 2>&1 | tail -15; grep -rn \"YiB\\|YB\\|doctest\" --include='*.py' --include='*.md' --include='*.toml' --include='*.ini' . | grep -v \"^./src/humanize/filesize.py\" | head", "description": "Run baseline test suite and search for suffix docs"}
-[tool_result] lrwxr-xr-x@ 1 donovan  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
+[tool_result] lrwxr-xr-x@ 1 user  wheel  84 Oct 23 13:32 <work>/env-humanize/bin/python -> ~/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3.12
 ....................sssssssssssssssssssssss............................. [ 12%]
 ........................................................................ [ 25%]
 ...................................................

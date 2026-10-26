@@ -1,0 +1,1 @@
+Bug: `humanize.naturaldelta()` truncates years instead of rounding: a timedelta of about 2.9 years (1058 days) is shown as "2 years" but should be "3 years", consistent with the docstring's claim that the timedelta is rounded to the nearest unit.

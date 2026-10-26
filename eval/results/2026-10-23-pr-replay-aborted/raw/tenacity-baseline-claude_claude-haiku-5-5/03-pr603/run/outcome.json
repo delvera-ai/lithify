@@ -1,0 +1,27 @@
+{
+  "task": "Bug: the `delay_since_first_attempt` key is missing from a retrying object's `statistics` until after the first retry, so code that reads `statistics[\"delay_since_first_attempt\"]` during the first attempt raises `KeyError`. The key should be present from the start of each run, with value `0` until a delay has occurred.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 25733,
+    "cached": 284612,
+    "out": 4946,
+    "cost": 0.01046392,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.6,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

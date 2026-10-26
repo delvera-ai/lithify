@@ -1,0 +1,27 @@
+{
+  "task": "Bug: `Retrying(enabled=False)(fn)` and `AsyncRetrying(enabled=False)(fn)` ignore `enabled=False` when called directly: they run the full retry loop and wrap the original exception in `RetryError`. With `enabled=False`, calling the retrying object with a function should call it exactly once and propagate its exception unchanged (awaiting coroutine functions for the async version), matching the decorator and iterator paths.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": null,
+  "usage": {
+    "in": 22182,
+    "cached": 235776,
+    "out": 2256,
+    "cost": 0.0,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

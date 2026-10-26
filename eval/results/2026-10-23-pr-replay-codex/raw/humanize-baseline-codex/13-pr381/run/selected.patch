@@ -1,0 +1,75 @@
+diff --git a/src/humanize/lists.py b/src/humanize/lists.py
+index 525f0e3..0e14b8b 100644
+--- a/src/humanize/lists.py
++++ b/src/humanize/lists.py
+@@ -4,15 +4,16 @@ from __future__ import annotations
+ 
+ TYPE_CHECKING = False
+ if TYPE_CHECKING:
++    from collections.abc import Iterable
+     from typing import Any
+ 
+ __all__ = ["natural_list"]
+ 
+ 
+-def natural_list(items: list[Any]) -> str:
++def natural_list(items: Iterable[Any]) -> str:
+     """Natural list.
+ 
+-    Convert a list of items into a human-readable string with commas and 'and'.
++    Convert a finite iterable into a human-readable string with commas and 'and'.
+ 
+     Examples:
+         >>> natural_list(["one", "two", "three"])
+@@ -23,11 +24,12 @@ def natural_list(items: list[Any]) -> str:
+         'one'
+ 
+     Args:
+-        items (list): An iterable of items.
++        items (Iterable): A finite iterable of items.
+ 
+     Returns:
+         str: A string with commas and 'and' in the right places.
+     """
++    items = list(items)
+     if not items:
+         return ""
+     if len(items) == 1:
+diff --git a/tests/test_lists.py b/tests/test_lists.py
+index cc514f3..54aee6d 100644
+--- a/tests/test_lists.py
++++ b/tests/test_lists.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from collections.abc import Callable, Iterable
++
+ import pytest
+ 
+ import humanize
+@@ -22,3 +24,25 @@ def test_natural_list(
+     test_args: list[str] | list[int] | list[str | int], expected: str
+ ) -> None:
+     assert humanize.natural_list(*test_args) == expected
++
++
++@pytest.mark.parametrize(
++    "make_iterable",
++    [
++        list,
++        tuple,
++        set,
++        frozenset,
++        iter,
++        lambda items: (item for item in items),
++        lambda items: dict.fromkeys(items).keys(),
++        lambda items: range(len(list(items))),
++    ],
++)
++@pytest.mark.parametrize("length", [0, 1, 2, 3, 5])
++def test_natural_list_iterables(
++    make_iterable: Callable[[Iterable[int]], Iterable[int]], length: int
++) -> None:
++    items = make_iterable(range(length))
++    expected = humanize.natural_list(list(items))
++    assert humanize.natural_list(make_iterable(range(length))) == expected

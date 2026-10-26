@@ -1,0 +1,144 @@
+--- a/scripts/check_changed.py
++++ b/scripts/check_changed.py
+@@ -10,6 +10,8 @@
+       * line length <= 88 (ruff line-length; do NOT eyeball this)
+       * no tabs / trailing whitespace
+       * a nested `def`/`class` is preceded by a blank line (ruff format)
++      * every added `def` annotates all parameters and its return (mypy
++        strict covers tenacity/ AND tests/; `self`/`cls` exempt)
+   - releasenotes/notes/*.yaml
+       * starts with `---`, top-level keys are reno sections, each section
+         holds `- ` list entries, no tabs
+@@ -25,6 +27,7 @@
+ 
+ from __future__ import annotations
+ 
++import ast
+ import os
+ import re
+ import subprocess
+@@ -74,6 +77,7 @@
+         compile(src, path, "exec")
+     except SyntaxError as exc:
+         errs.append(f"{path}:{exc.lineno}: syntax error: {exc.msg}")
++    errs += check_annotations(path, src, changed)
+     lines = src.splitlines()
+     for no in sorted(changed):
+         if no > len(lines):
+@@ -94,6 +98,37 @@
+                 errs.append(
+                     f"{path}:{no}: nested {m.group(2)} needs a blank line before it"
+                 )
++    return errs
++
++
++def check_annotations(path: str, src: str, changed: set[int]) -> list[str]:
++    """mypy-strict proxy: an added def must annotate every param and return."""
++    try:
++        tree = ast.parse(src)
++    except SyntaxError:
++        return []
++    errs: list[str] = []
++    for node in ast.walk(tree):
++        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
++            continue
++        if node.lineno not in changed:
++            continue
++        a = node.args
++        params = [*a.posonlyargs, *a.args]
++        if params and params[0].arg in ("self", "cls"):
++            params = params[1:]
++        params += a.kwonlyargs + [x for x in (a.vararg, a.kwarg) if x]
++        missing = [x.arg for x in params if x.annotation is None]
++        if missing:
++            errs.append(
++                f"{path}:{node.lineno}: def {node.name}: unannotated "
++                f"param(s) {', '.join(missing)} (mypy strict)"
++            )
++        if node.returns is None:
++            errs.append(
++                f"{path}:{node.lineno}: def {node.name}: missing return "
++                "annotation (mypy strict; use -> None)"
++            )
+     return errs
+ 
+ 
+
+--- a/skills/tenacity-change-contract/SKILL.md
++++ b/skills/tenacity-change-contract/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: tenacity-change-contract
+-description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code.
++description: Load when a task changes user-visible behaviour of the tenacity package (a bug fix, new feature, changed log/message text, retry-loop or `statistics` behaviour, retry/stop/wait strategy composition with `|`/`&`/`+` or sync/async strategy mixing, typing change, dropped Python version) — i.e. any edit under tenacity/ that a user of the library could notice. Lists the files such a change must touch besides the code (reno note, test, user docs in doc/source/index.rst).
+ ---
+ 
+ # What a behaviour change in tenacity must touch
+@@ -77,6 +77,20 @@
+   ```
+ - Rendered by `doc/source/changelog.rst` (`.. release-notes::`), so it must be valid YAML.
+ 
++## 2a. User docs for new API or a new usage form (`doc/source/index.rst`)
++Feature commits that add API or a new way to use it also edit `doc/source/index.rst`, next
++to the example of the existing form (e.g. #222 async iterator, #369, #423
++`stop_before_delay`, #463 trio). Bug fixes that change no documented usage don't need this.
++- `README.rst` is a symlink to `doc/source/index.rst`. Edit `index.rst` only.
++- Find the section with `grep -n "<existing usage, e.g. 'with attempt:'>" doc/source/index.rst`,
++  not just the class name. Usage sections often don't name the class (the "Retrying code
++  block" section shows `with attempt:` and never says `AttemptManager`).
++- Examples are `.. testcode::` blocks, run by `sphinx-build -W -b doctest` (`poe docs`,
++  `pyproject.toml [tool.poe.tasks]`). They must be valid, runnable Python. Async examples
++  only define `async def function(): ...` and never run it. Copy that shape.
++- `doc/source/api.rst` uses `autoclass`/`automodule`, so docstrings there update by
++  themselves.
++
+ ## 3. A regression test in the matching test file
+ - `tenacity/_utils.py` → `tests/test_utils.py`; callbacks/strategies/core → `tests/test_tenacity.py`
+   (`tests/test_after.py` for `after_log`); async → `tests/test_asyncio.py`.
+@@ -85,7 +99,8 @@
+ - ruff (`line-length = 88`, `target-version = "py310"`) checks and format-checks the whole repo,
+   tests included (`tox -e pep8`).
+ - Check items 2 and 3 with `<project python> .lithify/harness/scripts/check_changed.py`; it
+-  checks the reno note's shape and the changed lines' length/spacing (ruff/mypy can't run here).
++  checks the reno note's shape, the changed lines' length/spacing and that new defs are fully
++  annotated (ruff/mypy can't run here).
+ 
+ ## 4. Keep the change surface minimal
+ Do not edit `AGENTS.md`/`CLAUDE.md` (generated by `lithify sync`).
+
+--- a/system.md
++++ b/system.md
+@@ -12,9 +12,9 @@
+ 2. Run the full suite (`run_tests.py`, no args); read the `exit=` line and the summary line.
+    `exit=124` means a test hung: follow the script's printed next step; never just re-run.
+ 3. Run `<project python> .lithify/harness/scripts/check_changed.py` (stdlib: line length,
+-   nested-def spacing, syntax, reno note shape on changed files). Exit 1: fix each printed
+-   file:line and re-run. Never state a line length or format verdict from reading; quote this
+-   script. ruff/mypy can't run here: report them as not run.
++   nested-def spacing, syntax, unannotated new defs, reno note shape). Exit 1: fix each
++   printed file:line and re-run. Never state a line length, format or annotation verdict from
++   reading; quote this script. ruff/mypy can't run here: report them as not run.
+ Do not end your turn while a check is still running; a check you have not seen finish is not
+ run. A successful edit or file write is not evidence. In the final message, list every step
+ skipped.
+
+--- a/tool_guidance.md
++++ b/tool_guidance.md
+@@ -1,10 +1,12 @@
++- Harness files are in the working tree: skills at `.lithify/harness/skills/<name>/SKILL.md`,
++  scripts at `.lithify/harness/scripts/`. Read a skill there with `cat`; never `find /` or read
++  copies outside the working tree (one search did both and returned a 55 KB dump).
+ - The project venv (python in memory.md) runs pytest but has no pip, ruff, mypy or PyYAML;
+   `uv`/`uvx` are not on PATH, and a new `/tmp` venv dies in ensurepip (SIGABRT). Don't probe or
+   build one; `.lithify/harness/scripts/check_changed.py` is the stdlib substitute.
+-- The shell is zsh: quote globs (`--include='*.py'`), or the command fails with "no matches found".
++- The shell is zsh: quote every glob, including grep's (`--include='*.py'`), or the whole command
++  fails with "no matches found"; on that error, quote and re-run once.
+   `${PIPESTATUS[0]}` prints empty; use `cmd > /tmp/out.txt 2>&1; echo "exit=$?"; tail /tmp/out.txt`.
+   A word starting with `=` (e.g. `echo ===`) aborts the command ("== not found"); use `echo ---`.
+-- Run tests with `<project python> .lithify/harness/scripts/run_tests.py [--timeout S] [node ids]`
+-  (default 300 s, full log in /tmp/run_tests.log). Raw `pytest` has no time limit here: the full
+-  suite once hung with no output until the 900 s kill (a sync combinator holding an async
+-  strategy; see the tenacity-change-contract skill, §1b). A hang is a bug, not a slow suite.
++- Raw `pytest` has no time limit here (the suite once hung silently until a 900 s kill); always
++  go through `run_tests.py` (full log in /tmp/run_tests.log). A hang is a bug, not a slow suite.

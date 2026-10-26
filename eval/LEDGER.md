@@ -12,7 +12,10 @@ Caps: pilot (3B) $25; total $150. Cost is the sum of `usage.cost` from every `ou
 | 2026-10-23 | 3B install/hook checks | 1 claude + 4 codex sessions | 0.0029 | 6.7243 | codex sessions: small prompts, tokens not recorded |
 | 2026-10-23 | 3C dev set (humanize #142, #206 × 3 strategies) | 6 tasks | 9.0344 | 15.7587 | harness debugging; found test-edit gate blocks PRs that change pinned behaviour |
 | 2026-10-23 | 3C pilot humanize (10 eval PRs × 3 strategies) | 30 tasks | 22.2600 | 38.0187 | baseline 0.09, static 21.90, adaptive 0.27 |
-| 2026-10-23 | 3C full tenacity — ABORTED by operator error (a broken `ps | grep` check showed the live runs as dead; I killed their in-flight agents, deleted their worktrees and moved their output, crashing them) | 10 tasks recorded + 3 killed in flight | 2.3482 + 2.00 est | 42.3669 | recorded rows in `results/2026-10-23-pr-replay-aborted/`; in-flight spend unrecorded, estimated; runs restarted from task 1 |
-| 2026-10-23 | 3C full tenacity (22 eval PRs × 3 strategies) | 66 tasks | 18.4603 | 60.8272 | restart after the aborted run |
+| 2026-10-23 | 3C tenacity, Codex executor (baseline + adaptive) | 44 tasks | 0.00 (est, ChatGPT plan) | (unchanged) | baseline 454,805 in / 4,031,360 cached / 42,977 out; adaptive 494,834 / 4,204,544 / 45,899 tokens |
+| 2026-10-23 | 3C tenacity re-runs: baseline (22) after limit invalidation | 22 tasks | 0.4300 | — | clean re-run; superseded rows kept in `superseded/` (their spend counted above) |
+| 2026-10-23 | 3C tenacity re-run: static tasks 1–15 (stopped by session limit at task 16, resumed 2026-10-24) | 15 tasks | 43.7900 | — | limit-hit task discarded, nothing recorded |
+| 2026-10-23 | 3B/3C Codex runs: reflector check (#13), humanize baseline + adaptive | 2 + 30 tasks | 0.00 (est, ChatGPT plan) | — | tokens in `results-*.csv` |
+| 2026-10-24 | 3C tenacity static re-run, tasks 16–21 (resumed; stopped at the $65 cap before #741) | 6 tasks | 21.7200 | — | static total 65.51 |
 
-**Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent $60.83 (incl. $2.00 estimated).
+**Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent **$126.77** ($124.77 recorded in `results*.csv` across `eval/results/`, plus $2.00 estimated for the aborted run). Codex runs: $0 (ChatGPT plan; tokens recorded).

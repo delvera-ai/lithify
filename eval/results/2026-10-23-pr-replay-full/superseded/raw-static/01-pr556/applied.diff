@@ -1,0 +1,87 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 26cc7e5..f1405db 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,3 +3,4 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-155945-bug-tenacity-utils-find-ordinal](20261023-155945-bug-tenacity-utils-find-ordinal/EXPERIENCE.md) — **when** The task fixes or changes user-visible behaviour in tenacity (log or error text, defaults, API), and the task text only asks for the code fix. The harness has nothing that tells the agent about the repo's ship-with-fix artifacts (reno notes in `releasenotes/notes/`). **then** Keep the on-demand skill `skills/tenacity-change-contract` and its one-line pointer in `memory.md`. The skill spells out the reno note (file name pattern, `fixes:`/`features:` YAML, no edits to `changelog.rst`) and the test-module map. Without it, rollouts deliver a correct code-only fix and leave out the release note. Add new repo-convention facts to this skill rather than to always-on `system.md`.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8460241..f3f58e9 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,20 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 60,
++      "executions": 4,
++      "tokens_in": 232347,
++      "tokens_cached": 2063413,
++      "tokens_out": 27668,
++      "cost_usd": 1.796,
++      "wall_s": 255.0,
++      "always_on_tokens": 186,
++      "stability_after": 0.14
++    }
++  ]
+ }
+diff --git a/tenacity/_utils.py b/tenacity/_utils.py
+index be14871..3a46c3d 100644
+--- a/tenacity/_utils.py
++++ b/tenacity/_utils.py
+@@ -49,6 +49,8 @@ def find_ordinal(pos_num: int) -> str:
+         return "rd"
+     elif 4 <= pos_num <= 20:
+         return "th"
++    elif 11 <= pos_num % 100 <= 13:
++        return "th"
+     else:
+         return find_ordinal(pos_num % 10)
+ 
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index ec7b3ee..d8d8c07 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -39,3 +39,34 @@ def test_is_coroutine_callable() -> None:
+     assert _utils.is_coroutine_callable(partial_async_class) is True
+     assert _utils.is_coroutine_callable(partial_sync_class) is False
+     assert _utils.is_coroutine_callable(partial_lambda_fn) is False
++
++
++def test_find_ordinal() -> None:
++    assert _utils.find_ordinal(0) == "th"
++    assert _utils.find_ordinal(1) == "st"
++    assert _utils.find_ordinal(2) == "nd"
++    assert _utils.find_ordinal(3) == "rd"
++    assert _utils.find_ordinal(4) == "th"
++    assert _utils.find_ordinal(11) == "th"
++    assert _utils.find_ordinal(12) == "th"
++    assert _utils.find_ordinal(13) == "th"
++    assert _utils.find_ordinal(20) == "th"
++    assert _utils.find_ordinal(21) == "st"
++    assert _utils.find_ordinal(22) == "nd"
++    assert _utils.find_ordinal(23) == "rd"
++    assert _utils.find_ordinal(100) == "th"
++    assert _utils.find_ordinal(101) == "st"
++    assert _utils.find_ordinal(111) == "th"
++    assert _utils.find_ordinal(112) == "th"
++    assert _utils.find_ordinal(113) == "th"
++    assert _utils.find_ordinal(121) == "st"
++    assert _utils.find_ordinal(122) == "nd"
++    assert _utils.find_ordinal(123) == "rd"
++    assert _utils.find_ordinal(1011) == "th"
++
++
++def test_to_ordinal() -> None:
++    assert _utils.to_ordinal(111) == "111th"
++    assert _utils.to_ordinal(112) == "112th"
++    assert _utils.to_ordinal(113) == "113th"
++    assert _utils.to_ordinal(121) == "121st"

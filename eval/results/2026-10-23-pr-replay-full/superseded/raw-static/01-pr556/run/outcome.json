@@ -1,0 +1,52 @@
+{
+  "task": "Bug: `tenacity._utils.find_ordinal` (used for \"1st attempt\"-style wording in log messages) returns the wrong suffix for numbers greater than 20 that end in 11, 12 or 13: for 111, 112 and 113 it gives \"st\", \"nd\" and \"rd\", so messages read \"111st\", \"112nd\", \"113rd\". They should get \"th\"; all other numbers keep their current suffixes.",
+  "k": 1,
+  "reason": "override k=1",
+  "selected": "comp-1",
+  "why": "Fidelity decided it. All four add the same branch to `find_ordinal`, so the fix itself is equally correct in each. The repo ships fixes with reno release notes (`releasenotes/notes/`, `reno.yaml`, `.. release-notes::` in the changelog), and only c1 and c4 add one. c1 tests `find_ordinal` directly, which is the function the task names, plus `to_ordinal` for 111\u2013113, 121 and 1011. Its tests go at the end of `tests/test_utils.py`, like the existing ones.\nRunner-up c4 is just as correct, but it puts its test at the top of the file, above the existing tests, and only goes through `to_ordinal`. c3 has no release note, and c2 has neither a test nor a release note.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261023-155945-bug-tenacity-utils-find-ordinal",
+  "usage": {
+    "in": 232347,
+    "cached": 2063413,
+    "out": 27668,
+    "cost": 1.7960359600000002,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.14,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

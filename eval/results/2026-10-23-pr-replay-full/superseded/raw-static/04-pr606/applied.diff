@@ -1,0 +1,245 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index a8a9eea..072ca0d 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,6 +3,7 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261023-161759-regression-since-8-4-2-composing](20261023-161759-regression-since-8-4-2-composing/EXPERIENCE.md) — **when** A tenacity regression task lists several variants of the bug (operand orders, `|` and `&`, sync and async strategies, decorator vs `Retrying`) and asks that all of them work. Some variants may already work on HEAD because they take a different code path, for example `async_retry_base` overrides of the operators that `retry_base` delegates. **then** In `skills/tenacity-change-contract/SKILL.md`, give the agent steps to follow, not only facts about the code paths. Before any edit, run one snippet on unmodified HEAD that tries each named variant in its own try/except and prints which ones raise. Then require that every variant named in the task is exercised by a test, and that each test function contains at least one case that fails on HEAD (so fails_on_base still passes). Don't tell the agent to build tests only from the cases that fail, because that drops the working orders and async coverage from the tests and the release note.
+ - [20261023-161138-bug-the-delay-since-first-attemp](20261023-161138-bug-the-delay-since-first-attemp/EXPERIENCE.md) — **when** A tenacity regression test has to catch an exception, such as `KeyError` or `AttributeError`, raised by user code reading retry state while an attempt is running. The tempting test does the read inside `with attempt:` or inside the retried function, where tenacity's own machinery catches the exception and retries. **then** In `skills/tenacity-change-contract/SKILL.md`, don't just describe the swallowing mechanism; prescribe the test placement. Read the value outside `with attempt:` (at the top of the `for attempt in ...` body) or in a `before=` hook, so the bug's own exception reaches pytest. Make the DONE step "check that the fails_on_base output shows the bug's exception type, not an `AssertionError` from a count". Also remind that the sync `for attempt` loop needs `contextlib.suppress(RetryError)`, because fails_on_base exit 0 does not prove the test passes on the fix.
+ - [20261023-160401-bug-tenacity-after-log-crashes-w](20261023-160401-bug-tenacity-after-log-crashes-w/EXPERIENCE.md) — **when** The tenacity-change-contract skill asks the agent to verify something, such as "test fails on the old code", but gives no command for it. The only obvious way to do it is a state-changing git round-trip (stash/apply/drop, or hand-reverting the fix) on the working tree that holds the deliverable. **then** Ship the check as a deterministic, read-only script under `skills/tenacity-change-contract/scripts/` (temp copy of HEAD plus the working-tree tests, with clear exit codes and a "report not verified on exit 2" rule). Add an explicit invocation line in `skills/tenacity-change-contract/SKILL.md`'s DONE checklist, where the requirement is stated. Don't leave the agent with prose that just says "verify it".
+ - [20261023-155945-bug-tenacity-utils-find-ordinal](20261023-155945-bug-tenacity-utils-find-ordinal/EXPERIENCE.md) — **when** The task fixes or changes user-visible behaviour in tenacity (log or error text, defaults, API), and the task text only asks for the code fix. The harness has nothing that tells the agent about the repo's ship-with-fix artifacts (reno notes in `releasenotes/notes/`). **then** Keep the on-demand skill `skills/tenacity-change-contract` and its one-line pointer in `memory.md`. The skill spells out the reno note (file name pattern, `fixes:`/`features:` YAML, no edits to `changelog.rst`) and the test-module map. Without it, rollouts deliver a correct code-only fix and leave out the release note. Add new repo-convention facts to this skill rather than to always-on `system.md`.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9199313..b9b44ba 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -45,6 +45,21 @@
+       "wall_s": 379.1,
+       "always_on_tokens": 439,
+       "stability_after": 0.42
++    },
++    {
++      "task_id": "20261023-161759-regression-since-8-4-2-composing",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 24,
++      "executions": 4,
++      "tokens_in": 442014,
++      "tokens_cached": 5127327,
++      "tokens_out": 90634,
++      "cost_usd": 3.8375,
++      "wall_s": 1260.4,
++      "always_on_tokens": 471,
++      "stability_after": 0.56
+     }
+   ]
+ }
+diff --git a/tenacity/asyncio/retry.py b/tenacity/asyncio/retry.py
+index cbb332e..32d19b5 100644
+--- a/tenacity/asyncio/retry.py
++++ b/tenacity/asyncio/retry.py
+@@ -20,6 +20,7 @@ from tenacity import _utils, retry_base
+ 
+ if typing.TYPE_CHECKING:
+     from tenacity import RetryCallState
++    from tenacity.retry import RetryBaseT as SyncRetryBaseT
+ 
+ 
+ class async_retry_base(retry_base):
+@@ -30,22 +31,22 @@ class async_retry_base(retry_base):
+         pass
+ 
+     def __and__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(self, other)
+ 
+     def __rand__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_all":
+         return retry_all(other, self)
+ 
+     def __or__(  # type: ignore[override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(self, other)
+ 
+     def __ror__(  # type: ignore[misc,override]
+-        self, other: "retry_base | async_retry_base"
++        self, other: "SyncRetryBaseT | RetryBaseT"
+     ) -> "retry_any":
+         return retry_any(other, self)
+ 
+@@ -95,7 +96,7 @@ class retry_if_result(async_retry_base):
+ class retry_any(async_retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: "SyncRetryBaseT | RetryBaseT") -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+@@ -110,7 +111,7 @@ class retry_any(async_retry_base):
+ class retry_all(async_retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base | async_retry_base) -> None:
++    def __init__(self, *retries: "SyncRetryBaseT | RetryBaseT") -> None:
+         self.retries = retries
+ 
+     async def __call__(self, retry_state: "RetryCallState") -> bool:  # type: ignore[override]
+diff --git a/tenacity/retry.py b/tenacity/retry.py
+index 593b252..4edbd1f 100644
+--- a/tenacity/retry.py
++++ b/tenacity/retry.py
+@@ -29,16 +29,20 @@ class retry_base(abc.ABC):
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+         pass
+ 
+-    def __and__(self, other: "retry_base") -> "retry_all":
+-        return other.__rand__(self)
++    def __and__(self, other: "RetryBaseT") -> "retry_all":
++        if isinstance(other, retry_base):
++            return other.__rand__(self)
++        return retry_all(self, other)
+ 
+-    def __rand__(self, other: "retry_base") -> "retry_all":
++    def __rand__(self, other: "RetryBaseT") -> "retry_all":
+         return retry_all(other, self)
+ 
+-    def __or__(self, other: "retry_base") -> "retry_any":
+-        return other.__ror__(self)
++    def __or__(self, other: "RetryBaseT") -> "retry_any":
++        if isinstance(other, retry_base):
++            return other.__ror__(self)
++        return retry_any(self, other)
+ 
+-    def __ror__(self, other: "retry_base") -> "retry_any":
++    def __ror__(self, other: "RetryBaseT") -> "retry_any":
+         return retry_any(other, self)
+ 
+ 
+@@ -254,7 +258,7 @@ class retry_if_not_exception_message(retry_if_exception_message):
+ class retry_any(retry_base):
+     """Retries if any of the retries condition is valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+@@ -264,7 +268,7 @@ class retry_any(retry_base):
+ class retry_all(retry_base):
+     """Retries if all the retries condition are valid."""
+ 
+-    def __init__(self, *retries: retry_base) -> None:
++    def __init__(self, *retries: "RetryBaseT") -> None:
+         self.retries = retries
+ 
+     def __call__(self, retry_state: "RetryCallState") -> bool:
+diff --git a/tests/test_asyncio.py b/tests/test_asyncio.py
+index 599c4f2..735419c 100644
+--- a/tests/test_asyncio.py
++++ b/tests/test_asyncio.py
+@@ -292,6 +292,36 @@ class TestContextManager(unittest.TestCase):
+ 
+         self.assertEqual(3, result)
+ 
++    @asynctest
++    async def test_retry_with_plain_callable_composition(self) -> None:
++        class CustomException(Exception):
++            pass
++
++        def before_third_attempt(retry_state: tenacity.RetryCallState) -> bool:
++            return retry_state.attempt_number < 3
++
++        async def run(retry_strategy: tenacity.retry_base | tasyncio.RetryBaseT) -> int:
++            attempts = 0
++            async for attempt in tasyncio.AsyncRetrying(retry=retry_strategy):
++                with attempt:
++                    attempts += 1
++                    if attempts < 3:
++                        raise CustomException()
++
++                assert attempt.retry_state.outcome  # help mypy
++                if not attempt.retry_state.outcome.failed:
++                    attempt.retry_state.set_result(attempts)
++
++            return attempts
++
++        # sync retry_base instance with a plain callable, in both orders, with | and &
++        # (async strategies compose through async_retry_base, which already worked)
++        retry_on_exc = tenacity.retry_if_exception_type(CustomException)
++        self.assertEqual(3, await run(retry_on_exc | before_third_attempt))
++        self.assertEqual(3, await run(before_third_attempt | retry_on_exc))
++        self.assertEqual(3, await run(retry_on_exc & before_third_attempt))
++        self.assertEqual(3, await run(before_third_attempt & retry_on_exc))
++
+     @asynctest
+     async def test_retry_with_async_result_or(self) -> None:
+         async def test() -> int:
+diff --git a/tests/test_tenacity.py b/tests/test_tenacity.py
+index 0645a83..1020eed 100644
+--- a/tests/test_tenacity.py
++++ b/tests/test_tenacity.py
+@@ -743,6 +743,55 @@ class TestRetryConditions(unittest.TestCase):
+         self.assertFalse(r(tenacity.Future.construct(1, 2.2, False)))
+         self.assertFalse(r(tenacity.Future.construct(1, 42, True)))
+ 
++    def test_retry_or_and_and_with_plain_callable(self) -> None:
++        def is_foo(retry_state: tenacity.RetryCallState) -> bool:
++            assert retry_state.outcome  # help mypy
++            return not retry_state.outcome.failed and (
++                retry_state.outcome.result() == "foo"
++            )
++
++        def r(retry: tenacity.retry_base, fut: tenacity.Future) -> bool:
++            retry_state = make_retry_state(1, 1.0, last_result=fut)
++            return retry(retry_state)
++
++        or_strategies = [
++            tenacity.retry_if_result(lambda x: isinstance(x, int)) | is_foo,
++            is_foo | tenacity.retry_if_result(lambda x: isinstance(x, int)),
++        ]
++        for retry in or_strategies:
++            self.assertIsInstance(retry, tenacity.retry_any)
++            self.assertTrue(r(retry, tenacity.Future.construct(1, "foo", False)))
++            self.assertTrue(r(retry, tenacity.Future.construct(1, 2, False)))
++            self.assertFalse(r(retry, tenacity.Future.construct(1, "bar", False)))
++
++        and_strategies = [
++            tenacity.retry_if_result(lambda x: isinstance(x, str)) & is_foo,
++            is_foo & tenacity.retry_if_result(lambda x: isinstance(x, str)),
++        ]
++        for retry in and_strategies:
++            self.assertIsInstance(retry, tenacity.retry_all)
++            self.assertTrue(r(retry, tenacity.Future.construct(1, "foo", False)))
++            self.assertFalse(r(retry, tenacity.Future.construct(1, "bar", False)))
++            self.assertFalse(r(retry, tenacity.Future.construct(1, 2, False)))
++
++        # plain callable as the other operand, driven through the sync retry loop
++        attempts = 0
++
++        def before_third_attempt(retry_state: tenacity.RetryCallState) -> bool:
++            return retry_state.attempt_number < 3
++
++        @tenacity.retry(
++            retry=tenacity.retry_if_exception_type(IOError) & before_third_attempt
++        )
++        def flaky() -> int:
++            nonlocal attempts
++            attempts += 1
++            if attempts < 3:
++                raise OSError()
++            return attempts
++
++        self.assertEqual(3, flaky())
++
+     def _raise_try_again(self) -> None:
+         self._attempts += 1
+         if self._attempts < 3:

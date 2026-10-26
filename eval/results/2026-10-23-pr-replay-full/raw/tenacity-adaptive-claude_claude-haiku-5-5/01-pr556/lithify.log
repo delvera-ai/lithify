@@ -1,0 +1,24 @@
+lithify ▸ 20261023-155945-bug-tenacity-utils-find-ordinal  k=2 (genesis (S=0.00)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ▸ probe base-2: executing with claude@claude-haiku-5-5
+  ✓ probe base-2: test=pass
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ▸ blind select among 2 gate-passing deliverables (claude)
+  ✓ applied deliverable from base-1: The two fixes behave identically: each adds a `pos_num % 100` check for 11–13 just before the `% 10` fallback, so 111–113 get "th" and every other number keeps its old suffix. The tie was broken on fi
+lithify ◂ delivered=True first_pass=True S=0.20 executions=2 role_sessions=1 tokens(in/cached/out)=56621/344602/5347 cost=$0.20
+{
+  "task_id": "20261023-155945-bug-tenacity-utils-find-ordinal",
+  "k": 2,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.2,
+  "executions": 2,
+  "role_sessions": 1
+}
+
