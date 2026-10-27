@@ -32,6 +32,6 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 
 | 2026-10-27 | 0 recovery step 1 | environment parity and isolated CLI pin | zero tokens | 0.0000 | 3.6267 | Claude 2.1.309 installed; restore venv PATH and runner Python 3.14.4 |
 | 2026-10-27 | 0 recovery step 4 | audit 199 round-1 rollout sessions | zero tokens | 0.0000 | 3.6267 | notification endings A 2/60, B 3/65, C 0/74; original costs lower bounds; actual CLI versions differ from ENVIRONMENT.md |
-| 2026-10-27 | 0 recovery step 3 | Claude accounting fix PR #31 | zero tokens | 0.0000 | 3.6267 | captured-fixture regressions, cumulative billing without duplication, raw gzip archives and per-model/per-call metadata; all local and CI checks pass at 38bae79 |
+| 2026-10-27 | 0 recovery step 3 | Claude accounting fix PR #31 | zero tokens | 0.0000 | 3.6267 | captured-fixture regressions, cumulative billing without duplication, raw gzip archives and per-model/per-call metadata; all local and CI checks pass at PR head 13a9fee; calibration used installed source 38bae79; actual 2.1.310 limit and four-result captures added |
 | 2026-10-27 | 0 recovery step 2 | oracle preflight, original horizon | 60 tasks / 180 checks | 0.0000 | 3.6267 | all valid; no fixes or exclusions; absolute venv Python plus venv PATH |
 | 2026-10-27 | 0 recovery step 5 | A / calibration-A1 | 1/1 | 0.0414 | 3.6681 | holdout pass; exact CLI estimate $0.04137888 (1.41× round-1 recorded cost); one zero-cost limit rejection and one auto-resume; no replicates |
