@@ -26,6 +26,11 @@ def main() -> None:
     metadata = list(a.out.glob("raw/*/01-pr7492/run/sessions/*-execute.json"))
     assert len(metadata) == 1
     billing = json.loads(metadata[0].read_text())
+    by_session: dict[str, float] = {}
+    for result in billing["results"]:
+        sid = result.get("session_id", "")
+        by_session[sid] = max(by_session.get(sid, 0.0), float(result.get("total_cost_usd", 0) or 0))
+    calibration_cost = sum(by_session.values())
     calls = []
     for label, source in (("round1", old["calls"]), ("calibration", billing["calls"])):
         for index, call in enumerate(source, 1):
@@ -53,8 +58,9 @@ def main() -> None:
             "context_sizes": [c["context_tokens"] for c in old["calls"]],
         },
         "calibration": {"row": row, "billing": billing, "context_sizes": [c["context_tokens"] for c in billing["calls"]]},
-        "recorded_cost_ratio": float(row["cost_usd"]) / 0.0294,
-        "exceeds_three_times_round1": float(row["cost_usd"]) > 3 * 0.0294,
+        "calibration_cost_unrounded": calibration_cost,
+        "recorded_cost_ratio": calibration_cost / 0.0294,
+        "exceeds_three_times_round1": calibration_cost > 3 * 0.0294,
     }
     (a.out / "comparison.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(
