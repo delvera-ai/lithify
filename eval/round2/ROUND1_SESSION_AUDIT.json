@@ -3,6 +3,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/01-pr7492/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02257653,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -39,6 +41,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/01-pr7492/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.024827100000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -75,6 +79,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/02-pr7487/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03797320999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -111,6 +117,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/02-pr7487/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01973737,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -147,6 +155,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/03-pr7502/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021093890000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -183,6 +193,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/04-pr7497/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021514800000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -219,6 +231,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/05-pr7514/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.041183330000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -255,6 +269,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/06-pr7520/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01654723,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -291,6 +307,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/07-pr7523/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01610018,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -327,6 +345,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/08-pr7521/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01014887,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -363,6 +383,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/09-pr7519/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01711943,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -399,6 +421,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/10-pr7537/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.029769479999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -435,6 +459,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/11-pr7542/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02410346,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -471,6 +497,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/12-pr7549/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0554186,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -507,6 +535,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/13-pr7551/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.041586760000000014,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -543,6 +573,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/14-pr7550/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0598333,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -579,6 +611,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/15-pr7560/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.18438026000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -615,6 +649,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/16-pr7559/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01868701,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -651,6 +687,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/17-pr7565/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02880303,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -687,6 +725,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/18-pr7562/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027114460000000007,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -723,6 +763,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/19-pr7573/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0204013,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -759,6 +801,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/20-pr7578/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0157123,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -795,6 +839,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/20-pr7578/run/rollouts/comp-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01743511,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -831,6 +877,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/20-pr7578/run/rollouts/dom-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01031544,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -867,6 +915,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/20-pr7578/run/rollouts/inv-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.022014489999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -903,6 +953,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/21-pr7575/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.028023100000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -939,6 +991,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/22-pr7585/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.030451890000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -975,6 +1029,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/23-pr7597/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.024431060000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1011,6 +1067,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/24-pr7615/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.022772650000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1047,6 +1105,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/25-pr7584/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01557106,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1083,6 +1143,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/26-pr7616/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02499879,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1119,6 +1181,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/27-pr7621/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0236513,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1155,6 +1219,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/28-pr7630/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.026764980000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1191,6 +1257,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/29-pr7638/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021306070000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1227,6 +1295,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/30-pr7640/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03916799,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1264,6 +1334,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/31-pr7631/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02358928,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1300,6 +1372,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/32-pr7647/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.029758450000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1336,6 +1410,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/33-pr7649/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03507514,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1374,6 +1450,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/34-pr7659/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.034379450000000006,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1412,6 +1490,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/35-pr7655/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04738324000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1450,6 +1530,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/36-pr7641/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02563079,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1488,6 +1570,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/37-pr7673/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.014938219999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1526,6 +1610,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/38-pr7675/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021774170000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1564,6 +1650,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/39-pr7680/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02854192,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1602,6 +1690,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/40-pr7684/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.014652860000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1640,6 +1730,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/41-pr7690/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.045317840000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1678,6 +1770,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/42-pr7691/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01885901,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1716,6 +1810,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/43-pr7695/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01192452,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1754,6 +1850,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/44-pr7717/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.023024450000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1792,6 +1890,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/45-pr7729/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03734268,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1830,6 +1930,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/46-pr7736/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.035724410000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1868,6 +1970,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/47-pr7737/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03254148,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1906,6 +2010,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/48-pr7741/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.015794850000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1944,6 +2050,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/49-pr7704/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01360723,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -1982,6 +2090,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/50-pr7735/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03736207,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2020,6 +2130,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/51-pr7760/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.011466690000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2058,6 +2170,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/52-pr7766/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.018707869999999995,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2096,6 +2210,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/53-pr7771/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.011978190000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2134,6 +2250,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/54-pr7776/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.017889060000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2172,6 +2290,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/55-pr7778/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01149154,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2210,6 +2330,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/56-pr7779/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.07174302,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2248,6 +2370,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/57-pr7783/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.011172179999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2286,6 +2410,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/58-pr7786/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01420794,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2324,6 +2450,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/59-pr7787/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0195058,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2362,6 +2490,8 @@
     "arm": "sqlglot-adaptive-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-claude_claude-haiku-5-5/60-pr7796/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027337910000000007,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2400,6 +2530,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/01-pr7492/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.025793939999999994,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2436,6 +2568,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/01-pr7492/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02580807,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2472,6 +2606,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/02-pr7487/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03294649,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2508,6 +2644,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/02-pr7487/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01687592,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2544,6 +2682,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/03-pr7502/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.030760140000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2580,6 +2720,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/03-pr7502/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0225833,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2616,6 +2758,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/04-pr7497/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.023640819999999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2652,6 +2796,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/04-pr7497/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.023134180000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2688,6 +2834,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.07033932000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2724,6 +2872,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.05105126,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2760,6 +2910,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/comp-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.028973159999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2796,6 +2948,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/comp-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.030125240000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2832,6 +2986,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/dom-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03197667,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2868,6 +3024,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/dom-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.035419210000000007,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2904,6 +3062,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/inv-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.043303150000000006,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2940,6 +3100,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/05-pr7514/run/rollouts/inv-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.045756530000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -2976,6 +3138,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/06-pr7520/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013969880000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3012,6 +3176,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/06-pr7520/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.020424829999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3048,6 +3214,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/07-pr7523/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01783093,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3084,6 +3252,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/07-pr7523/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021449799999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3120,6 +3290,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/08-pr7521/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.012635790000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3156,6 +3328,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/08-pr7521/run/rollouts/base-2/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.012890669999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3192,6 +3366,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/09-pr7519/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.017599680000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3228,6 +3404,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/10-pr7537/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.018138320000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3264,6 +3442,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/11-pr7542/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013604780000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3300,6 +3480,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/12-pr7549/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.046266180000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3336,6 +3518,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/13-pr7551/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04171428000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3372,6 +3556,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/14-pr7550/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.047661770000000006,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3408,6 +3594,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/15-pr7560/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.12310039000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3444,6 +3632,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/16-pr7559/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.025749880000000006,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3480,6 +3670,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/17-pr7565/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.025421970000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3516,6 +3708,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/18-pr7562/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.032716180000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3552,6 +3746,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/19-pr7573/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02661614999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3588,6 +3784,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/20-pr7578/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.023730579999999994,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3624,6 +3822,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/21-pr7575/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03873352000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3660,6 +3860,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/22-pr7585/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.042085620000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3696,6 +3898,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/23-pr7597/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.030819629999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3732,6 +3936,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/24-pr7615/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027038939999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3769,6 +3975,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/25-pr7584/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02135277,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3805,6 +4013,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/26-pr7616/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.037920489999999994,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3843,6 +4053,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/27-pr7621/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.025326449999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3881,6 +4093,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/28-pr7630/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03189599,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3919,6 +4133,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/29-pr7638/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03504419,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3957,6 +4173,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/30-pr7640/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03159679,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -3995,6 +4213,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/31-pr7631/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.023304909999999995,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4033,6 +4253,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/32-pr7647/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.016232580000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4071,6 +4293,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/33-pr7649/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04546396,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4109,6 +4333,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/34-pr7659/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027396479999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4147,6 +4373,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/35-pr7655/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.020715119999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4185,6 +4413,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/36-pr7641/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027404060000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4223,6 +4453,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/37-pr7673/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01933739000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4261,6 +4493,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/38-pr7675/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.020020800000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4299,6 +4533,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/39-pr7680/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03150257,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4337,6 +4573,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/40-pr7684/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01554833,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4375,6 +4613,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/41-pr7690/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.09430612000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4413,6 +4653,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/42-pr7691/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013682390000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4451,6 +4693,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/43-pr7695/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.017493440000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4489,6 +4733,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/44-pr7717/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021474,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4527,6 +4773,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/45-pr7729/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03978302000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4565,6 +4813,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/46-pr7736/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03449576000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4603,6 +4853,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/47-pr7737/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03213804,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4641,6 +4893,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/48-pr7741/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02290032,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4679,6 +4933,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/49-pr7704/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03537511000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4717,6 +4973,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/50-pr7735/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04150635000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4755,6 +5013,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/51-pr7760/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03049604000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4793,6 +5053,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/52-pr7766/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04676602,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4831,6 +5093,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/53-pr7771/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.052457929999999986,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4869,6 +5133,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/54-pr7776/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.0255268,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4907,6 +5173,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/55-pr7778/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.022412559999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4945,6 +5213,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/56-pr7779/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.26530932,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -4983,6 +5253,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/57-pr7783/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01682074,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -5021,6 +5293,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/58-pr7786/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04612079,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -5059,6 +5333,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/59-pr7787/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.031483779999999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -5097,6 +5373,8 @@
     "arm": "sqlglot-adaptive-feedback-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/60-pr7796/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.039032870000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -5135,6 +5413,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/01-pr7492/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02944021,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6008,6 +6288,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/02-pr7487/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.015318790000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6044,6 +6326,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/03-pr7502/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.024816659999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6080,6 +6364,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/04-pr7497/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01708705,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6116,6 +6402,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/05-pr7514/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.041004420000000014,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6152,6 +6440,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/06-pr7520/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.014510760000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6188,6 +6478,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/07-pr7523/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01782193,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6224,6 +6516,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/08-pr7521/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.00841579,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6260,6 +6554,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/09-pr7519/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.016425380000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6296,6 +6592,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/10-pr7537/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01706707,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6332,6 +6630,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/11-pr7542/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01400937,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6368,6 +6668,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/12-pr7549/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04910785,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6404,6 +6706,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/13-pr7551/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03374929000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6440,6 +6744,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/14-pr7550/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.038170279999999994,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6476,6 +6782,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/15-pr7560/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.31831162,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6512,6 +6820,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/16-pr7559/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.027082000000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6548,6 +6858,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/17-pr7565/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.029623920000000005,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6584,6 +6896,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/18-pr7562/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.028130610000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6620,6 +6934,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/19-pr7573/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01629559,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6656,6 +6972,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/20-pr7578/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01540923,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6692,6 +7010,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/21-pr7575/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03893266000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6728,6 +7048,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/22-pr7585/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02660934,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6764,6 +7086,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/23-pr7597/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02245401,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6800,6 +7124,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/24-pr7615/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02313376,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6836,6 +7162,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/25-pr7584/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.016215010000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6872,6 +7200,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/26-pr7616/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02659617,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6908,6 +7238,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/27-pr7621/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.021010349999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6944,6 +7276,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/28-pr7630/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.032749629999999995,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -6980,6 +7314,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/29-pr7638/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.017123120000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7016,6 +7352,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/30-pr7640/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013300980000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7052,6 +7390,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/31-pr7631/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.018335810000000004,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7088,6 +7428,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/32-pr7647/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.016681940000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7124,6 +7466,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/33-pr7649/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02687241,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7160,6 +7504,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/34-pr7659/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02342898,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7196,6 +7542,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/35-pr7655/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01586291,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7232,6 +7580,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/36-pr7641/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03452008,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7268,6 +7618,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/37-pr7673/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.018923009999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7304,6 +7656,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/38-pr7675/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013758610000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7340,6 +7694,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/39-pr7680/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03190786999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7376,6 +7732,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/40-pr7684/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013894150000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7412,6 +7770,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/41-pr7690/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.32973811999999997,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7448,6 +7808,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/42-pr7691/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.014445849999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7484,6 +7846,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/43-pr7695/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01570096,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7520,6 +7884,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/44-pr7717/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01615909,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7556,6 +7922,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/45-pr7729/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04497337999999999,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7592,6 +7960,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/46-pr7736/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.031239869999999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7628,6 +7998,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/47-pr7737/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.04972688000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7664,6 +8036,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/48-pr7741/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.019213940000000002,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7700,6 +8074,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/49-pr7704/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01788273,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7736,6 +8112,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/50-pr7735/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.031521429999999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7772,6 +8150,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/51-pr7760/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01548488,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7808,6 +8188,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/52-pr7766/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.013923640000000001,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7844,6 +8226,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/53-pr7771/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.017325040000000003,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7880,6 +8264,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/54-pr7776/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01632337,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7916,6 +8302,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/55-pr7778/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.01115943,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7952,6 +8340,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/56-pr7779/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.08866704499999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -7988,6 +8378,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/57-pr7783/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.011474919999999998,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -8024,6 +8416,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/58-pr7786/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.02464758,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -8060,6 +8454,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/59-pr7787/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.03242152,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [
@@ -8096,6 +8492,8 @@
     "arm": "sqlglot-baseline-claude_claude-haiku-5-5",
     "trajectory": "eval/results/2026-10-26-horizon/raw/sqlglot-baseline-claude_claude-haiku-5-5/60-pr7796/run/rollouts/base-1/trajectory.md",
     "matched_sessions": 1,
+    "archived_cost_usd": 0.034242379999999996,
+    "cost_state_matches_rounding": true,
     "evidence": [
       {
         "versions": [

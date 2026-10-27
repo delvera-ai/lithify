@@ -75,10 +75,14 @@ def main() -> None:
                                 "calls": list(calls.values()) if task.name.startswith("01-") and "baseline" in arm.name else [],
                             }
                         )
+            archived_cost = json.loads(trajectory.with_name("run.json").read_text())["cost_usd"]
+            recovered = [e["cost_states"][-1]["totalCostUSD"] for e in candidates if e["cost_states"]]
             row = {
                 "arm": arm.name,
                 "trajectory": str(trajectory.relative_to(root)),
                 "matched_sessions": len(candidates),
+                "archived_cost_usd": archived_cost,
+                "cost_state_matches_rounding": bool(recovered) and all(abs(c - archived_cost) <= 0.000051 for c in recovered),
                 "evidence": candidates,
             }
             rows.append(row)
@@ -94,6 +98,8 @@ def main() -> None:
             if any(e["terminal_notification"] for e in evidence):
                 counts["notification_endings"] += 1
                 print("notification:", row["trajectory"])
+            if row["cost_state_matches_rounding"]:
+                counts["cost_matches"] += 1
             versions.update(v for e in evidence for v in e["versions"])
         print(arm, len(subset), dict(counts), sorted(versions))
 
