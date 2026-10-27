@@ -36,3 +36,4 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 | 2026-10-27 | 0 recovery step 2 | oracle preflight, original horizon | 60 tasks / 180 checks | 0.0000 | 3.6267 | all valid; no fixes or exclusions; absolute venv Python plus venv PATH |
 | 2026-10-27 | 0 recovery step 5 | A / calibration-A1 | 1/1 | 0.0414 | 3.6681 | holdout pass; exact CLI estimate $0.04137888 (1.41× round-1 recorded cost); one zero-cost limit rejection and one auto-resume; no replicates |
 | 2026-10-27 | 0 before A replicates | task-1 base suite timing | 2 suites, zero tokens | 0.0000 | 3.6681 | 43.003 s isolated / 42.442 s planned load (one sequential A); pipeline concurrency 4, executor timeout 900; below 160 s threshold |
+| 2026-10-27 | 0 before A replicates | PR #31 durations and gzip export guards | zero live tokens | 0.0000 | 3.6681 | merged 89020d7 after green CI; fixture, demo, strict sim-sweep and plugin passed |

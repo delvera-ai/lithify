@@ -32,3 +32,15 @@ it does not change the frozen tasks, hypotheses, or statistical decisions.
   archiving, including .lithify/runs/*/sessions/*.gz.
 - Post suite timing and A summary to tracking issue #29; stop/report if a
   tripwire fires. Phase 0 still ends with noise reanalysis/power and a report.
+
+
+Implementation/build record: PR #31 merged at 89020d7 after all CI passed.
+Replicates use a non-editable installation of that instrumented build, with
+only package sources (no eval data) in its installation source directory.
+This owner-requested instrumentation supersedes f964993 for the new rows;
+record it explicitly rather than silently relabeling it as the old build.
+All task/source hashes are checked before launch. A retains the registered
+$3 per-run cap, in addition to the $30 phase cap and owner's mean/median
+tripwires. An executor/outer timeout with only a lower-bound cost stops
+further paid work for reconciliation; gate/holdout timeouts have their own
+recorded outcome without pretending their billed CLI cost is unknown.

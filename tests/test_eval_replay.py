@@ -101,3 +101,31 @@ def test_outer_timeout_keeps_partial_cost_and_does_not_reuse_old_outcome(tmp_pat
     assert result["timeout_kind"] == "runner" and result["cost_lower_bound"]
     assert result["cost_usd"] == 0.01 and result["tokens_in"] == 3
     assert result["active_s"] == 0.01 and result["api_s"] == 0.005
+
+
+def test_cli_resume_cap_and_timezone_reset_are_zero_token_checks():
+    from datetime import UTC, datetime
+
+    from eval.round2.run_a_replicates import reset_delay, resume_allowed
+
+    now = datetime(2026, 10, 27, 12, 0, tzinfo=UTC)
+    assert reset_delay("resets 2:10pm (Africa/Johannesburg)", now) == 660
+    assert resume_allowed([{"utc_date": "2026-10-27"}] * 2, now)
+    assert not resume_allowed([{"utc_date": "2026-10-27"}] * 3, now)
+
+
+def test_replicate_ledger_keeps_prior_invalid_run_with_same_label(tmp_path, monkeypatch):
+    from eval.round2 import run_a_replicates
+
+    ledger = tmp_path / "eval/LEDGER.md"
+    ledger.parent.mkdir()
+    (tmp_path / "eval/results").mkdir()
+    original = "| 2026-10-27 | 0 | A / r1-A-rep2 | 2/60 | 3.6267 | 3.6267 | invalid |\n"
+    ledger.write_text(original)
+    monkeypatch.setattr(run_a_replicates, "ROOT", tmp_path)
+    summary = {"label": "r1-A-rep2", "tasks": 1, "cost_usd": 0.03}
+    run_a_replicates.update_ledger(summary, "running")
+    run_a_replicates.update_ledger(summary, "running")
+    text = ledger.read_text()
+    assert original in text
+    assert text.count("| 0 A replicate | A / r1-A-rep2 |") == 1

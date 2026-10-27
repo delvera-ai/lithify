@@ -258,7 +258,7 @@ def run_task(
         "holdout_pass": (hold_rc == 0) if hold_rc is not None else "",
         "outcome": "timeout" if kinds else "pass" if hold_rc == 0 and res.get("delivered", rec.get("delivered")) else "failure",
         "timeout_kind": ",".join(kinds),
-        "cost_lower_bound": bool(kinds),
+        "cost_lower_bound": bool(set(kinds) & {"executor", "runner"}) or (proc.returncode != 0 and not outcome),
         "selected": outcome.get("selected", ""),
         "executions": int(usage.get("exec", rec.get("executions", 0))),
         "role_sessions": int(usage.get("roles", 0)),
