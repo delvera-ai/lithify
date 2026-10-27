@@ -1,0 +1,27 @@
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..64d3261ea 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -138,6 +138,7 @@ AGG_FUNCTIONS = {
+     "groupBitmapAnd",
+     "groupBitmapOr",
+     "groupBitmapXor",
++    "groupConcat",
+     "sumWithOverflow",
+     "sumMap",
+     "minMap",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..8dc63b34f 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -103,6 +103,10 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT quantiles(0.1, 0.2, 0.3)(a)")
+         self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")
+         self.validate_identity("SELECT histogram(5)(a)")
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        )
++        self.validate_identity("SELECT groupConcatIf(', ')(a, a > 1) AS x FROM t")
+         self.validate_identity("SELECT groupUniqArray(2)(a)")
+         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
+         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")

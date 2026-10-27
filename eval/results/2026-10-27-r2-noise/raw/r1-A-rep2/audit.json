@@ -1,0 +1,21 @@
+{
+  "label": "r1-A-rep2",
+  "lithify_commit": "f964993",
+  "run_cost_usd": 3.6267,
+  "invariants": [
+    {
+      "pr": 7492,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    },
+    {
+      "pr": 7487,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}

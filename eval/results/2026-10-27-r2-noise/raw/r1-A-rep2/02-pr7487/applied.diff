@@ -1,0 +1,34 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9b41ec330..f10e133eb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 2,
+   "history": [
+     {
+       "task_id": "20261027-125902-oracle-dialect-support-the-optio",
+@@ -16,6 +16,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-130227-clickhouse-dialect-the-parametri",
++      "k": 0,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 62536,
++      "tokens_cached": 1178466,
++      "tokens_out": 9655,
++      "cost_usd": 1.4273,
++      "wall_s": 153.9,
++      "always_on_tokens": 165,
++      "stability_after": 0.0,
++      "feedback_failed": false
+     }
+   ]
+ }

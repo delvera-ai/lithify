@@ -1,0 +1,28 @@
+{
+  "task": "Oracle dialect: support the optional `WHERE` clause on the `UPDATE` and `INSERT` branches of a `MERGE` statement (`WHEN MATCHED THEN UPDATE SET ... WHERE ...`, `WHEN NOT MATCHED THEN INSERT ... VALUES ... WHERE ...`), so it parses and round-trips in Oracle. When transpiling to dialects that do not support it, emit an unsupported warning and drop the clause.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "",
+  "why": "cruise failed; escalation disabled",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 114591,
+    "cached": 1351326,
+    "out": 16311,
+    "cost": 2.1993630000000004,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.0,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=FAIL(1)"
+    }
+  },
+  "candidates": {}
+}

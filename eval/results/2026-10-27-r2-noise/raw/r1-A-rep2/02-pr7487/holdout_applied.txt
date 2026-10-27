@@ -1,0 +1,23 @@
+exit 1
+.................F............                                                             [100%]
+=================================== FAILURES ===================================
+_______________________ TestClickhouse.test_groupconcat ________________________
+
+self = <tests.dialects.test_clickhouse.TestClickhouse testMethod=test_groupconcat>
+
+    def test_groupconcat(self):
+        # groupConcat(sep)(col) - parametric form with separator
+>       parsed = self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/dialects/test_clickhouse.py:1724: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "SELECT groupConcat(', ')(part_name) FROM system.parts" != "SELECT groupConcat(', ') AS (part_name) FROM system.parts"
+E   - SELECT groupConcat(', ')(part_name) FROM system.parts
+E   + SELECT groupConcat(', ') AS (part_name) FROM system.parts
+E   ?                         ++++
+=========================== short test summary info ============================
+FAILED tests/dialects/test_clickhouse.py::TestClickhouse::test_groupconcat - ...
+1 failed, 29 passed, 270 subtests passed in 0.38s
