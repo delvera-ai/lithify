@@ -52,6 +52,8 @@ def configure(clone: Path, a: argparse.Namespace, test_cmd: str) -> None:
     cfg.skip_when_base_passes = a.strategy != "static" and not a.no_skip
     cfg.timeout_s = a.timeout
     cfg.concurrency = a.concurrency
+    if a.session_cap_usd is not None:
+        cfg.adapter_args["claude"] = ["--dangerously-skip-permissions", "--max-budget-usd", str(a.session_cap_usd)]
     role = a.roles or a.executor.partition("@")[0]
     cfg.roles = dict.fromkeys(("propose_inv", "propose_dom", "compose", "select", "reflect", "compact"), role)
     (clone / ".lithify" / "config.toml").write_text(render_config(cfg), encoding="utf-8")
@@ -128,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label", default="")
     ap.add_argument("--total-cap", type=float, default=TOTAL_CAP_USD, help="cap on spend across --budget-glob result dirs")
     ap.add_argument("--budget-glob", default="*", help="eval/results/ directories counted toward --total-cap")
+    ap.add_argument("--session-cap-usd", type=float, help="Claude per-session budget, in addition to runner caps")
     ap.add_argument("--product-commit", help="verified installed product commit (separate from tooling checkout)")
     ap.add_argument("--replicate", default="")
     ap.add_argument("--seed-label", type=int, default=0, help="session label, not an executor RNG seed")

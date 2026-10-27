@@ -22,3 +22,11 @@ matching billed model versions or accounting. Compare calibration modelUsage
 with the original session evidence before deciding comparability.
 
 Spend for this step: $0. Round-2 cumulative: $3.6267. No paid runs started.
+
+## Session evidence correction
+
+The subsequent all-rollout session audit found A actually ran Claude Code
+2.1.310, and B/C 2.1.310–2.1.311. The 2.1.309 environment record was stale.
+The owner-requested 2.1.309 pin is available, but it does not reproduce A's
+actual CLI version. Treat the calibration as a setup/cost measurement, not a
+valid replicate of A1. Ask before changing the noise plan.

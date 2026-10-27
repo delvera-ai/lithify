@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import getpass
+import gzip
 import json
 import math
 import os
@@ -102,6 +103,10 @@ def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> 
             continue
         out = dst / p.relative_to(src)
         out.parent.mkdir(parents=True, exist_ok=True)
+        if p.name.endswith(".jsonl.gz"):
+            text = gzip.decompress(p.read_bytes()).decode("utf-8")
+            out.write_bytes(gzip.compress(redact(text, extra).encode("utf-8"), mtime=0))
+            continue
         try:
             out.write_text(redact(p.read_text(encoding="utf-8"), extra), encoding="utf-8")
         except UnicodeDecodeError:

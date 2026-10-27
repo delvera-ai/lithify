@@ -32,3 +32,4 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 
 | 2026-10-27 | 0 recovery step 1 | environment parity and isolated CLI pin | zero tokens | 0.0000 | 3.6267 | Claude 2.1.309 installed; restore venv PATH and runner Python 3.14.4 |
 | 2026-10-27 | 0 recovery step 4 | audit 199 round-1 rollout sessions | zero tokens | 0.0000 | 3.6267 | notification endings A 2/60, B 3/65, C 0/74; original costs lower bounds; actual CLI versions differ from ENVIRONMENT.md |
+| 2026-10-27 | 0 recovery step 3 | Claude accounting fix PR #31 | zero tokens | 0.0000 | 3.6267 | captured-fixture regression, raw gzip archives and per-model/per-call metadata; local full checks, demo and sim-sweep pass; CI pending |
