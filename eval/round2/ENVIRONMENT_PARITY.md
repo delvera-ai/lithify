@@ -1,0 +1,24 @@
+# Environment parity before calibration
+
+Reference: eval/ENVIRONMENT.md (2026-10-23).
+
+| Component | Round 1 record | Invalid A2 launch | Corrected setup |
+|---|---|---|---|
+| OS | Darwin 25.6.0 arm64 | same | same |
+| uv | 0.11.7 | same | same |
+| Claude Code | 2.1.309 | 2.1.191 from Homebrew | isolated npm install pinned 2.1.309; verified --version |
+| Evaluation runner Python | project venv 3.14.4 | scratch 3.12.13 | use 3.14.4 from project venv to create non-editable calibration environment |
+| Repository test Python | absolute scratch venv path in raw gate reports; repos.py creates 3.12 | absolute scratch venv 3.12.13 | absolute scratch venv 3.12.13 (repos.py policy) |
+| bare python for subprocesses | available in original launch environment | missing | prepend repository venv bin to PATH |
+
+The invalid A2 gate and holdout commands already used the absolute venv Python.
+The failure was an internal subprocess in sqlglot's test_lazy_load, not the
+top-level test command. Fix PATH as well as keeping absolute gate/holdout commands.
+No global CLI installation or user settings were changed. Pin is run-local:
+`<scratch>/claude-2.1.309/node_modules/.bin/claude`.
+
+A matching CLI version and requested model label do not by themselves establish
+matching billed model versions or accounting. Compare calibration modelUsage
+with the original session evidence before deciding comparability.
+
+Spend for this step: $0. Round-2 cumulative: $3.6267. No paid runs started.
