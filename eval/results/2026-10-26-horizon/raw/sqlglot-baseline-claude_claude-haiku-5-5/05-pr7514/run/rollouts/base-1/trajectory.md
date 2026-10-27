@@ -451,7 +451,7 @@ te={
 254:    def test_partition(self):
 [tool_use Bash] {"command": "python3 - <<'EOF'\ndef edit(path, old, new):\n    s = open(path).read()\n    assert s.count(old) == 1, (path, s.count(old))\n    open(path, \"w\").write(s.replace(old, new))\n\nedit(\"tests/dialects/test_doris.py\",\n'''        self.validate_all(\n            \"MONTHS_ADD(d, n)\",\n''',\n'''        self.validate_all(\n            \"DATE_ADD('2025-01-01', 1)\",\n            read={\n   
 …[1551 chars elided]…
-donovan-Coding-delvera-foundational-lithify/f0ecd001-19e9-4b3c-8461-34bf1f0fcf2a/scratchpad/hwork/env-sqlglot/bin/python; $PY -m pytest -q -p no:cacheprovider --color=no tests/dialects/test_doris.py tests/dialects/test_starrocks.py tests/dialects/test_mysql.py tests/dialects/test_hive.py tests/dialects/test_dialect.py 2>&1 | tail -40", "description": "Add dialect tests and run related test files"}
+user-Coding-delvera-foundational-lithify/f0ecd001-19e9-4b3c-8461-34bf1f0fcf2a/scratchpad/hwork/env-sqlglot/bin/python; $PY -m pytest -q -p no:cacheprovider --color=no tests/dialects/test_doris.py tests/dialects/test_starrocks.py tests/dialects/test_mysql.py tests/dialects/test_hive.py tests/dialects/test_dialect.py 2>&1 | tail -40", "description": "Add dialect tests and run related test files"}
 [tool_result]             read={
                 "": "SELECT * FROM t WHERE cond IS TRUE",
                 "starrocks": "SELECT * FROM t WHERE cond",
