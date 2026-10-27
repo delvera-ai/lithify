@@ -1,0 +1,35 @@
+exit 1
+.....................F........... [ 51%]
+...............................          [100%]
+=================================== FAILURES ===================================
+__________________________ TestParser.test_max_nodes ___________________________
+
+self = <tests.test_parser.TestParser testMethod=test_max_nodes>
+
+    def test_max_nodes(self):
+>       self.assertIsInstance(parse_one("SELECT 1", max_nodes=1_000_000), exp.Select)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_parser.py:1089: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sqlglot/__init__.py:176: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1116: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.dialects.dialect.Dialect object at 0x106fa5f10>
+opts = {'max_nodes': 1000000}
+
+    def parser(self, **opts: Unpack[ParserArgs]) -> Parser:
+        args: ParserArgs = {"dialect": self, **opts}
+>       return self.parser_class(**args)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Parser.__init__() got an unexpected keyword argument 'max_nodes'
+
+sqlglot/dialects/dialect.py:1145: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_parser.py::TestParser::test_max_nodes - TypeError: Parser._...
+1 failed, 63 passed, 71 subtests passed in 0.43s

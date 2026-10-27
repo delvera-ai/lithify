@@ -1,0 +1,95 @@
+exit 1
+.......F.........                                   [100%]
+=================================== FAILURES ===================================
+__________________________ TestRedshift.test_identity __________________________
+
+self = <tests.dialects.test_redshift.TestRedshift testMethod=test_identity>
+
+    def test_identity(self):
+        self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")
+        self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("ALTER TABLE table_name ALTER COLUMN bla TYPE VARCHAR")
+        self.validate_identity("SELECT CAST(value AS FLOAT(8))")
+        self.validate_identity("1 div", "1 AS div")
+        self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
+        self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
+        self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
+        self.validate_identity("SELECT * FROM #x")
+        self.validate_identity("SELECT INTERVAL '5 DAY'")
+        self.validate_identity("SELECT date_col - INTERVAL '30' FROM t")
+        self.validate_identity("SELECT date_col - INTERVAL '1' AS one_second_later")
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '30' DAY FROM t",
+            "SELECT date_col - INTERVAL '30 DAY' FROM t",
+        )
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '1' HOUR AS one_hour_later",
+            "SELECT date_col - INTERVAL '1 HOUR' AS one_hour_later",
+        )
+        self.validate_identity("foo$")
+        self.validate_identity("CAST('bla' AS SUPER)")
+        self.validate_identity("CREATE TABLE real1 (realcol REAL)")
+        self.validate_identity("CAST('foo' AS HLLSKETCH)")
+        self.validate_identity("'abc' SIMILAR TO '(b|c)%'")
+        self.validate_identity("'%' SIMILAR TO '^%' ESCAPE '^'")
+        self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
+        self.validate_identity("SELECT APPROXIMATE AS y")
+>       self.validate_identity(
+            "SELECT APPROXIMATE PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY totalprice)"
+        )
+
+tests/dialects/test_redshift.py:365: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2034: in parse
+    return self._parse(
+sqlglot/parser.py:2154: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2124: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.redshift.RedshiftParser object at 0x10727d9d0>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.L_PAREN, text: (, line: 1, col: 35, start: 34, end: 34, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 35.
+E             SELECT APPROXIMATE PERCENTILE_DISC[4m([0m0.5) WITHIN GROUP (ORDER BY totalprice)
+
+sqlglot/parser.py:1991: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_redshift.py::TestRedshift::test_identity - sqlglot...
+1 failed, 16 passed, 165 subtests passed in 0.70s

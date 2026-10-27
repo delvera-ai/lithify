@@ -1,0 +1,247 @@
+exit 1
+/
+    FROM tbl""",
+                pretty=True,
+            )
+            self.validate(
+                """
+    SELECT
+      'hotel1' AS hotel,
+      *
+    FROM dw_1_dw_1_1.exactonline_1.transactionlines
+    /*
+        UNION ALL
+        SELECT
+          'Thon Partner Hotel Jølster' AS hotel,
+          name,
+          date,
+          CAST(identifier AS VARCHAR) AS identifier,
+          value
+        FROM d2o_889_oupjr_1348.public.accountvalues_forecast
+    */
+    UNION ALL
+    SELECT
+      'hotel2' AS hotel,
+      *
+    FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
+                """SELECT
+      'hotel1' AS hotel,
+      *
+    FROM dw_1_dw_1_1.exactonline_1.transactionlines
+    /*
+        UNION ALL
+        SELECT
+          'Thon Partner Hotel Jølster' AS hotel,
+          name,
+          date,
+          CAST(identifier AS VARCHAR) AS identifier,
+          value
+        FROM d2o_889_oupjr_1348.public.accountvalues_forecast
+    */
+    UNION ALL
+    SELECT
+      'hotel2' AS hotel,
+      *
+    FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
+                pretty=True,
+            )
+            self.validate(
+                """/* The result of  some calculations
+     */
+    with
+        base as (
+            select
+                sum(sb.hep_amount) as hep_amount,
+                -- I AM REMOVED
+                sum(sb.hep_budget)
+                /* Budget defined in sharepoint */
+                as blub
+                , 1 as bla
+            from gold.data_budget sb
+            group by all
+        )
+    select
+        *
+    from base
+    """,
+                """/* The result of  some calculations
+     */
+    WITH base AS (
+      SELECT
+        SUM(sb.hep_amount) AS hep_amount,
+        SUM(sb.hep_budget) /* I AM REMOVED */ AS blub, /* Budget defined in sharepoint */
+        1 AS bla
+      FROM gold.data_budget AS sb
+      GROUP BY ALL
+    )
+    SELECT
+      *
+    FROM base""",
+                pretty=True,
+            )
+            self.validate(
+                """-- comment
+    SOME_FUNC(arg IGNORE NULLS)
+      OVER (PARTITION BY foo ORDER BY bla) AS col""",
+                "SOME_FUNC(arg IGNORE NULLS) OVER (PARTITION BY foo ORDER BY bla) AS col /* comment */",
+                pretty=True,
+            )
+            self.validate(
+                """
+                SELECT *
+                FROM x
+                INNER JOIN y
+                -- inner join z
+                LEFT JOIN z using (id)
+                using (id)
+                """,
+                """SELECT
+      *
+    FROM x
+    INNER JOIN y
+      /* inner join z */
+      LEFT JOIN z
+        USING (id)
+      USING (id)""",
+                pretty=True,
+            )
+            self.validate(
+                """with x as (
+      SELECT *
+      /*
+    NOTE: LEFT JOIN because blah blah blah
+      */
+      FROM a
+    )
+    select * from x""",
+                """WITH x AS (
+      SELECT
+        *
+      /*
+    NOTE: LEFT JOIN because blah blah blah
+      */
+      FROM a
+    )
+    SELECT
+      *
+    FROM x""",
+                pretty=True,
+            )
+    
+            self.validate(
+                """SELECT X FROM  catalog.db.table WHERE Y
+            --
+            AND Z""",
+                """SELECT X FROM catalog.db.table WHERE Y AND Z""",
+            )
+            self.validate(
+                """with a as /* comment */ ( select * from b) select * from a""",
+                """WITH a /* comment */ AS (SELECT * FROM b) SELECT * FROM a""",
+            )
+            self.validate(
+                """
+      -- comment at the top
+    WITH
+    -- comment for tbl1
+    tbl1 AS (SELECT 1)
+    -- comment for tbl2
+    , tbl2 AS (SELECT 2)
+    -- comment for tbl3
+    , tbl3 AS (SELECT 3)
+    -- comment for final select
+    SELECT * FROM tbl1""",
+                """/* comment at the top */
+    WITH tbl1 /* comment for tbl1 */ AS (
+      SELECT
+        1
+    ), tbl2 /* comment for tbl2 */ AS (
+      SELECT
+        2
+    ), tbl3 /* comment for tbl3 */ AS (
+      SELECT
+        3
+    )
+    /* comment for final select */
+    SELECT
+      *
+    FROM tbl1""",
+                pretty=True,
+            )
+    
+            self.validate(
+                """
+                WITH x /* a */ AS (
+                  SELECT 2 AS n /* b */
+                  FROM (/* c */ SELECT /* c2 */ a /* d */ FROM t) AS x
+                )
+                SELECT * FROM x /* e */
+                WHERE n >= (/* f */ SELECT MAX(x) FROM t)
+                ORDER BY n /* g */
+                -- h
+                """,
+                """WITH x /* a */ AS (
+      SELECT
+        2 AS n /* b */
+      FROM (
+        /* c */ /* c2 */
+        SELECT
+          a /* d */
+        FROM t
+      ) AS x
+    )
+    SELECT
+      *
+    FROM x /* e */
+    WHERE
+      n >= (
+        SELECT
+          MAX(x)
+        FROM t
+      ) /* f */
+    ORDER BY
+      n /* g */ /* h */""",
+                pretty=True,
+            )
+    
+>           self.validate(
+                """SELECT
+      *
+    FROM x
+    WHERE
+      a = 1 AND /*
+      hello
+      world
+    */ 1 = 0""",
+                """SELECT
+      *
+    FROM x
+    WHERE
+      a = 1 AND /*
+      hello
+      world
+    */ 1 = 0""",
+                pretty=True,
+            )
+
+tests/test_transpile.py:642: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_transpile.py:22: in validate
+    self.assertEqual(transpile(sql, **kwargs)[0], target)
+E   AssertionError: 'SELECT\n  *\nFROM x\nWHERE\n  a = 1 AND /*\n    hello\n    world\n  */ 1 = 0' != 'SELECT\n  *\nFROM x\nWHERE\n  a = 1 AND /*\n  hello\n  world\n*/ 1 = 0'
+E     SELECT
+E       *
+E     FROM x
+E     WHERE
+E       a = 1 AND /*
+E   -     hello
+E   ? --
+E   +   hello
+E   -     world
+E   ? --
+E   +   world
+E   -   */ 1 = 0
+E   ? --
+E   + */ 1 = 0
+=========================== short test summary info ============================
+FAILED tests/test_transpile.py::TestTranspile::test_comments - AssertionError...
+1 failed, 27 passed, 1022 subtests passed in 0.48s

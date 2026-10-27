@@ -1,0 +1,92 @@
+exit 1
+........F.............................. [ 78%]
+...........                                                        [100%]
+=================================== FAILURES ===================================
+______________________________ TestMySQL.test_ddl ______________________________
+
+self = <tests.dialects.test_mysql.TestMySQL testMethod=test_ddl>
+
+    def test_ddl(self):
+        for t in ("BIGINT", "INT", "MEDIUMINT", "SMALLINT", "TINYINT"):
+            self.validate_identity(f"CREATE TABLE t (id {t} UNSIGNED)")
+            self.validate_identity(f"CREATE TABLE t (id {t}(10) UNSIGNED)")
+    
+        self.validate_identity("CREATE TABLE bar (abacate DOUBLE(10, 2) UNSIGNED)")
+        self.validate_identity("CREATE TABLE t (id DECIMAL(20, 4) UNSIGNED)")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, UNIQUE (b) USING BTREE)")
+        self.validate_identity("CREATE TABLE foo (a VARCHAR(32) NOT NULL UNIQUE COMMENT 'test')")
+        self.validate_identity("CREATE TABLE foo (id BIGINT)")
+        self.validate_identity("CREATE TABLE 00f (1d BIGINT)")
+        self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
+        self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+>       self.validate_identity("UPDATE /*+ MAX_EXECUTION_TIME(1) */ t SET a = 1")
+
+tests/dialects/test_mysql.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:176: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1116: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2020: in parse
+    return self._parse(
+sqlglot/parser.py:2140: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2107: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2259: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1093: in <lambda>
+    TokenType.UPDATE: lambda self: self._parse_update(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3607: in _parse_update
+    "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:4753: in _parse_table
+    self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+sqlglot/parser.py:4651: in _parse_table_parts
+    self.raise_error(f"Expected table name but got {self._curr}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.mysql.MySQLParser object at 0x10786fad0>
+message = "Expected table name but got <Token token_type: TokenType.HINT, text: /*+ MAX_EXECUTION_TIME(1) */, line: 1, col: 35, start: 7, end: 34, comments: [' MAX_EXECUTION_TIME(1) ']>"
+token = <Token token_type: TokenType.HINT, text: /*+ MAX_EXECUTION_TIME(1) */, line: 1, col: 35, start: 7, end: 34, comments: [' MAX_EXECUTION_TIME(1) ']>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expected table name but got <Token token_type: TokenType.HINT, text: /*+ MAX_EXECUTION_TIME(1) */, line: 1, col: 35, start: 7, end: 34, comments: [' MAX_EXECUTION_TIME(1) ']>. Line 1, Col: 35.
+E             UPDATE [4m/*+ MAX_EXECUTION_TIME(1) */[0m t SET a = 1
+
+sqlglot/parser.py:1977: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_mysql.py::TestMySQL::test_ddl - sqlglot.errors.Par...
+1 failed, 49 passed, 471 subtests passed in 1.23s

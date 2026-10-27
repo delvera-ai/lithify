@@ -1,0 +1,137 @@
+exit 1
+  read="bigquery",
+                ),
+                schema={
+                    "base_table": {
+                        "id": "INT64",
+                        "items": "ARRAY<STRUCT<price FLOAT64, category STRING>>",
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `cte` AS (SELECT `base_table`.`id` AS `id`, `base_table`.`items` AS `items` FROM `base_table` AS `base_table`) SELECT (SELECT SUM(`item`.`price`) AS `_col_0` FROM UNNEST(`cte`.`items`) AS `item` WHERE `category` = 'electronics') AS `electronics_total` FROM `cte` AS `cte`",
+        )
+    
+        self.check_file(
+            "qualify_columns",
+            qualify_columns,
+            execute=True,
+            schema=self.schema,
+        )
+        self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
+    
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT
+                    (
+                        SELECT
+                        col_st.value
+                        FROM UNNEST(col_st) AS col_st
+                    ) AS vcol1
+                    FROM t AS b
+                    """,
+                    read="bigquery",
+                ),
+                schema={
+                    "t": {
+                        "col_st": "ARRAY<STRUCT<key STRING, value INT>>",
+                    }
+                },
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT (SELECT `col_st`.`value` AS `value` FROM UNNEST(`b`.`col_st`) AS `col_st`) AS `vcol1` FROM `t` AS `b`",
+        )
+    
+        # Schema-qualified table joined twice (once unaliased, once aliased) should resolve correctly
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT 1 FROM dbo.a JOIN dbo.b ON dbo.b.id = dbo.a.id JOIN dbo.b AS x ON x.id = dbo.a.id"
+                ),
+            ).sql(),
+            'SELECT 1 AS "1" FROM "dbo"."a" AS "a" JOIN "dbo"."b" AS "b" ON "b"."id" = "a"."id" JOIN "dbo"."b" AS "x" ON "x"."id" = "a"."id"',
+        )
+    
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("SELECT * FROM t"),
+                schema={"t": {"end": "text"}},
+                quote_identifiers=False,
+            ).sql(),
+            "SELECT t.end AS end FROM t AS t",
+        )
+    
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2) "
+                    "SELECT * FROM produce UNPIVOT(sales FOR quarter IN (q1, q2))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`quarter` AS `quarter`, "
+            "`produce`.`sales` AS `sales` FROM `produce` AS `produce` "
+            "UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`)) AS `produce`",
+        )
+    
+        self.assertEqual(
+>           optimizer.qualify.qualify(
+                parse_one(
+                    "WITH cte AS (SELECT 1 AS a, 2 AS b, 3 AS c) "
+                    "SELECT u.val, u.name FROM cte UNPIVOT(val FOR name IN (a, b, c)) AS u"
+                ),
+            ).sql(),
+            'WITH "cte" AS (SELECT 1 AS "a", 2 AS "b", 3 AS "c") '
+            'SELECT "u"."val" AS "val", "u"."name" AS "name" FROM "cte" AS "cte" '
+            'UNPIVOT("val" FOR "name" IN ("cte"."a", "cte"."b", "cte"."c")) AS "u"',
+        )
+
+tests/test_optimizer.py:651: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sqlglot/optimizer/qualify.py:97: in qualify
+    expression = qualify_columns_func(
+sqlglot/optimizer/qualify_columns.py:85: in qualify_columns
+    _qualify_columns(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = Scope<WITH cte AS (SELECT 1 AS a, 2 AS b, 3 AS c) SELECT u.val, u.name FROM cte AS cte UNPIVOT(val FOR name IN (a, b, c)) AS u>
+resolver = <sqlglot.optimizer.resolver.Resolver object at 0x1107f1070>
+allow_partial_qualification = False
+
+    def _qualify_columns(
+        scope: Scope,
+        resolver: Resolver,
+        allow_partial_qualification: bool,
+    ) -> None:
+        """Disambiguate columns, ensuring each column specifies a source"""
+        for column in scope.columns:
+            column_table = column.table
+            column_name = column.name
+    
+            if column_table and column_table in scope.sources:
+                source_columns = resolver.get_source_columns(column_table)
+                if (
+                    not allow_partial_qualification
+                    and source_columns
+                    and column_name not in source_columns
+                    and "*" not in source_columns
+                ):
+>                   raise OptimizeError(f"Unknown column: {column_name}")
+E                   sqlglot.errors.OptimizeError: Unknown column: val
+
+sqlglot/optimizer/qualify_columns.py:615: OptimizeError
+----------------------------- Captured stdout call -----------------------------
+uuuuuuu [ 59%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 59%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 59%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 59%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 59%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 59%]
+uuuuuu
+=========================== short test summary info ============================
+FAILED tests/test_optimizer.py::TestOptimizer::test_qualify_columns - sqlglot...
+1 failed, 76 passed, 3705 subtests passed in 19.25s

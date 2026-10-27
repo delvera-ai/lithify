@@ -1,0 +1,22 @@
+exit 1
+F............................. [ 60%]
+....................                                              [100%]
+=================================== FAILURES ===================================
+__________________ TestMySQL.test_alter_table_auto_increment ___________________
+
+self = <tests.dialects.test_mysql.TestMySQL testMethod=test_alter_table_auto_increment>
+
+    def test_alter_table_auto_increment(self):
+        prop = self.parse_one("ALTER TABLE t AUTO_INCREMENT=3000000000").find(
+            exp.AutoIncrementProperty
+        )
+>       self.assertEqual(prop.this.to_py(), 3000000000)
+                         ^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'this'
+
+tests/dialects/test_mysql.py:1703: AttributeError
+------------------------------ Captured log call -------------------------------
+WARNING  sqlglot:parser.py:2150 'ALTER TABLE t AUTO_INCREMENT=3000000000' contains unsupported syntax. Falling back to parsing as a 'Command'.
+=========================== short test summary info ============================
+FAILED tests/dialects/test_mysql.py::TestMySQL::test_alter_table_auto_increment
+1 failed, 49 passed, 481 subtests passed in 0.45s

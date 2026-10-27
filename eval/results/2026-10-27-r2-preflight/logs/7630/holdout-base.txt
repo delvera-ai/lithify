@@ -1,0 +1,130 @@
+exit 1
+      self.assertIsInstance(expr, exp.Alter)
+        self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
+    
+        sql = "ARRAY[x" + ",x" * 27 + "]"
+        expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
+        self.validate_identity(sql, expected_sql, pretty=True)
+    
+>       self.validate_identity("""CAST('a' AS TEXT COLLATE "de_DE")""")
+
+tests/dialects/test_postgres.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2035: in parse
+    return self._parse(
+sqlglot/parser.py:2155: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2125: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.postgres.PostgresParser object at 0x10be2df10>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.R_PAREN, text: ), line: 1, col: 33, start: 32, end: 32, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 33.
+E             CAST('a' AS TEXT COLLATE "de_DE"[4m)[0m
+
+sqlglot/parser.py:1992: ParseError
+_____________________________ TestSpark.test_spark _____________________________
+
+self = <tests.dialects.test_spark.TestSpark testMethod=test_spark>
+
+    def test_spark(self):
+        # COLLATE on CHAR/VARCHAR should be preserved when the type is rewritten to STRING
+>       self.validate_identity(
+            "SELECT CAST('a' AS CHAR(10) COLLATE UTF8_BINARY)",
+            "SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)",
+        )
+
+tests/dialects/test_spark.py:275: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2035: in parse
+    return self._parse(
+sqlglot/parser.py:2155: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2125: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.spark.SparkParser object at 0x10be2ff50>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.R_PAREN, text: ), line: 1, col: 48, start: 47, end: 47, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 48.
+E             SELECT CAST('a' AS CHAR(10) COLLATE UTF8_BINARY[4m)[0m
+
+sqlglot/parser.py:1992: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_databricks.py::TestDatabricks::test_databricks - s...
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_postgres - sqlglot...
+FAILED tests/dialects/test_spark.py::TestSpark::test_spark - sqlglot.errors.P...
+3 failed, 63 passed, 403 subtests passed in 1.23s

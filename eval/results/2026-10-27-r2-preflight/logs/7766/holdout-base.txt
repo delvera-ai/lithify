@@ -1,0 +1,99 @@
+exit 1
+.............F............    [100%]
+=================================== FAILURES ===================================
+__________________________ TestPostgres.test_postgres __________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_postgres>
+
+    def test_postgres(self):
+        expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
+        unnest = expr.args["joins"][0].this.this
+        unnest.assert_is(exp.Unnest)
+    
+        alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
+        expr = self.parse_one(alter_table_only)
+    
+        self.assertIsInstance(expr, exp.Alter)
+        self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
+    
+        sql = "ARRAY[x" + ",x" * 27 + "]"
+        expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
+        self.validate_identity(sql, expected_sql, pretty=True)
+    
+        self.validate_identity("""CAST('a' AS TEXT COLLATE "de_DE")""")
+        self.validate_identity("SELECT '%' SIMILAR TO '^%' ESCAPE '^'")
+        self.validate_identity("SELECT GET_BIT(CAST(44 AS BIT(10)), 6)")
+        self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
+        self.validate_identity("SELECT COSH(1.5)")
+        self.validate_identity("SELECT EXP(1)")
+        self.validate_identity(
+            "SELECT MODE() WITHIN GROUP (ORDER BY status DESC) AS most_common FROM orders"
+        )
+        self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
+        self.validate_identity("SHA384(x)")
+        self.validate_identity("1.x", "1. AS x")
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
+        self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
+        self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
+        self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
+        self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
+        self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
+        self.validate_identity("x @@ y")
+>       self.validate_identity("doc @? '$.a[*] ? (@ > 2)'")
+
+tests/dialects/test_postgres.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2045: in parse
+    return self._parse(
+sqlglot/parser.py:2165: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2135: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.postgres.PostgresParser object at 0x10bac3c50>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.STRING, text: $.a[*] ? (@ > 2), line: 1, col: 25, start: 7, end: 24, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 25.
+E             doc @? [4m'$.a[*] ? (@ > 2)'[0m
+
+sqlglot/parser.py:2002: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_postgres - sqlglot...
+1 failed, 25 passed, 187 subtests passed in 1.03s

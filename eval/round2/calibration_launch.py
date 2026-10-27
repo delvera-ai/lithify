@@ -18,6 +18,10 @@ def main() -> None:
         checks = list(csv.DictReader(f))
     frozen = json.loads((root / "eval/round2/INPUT_MANIFEST.json").read_text())["tasks"]
     assert len(checks) == 60 and {int(r["pr"]) for r in checks} == {p["number"] for p in frozen}
+    frozen_by_pr = {p["number"]: p for p in frozen}
+    assert all(
+        (r["base"], r["merge"]) == (frozen_by_pr[int(r["pr"])]["base"], frozen_by_pr[int(r["pr"])]["merge"]) for r in checks
+    )
     assert all((r["holdout_base_rc"], r["holdout_merge_rc"], r["suite_merge_rc"]) == ("1", "0", "0") for r in checks)
     assert not list(out.glob("results*.csv")), "Calibration already recorded; no repeat authorized"
     assert not (work / "replay-r2-calibration-calibration-A1").exists(), "Calibration scratch exists; inspect, do not auto-resume"

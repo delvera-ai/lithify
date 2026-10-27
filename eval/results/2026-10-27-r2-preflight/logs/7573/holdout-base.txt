@@ -1,0 +1,26 @@
+exit 1
+.....................F...                                    [100%]
+=================================== FAILURES ===================================
+___________________________ TestPostgres.test_unnest ___________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_unnest>
+
+    def test_unnest(self):
+        self.validate_identity(
+            "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
+        )
+>       self.validate_identity(
+            "SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))"
+        )
+
+tests/dialects/test_postgres.py:1393: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "SELE[49 chars]EST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))" != "SELE[49 chars]EST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn, rn)), ' '))"
+E   - SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))
+E   + SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn, rn)), ' '))
+E   ?                                                                                                     ++++
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_unnest - Assertion...
+1 failed, 24 passed, 372 subtests passed in 0.48s

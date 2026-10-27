@@ -1,0 +1,19 @@
+exit 1
+.........................F....... [ 50%]
+................................         [100%]
+=================================== FAILURES ===================================
+_________________ TestParser.test_no_paren_functions_after_dot _________________
+
+self = <tests.test_parser.TestParser testMethod=test_no_paren_functions_after_dot>
+
+    def test_no_paren_functions_after_dot(self):
+        # NO_PAREN_FUNCTIONS (token-type-based): should be identifiers after a dot
+        col = parse_one("SELECT t.current_date FROM t").find(exp.Column)
+>       self.assertEqual(col.table, "t")
+                         ^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'table'
+
+tests/test_parser.py:103: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_parser.py::TestParser::test_no_paren_functions_after_dot - ...
+1 failed, 64 passed, 71 subtests passed in 21.41s

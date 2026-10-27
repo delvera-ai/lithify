@@ -1,0 +1,135 @@
+exit 1
+28: in _parse_expressions
+    return self._parse_csv(self._parse_expression)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8593: in _parse_csv
+    parse_result = parse_method()
+                   ^^^^^^^^^^^^^^
+sqlglot/parser.py:5771: in _parse_expression
+    return self._parse_alias(self._parse_assignment())
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5774: in _parse_assignment
+    this = self._parse_disjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5796: in _parse_disjunction
+    this = self._parse_conjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5808: in _parse_conjunction
+    this = self._parse_equality()
+           ^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5820: in _parse_equality
+    this = self._parse_comparison()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5832: in _parse_comparison
+    this = self._parse_range()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5842: in _parse_range
+    this = this or self._parse_bitwise()
+                   ^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6048: in _parse_bitwise
+    this = self._parse_term()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6081: in _parse_term
+    this = self._parse_factor()
+           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6104: in _parse_factor
+    this = self._parse_at_time_zone(parse_method())
+                                    ^^^^^^^^^^^^^^
+sqlglot/parser.py:6136: in _parse_unary
+    return self._parse_type()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parsers/mysql.py:557: in _parse_type
+    return super()._parse_type(
+sqlglot/parser.py:6200: in _parse_type
+    return self._parse_column()
+           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6571: in _parse_column
+    this = self._parse_column_reference()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6658: in _parse_column_reference
+    this = self._parse_field()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6889: in _parse_field
+    field = self._parse_primary() or self._parse_function(
+sqlglot/parser.py:6912: in _parse_function
+    func = self._parse_function_call(
+sqlglot/parser.py:7022: in _parse_function_call
+    func = self.validate_expression(func, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2018: in validate_expression
+    self.raise_error(error_message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.starrocks.StarRocksParser object at 0x107bb8f50>
+message = 'The number of provided arguments (4) is greater than the maximum number of supported arguments (2)'
+token = <Token token_type: TokenType.R_PAREN, text: ), line: 1, col: 26, start: 25, end: 25, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: The number of provided arguments (4) is greater than the maximum number of supported arguments (2). Line 1, Col: 26.
+E             SELECT MAP('a', 1, 'b', 2[4m)[0m
+
+sqlglot/parser.py:2007: ParseError
+________________________ TestStarrocks.test_min_max_by _________________________
+
+self = <tests.dialects.test_starrocks.TestStarrocks testMethod=test_min_max_by>
+
+    def test_min_max_by(self):
+        # StarRocks has MIN_BY/MAX_BY, but no ARG_MIN/ARG_MAX
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/aggregate-functions/min_by/
+>       self.validate_identity("SELECT MIN_BY(name, ts) FROM t")
+
+tests/dialects/test_starrocks.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'SELECT MIN_BY(name, ts) FROM t' != 'SELECT ARG_MIN(name, ts) FROM t'
+E   - SELECT MIN_BY(name, ts) FROM t
+E   ?           ---
+E   + SELECT ARG_MIN(name, ts) FROM t
+E   ?        ++++
+___________________________ TestStarrocks.test_trim ____________________________
+
+self = <tests.dialects.test_starrocks.TestStarrocks testMethod=test_trim>
+
+    def test_trim(self):
+        # StarRocks uses the function form TRIM(str, chars)/LTRIM/RTRIM,
+        # not MySQL's TRIM(chars FROM str) syntax
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/string-functions/trim/
+        self.validate_identity("SELECT TRIM('  hi  ')")
+>       self.validate_identity("SELECT TRIM('--hi--', '-')")
+
+tests/dialects/test_starrocks.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "SELECT TRIM('--hi--', '-')" != "SELECT TRIM('-' FROM '--hi--')"
+E   - SELECT TRIM('--hi--', '-')
+E   ?                     -----
+E   + SELECT TRIM('-' FROM '--hi--')
+E   ?             +++++++++
+=========================== short test summary info ============================
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_array_contains_all
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_map - sqlglot.er...
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_min_max_by - Ass...
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_trim - Assertion...
+4 failed, 12 passed, 69 subtests passed in 1.16s

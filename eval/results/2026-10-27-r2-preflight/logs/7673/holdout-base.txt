@@ -1,0 +1,22 @@
+exit 1
+........................ [ 54%]
+....................     [100%]
+=================================== FAILURES ===================================
+_ TestDuckDB.test_time [bigquery -> SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT PARSE_TIME('14:30', '%H:%M')" != "SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)"
+E   - SELECT PARSE_TIME('14:30', '%H:%M')
+E   + SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)
+_ TestDuckDB.test_time [bigquery -> SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT PARSE_TIME('15:30:00.123456', '%H:%M:%S.%f')" != "SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)"
+E   - SELECT PARSE_TIME('15:30:00.123456', '%H:%M:%S.%f')
+E   ?         -----
+E   + SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)
+E   ?        ++++++++                                       +++++++++
+=========================== short test summary info ============================
+SUBFAILED[bigquery -> SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)] tests/dialects/test_duckdb.py::TestDuckDB::test_time
+SUBFAILED[bigquery -> SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)] tests/dialects/test_duckdb.py::TestDuckDB::test_time
+2 failed, 44 passed, 598 subtests passed in 0.71s

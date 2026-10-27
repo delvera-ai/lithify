@@ -1,0 +1,22 @@
+exit 1
+.......................................................................................................................................... [ 99%]
+.                                                                        [100%]
+=================================== FAILURES ===================================
+________ TestDuckDB.test_duckdb [SELECT LIST(col) FROM t -> snowflake] _________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT LIST(col) FROM t' != 'SELECT ARRAY_AGG(col) FROM t'
+E   - SELECT LIST(col) FROM t
+E   ?        ^^^^
+E   + SELECT ARRAY_AGG(col) FROM t
+E   ?        ^^^^^^^^^
+_______ TestDuckDB.test_duckdb [SELECT LIST_DISTINCT(col) -> snowflake] ________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT LIST_DISTINCT(col)' != 'SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))'
+E   - SELECT LIST_DISTINCT(col)
+E   + SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))
+=========================== short test summary info ============================
+SUBFAILED[SELECT LIST(col) FROM t -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+SUBFAILED[SELECT LIST_DISTINCT(col) -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+2 failed, 139 passed, 2164 subtests passed in 2.46s

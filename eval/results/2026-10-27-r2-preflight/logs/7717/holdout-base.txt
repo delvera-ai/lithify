@@ -1,0 +1,25 @@
+exit 1
+........... [ 35%]
+..............F.....                                                       [100%]
+=================================== FAILURES ===================================
+_____________________ TestClickhouse.test_table_functions ______________________
+
+self = <tests.dialects.test_clickhouse.TestClickhouse testMethod=test_table_functions>
+
+    def test_table_functions(self):
+>       self.validate_identity(
+            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
+        )
+
+tests/dialects/test_clickhouse.py:1859: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "CREATE VIEW myschema.myview (c1 String N[58 chars]uet)" != 'CREATE VIEW myschema.myview (c1 String N[65 chars]uet)'
+E   - CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)
+E   ?                                                                         ^                  ^
+E   + CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file AS _t0("base/dir/*.parquet", Parquet)
+E   ?                                                                        +++++++ ^                  ^
+=========================== short test summary info ============================
+FAILED tests/dialects/test_clickhouse.py::TestClickhouse::test_table_functions
+1 failed, 30 passed, 275 subtests passed in 0.42s

@@ -1,0 +1,41 @@
+exit 1
+............................... [ 32%]
+...............................................F.................                                                                 [100%]
+=================================== FAILURES ===================================
+_______________________ TestSnowflake.test_staged_files ________________________
+
+self = <tests.dialects.test_snowflake.TestSnowflake testMethod=test_staged_files>
+
+    def test_staged_files(self):
+        # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
+        staged_file = parse_one("SELECT * FROM @foo", read="snowflake")
+        self.assertEqual(
+            normalize_identifiers(staged_file, dialect="snowflake").sql(dialect="snowflake"),
+            staged_file.sql(dialect="snowflake"),
+        )
+    
+        self.validate_identity('SELECT * FROM @"mystage"')
+        self.validate_identity('SELECT * FROM @"myschema"."mystage"/file.gz')
+        self.validate_identity('SELECT * FROM @"my_DB"."schEMA1".mystage/file.gz')
+        self.validate_identity("SELECT metadata$filename FROM @s1/")
+        self.validate_identity("SELECT * FROM @~")
+        self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
+        self.validate_identity("SELECT * FROM @mystage")
+        self.validate_identity("SELECT * FROM '@mystage'")
+        self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
+        self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
+>       self.validate_identity(
+            "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')"
+        )
+
+tests/dialects/test_snowflake.py:3432: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')" != 'SELECT $1, $2, metadata$filename FROM @mystage'
+E   - SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')
+E   ?                                               ----------------------------
+E   + SELECT $1, $2, metadata$filename FROM @mystage
+=========================== short test summary info ============================
+FAILED tests/dialects/test_snowflake.py::TestSnowflake::test_staged_files - A...
+1 failed, 95 passed, 1568 subtests passed in 1.04s

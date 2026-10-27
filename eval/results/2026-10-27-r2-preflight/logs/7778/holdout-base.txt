@@ -1,0 +1,40 @@
+exit 1
+....................                                     [100%]
+=================================== FAILURES ===================================
+___ TestPresto.test_cast [SELECT FROM_ISO8601_DATE('2020-05-11') -> duckdb] ____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT FROM_ISO8601_DATE('2020-05-11')" != "SELECT CAST('2020-05-11' AS DATE)"
+E   - SELECT FROM_ISO8601_DATE('2020-05-11')
+E   + SELECT CAST('2020-05-11' AS DATE)
+__ TestPresto.test_cast [SELECT FROM_ISO8601_DATE('2020-05-11') -> snowflake] __
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT FROM_ISO8601_DATE('2020-05-11')" != "SELECT CAST('2020-05-11' AS DATE)"
+E   - SELECT FROM_ISO8601_DATE('2020-05-11')
+E   + SELECT CAST('2020-05-11' AS DATE)
+____ TestPresto.test_cast [SELECT FROM_ISO8601_DATE('2020-05-11') -> spark] ____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT FROM_ISO8601_DATE('2020-05-11')" != "SELECT CAST('2020-05-11' AS DATE)"
+E   - SELECT FROM_ISO8601_DATE('2020-05-11')
+E   + SELECT CAST('2020-05-11' AS DATE)
+_ TestPresto.test_cast [SELECT FROM_ISO8601_DATE('2020-05-11') -> databricks] __
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT FROM_ISO8601_DATE('2020-05-11')" != "SELECT CAST('2020-05-11' AS DATE)"
+E   - SELECT FROM_ISO8601_DATE('2020-05-11')
+E   + SELECT CAST('2020-05-11' AS DATE)
+__ TestPresto.test_cast [SELECT FROM_ISO8601_DATE('2020-05-11') -> bigquery] ___
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT FROM_ISO8601_DATE('2020-05-11')" != "SELECT CAST('2020-05-11' AS DATE)"
+E   - SELECT FROM_ISO8601_DATE('2020-05-11')
+E   + SELECT CAST('2020-05-11' AS DATE)
+=========================== short test summary info ============================
+SUBFAILED[SELECT FROM_ISO8601_DATE('2020-05-11') -> duckdb] tests/dialects/test_presto.py::TestPresto::test_cast
+SUBFAILED[SELECT FROM_ISO8601_DATE('2020-05-11') -> snowflake] tests/dialects/test_presto.py::TestPresto::test_cast
+SUBFAILED[SELECT FROM_ISO8601_DATE('2020-05-11') -> spark] tests/dialects/test_presto.py::TestPresto::test_cast
+SUBFAILED[SELECT FROM_ISO8601_DATE('2020-05-11') -> databricks] tests/dialects/test_presto.py::TestPresto::test_cast
+SUBFAILED[SELECT FROM_ISO8601_DATE('2020-05-11') -> bigquery] tests/dialects/test_presto.py::TestPresto::test_cast
+5 failed, 20 passed, 515 subtests passed in 0.76s

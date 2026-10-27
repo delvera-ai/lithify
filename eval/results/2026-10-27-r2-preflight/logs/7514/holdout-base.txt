@@ -1,0 +1,139 @@
+exit 1
+, Literal(this=3, is_string=False)]
+
+    def _builder(args: BuilderArgs) -> E | None:
+        if len(args) < 2:
+            return None
+    
+        interval = args[1]
+    
+        if not isinstance(interval, exp.Interval):
+>           raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+E           sqlglot.errors.ParseError: INTERVAL expression expected but got '3'
+
+sqlglot/dialects/dialect.py:1609: ParseError
+_______________________ TestStarrocks.test_date_add_sub ________________________
+
+self = <tests.dialects.test_starrocks.TestStarrocks testMethod=test_date_add_sub>
+
+    def test_date_add_sub(self):
+        # Standard INTERVAL form
+        self.validate_identity("SELECT DATE_ADD(x, INTERVAL '3' DAY)")
+        self.validate_identity("SELECT DATE_SUB(x, INTERVAL '3' MONTH)")
+    
+        # Two-argument shorthand - default unit DAY
+>       self.validate_identity("SELECT DATE_SUB(x, 3)", "SELECT DATE_SUB(x, INTERVAL 3 DAY)")
+
+tests/dialects/test_starrocks.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:176: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1116: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2020: in parse
+    return self._parse(
+sqlglot/parser.py:2140: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2107: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2270: in _parse_statement
+    expression = self._parse_set_operations(expression) if expression else self._parse_select()
+                                                                           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3744: in _parse_select
+    query = self._parse_select_query(
+sqlglot/parser.py:3830: in _parse_select_query
+    projections, exclude = self._parse_projections()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3700: in _parse_projections
+    return self._parse_expressions(), None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8382: in _parse_expressions
+    return self._parse_csv(self._parse_expression)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8347: in _parse_csv
+    parse_result = parse_method()
+                   ^^^^^^^^^^^^^^
+sqlglot/parser.py:5625: in _parse_expression
+    return self._parse_alias(self._parse_assignment())
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5628: in _parse_assignment
+    this = self._parse_disjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5650: in _parse_disjunction
+    this = self._parse_conjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5662: in _parse_conjunction
+    this = self._parse_equality()
+           ^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5674: in _parse_equality
+    this = self._parse_comparison()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5686: in _parse_comparison
+    this = self._parse_range()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5696: in _parse_range
+    this = this or self._parse_bitwise()
+                   ^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5899: in _parse_bitwise
+    this = self._parse_term()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5932: in _parse_term
+    this = self._parse_factor()
+           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5955: in _parse_factor
+    this = self._parse_at_time_zone(parse_method())
+                                    ^^^^^^^^^^^^^^
+sqlglot/parser.py:5987: in _parse_unary
+    return self._parse_type()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parsers/mysql.py:508: in _parse_type
+    return super()._parse_type(
+sqlglot/parser.py:5992: in _parse_type
+    if not fallback_to_identifier and (atom := self._parse_atom()) is not None:
+                                               ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6387: in _parse_atom
+    and (column := self._parse_column()) is not None
+                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6412: in _parse_column
+    this = self._parse_column_reference()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6499: in _parse_column_reference
+    this = self._parse_field()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6728: in _parse_field
+    field = self._parse_primary() or self._parse_function(
+sqlglot/parser.py:6751: in _parse_function
+    func = self._parse_function_call(
+sqlglot/parser.py:6851: in _parse_function_call
+    func = func_builder(args)
+           ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = [Column(
+  this=Identifier(this=x, quoted=False)), Literal(this=3, is_string=False)]
+
+    def _builder(args: BuilderArgs) -> E | None:
+        if len(args) < 2:
+            return None
+    
+        interval = args[1]
+    
+        if not isinstance(interval, exp.Interval):
+>           raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+E           sqlglot.errors.ParseError: INTERVAL expression expected but got '3'
+
+sqlglot/dialects/dialect.py:1609: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_doris.py::TestDoris::test_date_add_sub - sqlglot.e...
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_date_add_sub - s...
+2 failed, 20 passed, 114 subtests passed in 3.49s

@@ -1,0 +1,109 @@
+exit 1
+a")
+        self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
+        self.validate_identity("x <> ''")
+        self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
+        self.validate_identity("DATE_TRUNC(col, MONTH, 'UTC+8')")
+        self.validate_identity("SELECT b'abc'")
+        self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
+        self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
+        self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
+        self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
+        self.validate_identity("CAST(x AS TIMESTAMP)")
+        self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
+        self.validate_identity("LOOP SET x = x + 1", check_command_warning=True)
+        self.validate_identity("REPEAT SET x = x + 1", check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE foo DROP PRIMARY KEY IF EXISTS",
+            check_command_warning=True,
+        )
+        self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 1, 12, 30, 10)")
+        self.validate_identity(
+            "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
+            check_command_warning=True,
+        )
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_identity("COMMIT TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION")
+        for load_data_sql in (
+            "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+        ):
+            with self.subTest(load_data_sql=load_data_sql):
+>               self.validate_identity(load_data_sql).assert_is(exp.LoadData)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/dialects/test_bigquery.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2036: in parse
+    return self._parse(
+sqlglot/parser.py:2156: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2123: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2275: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1099: in <lambda>
+    TokenType.LOAD: lambda self: self._parse_load(),
+                                 ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3599: in _parse_load
+    this=self._parse_table(schema=True),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:4810: in _parse_table
+    self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+sqlglot/parsers/bigquery.py:394: in _parse_table_parts
+    table = super()._parse_table_parts(
+sqlglot/parser.py:4705: in _parse_table_parts
+    self.raise_error(f"Expected table name but got {self._curr}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.bigquery.BigQueryParser object at 0x109e465d0>
+message = 'Expected table name but got <Token token_type: TokenType.INTO, text: INTO, line: 1, col: 14, start: 10, end: 13, comments: []>'
+token = <Token token_type: TokenType.INTO, text: INTO, line: 1, col: 14, start: 10, end: 13, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expected table name but got <Token token_type: TokenType.INTO, text: INTO, line: 1, col: 14, start: 10, end: 13, comments: []>. Line 1, Col: 14.
+E             LOAD DATA [4mINTO[0m TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])
+
+sqlglot/parser.py:1993: ParseError
+=========================== short test summary info ============================
+SUBFAILED(load_data_sql="LOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])") tests/dialects/test_bigquery.py::TestBigQuery::test_bigquery
+1 failed, 58 passed, 1059 subtests passed in 0.96s

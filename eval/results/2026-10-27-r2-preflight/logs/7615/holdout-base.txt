@@ -1,0 +1,19 @@
+exit 1
+.....F..................................................................... [ 94%]
+....                                  [100%]
+=================================== FAILURES ===================================
+___________ TestOptimizer.test_annotate_types_caches_schema_lookups ____________
+
+self = <tests.test_optimizer.TestOptimizer testMethod=test_annotate_types_caches_schema_lookups>
+
+    def test_annotate_types_caches_schema_lookups(self):
+        schema = MappingSchema({"t": {"a": "INT"}})
+        qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)
+>       pre = len(schema._find_cache)
+                  ^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'MappingSchema' object has no attribute '_find_cache'
+
+tests/test_optimizer.py:1475: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_optimizer.py::TestOptimizer::test_annotate_types_caches_schema_lookups
+1 failed, 78 passed, 3776 subtests passed in 18.99s

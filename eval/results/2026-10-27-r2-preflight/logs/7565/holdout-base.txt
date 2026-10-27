@@ -1,0 +1,137 @@
+exit 1
+
+
+self = <tests.dialects.test_oracle.TestOracle testMethod=test_listagg>
+
+    def test_listagg(self):
+>       self.validate_identity(
+            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) "
+            "WITHIN GROUP (ORDER BY hire_date) FROM employees"
+        )
+
+tests/dialects/test_oracle.py:885: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:176: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2034: in parse
+    return self._parse(
+sqlglot/parser.py:2154: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2121: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2284: in _parse_statement
+    expression = self._parse_set_operations(expression) if expression else self._parse_select()
+                                                                           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3763: in _parse_select
+    query = self._parse_select_query(
+sqlglot/parser.py:3849: in _parse_select_query
+    projections, exclude = self._parse_projections()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3719: in _parse_projections
+    return self._parse_expressions(), None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8418: in _parse_expressions
+    return self._parse_csv(self._parse_expression)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8383: in _parse_csv
+    parse_result = parse_method()
+                   ^^^^^^^^^^^^^^
+sqlglot/parser.py:5652: in _parse_expression
+    return self._parse_alias(self._parse_assignment())
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5655: in _parse_assignment
+    this = self._parse_disjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5677: in _parse_disjunction
+    this = self._parse_conjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5689: in _parse_conjunction
+    this = self._parse_equality()
+           ^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5701: in _parse_equality
+    this = self._parse_comparison()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5713: in _parse_comparison
+    this = self._parse_range()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5723: in _parse_range
+    this = this or self._parse_bitwise()
+                   ^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5924: in _parse_bitwise
+    this = self._parse_term()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5957: in _parse_term
+    this = self._parse_factor()
+           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5980: in _parse_factor
+    this = self._parse_at_time_zone(parse_method())
+                                    ^^^^^^^^^^^^^^
+sqlglot/parser.py:6012: in _parse_unary
+    return self._parse_type()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6017: in _parse_type
+    if not fallback_to_identifier and (atom := self._parse_atom()) is not None:
+                                               ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6412: in _parse_atom
+    and (column := self._parse_column()) is not None
+                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6437: in _parse_column
+    this = self._parse_column_reference()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6524: in _parse_column_reference
+    this = self._parse_field()
+           ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6753: in _parse_field
+    field = self._parse_primary() or self._parse_function(
+sqlglot/parser.py:6776: in _parse_function
+    func = self._parse_function_call(
+sqlglot/parser.py:6899: in _parse_function_call
+    self._match_r_paren(result)
+sqlglot/parser.py:9217: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.oracle.OracleParser object at 0x107551c10>
+message = 'Expecting )'
+token = <Token token_type: TokenType.ON, text: ON, line: 1, col: 33, start: 31, end: 32, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 33.
+E             SELECT LISTAGG(last_name, '; ' [4mON[0m OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY hire_date) FROM employees
+
+sqlglot/parser.py:1991: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_oracle.py::TestOracle::test_listagg - sqlglot.erro...
+1 failed, 24 passed, 213 subtests passed in 1.80s

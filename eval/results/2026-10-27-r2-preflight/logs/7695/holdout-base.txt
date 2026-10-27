@@ -1,0 +1,17 @@
+exit 1
+....................                                                  [100%]
+=================================== FAILURES ===================================
+_ TestExasol.test_show_databases [mysql -> SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: '' != 'SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS'
+E   + SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS
+_ TestExasol.test_show_databases [mysql -> SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: '' != 'SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS'
+E   + SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS
+=========================== short test summary info ============================
+SUBFAILED[mysql -> SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS] tests/dialects/test_exasol.py::TestExasol::test_show_databases
+SUBFAILED[mysql -> SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS] tests/dialects/test_exasol.py::TestExasol::test_show_databases
+2 failed, 20 passed, 577 subtests passed in 0.66s

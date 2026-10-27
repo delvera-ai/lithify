@@ -1,0 +1,124 @@
+exit 1
+E(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING BTREE)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test_table (id INT AUTO_INCREMENT, PRIMARY KEY (id) USING HASH)"
+        )
+        self.validate_identity("CREATE TABLE test (id INT, PRIMARY KEY pk_name (id))")
+        self.validate_identity("CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))")
+        self.validate_identity(
+            'CREATE TABLE test (id INT, PRIMARY KEY "pk_name" (id))',
+            "CREATE TABLE test (id INT, PRIMARY KEY `pk_name` (id))",
+        )
+        self.validate_identity("CREATE TABLE test (id INT, CONSTRAINT pk_name PRIMARY KEY (id))")
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) VIRTUAL)"
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT AS (a + a) STORED)",
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) STORED)",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (a INT, b INT AS (a + a) VIRTUAL)",
+            "CREATE TABLE test (a INT, b INT GENERATED ALWAYS AS (a + a) VIRTUAL)",
+        )
+        self.validate_identity(
+            "/*left*/ EXPLAIN SELECT /*hint*/ col FROM t1 /*right*/",
+            "/* left */ DESCRIBE /* hint */ SELECT col FROM t1 /* right */",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (name VARCHAR)",
+            "CREATE TABLE t (name TEXT)",
+        )
+        self.validate_identity(
+            "ALTER TABLE t ADD KEY `i` (`c`)",
+            "ALTER TABLE t ADD INDEX `i` (`c`)",
+        )
+        self.validate_identity(
+            "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
+            "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
+        )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
+        )
+>       self.validate_identity(
+            "CREATE TABLE t (a INT, b INT, UNIQUE KEY `Unique` (a, b))",
+            "CREATE TABLE t (a INT, b INT, UNIQUE `Unique` (a, b))",
+        )
+
+tests/dialects/test_mysql.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:176: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1116: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2020: in parse
+    return self._parse(
+sqlglot/parser.py:2140: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2107: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2259: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1074: in <lambda>
+    TokenType.CREATE: lambda self: self._parse_create(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2483: in _parse_create
+    this = self._parse_schema(this=table_parts)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:7010: in _parse_schema
+    self._match_r_paren()
+sqlglot/parser.py:9183: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.mysql.MySQLParser object at 0x107edba10>
+message = 'Expecting )'
+token = <Token token_type: TokenType.IDENTIFIER, text: Unique, line: 1, col: 49, start: 41, end: 48, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 49.
+E             CREATE TABLE t (a INT, b INT, UNIQUE KEY [4m`Unique`[0m (a, b))
+
+sqlglot/parser.py:1977: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_mysql.py::TestMySQL::test_ddl - sqlglot.errors.Par...
+1 failed, 49 passed, 471 subtests passed in 0.89s

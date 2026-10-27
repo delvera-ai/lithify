@@ -1,0 +1,104 @@
+exit 1
+(nbr, LAMBDA x : x + 1) FROM article AS a")
+        self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
+        self.validate_identity("SELECT TO_BINARY('test')")
+        self.validate_identity("SELECT UUIDV7()")
+        self.validate_identity("SELECT TRY(LOG(0))")
+        self.validate_identity("x::timestamp", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp without time zone", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("x::timestamp with time zone", "CAST(x AS TIMESTAMPTZ)")
+        self.validate_identity("CAST(x AS FOO)")
+        self.validate_identity("SELECT UNNEST([1, 2])").selects[0].assert_is(exp.UDTF)
+        self.validate_identity("'red' IN flags").args["field"].assert_is(exp.Column)
+        self.validate_identity("'red' IN tbl.flags")
+        self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
+        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
+        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
+        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
+        self.validate_identity("SELECT * FROM GLOB(x)")
+        self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
+        self.validate_identity("SELECT MAP {'x': 1}")
+        self.validate_identity("SELECT (MAP {'x': 1})['x']")
+        self.validate_identity("SELECT df1.*, df2.* FROM df1 POSITIONAL JOIN df2")
+        self.validate_identity("MAKE_TIMESTAMP(1992, 9, 20, 13, 34, 27.123456)")
+        self.validate_identity("MAKE_TIMESTAMP(1667810584123456)")
+        self.validate_identity("SELECT EPOCH_MS(10) AS t")
+        self.validate_identity("SELECT MAKE_TIMESTAMP(10) AS t")
+        self.validate_identity("SELECT TO_TIMESTAMP(10) AS t")
+        self.validate_identity("SELECT UNNEST(col, recursive := TRUE) FROM t")
+        self.validate_identity("VAR_POP(a)")
+        self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
+        self.validate_identity("SELECT {'a': 1} AS x")
+        self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
+        self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
+        self.validate_identity("SELECT {'key1': 'string', 'key2': 1, 'key3': 12.345}")
+        self.validate_identity("SELECT ROW(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
+        self.validate_identity("SELECT (x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
+        self.validate_identity("SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a)")
+        self.validate_identity("FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1")
+        self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
+        self.validate_identity("FROM tbl", "SELECT * FROM tbl")
+>       self.validate_identity(
+            "FROM (FROM tbl_1) AS t1 POSITIONAL JOIN (FROM tbl_2) AS t2 SELECT t1.x AS x1, t2.x AS x2",
+            "SELECT t1.x AS x1, t2.x AS x2 FROM (SELECT * FROM tbl_1) AS t1 POSITIONAL JOIN (SELECT * FROM tbl_2) AS t2",
+        )
+
+tests/dialects/test_duckdb.py:488: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2034: in parse
+    return self._parse(
+sqlglot/parser.py:2154: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2124: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.duckdb.DuckDBParser object at 0x10701b050>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.SELECT, text: SELECT, line: 1, col: 65, start: 59, end: 64, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 65.
+E             FROM (FROM tbl_1) AS t1 POSITIONAL JOIN (FROM tbl_2) AS t2 [4mSELECT[0m t1.x AS x1, t2.x AS x2
+
+sqlglot/parser.py:1991: ParseError
+----------------------------- Captured stdout call -----------------------------
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 38%]
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu [ 38%]
+uuuuuuuuuuuuuuuuuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb - sqlglot.error...
+1 failed, 43 passed, 358 subtests passed in 1.31s

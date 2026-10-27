@@ -1,0 +1,143 @@
+exit 1
+  ^^^^^^^^^^^^^^^^^^^^
+  File "<scratch>/oracle-shard-1/sqlglot/expressions/core.py", line 2789, in to_identifier
+    raise ValueError(f"Name needs to be a string or an Identifier, got: {name.__class__}")
+ValueError: Name needs to be a string or an Identifier, got: <class 'sqlglot.expressions.query.ColumnDef'>
+"""
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.test_optimizer.TestOptimizer testMethod=test_qualify_tables>
+file = 'qualify_tables', func = <function qualify_tables at 0x10eb9ac00>
+pretty = False, execute = False, only = None
+kwargs = {'db': 'db', 'catalog': 'c'}
+
+    def check_file(
+        self,
+        file,
+        func,
+        pretty=False,
+        execute=False,
+        only=None,
+        **kwargs,
+    ):
+        with ProcessPoolExecutor() as pool:
+            results = {}
+    
+            for i, (meta, sql, expected) in enumerate(
+                load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
+            ):
+                title = meta.get("title") or f"{i}, {sql}"
+                if only and title != only:
+                    continue
+    
+                dialect = meta.get("dialect")
+                leave_tables_isolated = meta.get("leave_tables_isolated")
+                validate_qualify_columns = meta.get("validate_qualify_columns")
+                canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
+    
+                func_kwargs = kwargs.copy()
+    
+                if leave_tables_isolated is not None:
+                    func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+    
+                if validate_qualify_columns is not None:
+                    func_kwargs["validate_qualify_columns"] = string_to_bool(
+                        validate_qualify_columns
+                    )
+                if dialect:
+                    func_kwargs["dialect"] = dialect
+                if canonicalize_table_aliases is not None:
+                    func_kwargs["canonicalize_table_aliases"] = string_to_bool(
+                        canonicalize_table_aliases
+                    )
+    
+                future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
+                results[future] = (
+                    sql,
+                    title,
+                    expected,
+                    dialect,
+                    execute if meta.get("execute") is None else False,
+                )
+    
+        for future in as_completed(results):
+            sql, title, expected, dialect, execute = results[future]
+    
+            with self.subTest(title):
+>               optimized = future.result()
+                            ^^^^^^^^^^^^^^^
+
+tests/test_optimizer.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = None
+
+    def __get_result(self):
+        if self._exception:
+            try:
+>               raise self._exception
+E               ValueError: Name needs to be a string or an Identifier, got: <class 'sqlglot.expressions.query.ColumnDef'>
+
+../../../../.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/_base.py:401: ValueError
+_________ TestOptimizer.test_qualify_tables_copies_typed_alias_columns _________
+
+self = <tests.test_optimizer.TestOptimizer testMethod=test_qualify_tables_copies_typed_alias_columns>
+
+    def test_qualify_tables_copies_typed_alias_columns(self):
+        expression = parse_one('SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)')
+    
+        original = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(original, exp.ColumnDef)
+    
+>       optimizer.qualify_tables.qualify_tables(expression, canonicalize_table_aliases=True)
+
+tests/test_optimizer.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sqlglot/optimizer/qualify_tables.py:153: in qualify_tables
+    _set_alias(
+sqlglot/optimizer/qualify_tables.py:100: in _set_alias
+    alias.set("columns", [exp.to_identifier(c) for c in columns])
+                          ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = ColumnDef(
+  this=Identifier(this='rank', quoted=True),
+  kind=DataType(this=DType.INT, nested=False))
+quoted = None, copy = True
+
+    def to_identifier(name, quoted=None, copy=True):
+        """Builds an identifier.
+    
+        Args:
+            name: The name to turn into an identifier.
+            quoted: Whether to force quote the identifier.
+            copy: Whether to copy name if it's an Identifier.
+    
+        Returns:
+            The identifier ast node.
+        """
+    
+        if name is None:
+            return None
+    
+        if isinstance(name, Identifier):
+            identifier = maybe_copy(name, copy)
+        elif isinstance(name, str):
+            identifier = Identifier(
+                this=name,
+                quoted=not SAFE_IDENTIFIER_RE.match(name) if quoted is None else quoted,
+            )
+        else:
+>           raise ValueError(f"Name needs to be a string or an Identifier, got: {name.__class__}")
+E           ValueError: Name needs to be a string or an Identifier, got: <class 'sqlglot.expressions.query.ColumnDef'>
+
+sqlglot/expressions/core.py:2789: ValueError
+=========================== short test summary info ============================
+SUBFAILED[Qualify JSONB_TO_RECORDSET with typed alias columns and canonicalize_table_aliases] tests/test_optimizer.py::TestOptimizer::test_qualify_tables
+FAILED tests/test_optimizer.py::TestOptimizer::test_qualify_tables_copies_typed_alias_columns
+2 failed, 76 passed, 3704 subtests passed in 28.79s

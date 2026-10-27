@@ -1,0 +1,111 @@
+exit 1
+..F................               [100%]
+=================================== FAILURES ===================================
+________________________ TestDatabricks.test_databricks ________________________
+
+self = <tests.dialects.test_databricks.TestDatabricks testMethod=test_databricks>
+
+    def test_databricks(self):
+        self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
+        self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")
+        self.validate_identity("SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)")
+        self.validate_identity("SELECT COSH(1.5)")
+        null_type = exp.DataType.build("VOID", dialect="databricks")
+        self.assertEqual(null_type.sql(), "NULL")
+        self.assertEqual(null_type.sql("databricks"), "VOID")
+    
+        self.validate_identity("DESCRIBE EXTENDED staging.onetrade_startb AS JSON")
+        self.validate_identity("SELECT BITMAP_BIT_POSITION(10)")
+        self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
+        self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
+        self.validate_identity("SELECT EXP(1)")
+        self.validate_identity("SELECT MODE(category)")
+        self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
+        self.validate_identity("REGEXP_LIKE(x, y)")
+        self.validate_identity("SELECT CAST(NULL AS VOID)")
+        self.validate_identity("SELECT void FROM t")
+        self.validate_identity("SELECT * FROM stream")
+        self.validate_identity("SELECT * FROM STREAM t")
+        self.validate_identity("SELECT t.current_time FROM t")
+        self.validate_identity("ALTER TABLE labels ADD COLUMN label_score FLOAT")
+        self.validate_identity("DESCRIBE HISTORY a.b")
+        self.validate_identity("DESCRIBE history.tbl")
+        self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
+        self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
+        self.validate_identity("CREATE TABLE t (c STRING COMMENT 'Hello World')")
+>       self.validate_all(
+            "CREATE TABLE t (c STRING COMMENT 'Hello ''World!')",
+            write={
+                "databricks": "CREATE TABLE t (c STRING COMMENT 'Hello \\'World!')",
+            },
+        )
+
+tests/dialects/test_databricks.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:81: in validate_all
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2041: in parse
+    return self._parse(
+sqlglot/parser.py:2161: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2128: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2280: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1090: in <lambda>
+    TokenType.CREATE: lambda self: self._parse_create(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2547: in _parse_create
+    this = self._parse_schema(this=table_parts)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:7211: in _parse_schema
+    self._match_r_paren()
+sqlglot/parser.py:9406: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.databricks.DatabricksParser object at 0x10bfe5190>
+message = 'Expecting )'
+token = <Token token_type: TokenType.STRING, text: World!, line: 1, col: 49, start: 41, end: 48, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 49.
+E             CREATE TABLE t (c STRING COMMENT 'Hello '[4m'World!'[0m)
+
+sqlglot/parser.py:1998: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_databricks.py::TestDatabricks::test_databricks - s...
+1 failed, 18 passed, 39 subtests passed in 0.76s

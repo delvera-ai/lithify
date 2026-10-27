@@ -1,0 +1,115 @@
+exit 1
+entity("SELECT EXP(1)")
+        self.validate_identity(
+            "SELECT MODE() WITHIN GROUP (ORDER BY status DESC) AS most_common FROM orders"
+        )
+        self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
+        self.validate_identity("SHA384(x)")
+        self.validate_identity("1.x", "1. AS x")
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
+        self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
+        self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
+        self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
+        self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
+        self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
+        self.validate_identity("x @@ y")
+        self.validate_identity("CAST(x AS MONEY)")
+        self.validate_identity("CAST(x AS INT4RANGE)")
+        self.validate_identity("CAST(x AS INT4MULTIRANGE)")
+        self.validate_identity("CAST(x AS INT8RANGE)")
+        self.validate_identity("CAST(x AS INT8MULTIRANGE)")
+        self.validate_identity("CAST(x AS NUMRANGE)")
+        self.validate_identity("CAST(x AS NUMMULTIRANGE)")
+        self.validate_identity("CAST(x AS TSRANGE)")
+        self.validate_identity("CAST(x AS TSMULTIRANGE)")
+        self.validate_identity("CAST(x AS TSTZRANGE)")
+        self.validate_identity("CAST(x AS TSTZMULTIRANGE)")
+        self.validate_identity("CAST(x AS DATERANGE)")
+        self.validate_identity("CAST(x AS DATEMULTIRANGE)")
+        self.validate_identity("x$")
+        self.validate_identity("LENGTH(x)")
+        self.validate_identity("LENGTH(x, utf8)")
+        self.validate_identity("CHAR_LENGTH(x)", "LENGTH(x)")
+        self.validate_identity("CHARACTER_LENGTH(x)", "LENGTH(x)")
+        self.validate_identity("SELECT ARRAY[1, 2, 3]")
+        self.validate_identity("SELECT ARRAY(SELECT 1)")
+        self.validate_identity("STRING_AGG(x, y)")
+        self.validate_identity("STRING_AGG(x, ',' ORDER BY y)")
+        self.validate_identity("STRING_AGG(x, ',' ORDER BY y DESC)")
+        self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
+        self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
+        self.validate_identity("COMMENT ON TYPE mood IS 'x'")
+>       self.validate_identity("COMMENT ON TYPE foo.mood IS 'x'")
+
+tests/dialects/test_postgres.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2036: in parse
+    return self._parse(
+sqlglot/parser.py:2156: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2123: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2275: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1087: in <lambda>
+    TokenType.COMMENT: lambda self: self._parse_comment(),
+                                    ^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2200: in _parse_comment
+    return self.expression(
+sqlglot/parser.py:2097: in expression
+    instance = self.validate_expression(instance)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2004: in validate_expression
+    self.raise_error(error_message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.postgres.PostgresParser object at 0x10770e5d0>
+message = "Required keyword: 'expression' missing for <class 'sqlglot.expressions.ddl.Comment'>"
+token = <Token token_type: TokenType.DOT, text: ., line: 1, col: 20, start: 19, end: 19, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Required keyword: 'expression' missing for <class 'sqlglot.expressions.ddl.Comment'>. Line 1, Col: 20.
+E             COMMENT ON TYPE foo[4m.[0mmood IS 'x'
+
+sqlglot/parser.py:1993: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_postgres - sqlglot...
+1 failed, 25 passed, 187 subtests passed in 0.71s

@@ -1,0 +1,66 @@
+exit 1
+............................... [ 32%]
+............................................................F....                                                                 [100%]
+=================================== FAILURES ===================================
+__________________________ TestSnowflake.test_undrop ___________________________
+
+self = <tests.dialects.test_snowflake.TestSnowflake testMethod=test_undrop>
+
+    def test_undrop(self):
+>       self.validate_identity("UNDROP TABLE my_table")
+
+tests/dialects/test_snowflake.py:6789: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2041: in parse
+    return self._parse(
+sqlglot/parser.py:2161: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2131: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.snowflake.SnowflakeParser object at 0x109c76990>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.VAR, text: my_table, line: 1, col: 21, start: 13, end: 20, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 21.
+E             UNDROP TABLE [4mmy_table[0m
+
+sqlglot/parser.py:1998: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_snowflake.py::TestSnowflake::test_undrop - sqlglot...
+1 failed, 95 passed, 1568 subtests passed in 1.52s

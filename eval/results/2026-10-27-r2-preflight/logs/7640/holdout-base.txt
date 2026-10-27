@@ -1,0 +1,64 @@
+exit 1
+................................. [ 50%]
+................................F        [100%]
+=================================== FAILURES ===================================
+__________________ TestParser.test_window_clause_without_from __________________
+
+self = <tests.test_parser.TestParser testMethod=test_window_clause_without_from>
+
+    def test_window_clause_without_from(self):
+        # https://github.com/tobymao/sqlglot/issues/7438
+        for dialect in (None, "sqlite", "postgres", "mysql", "duckdb", "bigquery"):
+            sql = "SELECT 1 WINDOW a AS (PARTITION BY x)"
+>           self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_parser.py:1082: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2035: in parse
+    return self._parse(
+sqlglot/parser.py:2155: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2125: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.base.BaseParser object at 0x10bd5c050>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.VAR, text: a, line: 1, col: 17, start: 16, end: 16, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 17.
+E             SELECT 1 WINDOW [4ma[0m AS (PARTITION BY x)
+
+sqlglot/parser.py:1992: ParseError
+=========================== short test summary info ============================
+FAILED tests/test_parser.py::TestParser::test_window_clause_without_from - sq...
+1 failed, 65 passed, 71 subtests passed in 22.52s
