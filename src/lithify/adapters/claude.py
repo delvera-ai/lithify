@@ -6,7 +6,8 @@ turns can emit additional results; accounting must retain every result. Usage is
 per-turn; total_cost_usd and modelUsage are cumulative within each session:
 https://code.claude.com/docs/en/agent-sdk/cost-tracking#track-costs-in-streaming-input-mode
 
-Format verified against Claude Code 2.1.309 (tests/fixtures/claude_2.1.309.jsonl).
+Format verified against Claude Code 2.1.309 (tests/fixtures/claude_2.1.309.jsonl)
+and 2.1.310 (tests/fixtures/claude_2.1.310_{background_results,session_limit}.jsonl).
 """
 
 from __future__ import annotations

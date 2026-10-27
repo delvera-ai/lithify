@@ -182,3 +182,18 @@ def test_claude_2_1_310_captured_limit_archives_zero_usage():
     assert result.tokens_in == result.tokens_cached == result.tokens_out == result.cost_usd == 0
     assert result.meta["result_count"] == 1 and result.meta["model_usage"] == {}
     assert result.raw_stream == capture
+
+
+def test_claude_2_1_310_real_background_results():
+    """All four actual result events from the one approved calibration, plus an assistant event."""
+    capture = (FIX / "claude_2.1.310_background_results.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert result.ok and "restarted full-suite run also finished" in result.text
+    assert "[assistant]" in result.transcript
+    assert (result.tokens_in, result.tokens_cached, result.tokens_out) == (57187, 2197168, 15956)
+    assert abs(result.cost_usd - 0.04137888) < 1e-12
+    assert result.meta["result_count"] == 4 and result.meta["num_turns"] == 40
+    model = result.meta["model_usage"]["claude-haiku-5-5"]
+    assert model["inputTokens"] == 82 and model["cacheCreationInputTokens"] == 57105
+    assert model["outputTokens"] == 15956 and model["costBasis"] == "list"
+    assert result.raw_stream == capture
