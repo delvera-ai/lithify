@@ -66,3 +66,71 @@ def test_claude_error_result_surfaces_limit_notice():
     assert not r.ok and r.error == notice and hit_limit(r)
     ok = ClaudeAdapter().parse((FIX / "claude_2.1.309.jsonl").read_text(), "", 0)
     assert not hit_limit(ok)
+
+
+def test_claude_accounts_for_every_result_from_captured_fixture():
+    """Replay the real 2.1.309 capture twice to model a notification follow-up result.
+
+    This is a constructed multi-result stream, not a claimed new live capture.
+    """
+    import json
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    followup = json.loads(capture.splitlines()[-1])
+    followup["result"] = "Background test completed"
+    r = ClaudeAdapter().parse(capture + json.dumps(followup) + "\n", "", 0)
+    assert r.ok and r.text == "Background test completed"
+    assert "[assistant] ok" in r.transcript
+    assert (r.tokens_in, r.tokens_cached, r.tokens_out) == (25838, 22668, 8)
+    assert abs(r.cost_usd - 0.00539788) < 1e-12
+    assert r.meta["result_count"] == 2 and r.meta["num_turns"] == 2
+    model = r.meta["model_usage"]["claude-haiku-5-5"]
+    assert model["inputTokens"] == 4 and model["outputTokens"] == 8
+    assert abs(model["costUSD"] - r.cost_usd) < 1e-12
+    assert model["contextWindow"] == 1000000
+    assert r.meta["calls"][0]["context_tokens"] == 24253
+    assert r.raw_stream == capture + json.dumps(followup) + "\n"
+
+
+def test_claude_call_usage_deduplicates_streamed_message_blocks():
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    message = capture.splitlines()[1] + "\n"
+    r = ClaudeAdapter().parse(message + capture, "", 0)
+    assert len(r.meta["calls"]) == 1
+    assert r.meta["calls"][0]["model"] == "claude-haiku-5-5"
+
+
+def test_claude_timeout_retains_usage_and_raw_stream(monkeypatch, tmp_path):
+    import subprocess
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 1, output=capture.encode())
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    r = ClaudeAdapter().run("task", tmp_path, timeout_s=1)
+    assert not r.ok and r.returncode == 124 and "timeout" in r.error
+    assert r.raw_stream == capture
+    assert r.cost_usd > 0 and r.tokens_out == 4
+
+
+def test_pipeline_archives_session_streams_and_billing(tmp_path):
+    import gzip
+    import json
+
+    from lithify.config import Config
+    from lithify.pipeline import Pipeline
+
+    pipe = Pipeline(tmp_path, Config())
+    pipe.runs_dir = tmp_path / ".lithify/runs/test"
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    pipe._account(result, role=False)
+    pipe._account(result, role=True)
+    sessions = pipe.runs_dir / "sessions"
+    assert gzip.decompress((sessions / "001-execute.jsonl.gz").read_bytes()).decode() == capture
+    assert gzip.decompress((sessions / "002-role.jsonl.gz").read_bytes()).decode() == capture
+    billing = json.loads((sessions / "001-execute.json").read_text())
+    assert billing["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 4
+    assert pipe.usage["exec"] == pipe.usage["roles"] == 1

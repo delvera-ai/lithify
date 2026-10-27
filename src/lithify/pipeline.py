@@ -17,6 +17,7 @@ at most one lesson to the library, and — with auto_adopt — only components i
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import random
@@ -144,6 +145,14 @@ class Pipeline:
 
     def _account(self, r: RunResult, role: bool) -> None:
         with self._usage_lock:
+            if r.raw_stream:
+                sessions = self.runs_dir / "sessions"
+                sessions.mkdir(parents=True, exist_ok=True)
+                number = int(self.usage["exec"] + self.usage["roles"]) + 1
+                prefix = sessions / f"{number:03d}-{'role' if role else 'execute'}"
+                with gzip.open(prefix.with_suffix(".jsonl.gz"), "wt", encoding="utf-8") as stream:
+                    stream.write(r.raw_stream)
+                prefix.with_suffix(".json").write_text(json.dumps(r.meta, indent=2), encoding="utf-8")
             self.usage["in"] += r.tokens_in
             self.usage["cached"] += r.tokens_cached
             self.usage["out"] += r.tokens_out

@@ -1,7 +1,8 @@
 """Claude Code: `claude -p --output-format stream-json --verbose`.
 
 stream-json gives the full trajectory (tool calls and results), which is the evidence
-the proposers read; the final `result` event carries usage and total_cost_usd.
+the proposers read; each `result` event carries usage and total_cost_usd. Background completion
+turns can emit additional results; accounting must retain every result.
 
 Format verified against Claude Code 2.1.309 (tests/fixtures/claude_2.1.309.jsonl).
 """
@@ -28,11 +29,52 @@ class ClaudeAdapter(Adapter):
         events = jsonl(stdout)
         lines: list[str] = []
         final: dict = {}
+        results: list[dict] = []
+        calls: dict[str, dict] = {}
+        models: dict[str, dict] = {}
+        totals = dict.fromkeys(("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"), 0)
+        cost = 0.0
+        turns = 0
         for ev in events:
             t = ev.get("type")
             if t == "result":
                 final = ev
+                usage = ev.get("usage") or {}
+                for key in totals:
+                    totals[key] += int(usage.get(key, 0) or 0)
+                cost += float(ev.get("total_cost_usd", 0.0) or 0.0)
+                turns += int(ev.get("num_turns", 0) or 0)
+                billed = ev.get("modelUsage") or {}
+                results.append(
+                    {
+                        "usage": usage,
+                        "modelUsage": billed,
+                        "total_cost_usd": ev.get("total_cost_usd", 0.0),
+                        "num_turns": ev.get("num_turns", 0),
+                        "is_error": ev.get("is_error", False),
+                    }
+                )
+                for model, values in billed.items():
+                    aggregate = models.setdefault(model, {})
+                    for key, value in values.items():
+                        if key.endswith("Tokens") or key in ("costUSD", "webSearchRequests"):
+                            aggregate[key] = aggregate.get(key, 0) + (value or 0)
+                        else:
+                            aggregate[key] = value
             elif t in ("assistant", "user"):
+                message = ev.get("message") or {}
+                if t == "assistant" and message.get("usage"):
+                    usage = message["usage"]
+                    # A streamed message can appear in several blocks with the same id.
+                    key = message.get("id") or f"event-{len(calls)}"
+                    calls[key] = {
+                        "model": message.get("model", ""),
+                        "usage": usage,
+                        "context_tokens": sum(
+                            int(usage.get(k, 0) or 0)
+                            for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+                        ),
+                    }
                 for block in (ev.get("message") or {}).get("content") or []:
                     if not isinstance(block, dict):
                         continue
@@ -47,18 +89,25 @@ class ClaudeAdapter(Adapter):
                             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
                         err = " ERROR" if block.get("is_error") else ""
                         lines.append(f"[tool_result{err}] {clip(content or '', 1000)}")
-        usage = final.get("usage") or {}
         return RunResult(
             ok=bool(final) and not final.get("is_error", False),
             text=str(final.get("result", "")),
             transcript="\n".join(lines),
-            tokens_in=int(usage.get("input_tokens", 0)) + int(usage.get("cache_creation_input_tokens", 0)),
-            tokens_cached=int(usage.get("cache_read_input_tokens", 0)),
-            tokens_out=int(usage.get("output_tokens", 0)),
-            cost_usd=float(final.get("total_cost_usd", 0.0) or 0.0),
+            tokens_in=totals["input_tokens"] + totals["cache_creation_input_tokens"],
+            tokens_cached=totals["cache_read_input_tokens"],
+            tokens_out=totals["output_tokens"],
+            cost_usd=cost,
             # An error result (e.g. a usage-limit notice) carries its message in `result`.
             error=clip(str(final.get("result", "")), 2000)
             if final.get("is_error")
             else ("" if final else clip(stderr or stdout, 2000)),
-            meta={"num_turns": final.get("num_turns"), "session_id": final.get("session_id")},
+            meta={
+                "num_turns": turns,
+                "session_id": final.get("session_id"),
+                "result_count": len(results),
+                "model_usage": models,
+                "results": results,
+                "calls": list(calls.values()),
+            },
+            raw_stream=stdout,
         )
