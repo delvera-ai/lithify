@@ -21,10 +21,12 @@ auto_adopt = false and every proposal is adopted after the task (see #13).
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import re
 import shutil
+import statistics
 import sys
 import time
 from pathlib import Path
@@ -83,6 +85,21 @@ def limit_hit(ev: Path) -> str:
         if LIMIT_TEXT.search(head):
             return f"limit notice in {t.parent.name}/trajectory.md"
     return ""
+
+
+def tripwire_reasons(rows: list[dict], run_cost: float, max_mean_cost: float | None, max_median_wall: float | None) -> list[str]:
+    if not rows:
+        return []
+    reasons = []
+    mean_cost = run_cost / len(rows)
+    median_wall = statistics.median(float(row["wall_s"]) for row in rows)
+    if max_mean_cost is not None and mean_cost > max_mean_cost:
+        reasons.append(f"mean cost/task ${mean_cost:.6f} exceeds ${max_mean_cost:.6f}")
+    if max_median_wall is not None and median_wall > max_median_wall:
+        reasons.append(f"median wall {median_wall:.3f}s exceeds {max_median_wall:.3f}s")
+    if any(str(row.get("cost_lower_bound", "")).lower() == "true" for row in rows):
+        reasons.append("timeout cost is a lower bound; reconcile before further paid work")
+    return reasons
 
 
 def reset_to(repo_name: str, clone: Path, base: str, keep: Path | None, save: bool = True) -> None:
@@ -144,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--replicate", default="")
     ap.add_argument("--seed-label", type=int, default=0, help="session label, not an executor RNG seed")
     ap.add_argument("--arm", default="")
+    ap.add_argument("--max-mean-cost", type=float, help="stop after a task if cumulative mean cost exceeds this")
+    ap.add_argument("--max-median-wall", type=float, help="stop after a task if median wall_s exceeds this")
     ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
 
@@ -188,6 +207,10 @@ def main(argv: list[str] | None = None) -> int:
     run_cost = float(progress["run_cost"])
     audit: list[dict] = list(progress["audit"])
     start = int(progress["next_pos"])
+    csv_path = out / f"results-{label}.csv"
+    completed = list(csv.DictReader(csv_path.open())) if a.resume and csv_path.exists() else []
+    stop_reason: list[str] = []
+    exit_code = 0
 
     def save_progress(next_pos: int) -> None:
         progress_file.write_text(json.dumps({"next_pos": next_pos, "run_cost": run_cost, "audit": audit}), encoding="utf-8")
@@ -199,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
         total = sum(spent(d) for d in RESULTS.glob(a.budget_glob) if d.is_dir())
         if run_cost >= a.limit_usd or total >= a.total_cap:
             print(f"budget stop before #{pr['number']}: run ${run_cost:.2f}/{a.limit_usd:.2f}; all results ${total:.2f}")
+            stop_reason = ["budget cap"]
+            exit_code = 80
             break
         reset_to(a.repo, clone, pr["base"], keep if pos > 1 else None, save=not (a.resume and pos == start))
         if pos == 1:
@@ -225,6 +250,10 @@ def main(argv: list[str] | None = None) -> int:
         m = run_task(clone, task_file, a.strategy, holdout, a.timeout * 6, ev, redactions)
         hit = limit_hit(ev)
         if hit:
+            interrupted = out / "interruptions" / label / f"{pos:02d}-{time.time_ns()}"
+            copy_redacted(ev, interrupted, redactions)
+            write_rows(interrupted / "results-interrupted.csv", [{**m, "replicate": label, "outcome": "cli-limit"}])
+            run_cost += float(m["cost_usd"])
             shutil.rmtree(ev, ignore_errors=True)
             save_progress(pos)
             print(f"LIMIT HIT at {pos}/{len(prs)} #{pr['number']}: {hit}; nothing recorded. Re-run with --resume.", flush=True)
@@ -288,7 +317,8 @@ def main(argv: list[str] | None = None) -> int:
             "lithify_commit": commit,
             **m,
         }
-        write_rows(out / f"results-{label}.csv", [row])
+        write_rows(csv_path, [row])
+        completed.append(row)
         run_cost += float(m["cost_usd"])
         print(
             f"   k={m['k']} delivered={m['delivered']} first_pass={m['first_pass']} holdout={m['holdout_pass']} "
@@ -297,11 +327,19 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
         save_progress(pos + 1)
+        stop_reason = tripwire_reasons(completed, run_cost, a.max_mean_cost, a.max_median_wall)
+        if stop_reason:
+            (ev_root / "tripwire.json").write_text(json.dumps({"reasons": stop_reason, "position": pos}, indent=2))
+            print("TRIPWIRE STOP: " + "; ".join(stop_reason), flush=True)
+            exit_code = 76
+            break
 
     summary = {
         "label": label,
         "lithify_commit": commit,
         "run_cost_usd": round(run_cost, 4),
+        "stop_reason": stop_reason,
+        "completed_tasks": len(completed),
         "invariants": audit,
     }
     (ev_root / "audit.json").write_text(redact(json.dumps(summary, indent=2), redactions), encoding="utf-8")
@@ -309,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
     if (clone / ".lithify" / "library").is_dir():
         copy_redacted(clone / ".lithify" / "library", ev_root / "library", redactions)
     print(f"done: {label} ${run_cost:.2f}; scratch {run_dir}")
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

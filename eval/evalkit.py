@@ -46,6 +46,9 @@ COLUMNS = [
     "applied",
     "first_pass",
     "holdout_pass",
+    "outcome",
+    "timeout_kind",
+    "cost_lower_bound",
     "selected",
     "executions",
     "role_sessions",
@@ -54,6 +57,9 @@ COLUMNS = [
     "tokens_out",
     "cost_usd",
     "wall_s",
+    "active_s",
+    "api_s",
+    "idle_s",
     "always_on_tokens",
     "stability_after",
     "promoted",
@@ -93,7 +99,31 @@ def redact(text: str, extra: dict[str, str] | None = None) -> str:
     text = text.replace(HOME, "~").replace(f"-Users-{USER}-", "-Users-user-")
     text = re.sub(rf"(?<![\w-]){re.escape(USER)}(?![\w-])", "user", text)
     text = text.replace(USER, "user")  # also inside clipped or mangled paths the rules above miss
+    text = re.sub(re.escape(USER), "user", text, flags=re.I)
     return SECRETISH.sub("<redacted>", text)
+
+
+def scan_leaks(root: Path) -> list[str]:
+    """Scan text and gzip evidence, including .lithify/runs/*/sessions/*.gz. Fail closed for gzip."""
+    findings = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            data = gzip.decompress(path.read_bytes()).decode("utf-8") if path.suffix == ".gz" else path.read_text()
+        except (OSError, UnicodeDecodeError, EOFError):
+            if path.suffix == ".gz":
+                findings.append(f"{path.relative_to(root)}: unreadable compressed evidence")
+            continue
+        if SECRETISH.search(data) or USER.casefold() in data.casefold() or HOME.casefold() in data.casefold():
+            findings.append(f"{path.relative_to(root)}: credential or unredacted identity")
+    return findings
+
+
+def require_redacted(root: Path) -> None:
+    findings = scan_leaks(root)
+    if findings:
+        raise RuntimeError("evidence export blocked:\n" + "\n".join(findings))
 
 
 def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> None:
@@ -103,7 +133,8 @@ def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> 
             continue
         out = dst / p.relative_to(src)
         out.parent.mkdir(parents=True, exist_ok=True)
-        if p.name.endswith(".jsonl.gz"):
+        if p.suffix == ".gz":
+            # Never copy compressed streams as opaque binary evidence.
             text = gzip.decompress(p.read_bytes()).decode("utf-8")
             out.write_bytes(gzip.compress(redact(text, extra).encode("utf-8"), mtime=0))
             continue
@@ -111,6 +142,32 @@ def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> 
             out.write_text(redact(p.read_text(encoding="utf-8"), extra), encoding="utf-8")
         except UnicodeDecodeError:
             shutil.copy2(p, out)
+    require_redacted(dst)
+
+
+def session_timing(rdir: Path | None, wall: float) -> dict[str, float | str]:
+    """CLI duration_ms is per result; API duration is cumulative per session.
+
+    Active time sums session effort; parallel sessions can exceed wall time,
+    so signed idle_s = wall_s - active_s includes gates and other overhead.
+    Missing result timing is unknown, not zero.
+    """
+    active = api = 0.0
+    found = False
+    for path in (rdir / "sessions").glob("*.json") if rdir else []:
+        meta = json.loads(path.read_text())
+        by_session: dict[str, float] = {}
+        for result in meta.get("results", []):
+            if "duration_ms" not in result or "duration_api_ms" not in result:
+                continue
+            found = True
+            active += float(result.get("duration_ms") or 0) / 1000
+            sid = result.get("session_id", "")
+            by_session[sid] = max(by_session.get(sid, 0), float(result.get("duration_api_ms") or 0) / 1000)
+        api += sum(by_session.values())
+    if not found:
+        return {"active_s": "", "api_s": "", "idle_s": ""}
+    return {"active_s": round(active, 3), "api_s": round(api, 3), "idle_s": round(wall - active, 3)}
 
 
 def run_task(
@@ -131,20 +188,30 @@ def run_task(
         args += ["--k", "0", "--no-escalate"]
     elif strategy == "static":
         args += ["--k", "1"]
+    before = set((repo / ".lithify/runs").iterdir()) if (repo / ".lithify/runs").exists() else set()
     t0 = time.time()
-    proc = lithify(repo, *args, timeout=timeout)
+    outer_timeout = False
+    try:
+        proc = lithify(repo, *args, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        outer_timeout = True
+        stdout = error.stdout.decode(errors="replace") if isinstance(error.stdout, bytes) else (error.stdout or "")
+        proc = subprocess.CompletedProcess(args, 124, stdout, f"runner timeout after {timeout}s")
     wall = round(time.time() - t0, 1)
     try:
         res = json.loads(proc.stdout[proc.stdout.find("{") :])
     except json.JSONDecodeError:
         res = {}
-    tid = res.get("task_id") or _latest(repo)
+    new_runs = [p for p in (repo / ".lithify/runs").iterdir() if p not in before] if (repo / ".lithify/runs").exists() else []
+    tid = res.get("task_id") or (max(new_runs, key=lambda p: p.stat().st_mtime).name if new_runs else "")
     rdir = repo / ".lithify" / "runs" / tid if tid else None
     outcome = json.loads((rdir / "outcome.json").read_text()) if rdir and (rdir / "outcome.json").exists() else {}
     state = json.loads((repo / ".lithify" / "state.json").read_text())
     rec = state["history"][-1] if state["history"] and tid and state["history"][-1]["task_id"] == tid else {}
     hold_rc: int | None = None
-    if callable(holdout):
+    if outer_timeout:
+        hold_rc = 124
+    elif callable(holdout):
         hold_rc = holdout(repo, evidence / "holdout_applied.txt")
     elif holdout:
         hold = sh(holdout, repo, check=False, timeout=600)
@@ -160,6 +227,22 @@ def run_task(
     if hl.exists():
         hl.write_text(redact(hl.read_text(encoding="utf-8"), extra_redact), encoding="utf-8")
     usage = outcome.get("usage", {})
+    if not usage and rdir:
+        usage = {"in": 0, "cached": 0, "out": 0, "cost": 0.0, "exec": 0, "roles": 0}
+        for path in (rdir / "sessions").glob("*.json"):
+            meta = json.loads(path.read_text())
+            usage["exec" if "execute" in path.name else "roles"] += 1
+            by_session: dict[str, float] = {}
+            for event in meta.get("results", []):
+                sid = event.get("session_id", "")
+                by_session[sid] = max(by_session.get(sid, 0), float(event.get("total_cost_usd") or 0))
+                u = event.get("usage") or {}
+                usage["in"] += int(u.get("input_tokens", 0)) + int(u.get("cache_creation_input_tokens", 0))
+                usage["cached"] += int(u.get("cache_read_input_tokens", 0))
+                usage["out"] += int(u.get("output_tokens", 0))
+            usage["cost"] += sum(by_session.values())
+    kinds = timeout_kinds(rdir, outer_timeout, hold_rc)
+
     proposal = outcome.get("proposal")
     proposed = ""
     if proposal:
@@ -173,6 +256,9 @@ def run_task(
         "applied": bool(outcome.get("applied", False)),
         "first_pass": bool(outcome.get("first_pass", rec.get("first_pass", False))),
         "holdout_pass": (hold_rc == 0) if hold_rc is not None else "",
+        "outcome": "timeout" if kinds else "pass" if hold_rc == 0 and res.get("delivered", rec.get("delivered")) else "failure",
+        "timeout_kind": ",".join(kinds),
+        "cost_lower_bound": bool(kinds),
         "selected": outcome.get("selected", ""),
         "executions": int(usage.get("exec", rec.get("executions", 0))),
         "role_sessions": int(usage.get("roles", 0)),
@@ -181,12 +267,28 @@ def run_task(
         "tokens_out": int(usage.get("out", 0)),
         "cost_usd": round(float(usage.get("cost", 0.0)), 4),
         "wall_s": wall,
+        **session_timing(rdir, wall),
         "always_on_tokens": rec.get("always_on_tokens", ""),
         "stability_after": rec.get("stability_after", ""),
         "promoted": " ".join(outcome.get("promoted", [])),
         "proposed": proposed,
         "exit_code": proc.returncode,
     }
+
+
+def timeout_kinds(rdir: Path | None, outer: bool = False, hold_rc: int | None = None) -> list[str]:
+    kinds = {"runner"} if outer else set()
+    if hold_rc == 124 and not outer:
+        kinds.add("holdout")
+    if rdir:
+        for path in (rdir / "rollouts").glob("*/run.json"):
+            data = json.loads(path.read_text())
+            if data.get("returncode") == 124 or str(data.get("error", "")).startswith("timeout after "):
+                kinds.add("executor")
+        for path in (rdir / "rollouts").glob("*/gates.md"):
+            if re.search(r"TIMEOUT after \d+s", path.read_text()):
+                kinds.add("gate")
+    return sorted(kinds)
 
 
 def _latest(repo: Path) -> str:
