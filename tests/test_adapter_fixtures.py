@@ -66,3 +66,141 @@ def test_claude_error_result_surfaces_limit_notice():
     assert not r.ok and r.error == notice and hit_limit(r)
     ok = ClaudeAdapter().parse((FIX / "claude_2.1.309.jsonl").read_text(), "", 0)
     assert not hit_limit(ok)
+
+
+def test_claude_accounts_for_every_result_from_captured_fixture():
+    """Replay the real 2.1.309 capture twice to model a notification follow-up result.
+
+    This is a constructed multi-result stream, not a claimed new live capture.
+    """
+    import json
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    followup = json.loads(capture.splitlines()[-1])
+    followup["result"] = "Background test completed"
+    followup["total_cost_usd"] *= 2
+    model = followup["modelUsage"]["claude-haiku-5-5"]
+    for key in ("inputTokens", "outputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "costUSD"):
+        model[key] *= 2
+    r = ClaudeAdapter().parse(capture + json.dumps(followup) + "\n", "", 0)
+    assert r.ok and r.text == "Background test completed"
+    assert "[assistant] ok" in r.transcript
+    assert (r.tokens_in, r.tokens_cached, r.tokens_out) == (25838, 22668, 8)
+    assert abs(r.cost_usd - 0.00539788) < 1e-12
+    assert r.meta["result_count"] == 2 and r.meta["num_turns"] == 2
+    model = r.meta["model_usage"]["claude-haiku-5-5"]
+    assert model["inputTokens"] == 4 and model["outputTokens"] == 8
+    assert abs(model["costUSD"] - r.cost_usd) < 1e-12
+    assert model["contextWindow"] == 1000000 and model["maxOutputTokens"] == 128000
+    assert r.meta["calls"][0]["context_tokens"] == 24253
+    assert r.raw_stream == capture + json.dumps(followup) + "\n"
+
+
+def test_claude_call_usage_deduplicates_streamed_message_blocks():
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    message = capture.splitlines()[1] + "\n"
+    r = ClaudeAdapter().parse(message + capture, "", 0)
+    assert len(r.meta["calls"]) == 1
+    assert r.meta["calls"][0]["model"] == "claude-haiku-5-5"
+
+
+def test_claude_timeout_retains_usage_and_raw_stream(monkeypatch, tmp_path):
+    import subprocess
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 1, output=capture.encode())
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    r = ClaudeAdapter().run("task", tmp_path, timeout_s=1)
+    assert not r.ok and r.returncode == 124 and "timeout" in r.error
+    assert r.raw_stream == capture
+    assert r.cost_usd > 0 and r.tokens_out == 4
+
+
+def test_pipeline_archives_session_streams_and_billing(tmp_path):
+    import gzip
+    import json
+
+    from lithify.config import Config
+    from lithify.pipeline import Pipeline
+
+    pipe = Pipeline(tmp_path, Config())
+    pipe.runs_dir = tmp_path / ".lithify/runs/test"
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    pipe._account(result, role=False)
+    pipe._account(result, role=True)
+    sessions = pipe.runs_dir / "sessions"
+    assert gzip.decompress((sessions / "001-execute.jsonl.gz").read_bytes()).decode() == capture
+    assert gzip.decompress((sessions / "002-role.jsonl.gz").read_bytes()).decode() == capture
+    billing = json.loads((sessions / "001-execute.json").read_text())
+    assert billing["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 4
+    assert pipe.usage["exec"] == pipe.usage["roles"] == 1
+
+
+def test_claude_cumulative_results_are_not_double_charged():
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    r = ClaudeAdapter().parse(capture + capture.splitlines()[-1] + "\n", "", 0)
+    assert r.meta["result_count"] == 2
+    assert abs(r.cost_usd - 0.00269894) < 1e-12
+    assert r.meta["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 4
+
+
+def test_claude_cost_survives_zeroed_error_and_separate_sessions_add():
+    import json
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    result = json.loads(capture.splitlines()[-1])
+    crash = {
+        "type": "result",
+        "is_error": True,
+        "result": "crash",
+        "usage": {},
+        "total_cost_usd": 0,
+        "session_id": result["session_id"],
+    }
+    r = ClaudeAdapter().parse(capture + json.dumps(crash), "", 1)
+    assert not r.ok and r.error == "crash"
+    assert abs(r.cost_usd - 0.00269894) < 1e-12 and r.tokens_out == 4
+    result["session_id"] = "another-session"
+    r = ClaudeAdapter().parse(capture + json.dumps(result), "", 0)
+    assert abs(r.cost_usd - 0.00539788) < 1e-12
+    assert r.meta["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 8
+
+
+def test_claude_2_1_310_captured_limit_archives_zero_usage():
+    """Real zero-token 2.1.310 session-limit stream from round-2 calibration preflight."""
+    from lithify.adapters.base import hit_limit
+
+    capture = (FIX / "claude_2.1.310_session_limit.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert not result.ok and hit_limit(result)
+    assert "session limit" in result.text and result.error == result.text
+    assert "[assistant]" in result.transcript
+    assert result.tokens_in == result.tokens_cached == result.tokens_out == result.cost_usd == 0
+    assert result.meta["result_count"] == 1 and result.meta["model_usage"] == {}
+    assert result.raw_stream == capture
+
+
+def test_claude_2_1_310_real_background_results():
+    """All four actual result events from the one approved calibration, plus an assistant event."""
+    capture = (FIX / "claude_2.1.310_background_results.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert result.ok and "restarted full-suite run also finished" in result.text
+    assert "[assistant]" in result.transcript
+    assert (result.tokens_in, result.tokens_cached, result.tokens_out) == (57187, 2197168, 15956)
+    assert abs(result.cost_usd - 0.04137888) < 1e-12
+    assert result.meta["result_count"] == 4 and result.meta["num_turns"] == 40
+    model = result.meta["model_usage"]["claude-haiku-5-5"]
+    assert model["inputTokens"] == 82 and model["cacheCreationInputTokens"] == 57105
+    assert model["outputTokens"] == 15956 and model["costBasis"] == "list"
+    assert result.raw_stream == capture
+
+
+def test_claude_captured_per_result_timing_scopes():
+    capture = (FIX / "claude_2.1.310_background_results.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert [r["duration_ms"] for r in result.meta["results"]] == [140554, 8266, 9581, 4924]
+    assert [r["duration_api_ms"] for r in result.meta["results"]] == [112582, 120593, 129804, 134645]
