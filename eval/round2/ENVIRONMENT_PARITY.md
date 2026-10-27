@@ -38,3 +38,11 @@ Antigravity is now 1.4.6 vs 1.4.3 (unused by the Claude calibration).
 The launch shell has Node 22.23.2 / npm 10.9.8 vs recorded Node 24.15.0 /
 npm 11.12.1; install a run-local Node/npm pin before calibration so npm-based
 Claude runs under the recorded runtime. Global tools remain unchanged.
+
+## Calibration runtime decision
+
+Owner approved 2.1.310 for actual A parity (rather than the stale 2.1.309
+record). Both isolated pins are installed. Node 24.15.0 and npm 11.12.1 are
+also installed run-locally. Final calibration uses 2.1.310 with that runtime,
+Python 3.14.4 for the non-editable runner, and absolute repo-venv Python for
+both gates and holdouts, with repo-venv bin on PATH for test subprocesses.

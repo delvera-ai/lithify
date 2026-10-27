@@ -201,10 +201,17 @@ The earlier claims that there was no causal link, or that most exact-string
 failures were unlearnable, are not established by the available evidence.
 
 The old Claude adapter retained only the last `result` event per process.
-Background-notification turns can replace the substantive result, so affected
-session costs and the aggregate dollar totals above must be treated as lower
-bounds, not reliable complete costs. These results cannot substantiate the
-cost claims above without remeasuring complete session accounting.
+Background-notification turns can replace the substantive result, so per-turn
+usage may be incomplete. Treat affected historical costs conservatively as lower
+bounds, but do not infer missing dollars merely from a notification ending:
+total_cost_usd and modelUsage are cumulative within a session. Comparing each
+archived rollout's run.json to the surviving session's final cost-state found
+all 199 costs match within CSV rounding (absolute difference <= $0.000051).
+Thus this audit found no dollar undercount in archived rollouts. Editor-role
+costs and authoritative invoices are outside this check. These are CLI cost
+estimates, not authoritative billing records; the calibration measures the same
+reported metric. Contract reference:
+https://code.claude.com/docs/en/agent-sdk/cost-tracking#track-costs-in-streaming-input-mode
 
 Read-only audit of all 199 archived rollout trajectories, matched by task id,
 rollout label, and exact final assistant text to surviving local session logs:
