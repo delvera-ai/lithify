@@ -168,3 +168,17 @@ def test_claude_cost_survives_zeroed_error_and_separate_sessions_add():
     r = ClaudeAdapter().parse(capture + json.dumps(result), "", 0)
     assert abs(r.cost_usd - 0.00539788) < 1e-12
     assert r.meta["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 8
+
+
+def test_claude_2_1_310_captured_limit_archives_zero_usage():
+    """Real zero-token 2.1.310 session-limit stream from round-2 calibration preflight."""
+    from lithify.adapters.base import hit_limit
+
+    capture = (FIX / "claude_2.1.310_session_limit.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert not result.ok and hit_limit(result)
+    assert "session limit" in result.text and result.error == result.text
+    assert "[assistant]" in result.transcript
+    assert result.tokens_in == result.tokens_cached == result.tokens_out == result.cost_usd == 0
+    assert result.meta["result_count"] == 1 and result.meta["model_usage"] == {}
+    assert result.raw_stream == capture
