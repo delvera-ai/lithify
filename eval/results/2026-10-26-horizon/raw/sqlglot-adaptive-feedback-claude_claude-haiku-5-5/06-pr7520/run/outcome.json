@@ -1,0 +1,32 @@
+{
+  "task": "MySQL dialect: MySQL allows setting the auto-increment counter of an existing table with `ALTER TABLE t AUTO_INCREMENT=3000000000`. sqlglot already parses `AUTO_INCREMENT` as a table property in `CREATE TABLE`. Support it in `ALTER TABLE` too, parsed as the same auto-increment property and round-tripping.",
+  "k": 2,
+  "reason": "genesis (S=0.15)",
+  "selected": "base-2",
+  "why": "The source changes are identical, so test fidelity to the request decided it. The task asks for two things: the statement must be \"parsed as the same auto-increment property\" and must round-trip. c1 tests both. It adds an identity round-trip test and an AST check that the ALTER action is an `exp.AutoIncrementProperty` with the value `3000000000`.\nThe runner-up, c2, only adds the identity round-trip. A round-trip test would still pass if the statement were wrongly parsed into a generic or command node, so the \"same property\" requirement goes unchecked.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 97869,
+    "cached": 1272272,
+    "out": 13577,
+    "cost": 0.20938291,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2692,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

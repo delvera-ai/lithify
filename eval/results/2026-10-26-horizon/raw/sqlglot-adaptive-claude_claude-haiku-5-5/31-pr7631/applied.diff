@@ -1,0 +1,107 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0bd88ce94..893293ead 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -464,6 +464,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 0.8683,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-224121-mysql-exasol-when-alias-referenc",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 65279,
++      "tokens_cached": 653358,
++      "tokens_out": 8005,
++      "cost_usd": 0.0236,
++      "wall_s": 2882.4,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/exasol.py b/sqlglot/generators/exasol.py
+index cd44625e6..9ea6eb60f 100644
+--- a/sqlglot/generators/exasol.py
++++ b/sqlglot/generators/exasol.py
+@@ -34,11 +34,19 @@ def _date_diff_sql(self: ExasolGenerator, expression: exp.DateDiff | exp.TsOrDsD
+     return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
+ 
+ 
++def _alias_key(name: str, quoted: bool) -> str:
++    # Unquoted identifiers are folded to upper case by Exasol, quoted ones are case-sensitive
++    return name if quoted else name.upper()
++
++
+ # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
+ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+     if isinstance(expression, exp.Select):
+-        aliases: dict[str, bool] = {
+-            alias.name: bool(alias.args.get("quoted"))
++        aliases: dict[str, tuple[str, bool]] = {
++            _alias_key(alias.name, bool(alias.args.get("quoted"))): (
++                alias.name,
++                bool(alias.args.get("quoted")),
++            )
+             for sel in expression.selects
+             if isinstance(sel, exp.Alias) and (alias := sel.args.get("alias"))
+         }
+@@ -53,11 +61,13 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+         ):
+             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
+ 
+-        def prefix_local(node: exp.Expr, visible_aliases: dict[str, bool]) -> exp.Expr:
++        def prefix_local(node: exp.Expr, visible_aliases: dict[str, tuple[str, bool]]) -> exp.Expr:
+             if isinstance(node, exp.Column) and not node.table:
+-                if node.name in visible_aliases:
++                key = _alias_key(node.name, bool(node.this.args.get("quoted")))
++                if key in visible_aliases:
++                    name, quoted = visible_aliases[key]
+                     return exp.Column(
+-                        this=exp.to_identifier(node.name, quoted=visible_aliases[node.name]),
++                        this=exp.to_identifier(name, quoted=quoted),
+                         table=exp.to_identifier("LOCAL", quoted=False),
+                     )
+             return node
+@@ -66,7 +76,7 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+             if arg := expression.args.get(key):
+                 expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
+ 
+-        seen_aliases: dict[str, bool] = {}
++        seen_aliases: dict[str, tuple[str, bool]] = {}
+         new_selects: list[exp.Expr] = []
+         for sel in expression.selects:
+             if isinstance(sel, exp.Alias):
+@@ -74,8 +84,9 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+                 sel.set("this", inner)
+ 
+                 alias_node = sel.args.get("alias")
++                quoted = bool(alias_node and getattr(alias_node, "quoted", False))
+ 
+-                seen_aliases[sel.alias] = bool(alias_node and getattr(alias_node, "quoted", False))
++                seen_aliases[_alias_key(sel.alias, quoted)] = (sel.alias, quoted)
+                 new_selects.append(sel)
+             else:
+                 new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 4c13e18a6..3d8e22d35 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -860,6 +860,12 @@ class TestExasol(Validator):
+                     write={"exasol": exasol_sql, "databricks": dbx_sql},
+                 )
+ 
++        self.validate_all(
++            "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField",
++            read={"mysql": "SELECT 1 AS idField FROM t GROUP BY idfield"},
++            write={"exasol": "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField"},
++        )
++
+     def test_regexp_like(self):
+         # Exasol uses binary predicate syntax: col REGEXP_LIKE pattern
+         self.validate_identity("SELECT x REGEXP_LIKE '.*pattern.*'")

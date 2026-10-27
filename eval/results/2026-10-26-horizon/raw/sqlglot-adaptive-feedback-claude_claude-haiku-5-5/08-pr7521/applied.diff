@@ -1,0 +1,65 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index fb8cb6dec..dd927f1d8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -112,6 +112,22 @@
+       "always_on_tokens": 1023,
+       "stability_after": 0.3579,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-184539-exasol-dialect-exasol-allows-bot",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 83144,
++      "tokens_cached": 876057,
++      "tokens_out": 9622,
++      "cost_usd": 0.1999,
++      "wall_s": 213.6,
++      "always_on_tokens": 1023,
++      "stability_after": 0.4278,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..8fcb23e7a 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1,4 +1,4 @@
+-from sqlglot import exp, transpile, UnsupportedError, ErrorLevel
++from sqlglot import exp, parse_one, transpile, UnsupportedError, ErrorLevel
+ from tests.dialects.test_dialect import Validator
+ 
+ 
+@@ -32,6 +32,15 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_minus(self):
++        self.validate_identity(
++            "SELECT a FROM t MINUS SELECT a FROM u", "SELECT a FROM t EXCEPT SELECT a FROM u"
++        )
++        self.validate_identity("SELECT a FROM t EXCEPT SELECT a FROM u")
++        self.assertIsInstance(
++            parse_one("SELECT a FROM t MINUS SELECT a FROM u", read="exasol"), exp.Except
++        )
++
+     def test_exasol_keywords(self):
+         keywords = ["CS", "ADD", "BOOLEAN", "CALL", "CONTROL"]
+ 

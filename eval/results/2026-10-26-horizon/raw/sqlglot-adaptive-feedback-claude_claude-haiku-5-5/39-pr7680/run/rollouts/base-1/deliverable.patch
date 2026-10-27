@@ -1,0 +1,33 @@
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index 9e12db747..cca9c285d 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -83,7 +83,7 @@ class MySQLParser(parser.Parser):
+     TABLE_ALIAS_TOKENS = (
+         (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI})
+         - parser.Parser.TABLE_INDEX_HINT_TOKENS
+-        - {TokenType.STRAIGHT_JOIN}
++        - {TokenType.STRAIGHT_JOIN, TokenType.SET}
+     )
+ 
+     RANGE_PARSERS = {
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..a6fe56a54 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -244,6 +244,15 @@ class TestMySQL(Validator):
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a, books AS b SET a.x = 1 WHERE a.id = b.author_id"
++        )
++        self.validate_identity("UPDATE a, b, c SET a.x = 1 WHERE a.id = b.id AND b.id = c.id")
++        self.validate_identity("UPDATE a, b JOIN c ON b.id = c.id SET a.x = 1")
++        self.validate_identity("UPDATE a JOIN b ON a.id = b.id, c SET a.x = 1")
+ 
+         # PARTITION BY RANGE - simple column
+         self.validate_identity(

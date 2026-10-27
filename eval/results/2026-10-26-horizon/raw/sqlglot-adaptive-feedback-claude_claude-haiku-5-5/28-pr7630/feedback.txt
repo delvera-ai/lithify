@@ -1,0 +1,18 @@
+{
+  "task_id": "20261027-043713-parser-collate-is-not-handled-in",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-043713-parser-collate-is-not-handled-in-feedback",
+  "components": [
+    "skills/sqlglot-data-types",
+    "system.md",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 179717,
+    "cached": 2733927,
+    "out": 29461,
+    "cost": 2.5732853999999996,
+    "exec": 0,
+    "roles": 3
+  }
+}

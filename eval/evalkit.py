@@ -54,6 +54,7 @@ COLUMNS = [
     "promoted",
     "proposed",
     "adopted",
+    "feedback",
     "adopt_policy",
     "lithify_commit",
 ]
@@ -86,6 +87,7 @@ def redact(text: str, extra: dict[str, str] | None = None) -> str:
         text = text.replace(src, dst)
     text = text.replace(HOME, "~").replace(f"-Users-{USER}-", "-Users-user-")
     text = re.sub(rf"(?<![\w-]){re.escape(USER)}(?![\w-])", "user", text)
+    text = text.replace(USER, "user")  # also inside clipped or mangled paths the rules above miss
     return SECRETISH.sub("<redacted>", text)
 
 

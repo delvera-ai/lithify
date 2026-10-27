@@ -1,0 +1,44 @@
+diff --git a/sqlglot/optimizer/qualify_tables.py b/sqlglot/optimizer/qualify_tables.py
+index ffd2c1dec..7ea24213f 100644
+--- a/sqlglot/optimizer/qualify_tables.py
++++ b/sqlglot/optimizer/qualify_tables.py
+@@ -80,7 +80,7 @@ def qualify_tables(
+         target_alias: str | None = None,
+         scope: Scope | None = None,
+         normalize: bool = False,
+-        columns: Sequence[str | exp.Identifier] | None = None,
++        columns: Sequence[str | exp.Identifier | exp.ColumnDef] | None = None,
+     ) -> None:
+         alias = expression.args.get("alias") or exp.TableAlias()
+ 
+@@ -97,7 +97,10 @@ def qualify_tables(
+         alias.set("this", exp.to_identifier(new_alias_name))
+ 
+         if columns:
+-            alias.set("columns", [exp.to_identifier(c) for c in columns])
++            alias.set(
++                "columns",
++                [c if isinstance(c, exp.ColumnDef) else exp.to_identifier(c) for c in columns],
++            )
+ 
+         expression.set("alias", alias)
+ 
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 8a8200262..b461719af 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -294,6 +294,14 @@ class TestOptimizer(unittest.TestCase):
+             "SELECT a FROM b AS b",
+         )
+ 
++        self.assertEqual(
++            optimizer.qualify_tables.qualify_tables(
++                parse_one("SELECT * FROM fn() AS t(col INT)"),
++                canonicalize_table_aliases=True,
++            ).sql(),
++            "SELECT * FROM FN() AS _0(col INT)",
++        )
++
+         self.assertEqual(
+             optimizer.qualify_tables.qualify_tables(parse_one("select a from b"), db='"DB"').sql(),
+             'SELECT a FROM "DB".b AS b',

@@ -1,0 +1,28 @@
+{
+  "task": "SQLite and other dialects: a `WINDOW` clause is rejected when the query has no `FROM`:\n\n```python\nsqlglot.parse_one(\"SELECT 1 WINDOW a AS (PARTITION BY fake_column);\", read=\"sqlite\")\n# ParseError: Invalid expression / Unexpected token. Line 1, Col: 17.\n```\n\nWith a `FROM` clause the same works. Allow the `WINDOW` clause without `FROM`.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 32770,
+    "cached": 420518,
+    "out": 5088,
+    "cost": 0.013300980000000002,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

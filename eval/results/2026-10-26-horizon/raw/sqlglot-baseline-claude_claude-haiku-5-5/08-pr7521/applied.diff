@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c069e0e11..1c8ac41b4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -112,6 +112,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-134555-exasol-dialect-exasol-allows-bot",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 25252,
++      "tokens_cached": 197509,
++      "tokens_out": 2783,
++      "cost_usd": 0.0084,
++      "wall_s": 126.9,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..18a432d53 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -39,6 +39,10 @@ class TestExasol(Validator):
+             with self.subTest(keyword=keyword):
+                 self.validate_identity(f"SELECT 1 AS {keyword}", f'SELECT 1 AS "{keyword}"')
+ 
++    def test_minus(self):
++        self.validate_identity("SELECT 1 MINUS SELECT 2", "SELECT 1 EXCEPT SELECT 2")
++        self.validate_identity("SELECT 1 EXCEPT SELECT 2")
++
+     def test_qualify_unscoped_star(self):
+         self.validate_all(
+             "SELECT TEST.*, 1 FROM TEST",

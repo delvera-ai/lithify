@@ -1,0 +1,28 @@
+{
+  "task": "MySQL dialect: quoted index or constraint names that look like keywords are rejected. MySQL allows any identifier as an index name when it is backtick-quoted, e.g. ``UNIQUE KEY `Unique` (a)``, ``KEY `Index` (b)`` or ``UNIQUE INDEX `Key` (c)`` in a `CREATE TABLE`, but sqlglot treats `` `Unique` ``, `` `Index` `` and `` `Key` `` as constraint keywords and fails. Quoted names must be accepted and round-trip.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 36394,
+    "cached": 567343,
+    "out": 8340,
+    "cost": 0.01711943,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

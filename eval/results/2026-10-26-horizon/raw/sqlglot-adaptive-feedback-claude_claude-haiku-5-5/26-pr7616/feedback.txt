@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-005847-postgres-dialect-create-type-fal",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-005847-postgres-dialect-create-type-fal-feedback",
+  "components": [
+    "skills/sqlglot-ddl-statements",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 145243,
+    "cached": 2458912,
+    "out": 26371,
+    "cost": 2.1807144000000003,
+    "exec": 0,
+    "roles": 3
+  }
+}

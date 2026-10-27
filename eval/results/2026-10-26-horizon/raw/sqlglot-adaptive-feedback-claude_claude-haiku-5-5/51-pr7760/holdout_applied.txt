@@ -1,0 +1,97 @@
+exit 1
+.............................F.. [ 86%]
+.....                      [100%]
+=================================== FAILURES ===================================
+_____________________________ TestSQLite.test_ddl ______________________________
+
+self = <tests.dialects.test_sqlite.TestSQLite testMethod=test_ddl>
+
+    def test_ddl(self):
+        for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
+            with self.subTest(f"ON CONFLICT {conflict_action}"):
+                self.validate_identity("CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT IGNORE)")
+    
+        self.validate_identity("CREATE TABLE over (x, y)")
+        self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR FAIL INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity(
+            "INSERT INTO tbl (x, y) SELECT 1, 'a' WHERE TRUE ON CONFLICT(x, LOWER(y)) DO UPDATE SET y = excluded.y"
+        )
+>       self.validate_identity(
+            "INSERT INTO tbl (x, y) VALUES (1, 'a') ON CONFLICT(x, LOWER(y) COLLATE NOCASE ASC, y DESC) DO NOTHING"
+        )
+
+tests/dialects/test_sqlite.py:301: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2045: in parse
+    return self._parse(
+sqlglot/parser.py:2165: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2132: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2284: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1097: in <lambda>
+    TokenType.INSERT: lambda self: self._parse_insert(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3512: in _parse_insert
+    conflict=self._parse_on_conflict(),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3548: in _parse_on_conflict
+    self._match_r_paren()
+sqlglot/parser.py:9414: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.sqlite.SQLiteParser object at 0x10735f7d0>
+message = 'Expecting )'
+token = <Token token_type: TokenType.ASC, text: ASC, line: 1, col: 81, start: 78, end: 80, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 81.
+E             INSERT INTO tbl (x, y) VALUES (1, 'a') ON CONFLICT(x, LOWER(y) COLLATE NOCASE [4mASC[0m, y DESC) DO NOTHING
+
+sqlglot/parser.py:2002: ParseError
+----------------------------- Captured stdout call -----------------------------
+uuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_sqlite.py::TestSQLite::test_ddl - sqlglot.errors.P...
+1 failed, 36 passed, 446 subtests passed in 0.82s

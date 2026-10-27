@@ -1,0 +1,30 @@
+diff --git a/sqlglot/optimizer/canonicalize.py b/sqlglot/optimizer/canonicalize.py
+index afb58085c..da220fd65 100644
+--- a/sqlglot/optimizer/canonicalize.py
++++ b/sqlglot/optimizer/canonicalize.py
+@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+ 
+ def _coerce_datediff_args(node: exp.DateDiff) -> None:
+     for e in (node.this, node.expression):
+-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
++        if e.type and e.type.this not in exp.DataType.TEMPORAL_TYPES:
+             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
+ 
+ 
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 21d981dbd..eed061468 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1290,6 +1290,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+             'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
+         )
+ 
++        # DATEDIFF arguments without an inferred type are left alone
++        self.assertEqual(
++            optimizer.canonicalize.canonicalize(parse_one("SELECT DATEDIFF(a, b) FROM t")).sql(),
++            "SELECT DATEDIFF(a, b) FROM t",
++        )
++
+     def test_tpch(self):
+         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
+ 

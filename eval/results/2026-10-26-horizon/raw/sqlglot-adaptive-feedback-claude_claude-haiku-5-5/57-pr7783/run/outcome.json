@@ -1,0 +1,28 @@
+{
+  "task": "Snowflake dialect: the `PATTERN` clause of a staged-file query is dropped when there is no `FILE_FORMAT`:\n\n```python\nsqlglot.parse_one(\"SELECT * FROM @mystage (PATTERN => '.*data-100.*')\", dialect=\"snowflake\").sql(dialect=\"snowflake\")\n# actual:   SELECT * FROM @mystage\n# expected: SELECT * FROM @mystage (PATTERN => '.*data-100.*')\n```\n\n`FILE_FORMAT` and `PATTERN` are independent optional parameters; each must be preserved on its own and together.",
+  "k": 1,
+  "reason": "build (S=0.70)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 41867,
+    "cached": 570224,
+    "out": 5495,
+    "cost": 0.01682074,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

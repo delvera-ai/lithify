@@ -1,0 +1,76 @@
+diff --git a/sqlglot/generators/clickhouse.py b/sqlglot/generators/clickhouse.py
+index eef1a97ad..9a6136945 100644
+--- a/sqlglot/generators/clickhouse.py
++++ b/sqlglot/generators/clickhouse.py
+@@ -584,6 +584,14 @@ class ClickHouseGenerator(generator.Generator):
+ 
+         return f"{create_sql}{comment_sql}"
+ 
++    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
++        separator = expression.args.get("separator")
++        if separator:
++            args = f"({self.sql(expression, 'this')})"
++            return self.func("groupConcat", separator) + args
++
++        return self.func("groupConcat", expression.this)
++
+     def prewhere_sql(self, expression: exp.PreWhere) -> str:
+         this = self.indent(self.sql(expression, "this"))
+         return f"{self.seg('PREWHERE')}{self.sep()}{this}"
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..2ee4a12e9 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -715,6 +715,22 @@ class ClickHouseParser(parser.Parser):
+                 expr = self._parse_window(func)
+             else:
+                 expr = func
++        elif isinstance(func, exp.Anonymous) and func.name == "groupConcat":
++            # groupConcat(<separator>)(<expr>) -> the separator is the parameter, the column the argument
++            params = self._parse_func_params(func)
++            if params and len(params) == 1 and len(func.expressions) == 1:
++                func = self.expression(
++                    exp.GroupConcat(this=params[0], separator=func.expressions[0])
++                )
++                expr = self._parse_window(func)
++            elif params:
++                # e.g. groupConcat(<separator>, <max_size>)(<expr>)
++                func = self.expression(
++                    exp.ParameterizedAgg(
++                        this=func.this, expressions=func.expressions, params=params
++                    )
++                )
++                expr = self._parse_window(func)
+ 
+         return expr
+ 
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..9cca39d6a 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -104,6 +104,10 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")
+         self.validate_identity("SELECT histogram(5)(a)")
+         self.validate_identity("SELECT groupUniqArray(2)(a)")
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        )
++        self.validate_identity("SELECT groupConcat(', ', 10)(a) FROM t")
+         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
+         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
+         self.validate_identity("jaroWinklerSimilarity('hello', 'world')")
+@@ -577,6 +581,14 @@ class TestClickhouse(Validator):
+             read={"duckdb": "SELECT quantile(a, [0.5])"},
+             write={"clickhouse": "SELECT quantiles(0.5)(a)"},
+         )
++        self.validate_all(
++            "SELECT groupConcat(', ')(a)",
++            read={"mysql": "SELECT GROUP_CONCAT(a SEPARATOR ', ')"},
++            write={
++                "clickhouse": "SELECT groupConcat(', ')(a)",
++                "mysql": "SELECT GROUP_CONCAT(a SEPARATOR ', ')",
++            },
++        )
+ 
+         self.validate_identity("SELECT isNaN(x)")
+         self.validate_all(

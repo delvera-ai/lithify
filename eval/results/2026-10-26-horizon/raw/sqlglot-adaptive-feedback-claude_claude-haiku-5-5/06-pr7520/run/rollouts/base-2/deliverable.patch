@@ -1,0 +1,37 @@
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..610b2e7ad 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,6 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
+     }
+ 
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..20648e036 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -34,6 +34,7 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
+         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
+         self.validate_identity(
+@@ -1402,6 +1403,12 @@ COMMENT='客户账户表'"""
+     def test_json_object(self):
+         self.validate_identity("SELECT JSON_OBJECT('id', 87, 'name', 'carrot')")
+ 
++    def test_alter_auto_increment(self):
++        alter = self.parse_one("ALTER TABLE t AUTO_INCREMENT=3000000000")
++        self.assertIsInstance(alter, exp.Alter)
++        self.assertIsInstance(alter.args["actions"][0], exp.AutoIncrementProperty)
++        self.assertEqual(alter.args["actions"][0].this.name, "3000000000")
++
+     def test_is_null(self):
+         self.validate_all(
+             "SELECT ISNULL(x)", write={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}

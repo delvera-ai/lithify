@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 893293ead..3217b5f15 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -480,6 +480,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-232924-optimizer-canonicalize-crashes-w",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 839,
++      "tokens_cached": 118177,
++      "tokens_out": 302,
++      "cost_usd": 0.0298,
++      "wall_s": 5380.8,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/canonicalize.py b/sqlglot/optimizer/canonicalize.py
+index afb58085c..b1ea0db59 100644
+--- a/sqlglot/optimizer/canonicalize.py
++++ b/sqlglot/optimizer/canonicalize.py
+@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+ 
+ def _coerce_datediff_args(node: exp.DateDiff) -> None:
+     for e in (node.this, node.expression):
+-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
++        if e.type and e.type.this not in (*exp.DataType.TEMPORAL_TYPES, exp.DType.UNKNOWN):
+             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
+ 
+ 
+diff --git a/tests/fixtures/optimizer/canonicalize.sql b/tests/fixtures/optimizer/canonicalize.sql
+index 63c248922..96ec556d7 100644
+--- a/tests/fixtures/optimizer/canonicalize.sql
++++ b/tests/fixtures/optimizer/canonicalize.sql
+@@ -101,6 +101,9 @@ DATE_TRUNC('DAY', CAST('2023-01-01' AS DATE));
+ DATEDIFF('2023-01-01', '2023-01-02', DAY);
+ DATEDIFF(CAST('2023-01-01' AS DATETIME), CAST('2023-01-02' AS DATETIME), DAY);
+ 
++DATEDIFF(a, b);
++DATEDIFF("a", "b");
++
+ SELECT "t"."d" > '2023-01-01' AS "d" FROM "temporal" AS "t";
+ SELECT "t"."d" > CAST('2023-01-01' AS DATE) AS "d" FROM "temporal" AS "t";
+ 

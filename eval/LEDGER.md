@@ -19,3 +19,4 @@ Caps: pilot (3B) $25; total $150. Cost is the sum of `usage.cost` from every `ou
 | 2026-10-24 | 3C tenacity static re-run, tasks 16–21 (resumed; stopped at the $65 cap before #741) | 6 tasks | 21.7200 | — | static total 65.51 |
 
 **Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent **$126.77** ($124.77 recorded in `results*.csv` across `eval/results/`, plus $2.00 estimated for the aborted run). Codex runs: $0 (ChatGPT plan; tokens recorded).
+| 2026-10-26/27 | Horizon (sqlglot): A baseline 60, B adaptive 60, C adaptive+feedback 60, dev smoke 1 | 181 tasks | 58.2300 | — | separate $100 budget; see `results/2026-10-26-horizon/REPORT.md` |

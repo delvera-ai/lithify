@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 107ca7bdc..5be311c42 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 0,
++  "consecutive_failures": 1,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -304,6 +304,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-194859-oracle-dialect-json-table-fails",
++      "k": 1,
++      "first_pass": false,
++      "delivered": true,
++      "churn_lines": 47,
++      "executions": 4,
++      "tokens_in": 387431,
++      "tokens_cached": 3644907,
++      "tokens_out": 66523,
++      "cost_usd": 2.9617,
++      "wall_s": 799.9,
++      "always_on_tokens": 185,
++      "stability_after": 0.8683,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..ba16bded4 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7923,7 +7923,7 @@ class Parser:
+         if not self._match_text_seq("NESTED"):
+             this = self._parse_id_var()
+             ordinality = self._match_pair(TokenType.FOR, TokenType.ORDINALITY)
+-            kind = self._parse_types(allow_identifiers=False)
++            kind = self._parse_format_json(self._parse_types(allow_identifiers=False))
+             nested = None
+         else:
+             this = None
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..414a98467 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -558,6 +558,9 @@ MATCH_RECOGNIZE (
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS(doc2 CLOB FORMAT JSON PATH '$.x'))"
++        )
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",

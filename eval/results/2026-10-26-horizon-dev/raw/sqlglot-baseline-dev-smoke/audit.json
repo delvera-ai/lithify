@@ -1,0 +1,14 @@
+{
+  "label": "sqlglot-baseline-dev-smoke",
+  "lithify_commit": "f964993",
+  "run_cost_usd": 0.0279,
+  "invariants": [
+    {
+      "pr": 7441,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}

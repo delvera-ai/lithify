@@ -1,0 +1,19 @@
+{
+  "task_id": "20261027-110302-bigquery-duckdb-bigquery-s-parse",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-110302-bigquery-duckdb-bigquery-s-parse-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions",
+    "skills/sqlglot-time-parsing",
+    "system.md",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 160133,
+    "cached": 1681252,
+    "out": 23991,
+    "cost": 2.0968304,
+    "exec": 0,
+    "roles": 3
+  }
+}

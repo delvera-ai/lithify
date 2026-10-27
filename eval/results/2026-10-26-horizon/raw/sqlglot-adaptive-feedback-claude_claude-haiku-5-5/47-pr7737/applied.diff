@@ -1,0 +1,172 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 146a66437..f596c261d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -720,6 +720,22 @@
+       "always_on_tokens": 2170,
+       "stability_after": 0.8,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261027-105620-optimizer-sqlglot-optimizer-qual",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 61966,
++      "tokens_cached": 966974,
++      "tokens_out": 20157,
++      "cost_usd": 0.0321,
++      "wall_s": 210.6,
++      "always_on_tokens": 2282,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..9231fcb8f 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        unnest_in_progress: frozenset[int] = frozenset(),
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -30,6 +36,8 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        # ids of UNNEST / LATERAL sources whose column types are already being inferred up the stack
++        self._unnest_in_progress: frozenset[int] = unnest_in_progress
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -161,10 +169,14 @@ class Resolver:
+                 # directly select a struct field in a query.
+                 # this handles the case where the unnest is statically defined.
+                 if self.dialect.UNNEST_COLUMN_ONLY and isinstance(source_expr, exp.Unnest):
+-                    if not source_expr.type or source_expr.type.is_type(exp.DType.UNKNOWN):
++                    if (not source_expr.type or source_expr.type.is_type(exp.DType.UNKNOWN)) and (
++                        id(source_expr) not in self._unnest_in_progress
++                    ):
+                         unnest_expr = seq_get(source_expr.expressions, 0)
+                         if isinstance(unnest_expr, exp.Column) and self.scope.parent:
+-                            col_type = self._get_unnest_column_type(unnest_expr, self.scope.parent)
++                            col_type = self._get_unnest_column_type(
++                                unnest_expr, self.scope.parent, source_expr
++                            )
+                             if col_type and col_type.is_type(exp.DType.ARRAY):
+                                 element_types = col_type.expressions
+                                 if element_types:
+@@ -178,8 +190,14 @@ class Resolver:
+                 ):
+                     explode_col = source_expr.this.this
+ 
+-                    if isinstance(explode_col, exp.Column) and source.parent:
+-                        col_type = self._get_unnest_column_type(explode_col, source.parent)
++                    if (
++                        isinstance(explode_col, exp.Column)
++                        and source.parent
++                        and id(source_expr) not in self._unnest_in_progress
++                    ):
++                        col_type = self._get_unnest_column_type(
++                            explode_col, source.parent, source_expr
++                        )
+                         columns.extend(self._struct_field_names(col_type))
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+@@ -360,13 +378,17 @@ class Resolver:
+             else []
+         )
+ 
+-    def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
++    def _get_unnest_column_type(
++        self, column: exp.Column, scope: Scope, unnest_source: exp.Expr
++    ) -> exp.DataType | None:
+         """
+         Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
+ 
+         Args:
+             column: The column expression being unnested/exploded.
+             scope: The scope to resolve the column in.
++            unnest_source: The UNNEST / LATERAL expression that owns `column`. It is excluded from
++                type inference while resolving `column`, since resolving it could otherwise re-enter here.
+ 
+         Returns:
+             The DataType of the column, or None if not found.
+@@ -376,7 +398,12 @@ class Resolver:
+             table_name = column.table
+         else:
+             # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
++            parent_resolver = Resolver(
++                scope,
++                self.schema,
++                self._infer_schema,
++                self._unnest_in_progress | {id(unnest_source)},
++            )
+             table_identifier = parent_resolver.get_table(column)
+             if not table_identifier:
+                 return None
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..bc4139c4d 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -754,6 +754,38 @@ class TestOptimizer(unittest.TestCase):
+         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
+ 
++    def test_qualify_columns__unnest_unqualified_column(self):
++        # resolving the type of an unqualified UNNEST / LATERAL column must not re-enter itself
++        sql = "SELECT x FROM t1 LATERAL VIEW EXPLODE(arr) v AS x"
++        expected = (
++            "SELECT `v`.`x` AS `x` FROM `t1` AS `t1` LATERAL VIEW EXPLODE(`t1`.`arr`) v AS `x`"
++        )
++        self.assertEqual(
++            qualify(
++                parse_one(sql, read="spark"),
++                schema={"t1": {"arr": "array<int>"}},
++                dialect="spark",
++            ).sql("spark"),
++            expected,
++        )
++
++        for dialect, sql in (
++            ("spark", "SELECT x FROM t1 LATERAL VIEW EXPLODE(arr) v AS x"),
++            ("hive", "SELECT x FROM t1 LATERAL VIEW EXPLODE(arr) v AS x"),
++            (
++                "spark",
++                "SELECT x FROM t1 LATERAL VIEW EXPLODE(arr) v AS x LATERAL VIEW EXPLODE(x) w AS y",
++            ),
++            ("bigquery", "SELECT x FROM t1, UNNEST(arr) AS x"),
++        ):
++            with self.subTest(sql):
++                with self.assertRaises(OptimizeError):
++                    qualify(
++                        parse_one(sql, read=dialect),
++                        schema={"other": {"a": "int"}},
++                        dialect=dialect,
++                    )
++
+     def test_pushdown_cte_alias_columns(self):
+         self.check_file(
+             "pushdown_cte_alias_columns",

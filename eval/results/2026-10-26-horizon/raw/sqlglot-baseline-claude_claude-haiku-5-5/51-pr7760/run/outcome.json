@@ -1,0 +1,28 @@
+{
+  "task": "SQLite (and other dialects with upsert): parsing `INSERT ... ON CONFLICT (...)` fails when the conflict target contains a complex expression instead of plain column names, for example a target matching a unique index on `(col_x, lower(col_y))`:\n\n```sql\nINSERT INTO tbl_a (col_x, col_y, col_z)\nSELECT x, y, z FROM src WHERE true\nON CONFLICT (col_x, lower(col_y)) DO UPDATE SET col_z = excluded.col_z\n```\n\n`ON CONFLICT` targets with expressions (and an optional `WHERE` on the target) should parse and round-trip.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 34585,
+    "cached": 513098,
+    "out": 6879,
+    "cost": 0.01548488,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

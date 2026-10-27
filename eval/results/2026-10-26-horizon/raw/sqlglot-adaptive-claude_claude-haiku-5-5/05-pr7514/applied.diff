@@ -1,0 +1,200 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9b109bac6..235e404c3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -64,6 +64,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.8,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-155446-doris-and-starrocks-dialects-bot",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 72242,
++      "tokens_cached": 1402523,
++      "tokens_out": 25429,
++      "cost_usd": 0.0412,
++      "wall_s": 289.9,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/dialect.py b/sqlglot/dialects/dialect.py
+index bbb4515c5..66a2e2b75 100644
+--- a/sqlglot/dialects/dialect.py
++++ b/sqlglot/dialects/dialect.py
+@@ -1613,6 +1613,22 @@ def build_date_delta_with_interval(
+     return _builder
+ 
+ 
++def build_date_delta_with_interval_or_days(
++    expression_class: Type[E],
++    negate: bool = False,
++) -> t.Callable[[BuilderArgs], E | exp.TsOrDsAdd | None]:
++    interval_builder = build_date_delta_with_interval(expression_class)
++
++    def _builder(args: BuilderArgs) -> E | exp.TsOrDsAdd | None:
++        if len(args) != 2 or isinstance(args[1], exp.Interval):
++            return interval_builder(args)
++
++        days = exp.Neg(this=args[1]) if negate else args[1]
++        return exp.TsOrDsAdd(this=args[0], expression=days, unit=exp.Literal.string("DAY"))
++
++    return _builder
++
++
+ def date_trunc_to_time(args: BuilderArgs) -> exp.DateTrunc | exp.TimestampTrunc:
+     unit = seq_get(args, 0)
+     this = seq_get(args, 1)
+@@ -1631,6 +1647,19 @@ def date_add_interval_sql(data_type: str, kind: str) -> t.Callable[[Generator, e
+     return func
+ 
+ 
++def ts_or_ds_add_days_sql(self: Generator, expression: exp.TsOrDsAdd) -> str:
++    if unit_to_str(expression).name.upper() == "DAY":
++        return self.func("DATE_ADD", expression.this, expression.expression)
++
++    return self.sql(
++        exp.DateAdd(
++            this=expression.this,
++            expression=expression.expression,
++            unit=expression.args.get("unit"),
++        )
++    )
++
++
+ def timestamptrunc_sql(
+     func: str = "DATE_TRUNC", zone: bool = False
+ ) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
+diff --git a/sqlglot/generators/doris.py b/sqlglot/generators/doris.py
+index d2137f835..04aa13bbe 100644
+--- a/sqlglot/generators/doris.py
++++ b/sqlglot/generators/doris.py
+@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
+     property_sql,
+     rename_func,
+     time_format,
++    ts_or_ds_add_days_sql,
+     unit_to_str,
+ )
+ from sqlglot.generators.mysql import MySQLGenerator
+@@ -72,7 +73,7 @@ class DorisGenerator(MySQLGenerator):
+         exp.StringToArray: rename_func("SPLIT_BY_STRING"),
+         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
+         exp.TimeStrToDate: rename_func("TO_DATE"),
+-        exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
++        exp.TsOrDsAdd: ts_or_ds_add_days_sql,
+         exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
+         exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+         exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index ef35b920d..d8ac3e7eb 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
+     approx_count_distinct_sql,
+     arrow_json_extract_sql,
+     rename_func,
++    ts_or_ds_add_days_sql,
+     unit_to_str,
+     inline_array_sql,
+     property_sql,
+@@ -95,6 +96,7 @@ class StarRocksGenerator(MySQLGenerator):
+         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
+         exp.DateDiff: lambda self, e: self.func("DATE_DIFF", unit_to_str(e), e.this, e.expression),
+         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
++        exp.TsOrDsAdd: ts_or_ds_add_days_sql,
+         exp.Flatten: rename_func("ARRAY_FLATTEN"),
+         exp.JSONExtractScalar: arrow_json_extract_sql,
+         exp.JSONExtract: arrow_json_extract_sql,
+diff --git a/sqlglot/parsers/doris.py b/sqlglot/parsers/doris.py
+index 215731e13..b1ed32389 100644
+--- a/sqlglot/parsers/doris.py
++++ b/sqlglot/parsers/doris.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ from sqlglot.tokens import TokenType
+@@ -27,6 +28,8 @@ class DorisParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
+         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate=True),
+         "DATE_TRUNC": _build_date_trunc,
+         "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
+         "MONTHS_ADD": exp.AddMonths.from_arg_list,
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index 004264297..bc15daf47 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
+-from sqlglot.dialects.dialect import build_timestamp_trunc
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ 
+@@ -10,6 +10,8 @@ from sqlglot.parsers.mysql import MySQLParser
+ class StarRocksParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate=True),
+         "DATE_TRUNC": build_timestamp_trunc,
+         "DATEDIFF": lambda args: exp.DateDiff(
+             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+diff --git a/tests/dialects/test_doris.py b/tests/dialects/test_doris.py
+index a33fed3aa..c8b8ba1a5 100644
+--- a/tests/dialects/test_doris.py
++++ b/tests/dialects/test_doris.py
+@@ -104,6 +104,11 @@ class TestDoris(Validator):
+         self.validate_identity("DATE_TRUNC(event_date, 'DAY')")
+         self.validate_identity("DATE_TRUNC('2010-12-02 19:28:30', 'HOUR')")
+         self.validate_identity("CURRENT_DATE()")
++        self.validate_identity("SELECT DATE_ADD('2025-01-01', 1)")
++        self.validate_all(
++            "SELECT DATE_SUB('2025-01-01', 1)",
++            write={"doris": "SELECT DATE_ADD('2025-01-01', -1)"},
++        )
+ 
+     def test_regex(self):
+         self.validate_all(
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index a98801725..80f988bcf 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -141,6 +141,21 @@ class TestStarrocks(Validator):
+         self.validate_identity(
+             "SELECT DATE_DIFF('MINUTE', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
+         )
++        self.validate_identity("SELECT DATE_ADD('2025-01-01', 1)")
++        self.validate_all(
++            "SELECT DATE_SUB('2025-01-01', 1)",
++            write={"starrocks": "SELECT DATE_ADD('2025-01-01', -1)"},
++        )
++        self.validate_all(
++            "DATE_ADD(x, 2)",
++            read={"hive": "DATE_ADD(x, 2)"},
++            write={"starrocks": "DATE_ADD(x, 2)"},
++        )
++        self.validate_all(
++            "DATE_ADD(x, INTERVAL 2 HOUR)",
++            read={"redshift": "DATE_ADD('hour', 2, x)"},
++            write={"starrocks": "DATE_ADD(x, INTERVAL '2' HOUR)"},
++        )
+ 
+     def test_regex(self):
+         self.validate_all(

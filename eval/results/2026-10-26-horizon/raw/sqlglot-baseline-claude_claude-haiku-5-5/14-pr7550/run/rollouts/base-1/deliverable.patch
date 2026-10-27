@@ -1,0 +1,52 @@
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..f87e30ee3 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -199,6 +199,11 @@ def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Column]:
+     return itertools.chain(name_columns, value_columns)
+ 
+ 
++def _is_unpivot_output_column(column: exp.Column) -> bool:
++    pivot = column.find_ancestor(exp.Pivot)
++    return bool(pivot and pivot.unpivot and any(column is c for c in _unpivot_columns(pivot)))
++
++
+ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
+     """
+     Remove table column aliases.
+@@ -617,6 +622,9 @@ def _qualify_columns(
+                 raise OptimizeError(f"Unknown column: {column_name}")
+ 
+         if not column_table:
++            if _is_unpivot_output_column(column):
++                continue
++
+             if scope.pivots and not column.find_ancestor(exp.Pivot):
+                 # If the column is under the Pivot expression, we need to qualify it
+                 # using the name of the pivoted source instead of the pivot's alias
+@@ -645,7 +653,11 @@ def _qualify_columns(
+ 
+     for pivot in scope.pivots:
+         for column in pivot.find_all(exp.Column):
+-            if not column.table and column.name in resolver.all_columns:
++            if (
++                not column.table
++                and column.name in resolver.all_columns
++                and not _is_unpivot_output_column(column)
++            ):
+                 table = resolver.get_table(column.name)
+                 if table:
+                     column.set("table", table)
+diff --git a/tests/fixtures/optimizer/qualify_columns.sql b/tests/fixtures/optimizer/qualify_columns.sql
+index 39c3470e1..c01795c66 100644
+--- a/tests/fixtures/optimizer/qualify_columns.sql
++++ b/tests/fixtures/optimizer/qualify_columns.sql
+@@ -1051,3 +1051,8 @@ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y A
+ # title: ANTI + normal joins reinclude the table on scope
+ SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
+ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
++
++# title: unpivot output names of a CTE source are not qualified
++# execute: false
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT * FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS c;

@@ -1,0 +1,34 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 12f29dc2a..0dcc42c92 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 0,
++  "consecutive_failures": 1,
+   "history": [
+     {
+       "task_id": "20261026-132437-oracle-dialect-support-the-optio",
+@@ -704,6 +704,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-161006-lineage-sqlglot-lineage-lineage",
++      "k": 0,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 1222,
++      "tokens_cached": 77138,
++      "tokens_out": 62,
++      "cost_usd": 0.045,
++      "wall_s": 5306.4,
++      "always_on_tokens": 185,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }

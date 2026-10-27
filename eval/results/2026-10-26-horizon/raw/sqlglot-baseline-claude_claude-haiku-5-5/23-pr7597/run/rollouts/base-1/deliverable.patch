@@ -1,0 +1,29 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 5a4ed118b..1446c705c 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -4748,6 +4748,9 @@ class Parser:
+         if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):
+             if not subquery.args.get("pivots"):
+                 subquery.set("pivots", self._parse_pivots())
++            if joins:
++                for join in self._parse_joins():
++                    subquery.append("joins", join)
+             return subquery
+ 
+         bracket = parse_bracket and self._parse_bracket(None)
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 66a872e27..71af5e638 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1517,6 +1517,10 @@ class TestDuckDB(Validator):
+         )
+         self.validate_identity("SELECT GREATEST(1.0, 2.5, NULL, 3.7)")
+         self.validate_identity("FROM t1, t2 SELECT *", "SELECT * FROM t1, t2")
++        self.validate_identity(
++            "FROM (FROM tbl_1) t1 POSITIONAL JOIN (FROM tbl_2) t2 SELECT t1.x AS x1, t2.x AS x2",
++            "SELECT t1.x AS x1, t2.x AS x2 FROM (SELECT * FROM tbl_1) AS t1 POSITIONAL JOIN (SELECT * FROM tbl_2) AS t2",
++        )
+         self.validate_identity("ROUND(2.256, 1)")
+ 
+         # TODO: This is incorrect AST, DATE_PART creates a STRUCT of values but it's stored in 'year' arg

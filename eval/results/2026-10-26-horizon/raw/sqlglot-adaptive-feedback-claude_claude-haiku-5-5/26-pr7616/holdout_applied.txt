@@ -1,0 +1,31 @@
+exit 1
+.......F.................                                             [100%]
+=================================== FAILURES ===================================
+____________________________ TestPostgres.test_ddl _____________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_ddl>
+
+    def test_ddl(self):
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
+            exp.DataType
+        )
+    
+        create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+        self.assertTrue(create_type.expression.assert_is(exp.DataType).is_type(exp.DType.ENUM))
+    
+        self.validate_identity("CREATE TYPE mood AS ENUM ()").assert_is(exp.Create)
+    
+        create_type = self.validate_identity(
+            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
+        ).assert_is(exp.Create)
+>       create_type.expression.assert_is(exp.Schema)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'assert_is'
+
+tests/dialects/test_postgres.py:1103: AttributeError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_ddl - AttributeErr...
+1 failed, 24 passed, 363 subtests passed in 0.39s

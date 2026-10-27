@@ -1,0 +1,28 @@
+{
+  "task": "MySQL dialect: `ALTER TABLE ... MODIFY [COLUMN] col_name column_definition [FIRST | AFTER col_name]` redefines the whole column. It has different semantics from `ALTER [COLUMN] col_name {SET DEFAULT ... | DROP DEFAULT | SET {VISIBLE|INVISIBLE}}`, but sqlglot treats it as an alter-column. Support `MODIFY COLUMN` with a full column definition and optional position, round-tripping for example:\n\n```sql\nALTER TABLE t MODIFY COLUMN c INT NOT NULL DEFAULT 5\nALTER TABLE t MODIFY COLUMN c VARCHAR(50) NOT NULL DEFAULT 'foo'\nALTER TABLE t MODIFY COLUMN c INT COMMENT 'hi'\nALTER TABLE t MODIFY COLUMN c INT FIRST\n```",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 53412,
+    "cached": 878196,
+    "out": 15307,
+    "cost": 0.027114460000000007,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

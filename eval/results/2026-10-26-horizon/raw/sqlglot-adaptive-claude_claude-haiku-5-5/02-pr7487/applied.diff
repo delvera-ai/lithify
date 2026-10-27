@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 99408a43d..729c7e146 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -16,6 +16,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.2,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-154113-clickhouse-dialect-the-parametri",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 121235,
++      "tokens_cached": 2339582,
++      "tokens_out": 33452,
++      "cost_usd": 0.2931,
++      "wall_s": 284.8,
++      "always_on_tokens": 185,
++      "stability_after": 0.4,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..d9fda1ea4 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -139,6 +139,7 @@ AGG_FUNCTIONS = {
+     "groupBitmapOr",
+     "groupBitmapXor",
+     "sumWithOverflow",
++    "groupConcat",
+     "sumMap",
+     "minMap",
+     "maxMap",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..31e1e4b9e 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -99,6 +99,10 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
+         self.validate_identity("SELECT quantilesIf(0.5)(a, a > 1) AS x FROM t")
+         self.validate_identity("SELECT quantileState(0.5)(a) AS x FROM t")
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        )
++        self.validate_identity("SELECT groupConcat(', ', 10)(part_name) AS x FROM t")
+         self.validate_identity("SELECT deltaSumMerge(a) AS x FROM t")
+         self.validate_identity("SELECT quantiles(0.1, 0.2, 0.3)(a)")
+         self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")

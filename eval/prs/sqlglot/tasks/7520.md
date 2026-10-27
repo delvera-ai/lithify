@@ -1,0 +1,1 @@
+MySQL dialect: MySQL allows setting the auto-increment counter of an existing table with `ALTER TABLE t AUTO_INCREMENT=3000000000`. sqlglot already parses `AUTO_INCREMENT` as a table property in `CREATE TABLE`. Support it in `ALTER TABLE` too, parsed as the same auto-increment property and round-tripping.

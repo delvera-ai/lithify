@@ -1,0 +1,80 @@
+exit 1
+.......F.................                                             [100%]
+=================================== FAILURES ===================================
+____________________________ TestPostgres.test_ddl _____________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_ddl>
+
+    def test_ddl(self):
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
+            exp.DataType
+        )
+    
+        create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+>       self.assertTrue(create_type.expression.assert_is(exp.DataType).is_type(exp.DType.ENUM))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/dialects/test_postgres.py:1096: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sqlglot/expressions/core.py:1277: in assert_is
+    raise AssertionError(f"{self} is not {type_}.")
+                           ^^^^^^
+sqlglot/expressions/core.py:1212: in __str__
+    return self.sql()
+           ^^^^^^^^^^
+sqlglot/expressions/core.py:1225: in sql
+    return Dialect.get_or_raise(dialect).generate(self, copy=copy, **opts)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1129: in generate
+    return self.generator(**opts).generate(expression, copy=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/generator.py:930: in generate
+    sql = self.sql(expression).strip()
+          ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.generator.Generator object at 0x107302a80>
+expression = EnumType(
+  expressions=[
+    Literal(this='sad', is_string=True),
+    Literal(this='ok', is_string=True),
+    Literal(this='happy', is_string=True)])
+key = None, comment = True
+
+    def sql(
+        self,
+        expression: str | exp.Expr | None,
+        key: str | None = None,
+        comment: bool = True,
+    ) -> str:
+        if not expression:
+            return ""
+    
+        if isinstance(expression, str):
+            return expression
+    
+        if key:
+            value = expression.args.get(key)
+            if value:
+                return self.sql(value)
+            return ""
+    
+        handler = self._dispatch.get(expression.__class__)
+    
+        if handler:
+            sql = handler(self, expression)
+        elif isinstance(expression, exp.Func):
+            sql = self.function_fallback_sql(expression)
+        elif isinstance(expression, exp.Property):
+            sql = self.property_sql(expression)
+        else:
+>           raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+E           ValueError: Unsupported expression type EnumType
+
+sqlglot/generator.py:1100: ValueError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_ddl - ValueError: ...
+1 failed, 24 passed, 363 subtests passed in 0.47s

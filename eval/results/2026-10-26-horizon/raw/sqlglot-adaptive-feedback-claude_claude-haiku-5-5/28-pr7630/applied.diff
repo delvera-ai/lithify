@@ -1,0 +1,135 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4b3cc6228..4ed51a3d4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -416,6 +416,22 @@
+       "always_on_tokens": 1629,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-043713-parser-collate-is-not-handled-in",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 61289,
++      "tokens_cached": 1218729,
++      "tokens_out": 14911,
++      "cost_usd": 0.0319,
++      "wall_s": 3814.6,
++      "always_on_tokens": 1629,
++      "stability_after": 0.7,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/datatypes.py b/sqlglot/expressions/datatypes.py
+index afe468e44..aeb5ec61b 100644
+--- a/sqlglot/expressions/datatypes.py
++++ b/sqlglot/expressions/datatypes.py
+@@ -178,6 +178,7 @@ class DataType(Expression):
+         "values": False,
+         "kind": False,
+         "nullable": False,
++        "collate": False,
+     }
+ 
+     Type: t.ClassVar[Type[DType]] = DType
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd0ec288b..e47b24bf8 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1738,6 +1738,10 @@ class Generator:
+         ):
+             type_sql = f"{type_sql} WITH TIME ZONE"
+ 
++        collate = self.sql(expression, "collate")
++        if collate:
++            type_sql = f"{type_sql} COLLATE {collate}"
++
+         return type_sql
+ 
+     def directory_sql(self, expression: exp.Directory) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 1e96f9216..7ebb37600 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6202,8 +6202,12 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             elif nested:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
+-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                    lambda: self._parse_type_collate(
++                        self._parse_types(
++                            check_func=check_func,
++                            schema=schema,
++                            allow_identifiers=allow_identifiers,
++                        )
+                     )
+                 )
+                 if type_token == TokenType.NULLABLE and len(expressions) == 1:
+@@ -6254,8 +6258,12 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             else:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
+-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                    lambda: self._parse_type_collate(
++                        self._parse_types(
++                            check_func=check_func,
++                            schema=schema,
++                            allow_identifiers=allow_identifiers,
++                        )
+                     )
+                 )
+ 
+@@ -6378,6 +6386,11 @@ class Parser:
+ 
+         return this
+ 
++    def _parse_type_collate(self, this: exp.Expr | None) -> exp.Expr | None:
++        if this and self._match(TokenType.COLLATE):
++            this.set("collate", self._parse_identifier() or self._parse_column())
++        return this
++
+     def _parse_json_type_arg(self) -> exp.Expr | None:
+         """Parse a single argument to ClickHouse's JSON type."""
+ 
+@@ -7696,7 +7709,7 @@ class Parser:
+             self.raise_error("Expected AS after CAST")
+ 
+         fmt = None
+-        to = self._parse_types()
++        to = self._parse_type_collate(self._parse_types())
+ 
+         default = None
+         if self._match(TokenType.DEFAULT):
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index fabf9a6cc..f46288594 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -103,6 +103,8 @@ class TestBigQuery(Validator):
+         self.validate_identity("CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END")
+         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
+         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
++        self.validate_identity("CREATE TABLE x (y ARRAY<STRING COLLATE 'und:ci'>)")
++        self.validate_identity("SELECT CAST(x AS ARRAY<STRING COLLATE 'und:ci'>)")
+         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
+         self.validate_identity("FOO(values)")
+         self.validate_identity("STRUCT(values AS value)")
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index cfb5b8ede..00b8f85e6 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1125,6 +1125,8 @@ FROM json_data, field_ids""",
+         self.validate_identity('ALTER INDEX "IX_Ratings_Column1" RENAME TO "IX_Ratings_Column2"')
+         self.validate_identity('CREATE TABLE x (a TEXT COLLATE "de_DE")')
+         self.validate_identity('CREATE TABLE x (a TEXT COLLATE pg_catalog."default")')
++        self.validate_identity('SELECT CAST(x AS VARCHAR(10) COLLATE "C")')
++        self.validate_identity('SELECT CAST(x AS STRUCT<a TEXT COLLATE "C">)')
+         self.validate_identity("CREATE TABLE t (col INT[3][5])")
+         self.validate_identity("CREATE TABLE t (col INT[3])")
+         self.validate_identity("CREATE INDEX IF NOT EXISTS ON t(c)")

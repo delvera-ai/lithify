@@ -1,0 +1,28 @@
+exit 1
+.......F.................                                             [100%]
+=================================== FAILURES ===================================
+____________________________ TestPostgres.test_ddl _____________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_ddl>
+
+    def test_ddl(self):
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
+            exp.DataType
+        )
+    
+>       create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+
+tests/dialects/test_postgres.py:1093: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')" != "CREATE TYPE mood AS ENUM('sad', 'ok', 'happy')"
+E   - CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')
+E   ?                         -
+E   + CREATE TYPE mood AS ENUM('sad', 'ok', 'happy')
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_ddl - AssertionErr...
+1 failed, 24 passed, 363 subtests passed in 0.41s

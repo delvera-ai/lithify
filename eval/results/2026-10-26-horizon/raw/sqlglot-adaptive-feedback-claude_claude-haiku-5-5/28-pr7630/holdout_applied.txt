@@ -1,0 +1,15 @@
+exit 1
+.............................................. [ 69%]
+.................. [ 96%]
+..                                                               [100%]
+=================================== FAILURES ===================================
+__ TestSpark.test_spark [postgres -> SELECT CAST('a' AS STRING COLLATE foo)] ___
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT CAST('a' AS STRING)" != "SELECT CAST('a' AS STRING COLLATE foo)"
+E   - SELECT CAST('a' AS STRING)
+E   + SELECT CAST('a' AS STRING COLLATE foo)
+E   ?                          ++++++++++++
+=========================== short test summary info ============================
+SUBFAILED[postgres -> SELECT CAST('a' AS STRING COLLATE foo)] tests/dialects/test_spark.py::TestSpark::test_spark
+1 failed, 66 passed, 879 subtests passed in 1.19s

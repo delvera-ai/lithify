@@ -1,0 +1,28 @@
+{
+  "task": "Snowflake dialect: in `CREATE` statements Snowflake accepts `KEY = VALUE` properties both after and **before** the column definitions:\n\n```sql\nCREATE TABLE t CHANGE_TRACKING=TRUE (id INT);\nCREATE TABLE t (id INT) CHANGE_TRACKING=TRUE;\n```\n\nThe second form works; the first fails to parse. Support properties before the column definitions.",
+  "k": 1,
+  "reason": "build (S=0.60)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 59198,
+    "cached": 1273908,
+    "out": 13819,
+    "cost": 0.031483779999999996,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

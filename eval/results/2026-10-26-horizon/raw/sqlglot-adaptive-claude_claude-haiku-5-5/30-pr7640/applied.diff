@@ -1,0 +1,62 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8f158bcc5..0bd88ce94 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -448,6 +448,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 0.8683,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-212813-sqlite-and-other-dialects-a-wind",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 58611,
++      "tokens_cached": 1782319,
++      "tokens_out": 19258,
++      "cost_usd": 0.0392,
++      "wall_s": 4377.7,
++      "always_on_tokens": 369,
++      "stability_after": 0.8683,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..d7e73f8b7 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8312,6 +8312,16 @@ class Parser:
+         if self._can_parse_limit_or_offset():
+             return this
+ 
++        # A WINDOW clause can directly follow a FROM-less projection, e.g. SELECT 1 WINDOW w AS (...)
++        if self._match(TokenType.WINDOW, advance=False):
++            name_end = seq_get(self._tokens, self._index + 2)
++            if (
++                self._next.token_type in self.ID_VAR_TOKENS
++                and name_end
++                and name_end.token_type == TokenType.ALIAS
++            ):
++                return this
++
+         any_token = self._match(TokenType.ALIAS)
+         comments = self._prev_comments
+ 
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..a1e3c6b3d 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -378,3 +378,9 @@ class TestSQLite(Validator):
+             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view BEGIN INSERT INTO employees (id, name, department) VALUES (NEW.id, NEW.name, NEW.department) END",
+             check_command_warning=True,
+         )
++
++    def test_window_without_from(self):
++        self.validate_identity(
++            "SELECT 1 WINDOW a AS (PARTITION BY fake_column)",
++        )
++        self.validate_identity("SELECT x AS window FROM t")

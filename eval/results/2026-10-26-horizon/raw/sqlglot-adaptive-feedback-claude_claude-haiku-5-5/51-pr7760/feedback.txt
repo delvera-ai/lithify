@@ -1,0 +1,19 @@
+{
+  "task_id": "20261027-111553-sqlite-and-other-dialects-with-u",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-111553-sqlite-and-other-dialects-with-u-feedback",
+  "components": [
+    "skills/sqlglot-clause-element-lists",
+    "skills/sqlglot-dialect-functions",
+    "skills/sqlglot-upsert-on-conflict",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 185678,
+    "cached": 2382083,
+    "out": 28778,
+    "cost": 2.5370326,
+    "exec": 0,
+    "roles": 3
+  }
+}

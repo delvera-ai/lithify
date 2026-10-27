@@ -1,0 +1,28 @@
+{
+  "task": "MySQL dialect: multi-table `UPDATE` fails to parse:\n\n```sql\nUPDATE authors, books\nSET authors.deleted_at = now(), books.deleted_at = now()\n-- ParseError: Invalid expression / Unexpected token. Line 5, Col: 9.\n```\n\nThe single-table form works. Support MySQL's joined-table `UPDATE` syntax (comma-separated tables and explicit joins) so it parses and round-trips.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 58559,
+    "cached": 927317,
+    "out": 21853,
+    "cost": 0.03190786999999999,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,37 @@
+exit 1
+............................................            [100%]
+=================================== FAILURES ===================================
+____ TestDuckDB.test_duckdb [SELECT JSON_ARRAY('a', 'b', 'c') -> snowflake] ____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')" != "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))"
+E   - SELECT ARRAY_CONSTRUCT('a', 'b', 'c')
+E   + SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))
+E   ?        +++++++++++                              +
+____ TestDuckDB.test_duckdb [SELECT JSON_ARRAY(NULL, 'a', 1) -> snowflake] _____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT ARRAY_CONSTRUCT(NULL, 'a', 1)" != "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL, 'a', 1))"
+E   - SELECT ARRAY_CONSTRUCT(NULL, 'a', 1)
+E   + SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL, 'a', 1))
+E   ?        +++++++++++                             +
+________ TestDuckDB.test_duckdb [SELECT JSON_ARRAY(NULL) -> snowflake] _________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT ARRAY_CONSTRUCT(NULL)' != 'SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL))'
+E   - SELECT ARRAY_CONSTRUCT(NULL)
+E   + SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL))
+E   ?        +++++++++++                     +
+__________ TestDuckDB.test_duckdb [SELECT JSON_ARRAY() -> snowflake] ___________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT ARRAY_CONSTRUCT()' != 'SELECT TO_VARIANT(ARRAY_CONSTRUCT())'
+E   - SELECT ARRAY_CONSTRUCT()
+E   + SELECT TO_VARIANT(ARRAY_CONSTRUCT())
+E   ?        +++++++++++                 +
+=========================== short test summary info ============================
+SUBFAILED[SELECT JSON_ARRAY('a', 'b', 'c') -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+SUBFAILED[SELECT JSON_ARRAY(NULL, 'a', 1) -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+SUBFAILED[SELECT JSON_ARRAY(NULL) -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+SUBFAILED[SELECT JSON_ARRAY() -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+4 failed, 44 passed, 589 subtests passed in 0.57s

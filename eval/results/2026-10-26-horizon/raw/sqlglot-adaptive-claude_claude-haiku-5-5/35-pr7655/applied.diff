@@ -1,0 +1,111 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 01008f241..6fb6f369a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -528,6 +528,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-032358-postgres-dialect-support-the-pos",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 1096,
++      "tokens_cached": 152024,
++      "tokens_out": 270,
++      "cost_usd": 0.0474,
++      "wall_s": 5374.9,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index eb9d6b8af..253ec24a2 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -74,6 +74,7 @@ class Postgres(Dialect):
+             "@@": TokenType.DAT,
+             "@>": TokenType.AT_GT,
+             "<@": TokenType.LT_AT,
++            "<<->>": TokenType.DLR_ARROW,
+             "?&": TokenType.QMARK_AMP,
+             "?|": TokenType.QMARK_PIPE,
+             "#-": TokenType.HASH_DASH,
+diff --git a/sqlglot/expressions/core.py b/sqlglot/expressions/core.py
+index c94c17509..54a0607cf 100644
+--- a/sqlglot/expressions/core.py
++++ b/sqlglot/expressions/core.py
+@@ -2118,6 +2118,10 @@ class Distance(Expression, Binary):
+     pass
+ 
+ 
++class Distance3D(Expression, Binary):
++    pass
++
++
+ class Escape(Expression, Binary):
+     pass
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 06a00e069..a8de74e77 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4222,6 +4222,9 @@ class Generator:
+     def distance_sql(self, expression: exp.Distance) -> str:
+         return self.binary(expression, "<->")
+ 
++    def distance3d_sql(self, expression: exp.Distance3D) -> str:
++        return self.binary(expression, "<<->>")
++
+     def dot_sql(self, expression: exp.Dot) -> str:
+         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
+ 
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 81562be9c..2f629647f 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -86,6 +86,11 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
+ class PostgresParser(parser.Parser):
+     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
+ 
++    FACTOR = {
++        **parser.Parser.FACTOR,
++        TokenType.DLR_ARROW: exp.Distance3D,
++    }
++
+     PROPERTY_PARSERS = {
+         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "INPUT"},
+         "SET": lambda self: self.expression(exp.SetConfigProperty(this=self._parse_set())),
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8ca6ee801..356c7f3ed 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -62,6 +62,7 @@ class TokenType(IntEnum):
+     HASH_ARROW = auto()
+     DHASH_ARROW = auto()
+     LR_ARROW = auto()
++    DLR_ARROW = auto()
+     DAT = auto()
+     LT_AT = auto()
+     AT_GT = auto()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index e3fe19046..4a3c3592d 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -370,6 +370,10 @@ class TestPostgres(Validator):
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) v1, LATERAL VERTICES(p2.poly) v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) AS v1, LATERAL VERTICES(p2.poly) AS v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",
+         )
++        self.validate_identity("SELECT a <<->> b FROM t")
++        self.validate_identity(
++            "SELECT id FROM buildings WHERE (geom <<->> ST_POINT(1, 2, 3)) < 10 ORDER BY geom <<->> other_geom",
++        )
+         self.validate_identity(
+             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL",
+             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",

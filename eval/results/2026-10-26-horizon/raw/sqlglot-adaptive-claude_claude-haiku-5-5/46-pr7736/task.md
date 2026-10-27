@@ -1,0 +1,1 @@
+Lineage: further improve `lineage()` support for `UNPIVOT` (a follow-up to the initial UNPIVOT lineage support): lineage through `UNPIVOT` should be correct in more query shapes, including the name and value columns and the columns that pass through the unpivot unchanged.

@@ -1,0 +1,51 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0ac16043e..b53dc9f65 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -80,6 +80,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-134041-mysql-dialect-mysql-allows-setti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 35927,
++      "tokens_cached": 449606,
++      "tokens_out": 5663,
++      "cost_usd": 0.0145,
++      "wall_s": 153.1,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..610b2e7ad 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,6 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
+     }
+ 
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..4b2fde2ad 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -34,6 +34,7 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
+         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
+         self.validate_identity(

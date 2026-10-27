@@ -1,0 +1,2 @@
+- The project's checks run with `<work>/env-sqlglot/bin/python -m pytest -q -p no:cacheprovider --color=no`.
+- Layout (AGENTS.md is stale on this): AST node classes live in the package `sqlglot/expressions/` (e.g. `json.py`, `query.py`), not `expressions.py`. Base parsing/generation is `sqlglot/parser.py` / `sqlglot/generator.py`; per-dialect overrides are `sqlglot/parsers/<dialect>.py` and `sqlglot/generators/<dialect>.py`, wired up in `sqlglot/dialects/<dialect>.py`. Dialect tests: `tests/dialects/test_<dialect>.py`.

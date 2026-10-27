@@ -1,0 +1,16 @@
+{
+  "task_id": "20261026-160035-transpiling-duckdb-s-json-array",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-160035-transpiling-duckdb-s-json-array-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 150425,
+    "cached": 1570899,
+    "out": 19083,
+    "cost": 1.8989598,
+    "exec": 0,
+    "roles": 3
+  }
+}

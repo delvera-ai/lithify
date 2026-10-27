@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9d46f1352..910396902 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -672,6 +672,22 @@
+       "always_on_tokens": 2170,
+       "stability_after": 0.8,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-103734-clickhouse-dialect-the-file-tabl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 45530,
++      "tokens_cached": 857340,
++      "tokens_out": 7596,
++      "cost_usd": 0.0215,
++      "wall_s": 165.3,
++      "always_on_tokens": 2170,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index efdebd18d..ea21db556 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -316,6 +316,7 @@ class ClickHouseParser(parser.Parser):
+     FUNC_TOKENS = {
+         *parser.Parser.FUNC_TOKENS,
+         TokenType.AND,
++        TokenType.FILE,
+         TokenType.OR,
+         TokenType.SET,
+     }
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..74e464545 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -87,6 +87,10 @@ class TestClickhouse(Validator):
+         self.validate_identity("WITH final AS (SELECT 1) SELECT * FROM final")
+         self.validate_identity("SELECT * FROM x FINAL")
+         self.validate_identity("SELECT * FROM x AS y FINAL")
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
++        self.validate_identity("SELECT * FROM file('a', Parquet) AS t")
+         self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")
+         self.validate_identity("CAST((1, 2) AS Tuple(a Int8, b Int16))")
+         self.validate_identity("SELECT * FROM foo LEFT ANY JOIN bla")

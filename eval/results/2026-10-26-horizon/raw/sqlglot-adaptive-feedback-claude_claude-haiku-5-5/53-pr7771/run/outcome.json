@@ -1,0 +1,28 @@
+{
+  "task": "Druid dialect: the `RETURNING <type>` clause of `JSON_VALUE` is not supported:\n\n```python\nsqlglot.parse_one(\"SELECT JSON_VALUE(x, '$.a' RETURNING BIGINT) FROM t\", dialect=\"druid\")\n# ParseError: Expecting ). Line 1, Col: 36.\n```\n\nIt should parse and round-trip unchanged in Druid (as it already does for MySQL, Trino and Exasol).",
+  "k": 1,
+  "reason": "build (S=0.70)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 70058,
+    "cached": 1560843,
+    "out": 22003,
+    "cost": 0.052457929999999986,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

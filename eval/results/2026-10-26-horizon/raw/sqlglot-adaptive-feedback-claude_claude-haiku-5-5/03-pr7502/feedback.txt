@@ -1,0 +1,17 @@
+{
+  "task_id": "20261026-155133-parser-add-a-safeguard-against-p",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-155133-parser-add-a-safeguard-against-p-feedback",
+  "components": [
+    "skills/sqlglot-parser-options",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 130250,
+    "cached": 946198,
+    "out": 17911,
+    "cost": 1.5892516,
+    "exec": 0,
+    "roles": 3
+  }
+}

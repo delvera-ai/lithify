@@ -1,0 +1,63 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 42f98dec9..4d93998a0 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6679,7 +6679,9 @@ class Parser:
+                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
+                     field = self._parse_column_ops(field)
+             else:
+-                field = self._parse_field(any_token=True, anonymous_func=True)
++                field = self._parse_field(
++                    any_token=True, anonymous_func=True, optional_parens=False
++                )
+ 
+             # Function calls can be qualified, e.g., x.y.FOO()
+             # This converts the final AST to a series of Dots leading to the function call
+@@ -6781,15 +6783,18 @@ class Parser:
+         any_token: bool = False,
+         tokens: t.Collection[TokenType] | None = None,
+         anonymous_func: bool = False,
++        optional_parens: bool = True,
+     ) -> exp.Expr | None:
+         if anonymous_func:
+             field = (
+-                self._parse_function(anonymous=anonymous_func, any_token=any_token)
++                self._parse_function(
++                    anonymous=anonymous_func, optional_parens=optional_parens, any_token=any_token
++                )
+                 or self._parse_primary()
+             )
+         else:
+             field = self._parse_primary() or self._parse_function(
+-                anonymous=anonymous_func, any_token=any_token
++                anonymous=anonymous_func, optional_parens=optional_parens, any_token=any_token
+             )
+         return field or self._parse_id_var(any_token=any_token, tokens=tokens)
+ 
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index c13ad3f84..a04558d6e 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -1045,6 +1045,22 @@ class TestParser(unittest.TestCase):
+         assert not any(isinstance(n, exp.Column) for n in ast.walk())
+         assert len(list(ast.find_all(exp.Dot))) == 7
+ 
++    def test_dotted_no_paren_function_names_are_identifiers(self):
++        for column_sql in (
++            "mytable.current_user",
++            "mytable.current_date",
++            "db.mytable.current_user",
++        ):
++            with self.subTest(column_sql=column_sql):
++                ast = parse_one(f"SELECT {column_sql} FROM mytable")
++                self.assertIsInstance(ast.selects[0], exp.Column)
++                self.assertEqual(ast.sql(), f"SELECT {column_sql} FROM mytable")
++
++        self.assertIsInstance(
++            parse_one("SELECT mytable.current_user() FROM mytable").selects[0], exp.Dot
++        )
++        self.assertIsInstance(parse_one("SELECT current_user FROM t").selects[0], exp.CurrentUser)
++
+     def test_pivot_missing_agg_func(self):
+         with self.assertRaises(ParseError) as ctx:
+             parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")

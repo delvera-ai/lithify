@@ -1,0 +1,38 @@
+exit 1
+.................. [ 17%]
+....................................................................................                                  [100%]
+=================================== FAILURES ===================================
+_ TestBigQuery.test_bigquery [SELECT PARSE_DATETIME('%F %T', '2023-01-15 14:30:00') -> duckdb] _
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')" != "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' ||[17 chars]%S')"
+E   - SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')
+E   + SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')
+E   ?                 +++++++++++                       +++++++++
+_ TestDuckDB.test_time [bigquery -> SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')" != "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' ||[17 chars]%S')"
+E   - SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')
+E   + SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')
+E   ?                 +++++++++++                       +++++++++
+_ TestDuckDB.test_time [bigquery -> SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y ' || '%a %b %-d %I:%M:%S %Y')] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT STRPTIME('Thu Dec 25 07:30:00 2008', '%a %b %-d %I:%M:%S %Y')" != "SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y[26 chars]%Y')"
+E   - SELECT STRPTIME('Thu Dec 25 07:30:00 2008', '%a %b %-d %I:%M:%S %Y')
+E   + SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y ' || '%a %b %-d %I:%M:%S %Y')
+E   ?                  +++++++++++                           +++++++++
+_ TestDuckDB.test_time [bigquery -> SELECT STRPTIME('1970 ' || '15:30:00.123456', '%Y ' || '%H:%M:%S.%f')] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT STRPTIME('15:30:00.123456', '%H:%M:%S.%f')" != "SELECT STRPTIME('1970 ' || '15:30:00.123456', '%Y ' || '%H:%M:%S.%f')"
+E   - SELECT STRPTIME('15:30:00.123456', '%H:%M:%S.%f')
+E   + SELECT STRPTIME('1970 ' || '15:30:00.123456', '%Y ' || '%H:%M:%S.%f')
+E   ?                 +++++++++++                   +++++++++
+=========================== short test summary info ============================
+SUBFAILED[SELECT PARSE_DATETIME('%F %T', '2023-01-15 14:30:00') -> duckdb] tests/dialects/test_bigquery.py::TestBigQuery::test_bigquery
+SUBFAILED[bigquery -> SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')] tests/dialects/test_duckdb.py::TestDuckDB::test_time
+SUBFAILED[bigquery -> SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y ' || '%a %b %-d %I:%M:%S %Y')] tests/dialects/test_duckdb.py::TestDuckDB::test_time
+SUBFAILED[bigquery -> SELECT STRPTIME('1970 ' || '15:30:00.123456', '%Y ' || '%H:%M:%S.%f')] tests/dialects/test_duckdb.py::TestDuckDB::test_time
+4 failed, 102 passed, 1661 subtests passed in 0.89s

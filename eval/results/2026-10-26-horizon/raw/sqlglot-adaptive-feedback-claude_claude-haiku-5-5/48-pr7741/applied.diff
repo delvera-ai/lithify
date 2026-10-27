@@ -1,0 +1,83 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f596c261d..5809b8e23 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -736,6 +736,22 @@
+       "always_on_tokens": 2282,
+       "stability_after": 0.8,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-110006-hive-spark-and-databricks-dialec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 47910,
++      "tokens_cached": 810402,
++      "tokens_out": 10435,
++      "cost_usd": 0.0229,
++      "wall_s": 174.9,
++      "always_on_tokens": 2282,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..214456cb4 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -1,5 +1,5 @@
+ from tests.dialects.test_dialect import Validator
+-from sqlglot import exp
++from sqlglot import exp, parse_one
+ 
+ 
+ class TestHive(Validator):
+@@ -1033,6 +1033,31 @@ class TestHive(Validator):
+         self.validate_identity("'\\\\'")
+         self.validate_identity("'\\\\z'")
+ 
++    def test_doubled_single_quote_escape(self):
++        for dialect in ("hive", "spark", "databricks"):
++            with self.subTest(dialect=dialect):
++                literal = parse_one("SELECT 'Hello ''World!'", read=dialect).find(exp.Literal)
++                self.assertTrue(literal.is_string)
++                self.assertEqual(literal.this, "Hello 'World!")
++
++        self.validate_all(
++            "SELECT 'Hello ''World!'",
++            write={
++                "hive": "SELECT 'Hello \\'World!'",
++                "spark": "SELECT 'Hello \\'World!'",
++                "databricks": "SELECT 'Hello \\'World!'",
++                "duckdb": "SELECT 'Hello ''World!'",
++            },
++        )
++        self.validate_all(
++            "CREATE TABLE t (a INT COMMENT 'Hello ''World!')",
++            write={
++                "hive": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "spark": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "databricks": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++            },
++        )
++
+     def test_data_type(self):
+         self.validate_all(
+             "CAST(a AS BIT)",

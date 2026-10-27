@@ -1,0 +1,133 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3f89b4f6b..7ae4f75b2 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -176,6 +176,22 @@
+       "always_on_tokens": 1023,
+       "stability_after": 0.4422,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261026-194826-optimizer-spark-hive-optimizing",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 70482,
++      "tokens_cached": 1939598,
++      "tokens_out": 25560,
++      "cost_usd": 0.0463,
++      "wall_s": 317.2,
++      "always_on_tokens": 1154,
++      "stability_after": 0.5307,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/annotate_types.py b/sqlglot/optimizer/annotate_types.py
+index 5d6b2b47a..261b931d9 100644
+--- a/sqlglot/optimizer/annotate_types.py
++++ b/sqlglot/optimizer/annotate_types.py
+@@ -314,6 +314,23 @@ class TypeAnnotator:
+                         selects[name] = {
+                             alias: column.type for alias, column in zip(alias_column_names, values)
+                         }
++
++                        # exploding an array of structs exposes the struct's fields as columns, like UNNEST does
++                        element = seq_get(values[0].type.expressions, 0) if values[0].type else None
++                        if (
++                            isinstance(expression, exp.Lateral)
++                            and element
++                            and element.is_type(exp.DType.STRUCT)
++                        ):
++                            selects[name].update(
++                                {
++                                    col_def.name: t.cast(
++                                        t.Union[exp.DataType, exp.DType], col_def.kind
++                                    )
++                                    for col_def in element.expressions
++                                    if isinstance(col_def, exp.ColumnDef) and col_def.kind
++                                }
++                            )
+                 elif isinstance(expression, exp.SetOperation) and len(
+                     expression.left.selects
+                 ) == len(expression.right.selects):
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e2b7a6548..b13b28bd0 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -169,6 +169,17 @@ class Resolver:
+                     if unnest.is_type(exp.DType.STRUCT):
+                         for k in unnest.type.expressions:  # type: ignore
+                             columns.append(k.name)
++            elif (
++                isinstance(source, Scope)
++                and isinstance(source.expression, exp.Lateral)
++                and isinstance(source.expression.this, exp.Explode)
++            ):
++                columns = list(source.expression.named_selects)
++
++                # exploding an array of structs exposes the struct's fields as columns, like UNNEST does
++                element_type = self._get_explode_element_type(source.expression.this.this)
++                if element_type and element_type.is_type(exp.DType.STRUCT):
++                    columns.extend(field.name for field in element_type.expressions)
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+             else:
+@@ -365,6 +376,18 @@ class Resolver:
+         source = scope.sources.get(table_name)
+         return self._get_column_type_from_scope(source, column) if source else None
+ 
++    def _get_explode_element_type(self, column: exp.Column) -> exp.DataType | None:
++        """Get the element type of an ARRAY column being exploded in this scope's FROM."""
++        if not isinstance(column, exp.Column):
++            return None
++
++        # not self.get_table(): that resolves against every source, including the lateral being resolved
++        source = self.scope.sources.get(column.table) if column.table else self.scope
++        col_type = self._get_column_type_from_scope(source, column) if source else None
++        if col_type and col_type.is_type(exp.DType.ARRAY) and col_type.expressions:
++            return col_type.expressions[0]
++        return None
++
+     def _get_column_type_from_scope(
+         self, source: Scope | exp.Table, column: exp.Column
+     ) -> exp.DataType | None:
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..6488b8eb8 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1341,6 +1341,25 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_struct_fields(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++        sql = "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci"
++        expression = optimizer.optimize(
++            parse_one(sql, read="spark"), schema=schema, dialect="spark"
++        )
++        self.assertEqual(
++            expression.sql("spark"),
++            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++        )
++        self.assertEqual(expression.selects[0].type.this, exp.DataType.Type.TEXT)
++
++        with self.assertRaises(OptimizeError):
++            optimizer.optimize(
++                parse_one(sql.replace("ci.name", "ci.missing"), read="spark"),
++                schema=schema,
++                dialect="spark",
++            )
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

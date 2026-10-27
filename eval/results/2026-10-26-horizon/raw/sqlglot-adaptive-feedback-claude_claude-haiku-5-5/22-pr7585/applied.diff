@@ -1,0 +1,120 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c65ca2634..76d21da09 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -320,6 +320,22 @@
+       "always_on_tokens": 1344,
+       "stability_after": 0.8,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-204443-redshift-dialect-approximate-per",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 68950,
++      "tokens_cached": 1695002,
++      "tokens_out": 22702,
++      "cost_usd": 0.0421,
++      "wall_s": 3556.9,
++      "always_on_tokens": 1344,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/redshift.py b/sqlglot/generators/redshift.py
+index bfe0d74f4..89dab7860 100644
+--- a/sqlglot/generators/redshift.py
++++ b/sqlglot/generators/redshift.py
+@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
+     no_tablesample_sql,
+     rename_func,
+ )
+-from sqlglot.generator import Generator
++from sqlglot.generator import Generator, unsupported_args
+ from sqlglot.generators.postgres import PostgresGenerator
+ from sqlglot.helper import seq_get
+ 
+@@ -336,6 +336,12 @@ class RedshiftGenerator(PostgresGenerator):
+         self.unsupported("Unsupported EXPLODE() function")
+         return ""
+ 
++    @unsupported_args("accuracy", "weight", "error_tolerance")
++    def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
++        percentile = exp.PercentileDisc(this=expression.args["quantile"])
++        order = exp.Order(expressions=[exp.Ordered(this=expression.this)])
++        return f"APPROXIMATE {self.sql(exp.WithinGroup(this=percentile, expression=order))}"
++
+     def _unix_to_time_sql(self, expression: exp.UnixToTime) -> str:
+         scale = expression.args.get("scale")
+         this = self.sql(expression.this)
+diff --git a/sqlglot/parsers/redshift.py b/sqlglot/parsers/redshift.py
+index 874ddfea2..f4b95bbaf 100644
+--- a/sqlglot/parsers/redshift.py
++++ b/sqlglot/parsers/redshift.py
+@@ -96,12 +96,26 @@ class RedshiftParser(PostgresParser):
+         this = self._parse_bitwise()
+         return self.expression(exp.TryCast(this=this, to=to, safe=safe))
+ 
+-    def _parse_approximate_count(self) -> exp.ApproxDistinct | None:
++    def _parse_approximate_count(self) -> exp.ApproxDistinct | exp.ApproxQuantile | None:
+         index = self._index - 1
+         func = self._parse_function()
+ 
+         if isinstance(func, exp.Count) and isinstance(func.this, exp.Distinct):
+             return self.expression(exp.ApproxDistinct(this=seq_get(func.this.expressions, 0)))
++
++        # Only an ascending single-key ordering maps onto ApproxQuantile
++        if (
++            isinstance(func, exp.WithinGroup)
++            and isinstance(func.this, exp.PercentileDisc)
++            and isinstance(func.expression, exp.Order)
++            and len(func.expression.expressions) == 1
++            and not func.expression.expressions[0].args.get("desc")
++        ):
++            return self.expression(
++                exp.ApproxQuantile(
++                    this=func.expression.expressions[0].this, quantile=func.this.this
++                )
++            )
+         self._retreat(index)
+         return None
+ 
+diff --git a/tests/dialects/test_redshift.py b/tests/dialects/test_redshift.py
+index 8df1e7c4f..b1a3bd77b 100644
+--- a/tests/dialects/test_redshift.py
++++ b/tests/dialects/test_redshift.py
+@@ -67,6 +67,17 @@ class TestRedshift(Validator):
+                 "spark": "SELECT APPROX_COUNT_DISTINCT(y)",
+             },
+         )
++        self.validate_all(
++            "SELECT APPROXIMATE PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY x)",
++            read={
++                "spark": "SELECT PERCENTILE_APPROX(x, 0.5)",
++            },
++            write={
++                "redshift": "SELECT APPROXIMATE PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY x)",
++                "spark": "SELECT PERCENTILE_APPROX(x, 0.5)",
++                "duckdb": "SELECT APPROX_QUANTILE(x, 0.5)",
++            },
++        )
+         self.validate_all(
+             "x ~* 'pat'",
+             write={
+@@ -362,6 +373,12 @@ class TestRedshift(Validator):
+         self.validate_identity("'%' SIMILAR TO '^%' ESCAPE '^'")
+         self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
+         self.validate_identity("SELECT APPROXIMATE AS y")
++        self.assertIsInstance(
++            self.validate_identity(
++                "SELECT APPROXIMATE PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY x) FROM t"
++            ).selects[0],
++            exp.ApproxQuantile,
++        )
+         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
+         self.validate_identity(
+             "COPY test_staging_tbl FROM 's3://your/bucket/prefix/here' IAM_ROLE default FORMAT AS AVRO 'auto'"

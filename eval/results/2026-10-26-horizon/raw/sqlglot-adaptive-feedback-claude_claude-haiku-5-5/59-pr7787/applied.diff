@@ -1,0 +1,76 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0fc637e23..d627a414d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -912,6 +912,22 @@
+       "always_on_tokens": 2729,
+       "stability_after": 0.6,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261027-120022-snowflake-dialect-in-create-stat",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 59198,
++      "tokens_cached": 1273908,
++      "tokens_out": 13819,
++      "cost_usd": 0.0315,
++      "wall_s": 208.3,
++      "always_on_tokens": 2789,
++      "stability_after": 0.7,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index c19a6c8e4..6f32eec15 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1027,6 +1027,18 @@ class SnowflakeParser(parser.Parser):
+ 
+         return self.expression(exp.RowAccessProperty(this=policy, expressions=expressions))
+ 
++    def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
++        index = self._index
++        prop = super()._parse_property_before()
++        if prop:
++            return prop
++
++        # Snowflake accepts generic KEY=VALUE properties between the table name and the schema
++        self._retreat(index)
++        if not self._match(TokenType.L_PAREN, advance=False):
++            return self._parse_property()
++        return None
++
+     def _parse_create(self) -> exp.Create | exp.Command:
+         expression = super()._parse_create()
+         if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 0757d1a12..7879b3863 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -4258,6 +4258,14 @@ class TestSnowflake(Validator):
+                 )
+ 
+         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
++        self.validate_identity(
++            "CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)",
++            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE",
++        )
++        self.validate_identity(
++            "CREATE OR REPLACE TABLE t DATA_RETENTION_TIME_IN_DAYS=1 CHANGE_TRACKING=TRUE (id INT)",
++            "CREATE OR REPLACE TABLE t (id INT) DATA_RETENTION_TIME_IN_DAYS=1 CHANGE_TRACKING=TRUE",
++        )
+         self.validate_identity("USE SECONDARY ROLES ALL")
+         self.validate_identity("USE SECONDARY ROLES NONE")
+         self.validate_identity("USE SECONDARY ROLES a, b, c")

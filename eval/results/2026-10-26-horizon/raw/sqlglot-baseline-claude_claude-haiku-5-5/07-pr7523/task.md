@@ -1,0 +1,1 @@
+MySQL dialect: MySQL allows optimizer hints (`/*+ ... */`) on all DML statements. sqlglot parses them on `SELECT` and `INSERT` but not on `UPDATE` or `DELETE`. Support hints there too, so they parse and round-trip.

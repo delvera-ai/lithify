@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 594a2e658..2778b09e6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -928,6 +928,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-195628-snowflake-dialect-in-create-stat",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 51431,
++      "tokens_cached": 1412392,
++      "tokens_out": 16034,
++      "cost_usd": 0.0324,
++      "wall_s": 649.6,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index c19a6c8e4..475d194d3 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1027,6 +1027,14 @@ class SnowflakeParser(parser.Parser):
+ 
+         return self.expression(exp.RowAccessProperty(this=policy, expressions=expressions))
+ 
++    def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
++        prop = super()._parse_property_before()
++        if prop or self._next.token_type != TokenType.EQ:
++            return prop
++
++        # Snowflake also accepts `KEY = VALUE` properties before the column definitions
++        return self._parse_property()
++
+     def _parse_create(self) -> exp.Create | exp.Command:
+         expression = super()._parse_create()
+         if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 0757d1a12..9f59c990a 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -5938,6 +5938,15 @@ SINGLE = TRUE""",
+             },
+         )
+ 
++    def test_create_table_properties_before_schema(self):
++        self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
++        self.validate_all(
++            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE",
++            read={
++                "snowflake": "CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)",
++            },
++        )
++
+     def test_create_view_copy_grants(self):
+         # for normal views, 'COPY GRANTS' goes *after* the column list. ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
+         self.validate_identity(

@@ -1,0 +1,1050 @@
+{
+  "repo": "sqlglot",
+  "since": "2026-06-01",
+  "until": "2026-07-31",
+  "prs": [
+    {
+      "number": 7691,
+      "title": "fix: multiline comment idempotency in connectors [GEMINI]",
+      "merged_at": "2026-06-01T09:33:59Z",
+      "merge": "9457cf661659422f718817bf8c4e22f8d4e6ad1f",
+      "base": "bc1d897918fb5e07e0e12219b194edc8de9504e3",
+      "holdout": [
+        "tests/test_transpile.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py"
+      ],
+      "src_lines": 4,
+      "issues": []
+    },
+    {
+      "number": 7695,
+      "title": "fix(exasol): transpile MySQL SHOW DATABASES/SCHEMAS to SELECT over SYS.EXA_SCHEMAS [CLAUDE]",
+      "merged_at": "2026-06-02T12:28:10Z",
+      "merge": "13a8b8db69d97613b2444fc9aa0721f7947a9c87",
+      "base": "603433d273b5f6cca8ddb2da9f0336515b985755",
+      "holdout": [
+        "tests/dialects/test_exasol.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/exasol.py"
+      ],
+      "src_lines": 6,
+      "issues": []
+    },
+    {
+      "number": 7717,
+      "title": "fix(clickhouse): parse file() as a table function",
+      "merged_at": "2026-06-08T08:20:14Z",
+      "merge": "8be7236391931bb2643dabf6c0efb434b0b89995",
+      "base": "1d07352dfb421dce825eb47e825c3b6124ea4bd3",
+      "holdout": [
+        "tests/dialects/test_clickhouse.py"
+      ],
+      "src_files": [
+        "sqlglot/parsers/clickhouse.py"
+      ],
+      "src_lines": 1,
+      "issues": [
+        7715
+      ]
+    },
+    {
+      "number": 7729,
+      "title": "Feat(lineage): add support for `UNPIVOT`",
+      "merged_at": "2026-06-10T14:00:13Z",
+      "merge": "74bef2f4617f2fa25881dded12ae3851a7ddfa1f",
+      "base": "32ed149002aa76a1b0b674b2c27af39daf70fdf5",
+      "holdout": [
+        "tests/test_lineage.py"
+      ],
+      "src_files": [
+        "sqlglot/lineage.py"
+      ],
+      "src_lines": 69,
+      "issues": [
+        7727
+      ]
+    },
+    {
+      "number": 7736,
+      "title": "Feat(lineage): more `UNPIVOT` lineage improvements",
+      "merged_at": "2026-06-11T11:41:02Z",
+      "merge": "f3ba8e4d20311c4e657f4f763c3e354fa533ba47",
+      "base": "ffd3a1401ffd84eab83cebe593b8f3f8c1ee2992",
+      "holdout": [
+        "tests/test_lineage.py"
+      ],
+      "src_files": [
+        "sqlglot/lineage.py"
+      ],
+      "src_lines": 103,
+      "issues": []
+    },
+    {
+      "number": 7737,
+      "title": "Fix(optimizer): infinite recursion in the resolver",
+      "merged_at": "2026-06-11T12:43:31Z",
+      "merge": "22844841f1de93643f17ae51077ceac79b0ec69a",
+      "base": "f3ba8e4d20311c4e657f4f763c3e354fa533ba47",
+      "holdout": [
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/resolver.py"
+      ],
+      "src_lines": 10,
+      "issues": [
+        7732
+      ]
+    },
+    {
+      "number": 7741,
+      "title": "fix(hive): add additional string escape for single quotes in Hive dialects",
+      "merged_at": "2026-06-12T11:39:41Z",
+      "merge": "bd7a9895e47781f3c7d0a66cd89bf1568f313a83",
+      "base": "8889df9017160f3e72af562f5387cca9b4e6606e",
+      "holdout": [
+        "tests/dialects/test_databricks.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/hive.py"
+      ],
+      "src_lines": 2,
+      "issues": []
+    },
+    {
+      "number": 7704,
+      "title": "fix(duckdb): add ParseDatetime transpilation for BigQuery to DuckDB",
+      "merged_at": "2026-06-12T14:09:03Z",
+      "merge": "27aee3e66434fe50c744cfbb7bd344bfe8d69a5b",
+      "base": "38a91629eaf0bcde81306bf56af06bd3d0c3da1b",
+      "holdout": [
+        "tests/dialects/test_bigquery.py",
+        "tests/dialects/test_duckdb.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/temporal.py",
+        "sqlglot/generators/duckdb.py",
+        "sqlglot/parsers/bigquery.py"
+      ],
+      "src_lines": 26,
+      "issues": []
+    },
+    {
+      "number": 7735,
+      "title": "feat(snowflake): add UNDROP support for all Snowflake Time Travel obj\u2026",
+      "merged_at": "2026-06-15T11:37:28Z",
+      "merge": "2e7f8b7e6eea5301a902bacf09e00f853e6c77b5",
+      "base": "62a0ba5bec243be6f1988261a0835cff60c4acfe",
+      "holdout": [
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/snowflake.py",
+        "sqlglot/expressions/ddl.py",
+        "sqlglot/generators/snowflake.py",
+        "sqlglot/parsers/snowflake.py",
+        "sqlglot/tokenizer_core.py"
+      ],
+      "src_lines": 50,
+      "issues": [
+        7734
+      ]
+    },
+    {
+      "number": 7760,
+      "title": "fix(parser): more robust ON CONFLICT",
+      "merged_at": "2026-06-17T16:36:15Z",
+      "merge": "4ada15a4291c110a6bd7c42cfa298fff0cfd4c6d",
+      "base": "6f99d4e06d09e576f32f4243caabcbcb44c33a38",
+      "holdout": [
+        "tests/dialects/test_postgres.py",
+        "tests/dialects/test_sqlite.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 7,
+      "issues": [
+        7759
+      ]
+    },
+    {
+      "number": 7766,
+      "title": "fix(postgres): support jsonpath @? operator CODEX",
+      "merged_at": "2026-06-19T12:26:54Z",
+      "merge": "02e24696524013da632cfd2e35f83da28b5e2947",
+      "base": "78c5cf92f262b0743470d91b3a24c0bb462a4183",
+      "holdout": [
+        "tests/dialects/test_postgres.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/postgres.py",
+        "sqlglot/expressions/json.py",
+        "sqlglot/generator.py",
+        "sqlglot/parser.py",
+        "sqlglot/tokenizer_core.py"
+      ],
+      "src_lines": 8,
+      "issues": []
+    },
+    {
+      "number": 7771,
+      "title": "fix(druid): add JSON_VALUE RETURNING support",
+      "merged_at": "2026-06-20T11:39:06Z",
+      "merge": "31cee10b187359597aef88976d46233d25642d02",
+      "base": "12eba761aa5839d1bfeb454abfacf9130723dae7",
+      "holdout": [
+        "tests/dialects/test_druid.py"
+      ],
+      "src_files": [
+        "sqlglot/parsers/druid.py"
+      ],
+      "src_lines": 5,
+      "issues": []
+    },
+    {
+      "number": 7776,
+      "title": "fix(snowflake): transpile FROM_ISO8601_TIMESTAMP to cast",
+      "merged_at": "2026-06-22T09:54:22Z",
+      "merge": "7db4d2515435ba3d0651f2bd467fca1a747be265",
+      "base": "7124b4272f1b9172c6849d3f6d29bfb35520c4ca",
+      "holdout": [
+        "tests/dialects/test_presto.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py",
+        "sqlglot/generators/duckdb.py",
+        "sqlglot/generators/presto.py"
+      ],
+      "src_lines": 7,
+      "issues": [
+        7775
+      ]
+    },
+    {
+      "number": 7778,
+      "title": "fix(presto): transpile FROM_ISO8601_DATE to cast",
+      "merged_at": "2026-06-22T09:57:13Z",
+      "merge": "43a3d9fc9503e667d1979dba6131feb8851a588b",
+      "base": "7db4d2515435ba3d0651f2bd467fca1a747be265",
+      "holdout": [
+        "tests/dialects/test_presto.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/temporal.py",
+        "sqlglot/generator.py",
+        "sqlglot/generators/presto.py"
+      ],
+      "src_lines": 8,
+      "issues": [
+        7777
+      ]
+    },
+    {
+      "number": 7779,
+      "title": "fix(starrocks): use native function syntax for MIN_BY/MAX_BY, MAP, ARRAY_CONTAINS_ALL, TRIM",
+      "merged_at": "2026-06-22T10:23:24Z",
+      "merge": "4cfcd392710c68e336c6c81b31d40c1c4388ef63",
+      "base": "eaa3f982d435d3d0aea27019be5d1a4a9fd47fa2",
+      "holdout": [
+        "tests/dialects/test_starrocks.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/starrocks.py",
+        "sqlglot/parsers/starrocks.py"
+      ],
+      "src_lines": 21,
+      "issues": []
+    },
+    {
+      "number": 7783,
+      "title": "fix(snowflake): preserve `PATTERN` clause on staged files without `FILE_FORMAT`",
+      "merged_at": "2026-06-22T13:37:43Z",
+      "merge": "2637c5696e4ce34d54600154376f400ba06d1860",
+      "base": "2ecdfe5cf9e0817bb2be9b2d83895e298dfbfe8a",
+      "holdout": [
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py"
+      ],
+      "src_lines": 4,
+      "issues": [
+        7782
+      ]
+    },
+    {
+      "number": 7786,
+      "title": "fix(exasol): treat LISTAGG second argument as the separator CLAUDE",
+      "merged_at": "2026-06-24T06:42:08Z",
+      "merge": "52fe2966081d430ab22d4eaf52f6d9c8cdb21248",
+      "base": "17f7870b470ea906df7967d74c88f72d8733b1d0",
+      "holdout": [
+        "tests/dialects/test_exasol.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/exasol.py",
+        "sqlglot/parsers/exasol.py"
+      ],
+      "src_lines": 7,
+      "issues": []
+    },
+    {
+      "number": 7787,
+      "title": "feat(snowflake): support properties before column definitions in `CREATE` statements",
+      "merged_at": "2026-06-24T15:16:15Z",
+      "merge": "523f7c2551906ffc37a03b8dae0fea3a0fca783d",
+      "base": "9f18b7705833c54478ce990c3319d2153ecb8be9",
+      "holdout": [
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py",
+        "sqlglot/parsers/snowflake.py"
+      ],
+      "src_lines": 29,
+      "issues": []
+    },
+    {
+      "number": 7796,
+      "title": "feat(snowflake): support invoking dynamically-resolved functions via `IDENTIFIER()`",
+      "merged_at": "2026-06-25T12:00:01Z",
+      "merge": "7a0a9abc516fd3280382f26b89adfc1547c10098",
+      "base": "075eaf5d8a67e24f85d282f5b8f9ba912f21025f",
+      "holdout": [
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/core.py",
+        "sqlglot/generator.py",
+        "sqlglot/generators/snowflake.py",
+        "sqlglot/parsers/snowflake.py"
+      ],
+      "src_lines": 65,
+      "issues": []
+    },
+    {
+      "number": 7802,
+      "title": "Fix(optimizer)!: resolve lateral subquery columns",
+      "merged_at": "2026-06-26T12:28:05Z",
+      "merge": "b1a0070ca9989e76e30ab512f206423d5d6de0bc",
+      "base": "7a0a9abc516fd3280382f26b89adfc1547c10098",
+      "holdout": [
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/resolver.py"
+      ],
+      "src_lines": 4,
+      "issues": [
+        7799
+      ]
+    },
+    {
+      "number": 7794,
+      "title": "fix(clickhouse): support arrayMap and arrayFilter roundtrips [CODEX]",
+      "merged_at": "2026-06-26T12:30:10Z",
+      "merge": "64e268a5d95cd84a87ad74ef569fc9bf356fd3fb",
+      "base": "b1a0070ca9989e76e30ab512f206423d5d6de0bc",
+      "holdout": [
+        "tests/dialects/test_clickhouse.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/clickhouse.py",
+        "sqlglot/parsers/clickhouse.py"
+      ],
+      "src_lines": 5,
+      "issues": []
+    },
+    {
+      "number": 7809,
+      "title": "fix(parser): parse chained range operators (IN/LIKE) instead of raising [CLAUDE]",
+      "merged_at": "2026-06-30T11:43:11Z",
+      "merge": "cf7e4bf4a57d331e4a6e5f4933cb7daf0e503c3b",
+      "base": "4e271fbe3e24223bb7761b46a89b3405a3b4df09",
+      "holdout": [
+        "tests/dialects/test_sqlite.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 46,
+      "issues": [
+        7806
+      ]
+    },
+    {
+      "number": 7808,
+      "title": "fix(presto): transpile FROM_ISO8601_TIMESTAMP_NANOS to cast",
+      "merged_at": "2026-06-30T12:31:07Z",
+      "merge": "e17d91898457a2e3fcdb3f4c4b00dad79772dd7e",
+      "base": "cf7e4bf4a57d331e4a6e5f4933cb7daf0e503c3b",
+      "holdout": [
+        "tests/dialects/test_presto.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/temporal.py",
+        "sqlglot/generator.py",
+        "sqlglot/generators/presto.py"
+      ],
+      "src_lines": 8,
+      "issues": []
+    },
+    {
+      "number": 7818,
+      "title": "fix(hive): PARSE_JSON and TO_JSON roundtrip",
+      "merged_at": "2026-07-01T08:21:42Z",
+      "merge": "52b8f4a93fcb7a8baffeba1727dc3e0ebcb88525",
+      "base": "5d9c56e8799fad51ebf941984fd12f8087a64673",
+      "holdout": [
+        "tests/dialects/test_hive.py",
+        "tests/fixtures/optimizer/annotate_functions.sql"
+      ],
+      "src_files": [
+        "sqlglot/generators/hive.py",
+        "sqlglot/generators/spark2.py"
+      ],
+      "src_lines": 49,
+      "issues": []
+    },
+    {
+      "number": 7823,
+      "title": "perf(optimizer): memoize UNNEST/EXPLODE column-type resolution [CLAUDE]",
+      "merged_at": "2026-07-03T14:07:52Z",
+      "merge": "693b3e3efa5f6e5ec547e29a79cbbe2b84971f21",
+      "base": "aeb2711f3be05bdcfa39a5e7479a0bedb0ca03f7",
+      "holdout": [
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/resolver.py"
+      ],
+      "src_lines": 29,
+      "issues": [
+        7821
+      ]
+    },
+    {
+      "number": 7825,
+      "title": "fix(generator): emit LIMIT 1 for countless FETCH FIRST ROWS ONLY CLAUDE",
+      "merged_at": "2026-07-06T17:27:26Z",
+      "merge": "faf15e65e9059248c82564ab29de2bd4c492392e",
+      "base": "693b3e3efa5f6e5ec547e29a79cbbe2b84971f21",
+      "holdout": [
+        "tests/dialects/test_dialect.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py"
+      ],
+      "src_lines": 7,
+      "issues": []
+    },
+    {
+      "number": 7831,
+      "title": "Fix!: true/null in t.true/null should be identifiers",
+      "merged_at": "2026-07-07T11:44:27Z",
+      "merge": "b29ef618b5db539f7bd4685e49b72ea08730daa5",
+      "base": "a66104f52aca450087524f84b76e29173971e656",
+      "holdout": [
+        "tests/dialects/test_postgres.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 8,
+      "issues": []
+    },
+    {
+      "number": 7835,
+      "title": "fix(tsql): parse EXEC return status parameter (CLAUDE)",
+      "merged_at": "2026-07-08T09:05:54Z",
+      "merge": "bcc8b1cd48593a7b8dfbabf43a5d9710eae19117",
+      "base": "c2fac5dd987118a04633f36e8bd0de5447ff694a",
+      "holdout": [
+        "tests/dialects/test_tsql.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/ddl.py",
+        "sqlglot/generators/tsql.py",
+        "sqlglot/parsers/tsql.py"
+      ],
+      "src_lines": 16,
+      "issues": [
+        7834
+      ]
+    },
+    {
+      "number": 7843,
+      "title": "Fix(parser)!: delimited text incorrectly consumed by `_match_text*`",
+      "merged_at": "2026-07-08T14:57:54Z",
+      "merge": "da55602dea6e70de54c500d072a0bff5ecfb3d6d",
+      "base": "0ce4063ae9c2de1e05e4597d08b5e546c5d2a43c",
+      "holdout": [
+        "tests/dialects/test_exasol.py",
+        "tests/dialects/test_snowflake.py",
+        "tests/fixtures/identity.sql",
+        "tests/test_parser.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py",
+        "sqlglot/parsers/exasol.py",
+        "sqlglot/parsers/snowflake.py"
+      ],
+      "src_lines": 51,
+      "issues": []
+    },
+    {
+      "number": 7854,
+      "title": "fix: preserve leading zeros in subsecond_precision [CLAUDE]",
+      "merged_at": "2026-07-13T10:56:52Z",
+      "merge": "c2e935f2fbe75f94a671187f3aa68710c210ce70",
+      "base": "ceda825eaa50919123d30867a7d2d3451253397b",
+      "holdout": [
+        "tests/test_time.py"
+      ],
+      "src_files": [
+        "sqlglot/time.py"
+      ],
+      "src_lines": 2,
+      "issues": []
+    },
+    {
+      "number": 7868,
+      "title": "Fix(optimizer): evict mutated projections from the annotator cache",
+      "merged_at": "2026-07-13T19:40:10Z",
+      "merge": "e17ab302340feee60b097b1732f91f5d3d348875",
+      "base": "57bbb45727e356721eb38bc040159c629491b9e5",
+      "holdout": [
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/annotate_types.py",
+        "sqlglot/optimizer/qualify_columns.py"
+      ],
+      "src_lines": 51,
+      "issues": []
+    },
+    {
+      "number": 7874,
+      "title": "fix(postgres): default unitless DATEDIFF to DAY instead of AGE [CLAUDE]",
+      "merged_at": "2026-07-16T12:08:49Z",
+      "merge": "98f3f97d51e5400a57e98c46dc6f65bba877d3e3",
+      "base": "0a374bf421f874d4c0618a2c710aaca14086c74f",
+      "holdout": [
+        "tests/dialects/test_mysql.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/postgres.py"
+      ],
+      "src_lines": 2,
+      "issues": []
+    },
+    {
+      "number": 7876,
+      "title": "fix(clickhouse): parse camelCase dateTrunc, not just date_trunc [CLAUDE]",
+      "merged_at": "2026-07-16T13:56:54Z",
+      "merge": "91a284b7c55f11cf7454b405a6458ea39379e7ff",
+      "base": "559b2c1e0dfb3be5c816d9d7976615023753f4ad",
+      "holdout": [
+        "tests/dialects/test_clickhouse.py"
+      ],
+      "src_files": [
+        "sqlglot/parsers/clickhouse.py"
+      ],
+      "src_lines": 1,
+      "issues": []
+    },
+    {
+      "number": 7877,
+      "title": "fix(oracle): preserve UNPIVOT IN-list literal labels [CLAUDE]",
+      "merged_at": "2026-07-16T15:12:06Z",
+      "merge": "5e08bb934c3441a97e908594a045cae6b8c65904",
+      "base": "91a284b7c55f11cf7454b405a6458ea39379e7ff",
+      "holdout": [
+        "tests/dialects/test_oracle.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/oracle.py"
+      ],
+      "src_lines": 1,
+      "issues": []
+    },
+    {
+      "number": 7881,
+      "title": "fix(oracle): unrecognized WITH hangs the parser [CLAUDE]",
+      "merged_at": "2026-07-16T17:01:11Z",
+      "merge": "a7058d6976e3a2439f55b9cfa208d03a4b888522",
+      "base": "39333fcbe7857ed7b762c4a12b530bcd121a99ca",
+      "holdout": [
+        "tests/dialects/test_oracle.py"
+      ],
+      "src_files": [
+        "sqlglot/parsers/oracle.py"
+      ],
+      "src_lines": 7,
+      "issues": []
+    },
+    {
+      "number": 7884,
+      "title": "fix(snowflake): wrap FILTER condition inside DISTINCT/ORDER BY args [CLAUDE]",
+      "merged_at": "2026-07-16T21:07:05Z",
+      "merge": "b2c07a1ee4ea48fae2b0f1a08407d253cc798b9e",
+      "base": "618804ce12b09b563147a31c37734725928f34c6",
+      "holdout": [
+        "tests/dialects/test_duckdb.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py"
+      ],
+      "src_lines": 16,
+      "issues": []
+    },
+    {
+      "number": 7888,
+      "title": "feat(dremio): support AT SNAPSHOT and AT TIMESTAMP time travel [CLAUDE]",
+      "merged_at": "2026-07-16T22:36:00Z",
+      "merge": "31bc57e7f14bc5ff97527e8027463d47d98a17fb",
+      "base": "b2c07a1ee4ea48fae2b0f1a08407d253cc798b9e",
+      "holdout": [
+        "tests/dialects/test_dremio.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/dremio.py",
+        "sqlglot/generators/dremio.py"
+      ],
+      "src_lines": 14,
+      "issues": []
+    },
+    {
+      "number": 7889,
+      "title": "refactor(snowflake)!: improve generator of FILTER()",
+      "merged_at": "2026-07-16T23:21:11Z",
+      "merge": "2f9c6280b7942f130aca5c70b45e732a5e904f13",
+      "base": "bf3c427e78645d8a6d0f1740a548ff99aff3b14d",
+      "holdout": [
+        "tests/dialects/test_dialect.py",
+        "tests/dialects/test_duckdb.py",
+        "tests/dialects/test_redshift.py",
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/generator.py",
+        "sqlglot/generators/snowflake.py"
+      ],
+      "src_lines": 82,
+      "issues": []
+    },
+    {
+      "number": 7885,
+      "title": "fix(snowflake): parse AUTOINCREMENT parts independently [CLAUDE]",
+      "merged_at": "2026-07-17T12:27:07Z",
+      "merge": "281442123ca0f617b1d877e8ebeacc4a7ad3cd2c",
+      "base": "19983a7b364aa0cb67943c1228215c5919f834d0",
+      "holdout": [
+        "tests/dialects/test_snowflake.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 18,
+      "issues": []
+    },
+    {
+      "number": 7908,
+      "title": "Unwrap INTERVAL amount in SQLite DATE_ADD instead of quoting it whole [CLAUDE]",
+      "merged_at": "2026-07-20T11:12:24Z",
+      "merge": "a034db7f6d91626f044152245bc284776a154c6f",
+      "base": "a247168f955fda0a09915efc53e90af7eb4337b8",
+      "holdout": [
+        "tests/dialects/test_sqlite.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/sqlite.py"
+      ],
+      "src_lines": 7,
+      "issues": []
+    },
+    {
+      "number": 7899,
+      "title": "fix(optimizer): keep columns a recursive CTE reads from itself [CLAUDE]",
+      "merged_at": "2026-07-20T11:49:31Z",
+      "merge": "199547a5304449f2f4b061e15caf63dc52964704",
+      "base": "655876fce7d7d26ef30f9df6d1fca60f03c36d80",
+      "holdout": [
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/pushdown_projections.py"
+      ],
+      "src_lines": 15,
+      "issues": []
+    },
+    {
+      "number": 7900,
+      "title": "fix(snowflake): rewrite COUNT(*) FILTER to COUNT_IF [CLAUDE]",
+      "merged_at": "2026-07-20T11:53:20Z",
+      "merge": "47e255dda3a328277b7dbb28503f200aea26a429",
+      "base": "199547a5304449f2f4b061e15caf63dc52964704",
+      "holdout": [
+        "tests/dialects/test_duckdb.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/snowflake.py"
+      ],
+      "src_lines": 5,
+      "issues": []
+    },
+    {
+      "number": 7895,
+      "title": "Fix TIMESTAMP_DIFF/DATETIME_DIFF transpilation to Presto/Trino [CLAUDE]",
+      "merged_at": "2026-07-20T11:56:28Z",
+      "merge": "e4d2ea50bdbbe8c38a2d69b43810bc21d48638b3",
+      "base": "47e255dda3a328277b7dbb28503f200aea26a429",
+      "holdout": [
+        "tests/dialects/test_bigquery.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/presto.py"
+      ],
+      "src_lines": 12,
+      "issues": []
+    },
+    {
+      "number": 7891,
+      "title": "feat(duckdb): transpile BigQuery ARRAY_CONCAT_AGG to DuckDB",
+      "merged_at": "2026-07-21T10:43:03Z",
+      "merge": "c4020942b711eb0f5c8a182ff580b31541aed07f",
+      "base": "91f660637bb59ff096ceb7ecda42b4fea147515f",
+      "holdout": [
+        "tests/dialects/test_bigquery.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/duckdb.py"
+      ],
+      "src_lines": 10,
+      "issues": []
+    },
+    {
+      "number": 7920,
+      "title": "fix(duckdb): handle ORDER BY and LIMIT for bq ARRAY_CONCAT_AGG",
+      "merged_at": "2026-07-21T11:48:10Z",
+      "merge": "c368c5eb2d84133a18f38ff98946b112c81f060d",
+      "base": "c4020942b711eb0f5c8a182ff580b31541aed07f",
+      "holdout": [
+        "tests/dialects/test_bigquery.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/duckdb.py"
+      ],
+      "src_lines": 9,
+      "issues": []
+    },
+    {
+      "number": 7929,
+      "title": "Feat(mysql): support INSERT ... SET ... syntax",
+      "merged_at": "2026-07-22T14:36:05Z",
+      "merge": "ee5a989cd5b756c10068837887f34ffe8606ce7f",
+      "base": "66316e335fd617d2f3ab8c412ae7a87356431c97",
+      "holdout": [
+        "tests/dialects/test_mysql.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 36,
+      "issues": [
+        7927
+      ]
+    },
+    {
+      "number": 7931,
+      "title": "feat(optimizer)!: parse and annotate duckdb FROM_HEX",
+      "merged_at": "2026-07-22T16:15:23Z",
+      "merge": "88c4b4a6f0372978f8ec58c872f0a7f26570bfe3",
+      "base": "c75b7b610e182fedba20758853d227b81bc1cb34",
+      "holdout": [
+        "tests/dialects/test_duckdb.py",
+        "tests/fixtures/optimizer/annotate_functions.sql"
+      ],
+      "src_files": [
+        "sqlglot/parsers/duckdb.py"
+      ],
+      "src_lines": 1,
+      "issues": []
+    },
+    {
+      "number": 7892,
+      "title": "feat(duckdb): transpile BigQuery IN UNNEST(array) to ARRAY_CONTAINS",
+      "merged_at": "2026-07-23T14:51:47Z",
+      "merge": "3cd3e58e10dcdf941f14765889641a5974e550ae",
+      "base": "3fe174867d5b3c42d668d269dde52fbce3943001",
+      "holdout": [
+        "tests/dialects/test_bigquery.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/duckdb.py"
+      ],
+      "src_lines": 48,
+      "issues": []
+    },
+    {
+      "number": 7968,
+      "title": "fix(clickhouse): generate MODIFY COLUMN for column type changes [CLAUDE]",
+      "merged_at": "2026-07-27T14:23:17Z",
+      "merge": "06eb0510b06307ffad115827bc7c9c53deecb216",
+      "base": "9b519e6e9f8ef1e6ed5d33198856f8c7a2889afb",
+      "holdout": [
+        "tests/dialects/test_clickhouse.py"
+      ],
+      "src_files": [
+        "sqlglot/generators/clickhouse.py"
+      ],
+      "src_lines": 1,
+      "issues": [
+        7793
+      ]
+    },
+    {
+      "number": 7953,
+      "title": "fix(executor): preserve unmatched outer join rows [CODEX]",
+      "merged_at": "2026-07-27T15:53:24Z",
+      "merge": "f85ea4c2d58f6efd8340f199bba8f3c9eee4cd45",
+      "base": "06eb0510b06307ffad115827bc7c9c53deecb216",
+      "holdout": [
+        "tests/test_executor.py"
+      ],
+      "src_files": [
+        "sqlglot/executor/python.py"
+      ],
+      "src_lines": 122,
+      "issues": [
+        7952
+      ]
+    },
+    {
+      "number": 7961,
+      "title": "fix(executor): preserve SQL three-valued boolean logic [CODEX]",
+      "merged_at": "2026-07-27T15:53:29Z",
+      "merge": "bb3825f0209ceb8a5e823d4597e15d92941160d1",
+      "base": "f85ea4c2d58f6efd8340f199bba8f3c9eee4cd45",
+      "holdout": [
+        "tests/test_executor.py"
+      ],
+      "src_files": [
+        "sqlglot/executor/env.py",
+        "sqlglot/generators/python.py"
+      ],
+      "src_lines": 60,
+      "issues": [
+        7960
+      ]
+    },
+    {
+      "number": 7955,
+      "title": "fix(executor): preserve set operation multiplicity [CODEX]",
+      "merged_at": "2026-07-27T20:19:43Z",
+      "merge": "7f2a41e7b90c73c0f8bcd137131f2e781b61da7a",
+      "base": "1fd3bb970bfb4dbca5a764eb9dd3f9a0ff45000f",
+      "holdout": [
+        "tests/test_executor.py"
+      ],
+      "src_files": [
+        "sqlglot/executor/python.py"
+      ],
+      "src_lines": 18,
+      "issues": [
+        7954
+      ]
+    },
+    {
+      "number": 7934,
+      "title": "feat(trino): parse WITH FUNCTION ... RETURNS ... RETURN inline UDFs [CLAUDE]",
+      "merged_at": "2026-07-28T11:15:44Z",
+      "merge": "c1475e7997ac1561d073cf5816e39b61eada70bc",
+      "base": "8ef659e414117628f59cb7cd4948a4d6ab7767df",
+      "holdout": [
+        "tests/dialects/test_trino.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/query.py",
+        "sqlglot/generator.py",
+        "sqlglot/generators/trino.py",
+        "sqlglot/parser.py",
+        "sqlglot/parsers/clickhouse.py",
+        "sqlglot/parsers/trino.py",
+        "sqlglot/transforms.py"
+      ],
+      "src_lines": 87,
+      "issues": [
+        5178
+      ]
+    },
+    {
+      "number": 7982,
+      "title": "feat(clickhouse): support quantileExactInclusive agg func",
+      "merged_at": "2026-07-29T08:46:20Z",
+      "merge": "8c20564ab957a527a3da3178f3a6a9d4e884a7c3",
+      "base": "aa495ef8d88742a2c1085d74a221f7dedaa4d472",
+      "holdout": [
+        "tests/dialects/test_clickhouse.py"
+      ],
+      "src_files": [
+        "sqlglot/parsers/clickhouse.py"
+      ],
+      "src_lines": 1,
+      "issues": [
+        7972
+      ]
+    },
+    {
+      "number": 7999,
+      "title": "feat(starrocks,doris): support DROP TABLE ... FORCE [CLAUDE]",
+      "merged_at": "2026-07-30T10:30:28Z",
+      "merge": "11170dc84ed3651b790d6be3b4ecc3fde0fe9ee6",
+      "base": "ce79ff00502aa944ae2232834013985505cc2a7c",
+      "holdout": [
+        "tests/dialects/test_doris.py",
+        "tests/dialects/test_starrocks.py"
+      ],
+      "src_files": [
+        "sqlglot/expressions/ddl.py",
+        "sqlglot/generator.py",
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 5,
+      "issues": []
+    },
+    {
+      "number": 8000,
+      "title": "feat(starrocks): parse REFRESH EXTERNAL TABLE [CLAUDE]",
+      "merged_at": "2026-07-30T11:39:50Z",
+      "merge": "3c6d84248fabc064c4200022e756986f18a1d329",
+      "base": "11170dc84ed3651b790d6be3b4ecc3fde0fe9ee6",
+      "holdout": [
+        "tests/dialects/test_starrocks.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/starrocks.py",
+        "sqlglot/parser.py"
+      ],
+      "src_lines": 5,
+      "issues": []
+    },
+    {
+      "number": 7983,
+      "title": "fix(optimizer): do not decorrelate negated comparison EXISTS",
+      "merged_at": "2026-07-30T11:40:09Z",
+      "merge": "b4b6bb0aaaf89a307f4f3d1e36d2e534fe2b4c02",
+      "base": "3c6d84248fabc064c4200022e756986f18a1d329",
+      "holdout": [
+        "tests/fixtures/optimizer/unnest_subqueries.sql",
+        "tests/test_executor.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/unnest_subqueries.py"
+      ],
+      "src_lines": 7,
+      "issues": [
+        7958
+      ]
+    },
+    {
+      "number": 7981,
+      "title": "feat(trino): parse routine characteristics for inline UDFs [CLAUDE]",
+      "merged_at": "2026-07-30T12:17:12Z",
+      "merge": "9815ccb32f1e5d17c31f4a1bdd868508b39f63dc",
+      "base": "b4b6bb0aaaf89a307f4f3d1e36d2e534fe2b4c02",
+      "holdout": [
+        "tests/dialects/test_trino.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/trino.py",
+        "sqlglot/expressions/query.py",
+        "sqlglot/generators/trino.py",
+        "sqlglot/parsers/trino.py"
+      ],
+      "src_lines": 63,
+      "issues": []
+    },
+    {
+      "number": 8009,
+      "title": "fix!: do not treat time travel clauses as single tokens",
+      "merged_at": "2026-07-31T12:57:58Z",
+      "merge": "eeaf1b832242cffc3a4c9613c20ad8a8d1dee417",
+      "base": "304a68d48a19aa9db118b0d22fa4856099e36471",
+      "holdout": [
+        "tests/dialects/test_bigquery.py",
+        "tests/dialects/test_spark.py"
+      ],
+      "src_files": [
+        "sqlglot/dialects/bigquery.py",
+        "sqlglot/dialects/dremio.py",
+        "sqlglot/dialects/hive.py",
+        "sqlglot/dialects/tsql.py",
+        "sqlglot/parser.py",
+        "sqlglot/parsers/dremio.py",
+        "sqlglot/tokenizer_core.py",
+        "sqlglot/tokens.py"
+      ],
+      "src_lines": 40,
+      "issues": []
+    },
+    {
+      "number": 8007,
+      "title": "fix!: do not treat `CHARACTER SET` as a single token",
+      "merged_at": "2026-07-31T13:52:12Z",
+      "merge": "187746cdcc0d8852666804dac58f34369fee0ec5",
+      "base": "03c96cbbfd26ecfe19924f7e7d5f0f1bb8eb8aa6",
+      "holdout": [
+        "tests/dialects/test_mysql.py",
+        "tests/dialects/test_postgres.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py",
+        "sqlglot/tokens.py"
+      ],
+      "src_lines": 33,
+      "issues": []
+    },
+    {
+      "number": 7979,
+      "title": "fix(optimizer): preserve UNNEST struct-field columns",
+      "merged_at": "2026-07-31T14:17:38Z",
+      "merge": "778420951106166c657911f6f8f6bd3e2a75e5bb",
+      "base": "187746cdcc0d8852666804dac58f34369fee0ec5",
+      "holdout": [
+        "tests/fixtures/optimizer/canonicalize_internal_names.sql",
+        "tests/test_optimizer.py"
+      ],
+      "src_files": [
+        "sqlglot/optimizer/canonicalize_internal_names.py"
+      ],
+      "src_lines": 25,
+      "issues": []
+    },
+    {
+      "number": 8008,
+      "title": "fix!: do not treat `START WITH` as a single token",
+      "merged_at": "2026-07-31T14:23:49Z",
+      "merge": "d7fd83a7dcfd096bc85fc0670599e5d0c8d9bce6",
+      "base": "778420951106166c657911f6f8f6bd3e2a75e5bb",
+      "holdout": [
+        "tests/dialects/test_mysql.py",
+        "tests/dialects/test_oracle.py",
+        "tests/dialects/test_postgres.py",
+        "tests/dialects/test_snowflake.py",
+        "tests/dialects/test_tsql.py",
+        "tests/test_parser.py"
+      ],
+      "src_files": [
+        "sqlglot/parser.py",
+        "sqlglot/tokens.py"
+      ],
+      "src_lines": 28,
+      "issues": []
+    }
+  ]
+}

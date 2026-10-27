@@ -1,0 +1,53 @@
+{
+  "task": "Oracle dialect: `JSON_TABLE` fails to parse when the input expression carries `FORMAT JSON` (e.g. `JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS (...))`). Support `FORMAT JSON` there so it parses and round-trips.",
+  "k": 1,
+  "reason": "cruise (S=1.00) \u2192 escalated",
+  "selected": "dom-1",
+  "why": "Scope and fidelity decided it. In the base repo the task's own example already parses and round-trips. c2 fixes a real Oracle gap next to it: `FORMAT JSON` on a COLUMNS entry (e.g. `doc2 CLOB FORMAT JSON PATH '$.x'`), which fails in the base. It does this with a one-line reuse of the existing `_parse_format_json`.\nRunner-up c3 (c1 has the same code): it adds `ENCODING` to the shared `FormatJson` node, and as far as I know Oracle's `JSON_TABLE` doesn't accept that. The change also affects every `FORMAT JSON` user in every dialect, which the task didn't ask for.",
+  "applied": true,
+  "first_pass": false,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": "<run>/repo/.lithify/proposals/20261026-194859-oracle-dialect-json-table-fails",
+  "usage": {
+    "in": 387431,
+    "cached": 3644907,
+    "out": 66523,
+    "cost": 2.96170794,
+    "exec": 4,
+    "roles": 5
+  },
+  "stability_after": 0.8683,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

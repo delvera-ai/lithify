@@ -1,0 +1,18 @@
+{
+  "task_id": "20261026-203349-oracle-dialect-json-table-fails",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-203349-oracle-dialect-json-table-fails-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions",
+    "skills/sqlglot-json-table",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 152561,
+    "cached": 1298946,
+    "out": 14756,
+    "cost": 1.7751492,
+    "exec": 0,
+    "roles": 3
+  }
+}

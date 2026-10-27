@@ -1,0 +1,33 @@
+exit 1
+................................. [ 50%]
+................................F        [100%]
+=================================== FAILURES ===================================
+__________________ TestParser.test_window_clause_without_from __________________
+
+self = <tests.test_parser.TestParser testMethod=test_window_clause_without_from>
+
+    def test_window_clause_without_from(self):
+        # https://github.com/tobymao/sqlglot/issues/7438
+        for dialect in (None, "sqlite", "postgres", "mysql", "duckdb", "bigquery"):
+            sql = "SELECT 1 WINDOW a AS (PARTITION BY x)"
+            self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+    
+        # multiple named windows still work
+        self.assertEqual(
+            parse_one("SELECT 1 WINDOW a AS (PARTITION BY x), b AS (ORDER BY y)").sql(),
+            "SELECT 1 WINDOW a AS (PARTITION BY x), b AS (ORDER BY y)",
+        )
+    
+        # WINDOW can still be used as an explicit alias (SELECT 1 AS WINDOW)
+        self.assertEqual(parse_one("SELECT 1 AS WINDOW").sql(), "SELECT 1 AS WINDOW")
+    
+        # WINDOW remains usable as an implicit alias when not followed by `<id> AS (`
+>       self.assertEqual(parse_one("SELECT col window FROM t").sql(), "SELECT col AS window FROM t")
+E       AssertionError: 'SELECT col WINDOW FROM AS t' != 'SELECT col AS window FROM t'
+E       - SELECT col WINDOW FROM AS t
+E       + SELECT col AS window FROM t
+
+tests/test_parser.py:1094: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_parser.py::TestParser::test_window_clause_without_from - As...
+1 failed, 65 passed, 71 subtests passed in 10.98s

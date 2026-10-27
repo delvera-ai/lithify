@@ -1,0 +1,28 @@
+{
+  "task": "Exasol dialect: the second argument of `LISTAGG` is the separator, but sqlglot folds it into the value:\n\n```python\nsqlglot.parse_one(\"SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t\", read=\"exasol\")\n# value parsed as CONCAT(x, ','), separator=None  (wrong)\n```\n\nOracle, Snowflake, Trino and DuckDB parse the same SQL with `x` as the value and `','` as the separator. Exasol `LISTAGG` must do the same, and round-trip.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 38114,
+    "cached": 366944,
+    "out": 5835,
+    "cost": 0.01420794,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

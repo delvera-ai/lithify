@@ -1,0 +1,36 @@
+exit 1
+......................................F.                                 [100%]
+=================================== FAILURES ===================================
+___________________________ TestLineage.test_unpivot ___________________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_unpivot>
+
+    def test_unpivot(self) -> None:
+        sql = """
+        SELECT id, metric_name, score
+        FROM sales UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+    
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+    
+        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
+>       self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+E       AssertionError: Lists differ: ['SALES.METRIC_NAME'] != ['SALES.JAN', 'SALES.FEB']
+E       
+E       First differing element 0:
+E       'SALES.METRIC_NAME'
+E       'SALES.JAN'
+E       
+E       Second list contains 1 additional elements.
+E       First extra element 1:
+E       'SALES.FEB'
+E       
+E       - ['SALES.METRIC_NAME']
+E       + ['SALES.JAN', 'SALES.FEB']
+
+tests/test_lineage.py:699: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lineage.py::TestLineage::test_unpivot - AssertionError: Lis...
+1 failed, 39 passed in 0.27s

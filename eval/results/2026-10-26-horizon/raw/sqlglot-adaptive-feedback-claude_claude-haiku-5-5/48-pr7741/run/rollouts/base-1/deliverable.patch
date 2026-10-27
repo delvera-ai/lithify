@@ -1,0 +1,56 @@
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..214456cb4 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -1,5 +1,5 @@
+ from tests.dialects.test_dialect import Validator
+-from sqlglot import exp
++from sqlglot import exp, parse_one
+ 
+ 
+ class TestHive(Validator):
+@@ -1033,6 +1033,31 @@ class TestHive(Validator):
+         self.validate_identity("'\\\\'")
+         self.validate_identity("'\\\\z'")
+ 
++    def test_doubled_single_quote_escape(self):
++        for dialect in ("hive", "spark", "databricks"):
++            with self.subTest(dialect=dialect):
++                literal = parse_one("SELECT 'Hello ''World!'", read=dialect).find(exp.Literal)
++                self.assertTrue(literal.is_string)
++                self.assertEqual(literal.this, "Hello 'World!")
++
++        self.validate_all(
++            "SELECT 'Hello ''World!'",
++            write={
++                "hive": "SELECT 'Hello \\'World!'",
++                "spark": "SELECT 'Hello \\'World!'",
++                "databricks": "SELECT 'Hello \\'World!'",
++                "duckdb": "SELECT 'Hello ''World!'",
++            },
++        )
++        self.validate_all(
++            "CREATE TABLE t (a INT COMMENT 'Hello ''World!')",
++            write={
++                "hive": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "spark": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "databricks": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++            },
++        )
++
+     def test_data_type(self):
+         self.validate_all(
+             "CAST(a AS BIT)",

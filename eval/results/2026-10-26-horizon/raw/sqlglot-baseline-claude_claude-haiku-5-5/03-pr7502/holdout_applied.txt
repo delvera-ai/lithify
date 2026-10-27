@@ -1,0 +1,34 @@
+exit 1
+.....................F........... [ 51%]
+...............................          [100%]
+=================================== FAILURES ===================================
+__________________________ TestParser.test_max_nodes ___________________________
+
+self = <tests.test_parser.TestParser testMethod=test_max_nodes>
+
+    def test_max_nodes(self):
+        self.assertIsInstance(parse_one("SELECT 1", max_nodes=1_000_000), exp.Select)
+    
+        cols = [f"col{i}" for i in range(500)]
+        sql = f"SELECT {','.join(cols)} FROM t"
+        self.assertIsInstance(parse_one(sql, max_nodes=1_000_000), exp.Select)
+    
+        width = 10000
+        depth = 100
+        expr = "x" + "=x" * depth
+        cols = [expr for _ in range(width)]
+        sql = f"SELECT {','.join(cols)}"
+    
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=1_000_000)
+        self.assertIn("Maximum number of AST nodes", str(ctx.exception))
+    
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=50_000)
+>       self.assertIn("(50000)", str(ctx.exception))
+E       AssertionError: '(50000)' not found in 'Maximum number of AST nodes exceeded (max_nodes=50000)'
+
+tests/test_parser.py:1107: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_parser.py::TestParser::test_max_nodes - AssertionError: '(5...
+1 failed, 63 passed, 71 subtests passed in 8.59s

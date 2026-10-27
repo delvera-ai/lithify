@@ -1,0 +1,24 @@
+exit 1
+.................F............                                                             [100%]
+=================================== FAILURES ===================================
+_______________________ TestClickhouse.test_groupconcat ________________________
+
+self = <tests.dialects.test_clickhouse.TestClickhouse testMethod=test_groupconcat>
+
+    def test_groupconcat(self):
+        # groupConcat(sep)(col) - parametric form with separator
+        parsed = self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts")
+        gc = parsed.selects[0]
+>       self.assertIsInstance(gc, exp.GroupConcat)
+E       AssertionError: ParameterizedAgg(
+E         this=groupConcat,
+E         expressions=[
+E           Literal(this=', ', is_string=True)],
+E         params=[
+E           Column(
+E             this=Identifier(this=part_name, quoted=False))]) is not an instance of <class 'sqlglot.expressions.aggregate.GroupConcat'>
+
+tests/dialects/test_clickhouse.py:1726: AssertionError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_clickhouse.py::TestClickhouse::test_groupconcat - ...
+1 failed, 29 passed, 270 subtests passed in 0.41s

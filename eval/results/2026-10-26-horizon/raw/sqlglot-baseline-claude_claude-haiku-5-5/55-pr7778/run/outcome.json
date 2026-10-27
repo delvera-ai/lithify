@@ -1,0 +1,28 @@
+{
+  "task": "Trino \u2192 other dialects: `FROM_ISO8601_DATE` only exists in Presto/Trino, but sqlglot parses it as an unknown function and passes it through unchanged:\n\n```python\np = sqlglot.parse_one(\"SELECT FROM_ISO8601_DATE('2020-05-11')\", \"trino\")\nfor d in [\"snowflake\", \"duckdb\", \"spark\", \"bigquery\"]:\n    print(d, p.sql(d))   # all emit FROM_ISO8601_DATE(...)\n```\n\nFor other dialects it should be transpiled to a cast to `DATE` (and round-trip in Presto/Trino).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 30121,
+    "cached": 289783,
+    "out": 4478,
+    "cost": 0.01115943,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

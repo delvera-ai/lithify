@@ -1,0 +1,91 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 5382f7200..228fc8a5b 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -784,6 +784,22 @@
+       "always_on_tokens": 2419,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-111553-sqlite-and-other-dialects-with-u",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 60368,
++      "tokens_cached": 1014804,
++      "tokens_out": 16556,
++      "cost_usd": 0.0305,
++      "wall_s": 259.3,
++      "always_on_tokens": 2419,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26ea7cdf4..c7ce2e187 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2299,7 +2299,15 @@ class Generator:
+         constraint = self.sql(expression, "constraint")
+         constraint = f" ON CONSTRAINT {constraint}" if constraint else ""
+ 
+-        conflict_keys = self.expressions(expression, key="conflict_keys", flat=True)
++        conflict_keys = self.expressions(
++            sqls=[
++                k
++                if isinstance(k, (exp.Column, exp.Identifier, exp.Func, exp.Paren))
++                else exp.paren(k, copy=False)
++                for k in expression.args.get("conflict_keys") or []
++            ],
++            flat=True,
++        )
+         if conflict_keys:
+             conflict_keys = f"({conflict_keys})"
+ 
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 9fa6b9261..2010ff893 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3544,7 +3544,7 @@ class Parser:
+             if self._match_text_seq("ON", "CONSTRAINT"):
+                 constraint = self._parse_id_var()
+             elif self._match(TokenType.L_PAREN):
+-                conflict_keys = self._parse_csv(self._parse_id_var)
++                conflict_keys = self._parse_csv(self._parse_assignment)
+                 self._match_r_paren()
+ 
+         index_predicate = self._parse_where()
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 2509021e1..85e1ce973 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -377,6 +377,25 @@ class TestSQLite(Validator):
+             "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
+         )
+ 
++    def test_on_conflict_expression_keys(self):
++        expr = self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) SELECT x, y, z FROM src WHERE TRUE ON CONFLICT(col_x, LOWER(col_y)) DO UPDATE SET col_z = excluded.col_z"
++        )
++        conflict_keys = expr.args["conflict"].args["conflict_keys"]
++        self.assertIsInstance(conflict_keys[0], exp.Column)
++        self.assertIsInstance(conflict_keys[1], exp.Lower)
++
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x) VALUES (1) ON CONFLICT(LOWER(col_y)) WHERE col_x > 0 DO NOTHING"
++        )
++        self.validate_all(
++            "INSERT INTO t (a) VALUES (1) ON CONFLICT(a, b + 1) DO NOTHING",
++            write={
++                "postgres": "INSERT INTO t (a) VALUES (1) ON CONFLICT(a, (b + 1)) DO NOTHING",
++                "sqlite": "INSERT INTO t (a) VALUES (1) ON CONFLICT(a, (b + 1)) DO NOTHING",
++            },
++        )
++
+     def test_analyze(self):
+         self.validate_identity("ANALYZE tbl")
+         self.validate_identity("ANALYZE schma.tbl")

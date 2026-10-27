@@ -1,0 +1,23 @@
+exit 1
+..........................................................                                      [100%]
+=================================== FAILURES ===================================
+____ TestBigQuery.test_bignumeric [DECLARE x BIGNUMERIC(76, 38) -> duckdb] _____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'DECLARE x DECIMAL(76, 38)' != 'DECLARE x DECIMAL(38, 38)'
+E   - DECLARE x DECIMAL(76, 38)
+E   ?                   ^^
+E   + DECLARE x DECIMAL(38, 38)
+E   ?                   ^^
+____ TestBigQuery.test_bignumeric [DECLARE x BIGDECIMAL(76, 38) -> duckdb] _____
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'DECLARE x DECIMAL(76, 38)' != 'DECLARE x DECIMAL(38, 38)'
+E   - DECLARE x DECIMAL(76, 38)
+E   ?                   ^^
+E   + DECLARE x DECIMAL(38, 38)
+E   ?                   ^^
+=========================== short test summary info ============================
+SUBFAILED[DECLARE x BIGNUMERIC(76, 38) -> duckdb] tests/dialects/test_bigquery.py::TestBigQuery::test_bignumeric
+SUBFAILED[DECLARE x BIGDECIMAL(76, 38) -> duckdb] tests/dialects/test_bigquery.py::TestBigQuery::test_bignumeric
+2 failed, 58 passed, 1055 subtests passed in 0.63s

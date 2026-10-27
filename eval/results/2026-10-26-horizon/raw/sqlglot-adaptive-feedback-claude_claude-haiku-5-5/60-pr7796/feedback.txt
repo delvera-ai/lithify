@@ -1,0 +1,16 @@
+{
+  "task_id": "20261027-120759-snowflake-dialect-snowflake-can",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-120759-snowflake-dialect-snowflake-can-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 177438,
+    "cached": 1972599,
+    "out": 25279,
+    "cost": 2.3192757999999998,
+    "exec": 0,
+    "roles": 3
+  }
+}

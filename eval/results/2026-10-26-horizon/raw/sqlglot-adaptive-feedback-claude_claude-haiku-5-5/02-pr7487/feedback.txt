@@ -1,0 +1,18 @@
+{
+  "task_id": "20261026-154230-clickhouse-dialect-the-parametri",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-154230-clickhouse-dialect-the-parametri-feedback",
+  "components": [
+    "memory.md",
+    "skills/sqlglot-dialect-functions",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 130637,
+    "cached": 1147589,
+    "out": 21510,
+    "cost": 1.7045738000000001,
+    "exec": 0,
+    "roles": 3
+  }
+}

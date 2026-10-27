@@ -1,0 +1,26 @@
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index efdebd18d..ea21db556 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -316,6 +316,7 @@ class ClickHouseParser(parser.Parser):
+     FUNC_TOKENS = {
+         *parser.Parser.FUNC_TOKENS,
+         TokenType.AND,
++        TokenType.FILE,
+         TokenType.OR,
+         TokenType.SET,
+     }
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..e9d9ba247 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -69,6 +69,9 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 0.01)")
+         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 1 / 10 OFFSET 1 / 2)")
+         self.validate_identity("SELECT sum(foo * bar) FROM bla SAMPLE 10000000")
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
+         self.validate_identity("CAST(x AS Nested(ID UInt32, Serial UInt32, EventTime DateTime))")
+         self.validate_identity("CAST(x AS Enum('hello' = 1, 'world' = 2))")
+         self.validate_identity("CAST(x AS Enum('hello', 'world'))")

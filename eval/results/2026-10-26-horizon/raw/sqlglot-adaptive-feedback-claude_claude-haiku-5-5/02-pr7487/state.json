@@ -1,0 +1,37 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 122940,
+      "tokens_cached": 2035267,
+      "tokens_out": 27483,
+      "cost_usd": 0.3041,
+      "wall_s": 329.1,
+      "always_on_tokens": 185,
+      "stability_after": 0.2,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261026-154230-clickhouse-dialect-the-parametri",
+      "k": 2,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 2,
+      "tokens_in": 118906,
+      "tokens_cached": 1966982,
+      "tokens_out": 26810,
+      "cost_usd": 0.2996,
+      "wall_s": 240.3,
+      "always_on_tokens": 185,
+      "stability_after": 0.4,
+      "feedback_failed": false
+    }
+  ]
+}

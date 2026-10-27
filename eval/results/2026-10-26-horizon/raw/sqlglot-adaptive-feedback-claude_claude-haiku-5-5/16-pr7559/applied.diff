@@ -1,0 +1,63 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 6c6e92abf..06a650b93 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -240,6 +240,22 @@
+       "always_on_tokens": 1154,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-201252-json-array-accepts-at-most-four",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 52269,
++      "tokens_cached": 813028,
++      "tokens_out": 14338,
++      "cost_usd": 0.0257,
++      "wall_s": 256.4,
++      "always_on_tokens": 1154,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 8f006c49a..bc3096d42 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -11,11 +11,12 @@ class CheckJson(Expression, Func):
+ 
+ class JSONArray(Expression, Func):
+     arg_types = {
+-        "expressions": False,
+         "null_handling": False,
+         "return_type": False,
+         "strict": False,
++        "expressions": False,
+     }
++    is_var_len_args = True
+ 
+ 
+ class JSONArrayAgg(Expression, AggFunc):
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 82118285c..056cf37fd 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -577,6 +577,13 @@ class TestDuckDB(Validator):
+                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+             },
+         )
++        self.validate_all(
++            "SELECT JSON_ARRAY(1, 2, 3, 4, 5, 6)",
++            write={
++                "duckdb": "SELECT JSON_ARRAY(1, 2, 3, 4, 5, 6)",
++                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(1, 2, 3, 4, 5, 6))",
++            },
++        )
+         self.validate_identity(
+             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
+             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",

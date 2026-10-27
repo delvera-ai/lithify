@@ -1,0 +1,80 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d411120db..9b109bac6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -48,6 +48,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.6,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-155049-transpiling-duckdb-s-json-array",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 41481,
++      "tokens_cached": 768250,
++      "tokens_out": 11079,
++      "cost_usd": 0.0215,
++      "wall_s": 235.7,
++      "always_on_tokens": 185,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..1eeb3c344 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1029,6 +1029,10 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return super().createable_sql(expression, locations)
+ 
++    @unsupported_args("null_handling", "return_type", "strict")
++    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
++        return self.func("ARRAY_CONSTRUCT", *expression.expressions)
++
+     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+         this = expression.this
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..a2910a2da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
+         ),
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..09f90b8f6 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -2748,6 +2748,21 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_json_array(self):
++        self.validate_identity("SELECT JSON_ARRAY('a', 'b', 'c')")
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++            },
++        )
++        self.validate_all(
++            "SELECT JSON_ARRAY()",
++            write={
++                "snowflake": "SELECT ARRAY_CONSTRUCT()",
++            },
++        )
++
+     def test_map_insert(self):
+         self.validate_all(
+             "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': CAST(3 AS DECIMAL(38, 0))})",

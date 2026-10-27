@@ -1,0 +1,76 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..ddfb1aab2 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -471,21 +471,31 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
+-        unpivot_columns = [
+-            col
++        # UNPIVOT(v1, v2 FOR name IN ((a1, a2) AS 'x', (b1, b2) AS 'y')): the name column is derived
++        # from every IN-list source column, while the i-th value column is only derived from the
++        # i-th source column of each IN-list entry
++        in_entries = [
++            e.this if isinstance(e, exp.PivotAlias) else e
+             for field in pivot.fields
+             for e in field.expressions
+-            for col in e.find_all(exp.Column)
+         ]
+-        for value_column in pivot.expressions:
+-            for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
++        unpivot_columns = [col for e in in_entries for col in e.find_all(exp.Column)]
+         for field in pivot.fields:
+             if isinstance(field, exp.In):
+                 mapping[field.this.name] = unpivot_columns
+ 
++        value_columns = pivot.expressions
++        if value_columns and isinstance(value_columns[0], exp.Tuple):
++            value_columns = value_columns[0].expressions
++
++        for i, value_column in enumerate(value_columns):
++            source_columns = []
++            for e in in_entries:
++                source = e.expressions[i] if isinstance(e, exp.Tuple) else e
++                source_columns.extend(source.find_all(exp.Column))
++            for identifier in value_column.find_all(exp.Identifier):
++                mapping[identifier.name] = source_columns
++
+         return mapping
+ 
+     # For each aggregation function, the pivot creates a new column for each field in category
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..293f042fb 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,27 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT a, b, id, n
++        FROM sales UNPIVOT ((a, b) FOR n IN ((jan, mar) AS 'Q1', (feb, apr) AS 'Q2'))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int", "mar": "int", "apr": "int"}}
++
++        node = lineage("a", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
++
++        node = lineage("b", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.MAR", "SALES.APR"])
++
++        node = lineage("n", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            [d.name for d in node.downstream], ["SALES.JAN", "SALES.MAR", "SALES.FEB", "SALES.APR"]
++        )
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.ID"])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

@@ -1,0 +1,16 @@
+{
+  "task_id": "20261026-160938-doris-and-starrocks-dialects-bot",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-160938-doris-and-starrocks-dialects-bot-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 194381,
+    "cached": 2215742,
+    "out": 23887,
+    "cost": 2.4755924,
+    "exec": 0,
+    "roles": 3
+  }
+}

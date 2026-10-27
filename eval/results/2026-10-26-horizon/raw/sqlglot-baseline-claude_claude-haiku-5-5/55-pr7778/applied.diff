@@ -1,0 +1,90 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index edfb4689d..47ffc870f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -864,6 +864,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-194202-trino-other-dialects-from-iso860",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 30121,
++      "tokens_cached": 289783,
++      "tokens_out": 4478,
++      "cost_usd": 0.0112,
++      "wall_s": 163.9,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/temporal.py b/sqlglot/expressions/temporal.py
+index bdf87afe9..13ea7f921 100644
+--- a/sqlglot/expressions/temporal.py
++++ b/sqlglot/expressions/temporal.py
+@@ -433,6 +433,10 @@ class DiToDate(Expression, Func):
+     pass
+ 
+ 
++class FromISO8601Date(Expression, Func):
++    _sql_names = ["FROM_ISO8601_DATE"]
++
++
+ class FromISO8601Timestamp(Expression, Func):
+     _sql_names = ["FROM_ISO8601_TIMESTAMP"]
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd408172b..07df2cfc5 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3994,6 +3994,9 @@ class Generator:
+     def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+         return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+ 
++    def fromiso8601date_sql(self, expression: exp.FromISO8601Date) -> str:
++        return self.sql(exp.cast(expression.this, exp.DType.DATE))
++
+     def add_sql(self, expression: exp.Add) -> str:
+         return self.binary(expression, "+")
+ 
+diff --git a/sqlglot/generators/presto.py b/sqlglot/generators/presto.py
+index ea7d2542c..4f2ccdc3d 100644
+--- a/sqlglot/generators/presto.py
++++ b/sqlglot/generators/presto.py
+@@ -304,6 +304,7 @@ class PrestoGenerator(generator.Generator):
+         exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
+         exp.FileFormatProperty: lambda self, e: f"format={self.sql(exp.Literal.string(e.name))}",
+         exp.First: _first_last_sql,
++        exp.FromISO8601Date: rename_func("FROM_ISO8601_DATE"),
+         exp.FromISO8601Timestamp: rename_func("FROM_ISO8601_TIMESTAMP"),
+         exp.FromTimeZone: lambda self, e: (
+             f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
+diff --git a/tests/dialects/test_presto.py b/tests/dialects/test_presto.py
+index a487c929d..3b4606413 100644
+--- a/tests/dialects/test_presto.py
++++ b/tests/dialects/test_presto.py
+@@ -45,6 +45,17 @@ class TestPresto(Validator):
+                 "bigquery": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMP)",
+             },
+         )
++        self.validate_all(
++            "SELECT FROM_ISO8601_DATE('2020-05-11')",
++            write={
++                "duckdb": "SELECT CAST('2020-05-11' AS DATE)",
++                "presto": "SELECT FROM_ISO8601_DATE('2020-05-11')",
++                "trino": "SELECT FROM_ISO8601_DATE('2020-05-11')",
++                "snowflake": "SELECT CAST('2020-05-11' AS DATE)",
++                "spark": "SELECT CAST('2020-05-11' AS DATE)",
++                "bigquery": "SELECT CAST('2020-05-11' AS DATE)",
++            },
++        )
+         self.validate_all(
+             "CAST(x AS INTERVAL YEAR TO MONTH)",
+             write={

@@ -1,0 +1,47 @@
+exit 1
+...F.......       [100%]
+=================================== FAILURES ===================================
+_____________________________ TestSQLite.test_ddl ______________________________
+
+self = <tests.dialects.test_sqlite.TestSQLite testMethod=test_ddl>
+
+    def test_ddl(self):
+        for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
+            with self.subTest(f"ON CONFLICT {conflict_action}"):
+                self.validate_identity("CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT IGNORE)")
+    
+        self.validate_identity("CREATE TABLE over (x, y)")
+        self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR FAIL INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
+        self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
+        self.validate_identity("CREATE VIRTUAL TABLE docs USING fts5(title, content)")
+        self.validate_identity("CREATE VIRTUAL TABLE IF NOT EXISTS docs USING fts5(title, content)")
+        self.validate_identity("CREATE VIRTUAL TABLE main.docs USING fts5(title, content)")
+        self.validate_identity(
+            "CREATE VIRTUAL TABLE demo_index USING rtree(id, minX, maxX, minY, maxY)"
+        )
+        self.validate_identity("CREATE VIRTUAL TABLE t USING module_name")
+        self.validate_identity("PRAGMA table_info")
+        self.validate_identity("PRAGMA schema")
+        self.validate_identity("PRAGMA full_column_names = on")
+        self.validate_identity("PRAGMA full_column_names = off")
+        self.validate_identity("PRAGMA cache_size = 2000")
+        self.validate_identity("PRAGMA foo = -2000")
+>       self.validate_identity("PRAGMA foo(-2000)", "PRAGMA foo = -2000")
+
+tests/dialects/test_sqlite.py:304: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'PRAGMA foo = -2000' != 'PRAGMA FOO(-2000)'
+E   - PRAGMA foo = -2000
+E   + PRAGMA FOO(-2000)
+----------------------------- Captured stdout call -----------------------------
+uuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_sqlite.py::TestSQLite::test_ddl - AssertionError: ...
+1 failed, 10 passed, 55 subtests passed in 0.32s

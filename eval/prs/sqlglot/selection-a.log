@@ -1,0 +1,178 @@
+#7422: needs both test and source changes (tests=0, src=4)
+#7424: needs both test and source changes (tests=0, src=2)
+#7420: needs both test and source changes (tests=0, src=6)
+#7426: needs both test and source changes (tests=0, src=1)
+#7421: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7429: needs both test and source changes (tests=0, src=1)
+#7430: needs both test and source changes (tests=0, src=1)
+#7434: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7440: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7441: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7419: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7442: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7439: needs both test and source changes (tests=0, src=1)
+#7433: needs both test and source changes (tests=0, src=2)
+#7452: needs both test and source changes (tests=0, src=1)
+#7451: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7450: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7436: merge commit not in history
+#7445: needs both test and source changes (tests=0, src=1)
+#7453: needs both test and source changes (tests=0, src=0)
+#7454: needs both test and source changes (tests=0, src=0)
+#7457: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7315: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7455: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7444: needs both test and source changes (tests=0, src=4)
+#7446: needs both test and source changes (tests=0, src=9)
+#7458: needs both test and source changes (tests=0, src=1)
+#7443: needs both test and source changes (tests=0, src=1)
+#7459: needs both test and source changes (tests=0, src=100)
+#7460: needs both test and source changes (tests=0, src=2)
+#7463: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7466: needs both test and source changes (tests=0, src=0)
+#7467: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7461: needs both test and source changes (tests=0, src=1)
+#7464: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7468: needs both test and source changes (tests=0, src=1)
+#7491: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7472: needs both test and source changes (tests=0, src=1)
+#7473: needs both test and source changes (tests=0, src=1)
+#7488: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7475: needs both test and source changes (tests=0, src=1)
+#7490: needs both test and source changes (tests=1, src=0)
+#7485: needs both test and source changes (tests=0, src=1)
+#7493: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7496: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7489: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7479: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7499: needs both test and source changes (tests=0, src=1)
+#7500: needs both test and source changes (tests=0, src=1)
+#7482: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7486: needs both test and source changes (tests=0, src=1)
+#7492: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7487: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7502: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7471: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7501: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7477: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7503: needs both test and source changes (tests=0, src=1)
+#7505: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7507: needs both test and source changes (tests=0, src=1)
+#7510: suite@base=-1 holdout@base=1 holdout@merge=1 old-tests@merge=-1 -> drop
+#7513: needs both test and source changes (tests=1, src=0)
+#7497: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7511: merge commit not in history
+#7514: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7520: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7523: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7521: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7519: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7517: needs both test and source changes (tests=0, src=1)
+#7524: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7525: needs both test and source changes (tests=0, src=1)
+#7526: needs both test and source changes (tests=0, src=0)
+#7528: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7529: merge commit not in history
+#7522: merge commit not in history
+#7533: needs both test and source changes (tests=1, src=0)
+#7535: needs both test and source changes (tests=0, src=1)
+#7530: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7537: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7542: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7544: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7545: needs both test and source changes (tests=0, src=1)
+#7546: needs both test and source changes (tests=0, src=1)
+#7538: merge commit not in history
+#7549: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7547: needs both test and source changes (tests=0, src=2)
+#7551: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7550: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7552: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7518: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7554: needs both test and source changes (tests=0, src=0)
+#7557: needs both test and source changes (tests=0, src=1)
+#7560: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7536: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7561: merge commit not in history
+#7559: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7564: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7565: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7562: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7465: needs both test and source changes (tests=0, src=13)
+#7571: needs both test and source changes (tests=0, src=1)
+#7570: needs both test and source changes (tests=0, src=6)
+#7569: needs both test and source changes (tests=1, src=0)
+#7573: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7574: needs both test and source changes (tests=0, src=4)
+#7578: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7575: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7543: needs both test and source changes (tests=0, src=3)
+#7583: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7577: merge commit not in history
+#7572: needs both test and source changes (tests=0, src=6)
+#7585: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7580: suite@base=-1 holdout@base=2 holdout@merge=0 old-tests@merge=1 -> drop
+#7597: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7598: needs both test and source changes (tests=0, src=1)
+#7600: needs both test and source changes (tests=0, src=0)
+#7591: needs both test and source changes (tests=0, src=1)
+#7590: needs both test and source changes (tests=0, src=1)
+#7603: needs both test and source changes (tests=0, src=5)
+#7579: needs both test and source changes (tests=0, src=5)
+#7592: needs both test and source changes (tests=0, src=1)
+#7601: needs both test and source changes (tests=0, src=3)
+#7602: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7594: needs both test and source changes (tests=0, src=1)
+#7608: needs both test and source changes (tests=0, src=5)
+#7605: needs both test and source changes (tests=0, src=2)
+#7615: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7584: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7613: needs both test and source changes (tests=0, src=1)
+#7611: merge commit not in history
+#7609: needs both test and source changes (tests=0, src=1)
+#7618: needs both test and source changes (tests=0, src=3)
+#7614: merge commit not in history
+#7588: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7606: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7616: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7623: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7621: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7622: needs both test and source changes (tests=0, src=1)
+#7629: suite@base=-1 holdout@base=0 holdout@merge=-1 old-tests@merge=-1 -> drop
+#7630: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7586: needs both test and source changes (tests=0, src=3)
+#7626: needs both test and source changes (tests=0, src=2)
+#7638: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7633: needs both test and source changes (tests=0, src=5)
+#7635: needs both test and source changes (tests=0, src=0)
+#7639: needs both test and source changes (tests=0, src=18)
+#7640: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7636: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7631: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7642: needs both test and source changes (tests=0, src=2)
+#7647: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7653: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7649: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7654: needs both test and source changes (tests=0, src=2)
+#7659: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7655: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7641: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7652: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7658: merge commit not in history
+#7656: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7665: merge commit not in history
+#7669: needs both test and source changes (tests=0, src=1)
+#7667: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7664: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7671: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7677: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7673: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7675: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7680: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7674: merge commit not in history
+#7661: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7684: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep
+#7687: needs both test and source changes (tests=0, src=1)
+#7686: suite@base=-1 holdout@base=5 holdout@merge=5 old-tests@merge=-1 -> drop
+#7689: suite@base=-1 holdout@base=1 holdout@merge=0 old-tests@merge=1 -> drop
+#7690: suite@base=0 holdout@base=1 holdout@merge=0 old-tests@merge=0 -> keep

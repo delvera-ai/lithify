@@ -1,0 +1,142 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 187b83edf..6ac7f4e4d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -784,6 +784,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-183620-snowflake-dialect-snowflake-s-ti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 49658,
++      "tokens_cached": 1337923,
++      "tokens_out": 16432,
++      "cost_usd": 0.0315,
++      "wall_s": 544.5,
++      "always_on_tokens": 185,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index fddbc935a..f03dbfec5 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -366,6 +366,10 @@ class Drop(Expression):
+         return kind and kind.upper()
+ 
+ 
++class Undrop(Expression):
++    arg_types = {"this": False, "kind": True}
++
++
+ class DropPrimaryKey(Expression):
+     arg_types = {}
+ 
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index bee254c35..190534d5c 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -837,6 +837,11 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return f"{value}{explode}{alias}"
+ 
++    def undrop_sql(self, expression: exp.Undrop) -> str:
++        this = self.sql(expression, "this")
++        this = f" {this}" if this else ""
++        return f"UNDROP {expression.args['kind']}{this}"
++
+     def show_sql(self, expression: exp.Show) -> str:
+         terse = "TERSE " if expression.args.get("terse") else ""
+         iceberg = "ICEBERG " if expression.args.get("iceberg") else ""
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 8c3fed5c3..d00be3b64 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -762,6 +762,21 @@ class SnowflakeParser(parser.Parser):
+         TokenType.SHOW: lambda self: self._parse_show(),
+     }
+ 
++    UNDROP_KINDS = (
++        "DYNAMIC TABLE",
++        "ICEBERG TABLE",
++        "EXTERNAL VOLUME",
++        "TABLE",
++        "SCHEMA",
++        "DATABASE",
++        "ACCOUNT",
++        "NOTEBOOK",
++        "SNAPSHOT",
++        "STREAMLIT",
++        "TAG",
++        "TYPE",
++    )
++
+     PROPERTY_PARSERS = {
+         **parser.Parser.PROPERTY_PARSERS,
+         "CREDENTIALS": lambda self: self._parse_credentials_property(),
+@@ -1135,6 +1150,24 @@ class SnowflakeParser(parser.Parser):
+ 
+         return super()._parse_id_var(any_token=any_token, tokens=tokens)
+ 
++    def _parse_statement(self) -> exp.Expr | None:
++        # https://docs.snowflake.com/en/sql-reference/sql/undrop-table
++        if self._match_text_seq("UNDROP"):
++            return self._parse_undrop()
++        return super()._parse_statement()
++
++    def _parse_undrop(self) -> exp.Undrop | exp.Command:
++        start = self._prev
++        kind = next(
++            (kind for kind in self.UNDROP_KINDS if self._match_text_seq(*kind.split(" "))),
++            None,
++        )
++        if not kind:
++            return self._parse_as_command(start)
++
++        this = self._parse_table_parts(schema=True) if self._curr else None
++        return self.expression(exp.Undrop(this=this, kind=kind))
++
+     def _parse_show_snowflake(
+         self, this: str, terse: bool = False, iceberg: bool = False
+     ) -> exp.Show:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 8eccf066c..fedc90c17 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -5356,6 +5356,28 @@ MATCH_RECOGNIZE (
+         self.assertTrue(ast.args["restrict"])
+         self.validate_identity("DROP ICEBERG TABLE IF EXISTS t RESTRICT")
+ 
++    def test_undrop(self):
++        for kind in (
++            "TABLE",
++            "SCHEMA",
++            "DATABASE",
++            "ACCOUNT",
++            "NOTEBOOK",
++            "SNAPSHOT",
++            "STREAMLIT",
++            "TAG",
++            "TYPE",
++            "DYNAMIC TABLE",
++            "EXTERNAL VOLUME",
++            "ICEBERG TABLE",
++        ):
++            with self.subTest(kind):
++                self.validate_identity(f"UNDROP {kind} t")
++
++        self.validate_identity("UNDROP TABLE db.schema.t")
++        self.validate_identity("UNDROP ACCOUNT")
++        self.validate_identity("UNDROP TABLE IDENTIFIER('12345')")
++
+     def test_show_primary_keys(self):
+         self.validate_identity("SHOW PRIMARY KEYS")
+         self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")

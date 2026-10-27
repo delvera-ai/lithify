@@ -1,0 +1,19 @@
+lithify ▸ 20261026-143615-postgres-dialect-when-an-unnest  k=0 (override k=0) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ✓ applied deliverable from base-1: cruise: gates passed on first execution
+lithify ◂ delivered=True first_pass=True S=1.00 executions=1 role_sessions=0 tokens(in/cached/out)=36087/527779/7606 cost=$0.02
+{
+  "task_id": "20261026-143615-postgres-dialect-when-an-unnest",
+  "k": 0,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 1.0,
+  "executions": 1,
+  "role_sessions": 0
+}
+

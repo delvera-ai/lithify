@@ -1,0 +1,28 @@
+{
+  "task": "Hive, Spark and Databricks dialects: a doubled single quote (`''`) inside a string literal should be read as an escaped single quote, as these engines do. Today a column comment such as `COMMENT 'Hello ''World!'` is parsed incorrectly. Strings with `''` escapes should parse and round-trip in these dialects.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 36716,
+    "cached": 451735,
+    "out": 7873,
+    "cost": 0.015794850000000003,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

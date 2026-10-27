@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-102257-duckdb-dialect-overloaded-macro",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-102257-duckdb-dialect-overloaded-macro-feedback",
+  "components": [
+    "skills/sqlglot-ddl-statements",
+    "skills/sqlglot-dialect-functions"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 151233,
+    "cached": 1452046,
+    "out": 21417,
+    "cost": 1.9283332,
+    "exec": 0,
+    "roles": 3
+  }
+}

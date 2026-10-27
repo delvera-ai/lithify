@@ -1,0 +1,55 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 702e7777e..cff820df7 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -608,6 +608,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-081027-postgres-dialect-comment-on-fail",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 1644,
++      "tokens_cached": 47002,
++      "tokens_out": 510,
++      "cost_usd": 0.0147,
++      "wall_s": 3676.9,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index f7295acdf..935631e22 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -2193,7 +2193,7 @@ class Parser:
+         elif kind.token_type == TokenType.COLUMN:
+             this = self._parse_column()
+         else:
+-            this = self._parse_id_var()
++            this = self._parse_table_parts()
+ 
+         self._match(TokenType.IS)
+ 
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index cba9d4887..6c3678ed7 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -69,6 +69,10 @@ class TestPostgres(Validator):
+         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+         self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
++        self.validate_identity("COMMENT ON TYPE foo.mood IS 'x'")
++        self.validate_identity("COMMENT ON VIEW foo.bat IS 'x'")
++        self.validate_identity("COMMENT ON SEQUENCE foo.seq IS 'x'")
++        self.validate_identity("COMMENT ON INDEX foo.idx IS 'x'")
+         self.validate_identity("SELECT e'\\xDEADBEEF'")
+         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")

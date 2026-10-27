@@ -1,0 +1,65 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b9354d362..1d5941adc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -880,6 +880,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-103050-snowflake-dialect-the-pattern-cl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32347,
++      "tokens_cached": 266018,
++      "tokens_out": 4088,
++      "cost_usd": 0.0112,
++      "wall_s": 131.3,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 581f4da44..b956163fc 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2410,10 +2410,12 @@ class Generator:
+         laterals = self.expressions(expression, key="laterals", sep="")
+ 
+         file_format = self.sql(expression, "format")
+-        if file_format:
+-            pattern = self.sql(expression, "pattern")
+-            pattern = f", PATTERN => {pattern}" if pattern else ""
+-            file_format = f" (FILE_FORMAT => {file_format}{pattern})"
++        pattern = self.sql(expression, "pattern")
++        stage_params = [
++            *([f"FILE_FORMAT => {file_format}"] if file_format else []),
++            *([f"PATTERN => {pattern}"] if pattern else []),
++        ]
++        file_format = f" ({', '.join(stage_params)})" if stage_params else ""
+ 
+         ordinality = expression.args.get("ordinality") or ""
+         if ordinality:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index f5b36d7d5..7f7e864a7 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -3441,6 +3441,12 @@ class TestSnowflake(Validator):
+         self.validate_identity(
+             "SELECT t.$1, t.$2 FROM @mystage1 (FILE_FORMAT => 'myformat', PATTERN => '.*data.*[.]csv.gz') AS t"
+         )
++        self.validate_identity(
++            "SELECT * FROM @mystage (PATTERN => '.*data-100.*')",
++        )
++        self.validate_identity(
++            "SELECT * FROM @mystage (FILE_FORMAT => 'myformat') AS t",
++        )
+         self.validate_identity(
+             "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
+             "SELECT GET_PATH(PARSE_JSON($1), 'a.b') FROM @mystage2/data1.json.gz",

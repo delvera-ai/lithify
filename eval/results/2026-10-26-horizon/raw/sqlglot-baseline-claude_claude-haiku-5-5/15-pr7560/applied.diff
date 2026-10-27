@@ -1,0 +1,240 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 36edf5a96..e3dc477a4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -224,6 +224,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-141239-optimizer-un-pivot-over-cte-sour",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 128074,
++      "tokens_cached": 4764054,
++      "tokens_out": 71904,
++      "cost_usd": 0.3183,
++      "wall_s": 762.8,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index 28de2be45..0f1e24f77 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -8,14 +8,14 @@ from sqlglot.dialects.dialect import Dialect, DialectType
+ from sqlglot.errors import OptimizeError, highlight_sql
+ from sqlglot.helper import seq_get
+ from sqlglot.optimizer.annotate_types import TypeAnnotator
+-from sqlglot.optimizer.resolver import Resolver
++from sqlglot.optimizer.resolver import Resolver, pivot_output_columns
+ from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
+ from sqlglot.optimizer.simplify import simplify_parens
+ from sqlglot.schema import Schema, ensure_schema
+ 
+ if t.TYPE_CHECKING:
+     from sqlglot._typing import E
+-    from collections.abc import Iterator, Iterable
++    from collections.abc import Iterable
+ 
+ 
+ def qualify_columns(
+@@ -181,22 +181,6 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
+         scope.clear_cache()
+ 
+ 
+-def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
+-    name_columns = [
+-        field.this
+-        for field in unpivot.fields
+-        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
+-    ]
+-    value_columns = (
+-        ident
+-        for e in unpivot.expressions
+-        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
+-        if isinstance(ident, exp.Identifier)
+-    )
+-
+-    return itertools.chain(name_columns, value_columns)
+-
+-
+ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
+     """
+     Remove table column aliases.
+@@ -605,7 +589,12 @@ def _qualify_columns(
+         column_name = column.name
+ 
+         if column_table and column_table in scope.sources:
+-            source_columns = resolver.get_source_columns(column_table)
++            # Columns inside a PIVOT refer to the pre-pivot source, the ones outside of it to its output
++            source_columns = (
++                resolver.get_source_columns(column_table)
++                if column.find_ancestor(exp.Pivot)
++                else resolver.get_output_columns(column_table)
++            )
+             if (
+                 not allow_partial_qualification
+                 and source_columns
+@@ -782,26 +771,7 @@ def _expand_stars(
+     coalesced_columns = set()
+     dialect = resolver.dialect
+ 
+-    pivot_output_columns = None
+-    pivot_exclude_columns: set[str] = set()
+-
+     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
+-    if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
+-        if pivot.unpivot:
+-            pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
+-
+-            for field in pivot.fields:
+-                if isinstance(field, exp.In):
+-                    pivot_exclude_columns.update(
+-                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+-                    )
+-
+-        else:
+-            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
+-
+-            pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
+-            if not pivot_output_columns:
+-                pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
+ 
+     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+         isinstance(col, exp.Dot) for col in scope.stars
+@@ -865,12 +835,7 @@ def _expand_stars(
+             replaced_columns = replace_columns.get(table_id, {})
+ 
+             if pivot:
+-                if pivot_output_columns and pivot_exclude_columns:
+-                    pivot_columns = [c for c in columns if c not in pivot_exclude_columns]
+-                    pivot_columns.extend(pivot_output_columns)
+-                else:
+-                    pivot_columns = pivot.alias_column_names
+-
++                pivot_columns = pivot_output_columns(pivot, columns)
+                 if pivot_columns:
+                     new_selections.extend(
+                         alias(exp.column(name, table=pivot.alias), name, copy=False)
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index ca6f8d5ac..5f05eafda 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -11,7 +11,53 @@ from sqlglot.optimizer.scope import Scope
+ 
+ if t.TYPE_CHECKING:
+     from sqlglot.schema import Schema
+-    from collections.abc import Sequence, Mapping
++    from collections.abc import Iterator, Sequence, Mapping
++
++
++def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
++    name_columns = [
++        field.this
++        for field in unpivot.fields
++        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
++    ]
++    value_columns = (
++        ident
++        for e in unpivot.expressions
++        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
++        if isinstance(ident, exp.Identifier)
++    )
++
++    return itertools.chain(name_columns, value_columns)
++
++
++def pivot_output_columns(pivot: exp.Pivot, columns: Sequence[str]) -> list[str] | None:
++    """
++    Returns the columns that a PIVOT / UNPIVOT exposes, given the `columns` of its source.
++
++    Returns None if the output columns can't be derived from the pivot.
++    """
++    if pivot.alias_column_names:
++        return pivot.alias_column_names
++
++    if pivot.unpivot:
++        output = [c.output_name for c in _unpivot_columns(pivot)]
++        exclude = {
++            c.output_name
++            for field in pivot.fields
++            if isinstance(field, exp.In)
++            for e in field.expressions
++            for c in e.find_all(exp.Column)
++        }
++    else:
++        output = [c.output_name for c in pivot.args.get("columns", [])] or [
++            c.alias_or_name for c in pivot.expressions
++        ]
++        exclude = {c.output_name for c in pivot.find_all(exp.Column)}
++
++    if not output or not exclude:
++        return None
++
++    return [c for c in columns if c not in exclude] + output
+ 
+ 
+ class Resolver:
+@@ -214,6 +260,16 @@ class Resolver:
+ 
+         return self._get_source_columns_cache[cache_key]
+ 
++    def get_output_columns(self, name: str, only_visible: bool = False) -> Sequence[str]:
++        """Resolve the columns that the source `name` exposes once it has been pivoted, if it is."""
++        columns = self.get_source_columns(name, only_visible)
++        source = self.scope.sources[name]
++        pivot = (
++            seq_get(source.args.get("pivots") or [], 0) if isinstance(source, exp.Table) else None
++        )
++        output = pivot_output_columns(pivot, columns) if pivot is not None else None
++        return columns if output is None else output
++
+     def _get_all_source_columns(self) -> dict[str, Sequence[str]]:
+         if self._source_columns is None:
+             self._source_columns = {
+diff --git a/tests/fixtures/optimizer/optimizer.sql b/tests/fixtures/optimizer/optimizer.sql
+index 60ae89d49..8d2727bb0 100644
+--- a/tests/fixtures/optimizer/optimizer.sql
++++ b/tests/fixtures/optimizer/optimizer.sql
+@@ -633,6 +633,33 @@ SELECT
+ FROM `u_cte` AS `u_cte`
+ PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_0`;
+ 
++# title: selecting all columns from an unpivoted CTE source
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT f, g, h FROM u) SELECT * FROM c UNPIVOT(v FOR m IN (f, g));
++SELECT
++  `c`.`h` AS `h`,
++  `c`.`m` AS `m`,
++  `c`.`v` AS `v`
++FROM `c` AS `c`
++UNPIVOT(`v` FOR `m` IN (`c`.`f`, `c`.`g`)) AS `c`;
++
++# title: selecting a column from an aliased unpivoted CTE source
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT f, g, h FROM u) SELECT u2.v FROM c UNPIVOT(v FOR m IN (f, g)) AS u2;
++WITH `c` AS (
++  SELECT
++    `u`.`f` AS `f`,
++    `u`.`g` AS `g`,
++    `u`.`h` AS `h`
++  FROM `u` AS `u`
++)
++SELECT
++  `u2`.`v` AS `v`
++FROM `c` AS `c`
++UNPIVOT(`v` FOR `m` IN (`c`.`f`, `c`.`g`)) AS `u2`;
++
+ # title: selecting all columns from a pivoted source and generating snowflake
+ # execute: false
+ # dialect: snowflake

@@ -1,0 +1,92 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 680946c3c..7b6ba6b49 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -544,6 +544,22 @@
+       "always_on_tokens": 2013,
+       "stability_after": 0.6,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-100136-duckdb-or-any-source-where-nulls",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 52798,
++      "tokens_cached": 796246,
++      "tokens_out": 17770,
++      "cost_usd": 0.0274,
++      "wall_s": 221.8,
++      "always_on_tokens": 2013,
++      "stability_after": 0.7,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..734e1a163 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,8 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = self.sql(self._null_check_operand(expression))
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+@@ -3036,6 +3035,20 @@ class Generator:
+ 
+         return f"{this}{sort_order}{nulls_sort_change}{with_fill}"
+ 
++    def _null_check_operand(self, expression: exp.Ordered) -> exp.Expression:
++        # A bare column that names a single projection of the ORDER BY's SELECT is checked through
++        # that projection, since a bare name in a CASE is resolved against every FROM table
++        column = expression.this
++        order = expression.parent
++        select = order.parent if isinstance(order, exp.Order) else None
++
++        if isinstance(column, exp.Column) and not column.table and isinstance(select, exp.Select):
++            projections = [p for p in select.expressions if p.alias_or_name == column.name]
++            if len(projections) == 1:
++                return projections[0].unalias()
++
++        return column
++
+     def matchrecognizemeasure_sql(self, expression: exp.MatchRecognizeMeasure) -> str:
+         window_frame = self.sql(expression, "window_frame")
+         window_frame = f"{window_frame} " if window_frame else ""
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..ff788b486 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -2854,3 +2854,23 @@ class TestDuckDB(Validator):
+                 "snowflake": "SELECT TO_VARIANT('1')",
+             },
+         )
++
++    def test_null_ordering_mysql_ambiguous_columns(self):
++        self.validate_all(
++            "SELECT a.x, b.y FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "mysql": "SELECT a.x, b.y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
++        self.validate_all(
++            "SELECT a.x AS v, b.y FROM a JOIN b ON a.id = b.id ORDER BY v",
++            write={
++                "mysql": "SELECT a.x AS v, b.y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, v",
++            },
++        )
++        self.validate_all(
++            "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY b.x",
++            write={
++                "mysql": "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN b.x IS NULL THEN 1 ELSE 0 END, b.x",
++            },
++        )

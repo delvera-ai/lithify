@@ -1,0 +1,213 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0fca45e6a..49b096b73 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -864,6 +864,22 @@
+       "always_on_tokens": 2683,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-114009-starrocks-dialect-several-functi",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 118684,
++      "tokens_cached": 2930668,
++      "tokens_out": 47630,
++      "cost_usd": 0.2653,
++      "wall_s": 362.3,
++      "always_on_tokens": 2683,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index e71176c1f..a0f03eca3 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ from sqlglot import exp, transforms
+ from sqlglot.dialects.dialect import (
+     approx_count_distinct_sql,
++    arg_max_or_min_no_count,
+     arrow_json_extract_sql,
+     rename_func,
+     unit_to_str,
+@@ -38,6 +39,25 @@ def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
+     return expression
+ 
+ 
++def _map_sql(self: StarRocksGenerator, expression: exp.Map | exp.VarMap) -> str:
++    # StarRocks' map() takes interleaved key, value arguments; the two-array form is map_from_arrays()
++    keys = expression.args.get("keys")
++    values = expression.args.get("values")
++
++    if keys is None and values is None:
++        return self.func("MAP")
++
++    if (
++        isinstance(keys, exp.Array)
++        and isinstance(values, exp.Array)
++        and len(keys.expressions) == len(values.expressions)
++    ):
++        pairs = [arg for pair in zip(keys.expressions, values.expressions) for arg in pair]
++        return self.func("MAP", *pairs)
++
++    return self.func("MAP_FROM_ARRAYS", keys, values)
++
++
+ # https://docs.starrocks.io/docs/sql-reference/sql-functions/spatial-functions/st_distance_sphere/
+ def st_distance_sphere(self, expression: exp.StDistance) -> str:
+     point1 = expression.this
+@@ -86,9 +106,14 @@ class StarRocksGenerator(MySQLGenerator):
+     }
+ 
+     TRANSFORMS = {
+-        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k is not exp.DateTrunc},
++        **{
++            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
++        },
+         exp.Array: inline_array_sql,
++        exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
++        exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+         exp.ArrayAgg: rename_func("ARRAY_AGG"),
++        exp.ArrayContainsAll: rename_func("ARRAY_CONTAINS_ALL"),
+         exp.ArrayFilter: rename_func("ARRAY_FILTER"),
+         exp.ArrayToString: rename_func("ARRAY_JOIN"),
+         exp.ApproxDistinct: approx_count_distinct_sql,
+@@ -98,6 +123,8 @@ class StarRocksGenerator(MySQLGenerator):
+         exp.Flatten: rename_func("ARRAY_FLATTEN"),
+         exp.JSONExtractScalar: arrow_json_extract_sql,
+         exp.JSONExtract: arrow_json_extract_sql,
++        exp.Map: _map_sql,
++        exp.VarMap: _map_sql,
+         exp.Property: property_sql,
+         exp.RegexpLike: rename_func("REGEXP"),
+         # Inherited from MySQL, minus operations StarRocks supports natively
+@@ -310,6 +337,22 @@ class StarRocksGenerator(MySQLGenerator):
+ 
+         return f"PARTITION BY {self.sql(this)}"
+ 
++    def trim_sql(self, expression: exp.Trim) -> str:
++        this = expression.this
++        pattern = expression.expression
++
++        if expression.args.get("collation"):
++            self.unsupported("StarRocks TRIM does not support COLLATE")
++
++        # StarRocks errors on an empty characters argument, and trimming no characters is a no-op
++        if isinstance(pattern, exp.Literal) and pattern.is_string and not pattern.name:
++            return self.sql(this)
++
++        func_name = {"LEADING": "LTRIM", "TRAILING": "RTRIM"}.get(
++            expression.args.get("position"), "TRIM"
++        )
++        return self.func(func_name, this, pattern)
++
+     def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
+         """Generate StarRocks ORDER BY clause for clustering."""
+         if expression.this:
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index eb5387154..e563c898c 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -30,6 +30,11 @@ class StarRocksParser(MySQLParser):
+         "REGEXP": exp.RegexpLike.from_arg_list,
+     }
+ 
++    FUNCTION_PARSERS = {
++        **MySQLParser.FUNCTION_PARSERS,
++        "MAP": lambda self: self._parse_map(),
++    }
++
+     PROPERTY_PARSERS = {
+         **MySQLParser.PROPERTY_PARSERS,
+         "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+@@ -38,6 +43,15 @@ class StarRocksParser(MySQLParser):
+         "REFRESH": lambda self: self._parse_refresh_property(),
+     }
+ 
++    def _parse_map(self) -> exp.Map:
++        # MAP(k1, v1, k2, v2, ...): the keys and values are interleaved, unlike the two-array form
++        args = self._parse_csv(self._parse_assignment)
++        return self.expression(
++            exp.Map(
++                keys=exp.Array(expressions=args[0::2]), values=exp.Array(expressions=args[1::2])
++            )
++        )
++
+     def _parse_rollup_property(self) -> exp.RollupProperty:
+         # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
+         def parse_rollup_index() -> exp.RollupIndex:
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index b6b27b254..78b0465e1 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -333,3 +333,63 @@ class TestStarrocks(Validator):
+         self.validate_identity(
+             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
+         )
++
++    def test_aggregate_and_array_functions(self):
++        self.validate_identity("SELECT MIN_BY(a, b) FROM t").expressions[0].assert_is(exp.ArgMin)
++        self.validate_identity("SELECT MAX_BY(a, b) OVER (PARTITION BY c) FROM t")
++        self.validate_all(
++            "SELECT MAX_BY(a, b) FROM t",
++            read={"duckdb": "SELECT ARG_MAX(a, b) FROM t"},
++        )
++        self.validate_all(
++            "SELECT MIN_BY(a, b) FROM t",
++            read={"duckdb": "SELECT ARG_MIN(a, b) FROM t"},
++        )
++
++        self.validate_identity("SELECT ARRAY_CONTAINS_ALL(a, b)")
++        self.validate_all(
++            "SELECT ARRAY_CONTAINS_ALL(a, b)",
++            read={"postgres": "SELECT a @> b", "duckdb": "SELECT ARRAY_HAS_ALL(a, b)"},
++        )
++
++    def test_map_constructor(self):
++        self.validate_identity("SELECT MAP()")
++        self.validate_identity("SELECT MAP('a', 1, 'b', 2)").selects[0].assert_is(exp.Map)
++        self.validate_identity("SELECT MAP(a, b)")
++        self.validate_identity("SELECT MAP_FROM_ARRAYS([1, 2], ['x', 'y'])")
++
++        self.validate_all(
++            "SELECT MAP('a', 1, 'b', 2)",
++            read={
++                "duckdb": "SELECT MAP(['a', 'b'], [1, 2])",
++                "presto": "SELECT MAP(ARRAY['a', 'b'], ARRAY[1, 2])",
++                "spark": "SELECT MAP('a', 1, 'b', 2)",
++            },
++        )
++        self.validate_all(
++            "SELECT MAP_FROM_ARRAYS(k, v)",
++            read={"duckdb": "SELECT MAP(k, v)"},
++        )
++
++    def test_trim(self):
++        self.validate_identity("SELECT TRIM(a)")
++        self.validate_identity("SELECT TRIM(a, 'x')")
++        self.validate_identity("SELECT LTRIM(a, 'x')")
++        self.validate_identity("SELECT RTRIM(a)")
++
++        self.validate_all(
++            "SELECT TRIM(a, 'x')",
++            read={
++                "mysql": "SELECT TRIM(BOTH 'x' FROM a)",
++                "duckdb": "SELECT TRIM('x' FROM a)",
++            },
++        )
++        self.validate_all(
++            "SELECT LTRIM(a, 'x')",
++            read={"duckdb": "SELECT TRIM(LEADING 'x' FROM a)"},
++        )
++        self.validate_all(
++            "SELECT RTRIM(a, 'x')",
++            read={"duckdb": "SELECT TRIM(TRAILING 'x' FROM a)"},
++        )
++        self.validate_all("SELECT a", read={"duckdb": "SELECT TRIM(BOTH '' FROM a)"})

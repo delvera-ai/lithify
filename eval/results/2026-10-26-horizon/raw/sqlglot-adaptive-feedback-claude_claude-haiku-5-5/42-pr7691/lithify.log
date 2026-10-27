@@ -1,0 +1,21 @@
+lithify ▸ 20261027-103219-pretty-printing-a-multi-line-com  k=1 (build (S=0.60)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ✓ applied deliverable from base-1: only one distinct deliverable passed the gates (no LLM judge needed)
+lithify ◂ delivered=True first_pass=True S=0.70 executions=1 role_sessions=0 tokens(in/cached/out)=35644/415909/4793 cost=$0.01
+{
+  "task_id": "20261027-103219-pretty-printing-a-multi-line-com",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.7,
+  "executions": 1,
+  "role_sessions": 0
+}
+

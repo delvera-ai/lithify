@@ -1,0 +1,93 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4081b4f1e..3863b9c8c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -896,6 +896,22 @@
+       "always_on_tokens": 2729,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-115250-exasol-dialect-the-second-argume",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 65040,
++      "tokens_cached": 1206019,
++      "tokens_out": 15766,
++      "cost_usd": 0.0461,
++      "wall_s": 218.5,
++      "always_on_tokens": 2729,
++      "stability_after": 0.7,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/exasol.py b/sqlglot/parsers/exasol.py
+index 0d2156035..1e86f58ac 100644
+--- a/sqlglot/parsers/exasol.py
++++ b/sqlglot/parsers/exasol.py
+@@ -118,9 +118,10 @@ class ExasolParser(parser.Parser):
+ 
+     FUNCTION_PARSERS = {
+         **parser.Parser.FUNCTION_PARSERS,
+-        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
+-        **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
++        "GROUP_CONCAT": lambda self: self._parse_group_concat(),
++        # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
++        "LISTAGG": lambda self: self._parse_listagg(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
+         "JSON_VALUE": lambda self: self._parse_json_value(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+@@ -146,6 +147,13 @@ class ExasolParser(parser.Parser):
+             column.set("table", None)
+         return column
+ 
++    def _parse_listagg(self) -> exp.GroupConcat:
++        listagg = self._parse_string_agg()
++        # Exasol's default delimiter is an empty string, not the "," used when no separator is given
++        if not listagg.args.get("separator"):
++            listagg.set("separator", exp.Literal.string(""))
++        return listagg
++
+     def _parse_json_extract(self) -> exp.JSONExtract:
+         args = self._parse_expressions()
+         self._match_r_paren()
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 1404e1a3c..fb667c529 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -325,6 +325,30 @@ class TestExasol(Validator):
+             "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows between 1 preceding and 1 following) GROUP_CONCAT_RESULT from employee_table ORDER BY department, hire_date",
+             "SELECT id, department, hire_date, LISTAGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+         )
++        self.validate_identity(
++            "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(DISTINCT x, ', ') WITHIN GROUP (ORDER BY y DESC) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(x) WITHIN GROUP (ORDER BY y) FROM t",
++            "SELECT LISTAGG(x, '') WITHIN GROUP (ORDER BY y) FROM t",
++        )
++        self.validate_all(
++            "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            read={
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "snowflake": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "trino": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "duckdb": "LISTAGG(x, ',' ORDER BY y)",
++            },
++            write={
++                "exasol": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "duckdb": "LISTAGG(x, ',' ORDER BY y)",
++            },
++        )
+         self.validate_all(
+             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+             write={

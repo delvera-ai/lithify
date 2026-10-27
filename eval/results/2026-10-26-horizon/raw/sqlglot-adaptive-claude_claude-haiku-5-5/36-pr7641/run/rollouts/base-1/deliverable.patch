@@ -1,0 +1,61 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..cbb883702 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2955,6 +2955,26 @@ class Generator:
+     def sort_sql(self, expression: exp.Sort) -> str:
+         return self.op_expressions("SORT BY", expression)
+ 
++    def _unambiguous_order_key(self, expression: exp.Ordered) -> exp.Expression:
++        # A bare ORDER BY alias may resolve to a column that is ambiguous across FROM sources when
++        # repeated in an expression, so reference the aliased (qualified) column instead
++        key = expression.this
++        order = expression.parent
++        if (
++            isinstance(key, exp.Column)
++            and not key.table
++            and isinstance(order, exp.Order)
++            and isinstance(order.parent, exp.Select)
++        ):
++            for projection in order.parent.expressions:
++                if (
++                    isinstance(projection, exp.Alias)
++                    and projection.alias == key.name
++                    and isinstance(projection.this, exp.Column)
++                ):
++                    return projection.this
++        return key
++
+     def ordered_sql(self, expression: exp.Ordered) -> str:
+         desc = expression.args.get("desc")
+         asc = not desc
+@@ -3026,9 +3046,8 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = self.sql(self._unambiguous_order_key(expression))
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..f57bfdcb1 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -155,6 +155,13 @@ class TestDuckDB(Validator):
+                 "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
+             },
+         )
++        self.validate_all(
++            "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "duckdb": "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY x",
++                "mysql": "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
+         self.validate_all(
+             "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+             write={

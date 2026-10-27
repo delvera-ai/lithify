@@ -1,0 +1,58 @@
+diff --git a/sqlglot/optimizer/qualify_tables.py b/sqlglot/optimizer/qualify_tables.py
+index ddfa63560..6f2c92331 100644
+--- a/sqlglot/optimizer/qualify_tables.py
++++ b/sqlglot/optimizer/qualify_tables.py
+@@ -195,6 +195,12 @@ def qualify_tables(
+             if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):
+                 _set_alias(table, canonical_aliases, target_alias=table.name)
+ 
++            # A pivoted CTE is a Scope source keyed by its pivot's alias, so its pivot is aliased here
++            pivot = seq_get(table.args.get("pivots") or [], 0)
++            if pivot and table.name in scope.sources:
++                target_alias = table.alias if pivot.unpivot else None
++                _set_alias(pivot, canonical_aliases, target_alias=target_alias, normalize=True)
++
+         for column in local_columns:
+             column_table = column.table
+ 
+diff --git a/sqlglot/optimizer/scope.py b/sqlglot/optimizer/scope.py
+index 47e4ef798..95191deae 100644
+--- a/sqlglot/optimizer/scope.py
++++ b/sqlglot/optimizer/scope.py
+@@ -813,7 +813,7 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
+                 # it is pivoted, because then we get back a new table and hence a new source.
+                 pivots = expression.args.get("pivots")
+                 if pivots:
+-                    sources[pivots[0].alias] = expression
++                    sources[pivots[0].alias] = scope.sources[table_name]
+                 else:
+                     sources[source_name] = scope.sources[table_name]
+             elif source_name in sources:
+diff --git a/tests/fixtures/optimizer/optimizer.sql b/tests/fixtures/optimizer/optimizer.sql
+index 60ae89d49..b439886a6 100644
+--- a/tests/fixtures/optimizer/optimizer.sql
++++ b/tests/fixtures/optimizer/optimizer.sql
+@@ -746,6 +746,23 @@ UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_0"
+ ORDER BY
+   "_0"."EMPID";
+ 
++# title: unpivoted CTE source, the unpivot's value and name columns are new output columns
++# execute: false
++WITH c AS (SELECT empid, jan, feb FROM m_sales) SELECT * FROM c UNPIVOT(sales FOR month IN (jan, feb));
++WITH "c" AS (
++  SELECT
++    "m_sales"."empid" AS "empid",
++    "m_sales"."jan" AS "jan",
++    "m_sales"."feb" AS "feb"
++  FROM "m_sales" AS "m_sales"
++)
++SELECT
++  "c"."empid" AS "empid",
++  "c"."month" AS "month",
++  "c"."sales" AS "sales"
++FROM "c" AS "c"
++UNPIVOT("sales" FOR "month" IN ("c"."jan", "c"."feb")) AS "c";
++
+ # title: unpivoted table source with a single value column, unpivot columns can be qualified
+ # execute: false
+ # dialect: bigquery

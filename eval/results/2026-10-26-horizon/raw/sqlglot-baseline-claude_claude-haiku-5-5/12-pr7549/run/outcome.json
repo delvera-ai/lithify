@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer (Spark/Hive): optimizing a `LATERAL VIEW EXPLODE` over an `ARRAY<STRUCT<...>>` and then accessing a field on the generated alias fails:\n\n```python\nfrom sqlglot.optimizer import optimize\nsql = \"SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci\"\nschema = {\"my_table\": {\"items\": \"ARRAY<STRUCT<name:STRING>>\"}}\noptimize(sqlglot.parse_one(sql, read=\"spark\"), schema=schema, dialect=\"spark\")\n# OptimizeError\n```\n\n`EXPLODE` aliases must be qualified and type-annotated so field access on the exploded struct works.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 71558,
+    "cached": 1797905,
+    "out": 33646,
+    "cost": 0.04910785,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

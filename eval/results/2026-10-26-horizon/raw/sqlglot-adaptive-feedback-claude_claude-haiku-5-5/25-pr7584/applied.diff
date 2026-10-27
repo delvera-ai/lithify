@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 6a6ea4c82..17b2e65fc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -368,6 +368,22 @@
+       "always_on_tokens": 1344,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-232946-bigquery-duckdb-a-parameterised",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 44741,
++      "tokens_cached": 771177,
++      "tokens_out": 9392,
++      "cost_usd": 0.0214,
++      "wall_s": 2618.8,
++      "always_on_tokens": 1344,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index f40beaca2..06baac087 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2175,6 +2175,12 @@ class DuckDBGenerator(generator.Generator):
+         """
+     )
+ 
++    def datatype_sql(self, expression: exp.DataType) -> str:
++        if expression.is_type(exp.DType.BIGDECIMAL) and expression.expressions:
++            return f"DECIMAL({self.expressions(expression, flat=True)})"
++
++        return super().datatype_sql(expression)
++
+     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
+         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
+         return self.sql(
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index 798b3a5fa..4b8a4c760 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -3831,3 +3831,17 @@ OPTIONS (
+                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                     },
+                 )
++
++                self.validate_all(
++                    f"SELECT CAST(1 AS {type_}(10, 2))",
++                    write={
++                        "duckdb": "SELECT CAST(1 AS DECIMAL(10, 2))",
++                    },
++                )
++
++                self.validate_all(
++                    f"DECLARE x {type_}(76, 38)",
++                    write={
++                        "duckdb": "DECLARE x DECIMAL(76, 38)",
++                    },
++                )
