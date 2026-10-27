@@ -20,3 +20,12 @@ Caps: pilot (3B) $25; total $150. Cost is the sum of `usage.cost` from every `ou
 
 **Pilot cap:** $25.00 — spent $6.72 (27%). **Total cap:** $150.00 — spent **$126.77** ($124.77 recorded in `results*.csv` across `eval/results/`, plus $2.00 estimated for the aborted run). Codex runs: $0 (ChatGPT plan; tokens recorded).
 | 2026-10-26/27 | Horizon (sqlglot): A baseline 60, B adaptive 60, C adaptive+feedback 60, dev smoke 1 | 181 tasks | 58.2300 | — | separate $100 budget; see `results/2026-10-26-horizon/REPORT.md` |
+
+## Round 2 (separate budget)
+
+Phase 0 cap $30; dev $30; pilot $50 within main $350. Cumulative below is
+round 2 only. Running costs are provisional and reconciled to raw CSVs.
+
+| date | phase | arm / run | tasks | cost USD | cumulative round-2 USD | status |
+|---|---|---|---|---|---|---|
+| 2026-10-27 | 0 | A / r1-A-rep2 | 0/60 | 0.0000 | 0.0000 | starting; cap $3, total cap $30, glob `*-r2-*` |
