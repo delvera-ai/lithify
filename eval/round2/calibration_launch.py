@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--resume-after-limit", action="store_true")
+    options = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     work = Path.home() / ".cache/lithify-dev/r2-noise-scratch"
     out = root / "eval/results/2026-10-27-r2-calibration"
@@ -24,7 +29,28 @@ def main() -> None:
     )
     assert all((r["holdout_base_rc"], r["holdout_merge_rc"], r["suite_merge_rc"]) == ("1", "0", "0") for r in checks)
     assert not list(out.glob("results*.csv")), "Calibration already recorded; no repeat authorized"
-    assert not (work / "replay-r2-calibration-calibration-A1").exists(), "Calibration scratch exists; inspect, do not auto-resume"
+    scratch = work / "replay-r2-calibration-calibration-A1"
+    if options.resume_after_limit:
+        authorization = json.loads((out / "limit-resume-authorization.json").read_text())
+        assert authorization["classification"] == "CLI session limit"
+        assert authorization["recorded_cost"] == authorization["tokens"] == 0
+        assert not authorization["task_completed"]
+        assert json.loads((scratch / "progress.json").read_text())["next_pos"] == 1
+        ledger = out / "AUTO_RESUMES.json"
+        resumes = json.loads(ledger.read_text()) if ledger.exists() else []
+        now = datetime.now(UTC)
+        assert sum(r["utc_date"] == now.date().isoformat() for r in resumes) < 3
+        resumes.append(
+            {
+                "utc_date": now.date().isoformat(),
+                "timestamp": now.isoformat(),
+                "reason": "CLI session limit, zero tokens and cost",
+                "task": "sqlglot#7492",
+            }
+        )
+        ledger.write_text(json.dumps(resumes, indent=2) + "\n")
+    else:
+        assert not scratch.exists(), "Calibration scratch exists; inspect, do not auto-resume"
     manifest = json.loads((out / "run-environment.json").read_text())
     env = dict(os.environ)
     env["DISABLE_AUTOUPDATER"] = "1"
@@ -74,6 +100,8 @@ def main() -> None:
         "--product-commit",
         manifest["product_commit"],
     ]
+    if options.resume_after_limit:
+        args.append("--resume")
     print("All 60 oracle checks passed; starting the single capped calibration.", flush=True)
     os.chdir(root)
     os.execve(py, args, env)

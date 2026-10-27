@@ -56,7 +56,12 @@ def configure(clone: Path, a: argparse.Namespace, test_cmd: str) -> None:
         cfg.adapter_args["claude"] = ["--dangerously-skip-permissions", "--max-budget-usd", str(a.session_cap_usd)]
     role = a.roles or a.executor.partition("@")[0]
     cfg.roles = dict.fromkeys(("propose_inv", "propose_dom", "compose", "select", "reflect", "compact"), role)
-    (clone / ".lithify" / "config.toml").write_text(render_config(cfg), encoding="utf-8")
+    # render_config emits an empty adapter_args table; preserve explicit run caps here.
+    rendered = render_config(cfg)
+    rendered += "\n".join(f"{json.dumps(cli)} = {json.dumps(args)}" for cli, args in cfg.adapter_args.items()) + "\n"
+    (clone / ".lithify" / "config.toml").write_text(rendered, encoding="utf-8")
+    if load_config(clone).adapter_args != cfg.adapter_args:
+        raise RuntimeError("adapter argument configuration did not round-trip; refusing uncapped execution")
 
 
 # Signatures of a subscription or rate limit cutting sessions short: the CLI returns the notice as
@@ -67,8 +72,12 @@ LIMIT_LOG = re.compile(r"discarded \(\)|\[executor: \]")
 
 def limit_hit(ev: Path) -> str:
     log = ev / "lithify.log"
-    if log.exists() and LIMIT_LOG.search(log.read_text(encoding="utf-8", errors="ignore")):
-        return "session failed with an empty error (lithify.log)"
+    if log.exists():
+        text = log.read_text(encoding="utf-8", errors="ignore")
+        if LIMIT_TEXT.search(text):
+            return "agent CLI limit notice in lithify.log"
+        if LIMIT_LOG.search(text):
+            return "session failed with an empty error (lithify.log)"
     for t in (ev / "run").rglob("trajectory.md") if (ev / "run").is_dir() else []:
         head = t.read_text(encoding="utf-8", errors="ignore")[:4000]
         if LIMIT_TEXT.search(head):

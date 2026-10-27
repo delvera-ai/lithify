@@ -1,0 +1,4 @@
+lithify ▸ 20261027-140400-oracle-dialect-support-the-optio  k=0 (override k=0) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+
+lithify run failed: probe base-1 stopped by an agent CLI limit: You've hit your session limit · resets 2:10pm (Africa/Johannesburg)
