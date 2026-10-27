@@ -241,3 +241,17 @@ usage matches the archived CSV: 52,150 input plus cache-write tokens,
 low task-1 cost is not explained by missing task-1 token usage. The audit JSON
 retains this billing evidence for comparison with calibration; no correction
 is applied to the frozen original CSVs.
+
+
+The completed round-2 calibration (#7492, same unchanged task text) passed its
+holdout at reported cost $0.04137888, 1.40744× the original recorded $0.0294,
+under the 3× stop threshold. CLI 2.1.310 and modelUsage's claude-haiku-5-5
+identifier match the baseline evidence. Forty calls emitted four results;
+adding cumulative costs would wrongly report $0.15148946. Complete per-turn
+usage is 57,187 input/cache-write, 2,197,168 cache-read, 15,956 output tokens.
+The raw timestamps/recorded wall time include a large unexplained delay
+(2,705.6 seconds vs 175.5), so this does not establish comparable throughput.
+All 60 zero-token horizon oracles pass the base-fail/merge-pass/suite-pass
+preflight. No replicates or plan/budget changes followed. See
+`eval/results/2026-10-27-r2-calibration/REPORT.md` and the preflight report.
+Round-2 cumulative ledger spend is $3.6681, including the invalid earlier run.

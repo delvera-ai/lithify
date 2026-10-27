@@ -1,0 +1,14 @@
+{
+  "label": "calibration-A1",
+  "lithify_commit": "38bae7919ebc290dd8da5a2e0ad601a40e7630d1",
+  "run_cost_usd": 0.0414,
+  "invariants": [
+    {
+      "pr": 7492,
+      "head_unchanged": true,
+      "branches_unchanged": true,
+      "worktrees": 1,
+      "test_edits_flagged": []
+    }
+  ]
+}
