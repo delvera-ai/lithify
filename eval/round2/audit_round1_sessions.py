@@ -65,7 +65,8 @@ def main() -> None:
                                 "models": sorted(models),
                                 "terminal_notification": matching_user.lstrip().startswith("<task-notification>"),
                                 "matched_at_session_end": last_assistant == final,
-                                "calls": list(calls.values()),
+                                "call_count": len(calls),
+                                "calls": list(calls.values()) if task.name.startswith("01-") and "baseline" in arm.name else [],
                             }
                         )
             row = {
