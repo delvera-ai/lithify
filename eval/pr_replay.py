@@ -128,6 +128,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label", default="")
     ap.add_argument("--total-cap", type=float, default=TOTAL_CAP_USD, help="cap on spend across --budget-glob result dirs")
     ap.add_argument("--budget-glob", default="*", help="eval/results/ directories counted toward --total-cap")
+    ap.add_argument("--product-commit", help="verified installed product commit (separate from tooling checkout)")
+    ap.add_argument("--replicate", default="")
+    ap.add_argument("--seed-label", type=int, default=0, help="session label, not an executor RNG seed")
+    ap.add_argument("--arm", default="")
     ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
 
@@ -167,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
     test_cmd = spec["test_cmd"].format(py=py)
     redactions = {str(run_dir): "<run>", str(work): "<work>", str(EVAL): "<eval>"}
 
-    commit = lithify_commit()
+    commit = a.product_commit or lithify_commit()
     keep = run_dir / "carried"
     run_cost = float(progress["run_cost"])
     audit: list[dict] = list(progress["audit"])
@@ -264,6 +268,10 @@ def main(argv: list[str] | None = None) -> int:
             "executor": a.executor,
             "task": f"{a.repo}#{pr['number']}",
             "order_seed": 0,
+            "seed": a.seed_label,
+            "replicate": a.replicate,
+            "arm": a.arm or arm,
+            "tooling_commit": lithify_commit(),
             "position": pos,
             "lithify_commit": commit,
             **m,

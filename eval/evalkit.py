@@ -29,6 +29,10 @@ SECRETISH = re.compile(r"(sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za
 
 COLUMNS = [
     "experiment",
+    "arm",
+    "seed",
+    "replicate",
+    "tooling_commit",
     "strategy",
     "executor",
     "task_id",
