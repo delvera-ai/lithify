@@ -2,7 +2,9 @@
 
 stream-json gives the full trajectory (tool calls and results), which is the evidence
 the proposers read; each `result` event carries usage and total_cost_usd. Background completion
-turns can emit additional results; accounting must retain every result.
+turns can emit additional results; accounting must retain every result. Usage is
+per-turn; total_cost_usd and modelUsage are cumulative within each session:
+https://code.claude.com/docs/en/agent-sdk/cost-tracking#track-costs-in-streaming-input-mode
 
 Format verified against Claude Code 2.1.309 (tests/fixtures/claude_2.1.309.jsonl).
 """
@@ -33,7 +35,7 @@ class ClaudeAdapter(Adapter):
         calls: dict[str, dict] = {}
         models: dict[str, dict] = {}
         totals = dict.fromkeys(("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"), 0)
-        cost = 0.0
+        sessions: dict[str, dict] = {}
         turns = 0
         for ev in events:
             t = ev.get("type")
@@ -42,11 +44,14 @@ class ClaudeAdapter(Adapter):
                 usage = ev.get("usage") or {}
                 for key in totals:
                     totals[key] += int(usage.get(key, 0) or 0)
-                cost += float(ev.get("total_cost_usd", 0.0) or 0.0)
+                session = sessions.setdefault(ev.get("session_id", ""), {"cost": 0.0, "models": {}})
+                # Later results are cumulative, not additional spend. A crash can zero them.
+                session["cost"] = max(session["cost"], float(ev.get("total_cost_usd", 0.0) or 0.0))
                 turns += int(ev.get("num_turns", 0) or 0)
                 billed = ev.get("modelUsage") or {}
                 results.append(
                     {
+                        "session_id": ev.get("session_id", ""),
                         "usage": usage,
                         "modelUsage": billed,
                         "total_cost_usd": ev.get("total_cost_usd", 0.0),
@@ -55,7 +60,7 @@ class ClaudeAdapter(Adapter):
                     }
                 )
                 for model, values in billed.items():
-                    aggregate = models.setdefault(model, {})
+                    aggregate = session["models"].setdefault(model, {})
                     for key, value in values.items():
                         if key in (
                             "inputTokens",
@@ -66,7 +71,7 @@ class ClaudeAdapter(Adapter):
                             "costUSD",
                             "webSearchRequests",
                         ):
-                            aggregate[key] = aggregate.get(key, 0) + (value or 0)
+                            aggregate[key] = max(aggregate.get(key, 0), value or 0)
                         else:
                             aggregate[key] = value
             elif t in ("assistant", "user"):
@@ -97,6 +102,20 @@ class ClaudeAdapter(Adapter):
                             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
                         err = " ERROR" if block.get("is_error") else ""
                         lines.append(f"[tool_result{err}] {clip(content or '', 1000)}")
+        additive = {
+            "inputTokens",
+            "outputTokens",
+            "cacheReadInputTokens",
+            "cacheCreationInputTokens",
+            "thinkingTokens",
+            "costUSD",
+            "webSearchRequests",
+        }
+        for session in sessions.values():
+            for model, values in session["models"].items():
+                aggregate = models.setdefault(model, {})
+                for key, value in values.items():
+                    aggregate[key] = aggregate.get(key, 0) + value if key in additive else value
         return RunResult(
             ok=bool(final) and not final.get("is_error", False),
             text=str(final.get("result", "")),
@@ -104,7 +123,7 @@ class ClaudeAdapter(Adapter):
             tokens_in=totals["input_tokens"] + totals["cache_creation_input_tokens"],
             tokens_cached=totals["cache_read_input_tokens"],
             tokens_out=totals["output_tokens"],
-            cost_usd=cost,
+            cost_usd=sum(session["cost"] for session in sessions.values()),
             # An error result (e.g. a usage-limit notice) carries its message in `result`.
             error=clip(str(final.get("result", "")), 2000)
             if final.get("is_error")

@@ -78,6 +78,10 @@ def test_claude_accounts_for_every_result_from_captured_fixture():
     capture = (FIX / "claude_2.1.309.jsonl").read_text()
     followup = json.loads(capture.splitlines()[-1])
     followup["result"] = "Background test completed"
+    followup["total_cost_usd"] *= 2
+    model = followup["modelUsage"]["claude-haiku-5-5"]
+    for key in ("inputTokens", "outputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "costUSD"):
+        model[key] *= 2
     r = ClaudeAdapter().parse(capture + json.dumps(followup) + "\n", "", 0)
     assert r.ok and r.text == "Background test completed"
     assert "[assistant] ok" in r.transcript
@@ -134,3 +138,33 @@ def test_pipeline_archives_session_streams_and_billing(tmp_path):
     billing = json.loads((sessions / "001-execute.json").read_text())
     assert billing["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 4
     assert pipe.usage["exec"] == pipe.usage["roles"] == 1
+
+
+def test_claude_cumulative_results_are_not_double_charged():
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    r = ClaudeAdapter().parse(capture + capture.splitlines()[-1] + "\n", "", 0)
+    assert r.meta["result_count"] == 2
+    assert abs(r.cost_usd - 0.00269894) < 1e-12
+    assert r.meta["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 4
+
+
+def test_claude_cost_survives_zeroed_error_and_separate_sessions_add():
+    import json
+
+    capture = (FIX / "claude_2.1.309.jsonl").read_text()
+    result = json.loads(capture.splitlines()[-1])
+    crash = {
+        "type": "result",
+        "is_error": True,
+        "result": "crash",
+        "usage": {},
+        "total_cost_usd": 0,
+        "session_id": result["session_id"],
+    }
+    r = ClaudeAdapter().parse(capture + json.dumps(crash), "", 1)
+    assert not r.ok and r.error == "crash"
+    assert abs(r.cost_usd - 0.00269894) < 1e-12 and r.tokens_out == 4
+    result["session_id"] = "another-session"
+    r = ClaudeAdapter().parse(capture + json.dumps(result), "", 0)
+    assert abs(r.cost_usd - 0.00539788) < 1e-12
+    assert r.meta["model_usage"]["claude-haiku-5-5"]["outputTokens"] == 8
