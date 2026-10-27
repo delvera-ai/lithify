@@ -190,3 +190,42 @@ Each point cites its evidence. The independent review verified points 3–5.
 - There is a single seed per configuration.
 - Antigravity was not evaluated.
 - Raw trajectories are redacted (home paths, username, secret-shaped strings).
+
+
+## Round-2 recovery: accounting and environment caveats (2026-10-27)
+
+Round 1 is inconclusive, not evidence of no effect. The original primary test
+was underpowered; shared baseline noise correlates the arm comparisons. Missing
+per-task harness snapshots also prevent excluding an effect of always-on text.
+The earlier claims that there was no causal link, or that most exact-string
+failures were unlearnable, are not established by the available evidence.
+
+The old Claude adapter retained only the last `result` event per process.
+Background-notification turns can replace the substantive result, so affected
+session costs and the aggregate dollar totals above must be treated as lower
+bounds, not reliable complete costs. These results cannot substantiate the
+cost claims above without remeasuring complete session accounting.
+
+Read-only audit of all 199 archived rollout trajectories, matched by task id,
+rollout label, and exact final assistant text to surviving local session logs:
+
+| arm | archived rollout sessions | final turn responds to a task notification |
+|---|---:|---:|
+| A baseline | 60 | 2 (#7729 at position 45; #7771 at 53) |
+| B adaptive | 65 | 3 (#7565 at 17; #7659 at 34; #7684 at 40) |
+| C adaptive + feedback | 74 | 0 |
+
+The classification requires the immediately preceding user message to begin
+with `<task-notification>`; mentioning background execution alone does not count.
+It includes a substantive final answer when that answer follows a notification.
+Editor-role sessions without archived trajectories are outside this count;
+zero flagged C rollouts does not establish complete accounting for C.
+Evidence and per-call token/context metadata:
+`eval/round2/ROUND1_SESSION_AUDIT.json`; reproducible audit script:
+`eval/round2/audit_round1_sessions.py` (requires surviving local session logs).
+No missing result events or missing dollar costs were reconstructed or invented.
+
+The session metadata contradicts the static environment document: A reports
+Claude Code 2.1.310, B/C 2.1.310–2.1.311, rather than 2.1.309. Models in these
+message logs are not equivalent to a `modelUsage` billing record. Calibration
+must report this comparability limitation before using A1 as a noise reference.
