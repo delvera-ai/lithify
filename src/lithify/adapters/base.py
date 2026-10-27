@@ -36,6 +36,7 @@ class RunResult:
     returncode: int = 0
     error: str = ""
     meta: dict[str, Any] = field(default_factory=dict)
+    raw_stream: str = ""
 
 
 class Adapter:
@@ -83,7 +84,11 @@ class Adapter:
             return RunResult(ok=False, error=f"{self.binary} not found on PATH", returncode=127)
         except subprocess.TimeoutExpired as e:
             out = e.stdout.decode() if isinstance(e.stdout, bytes) else (e.stdout or "")
-            res = RunResult(ok=False, error=f"timeout after {timeout_s}s", returncode=124, transcript=out[-20000:])
+            res = self.parse(out, f"timeout after {timeout_s}s", 124)
+            res.ok = False
+            res.error = f"timeout after {timeout_s}s"
+            res.returncode = 124
+            res.meta["role"] = role
             res.seconds = time.time() - t0
             return res
         res = self.parse(proc.stdout or "", proc.stderr or "", proc.returncode)

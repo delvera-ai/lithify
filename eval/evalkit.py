@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import getpass
+import gzip
 import json
 import math
 import os
@@ -49,6 +50,9 @@ COLUMNS = [
     "tokens_out",
     "cost_usd",
     "wall_s",
+    "active_s",
+    "api_s",
+    "idle_s",
     "always_on_tokens",
     "stability_after",
     "promoted",
@@ -88,7 +92,31 @@ def redact(text: str, extra: dict[str, str] | None = None) -> str:
     text = text.replace(HOME, "~").replace(f"-Users-{USER}-", "-Users-user-")
     text = re.sub(rf"(?<![\w-]){re.escape(USER)}(?![\w-])", "user", text)
     text = text.replace(USER, "user")  # also inside clipped or mangled paths the rules above miss
+    text = re.sub(re.escape(USER), "user", text, flags=re.I)
     return SECRETISH.sub("<redacted>", text)
+
+
+def scan_leaks(root: Path) -> list[str]:
+    """Scan text and gzip evidence, including .lithify/runs/*/sessions/*.gz. Fail closed for gzip."""
+    findings = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            data = gzip.decompress(path.read_bytes()).decode("utf-8") if path.suffix == ".gz" else path.read_text()
+        except (OSError, UnicodeDecodeError, EOFError):
+            if path.suffix == ".gz":
+                findings.append(f"{path.relative_to(root)}: unreadable compressed evidence")
+            continue
+        if SECRETISH.search(data) or USER.casefold() in data.casefold() or HOME.casefold() in data.casefold():
+            findings.append(f"{path.relative_to(root)}: credential or unredacted identity")
+    return findings
+
+
+def require_redacted(root: Path) -> None:
+    findings = scan_leaks(root)
+    if findings:
+        raise RuntimeError("evidence export blocked:\n" + "\n".join(findings))
 
 
 def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> None:
@@ -98,10 +126,41 @@ def copy_redacted(src: Path, dst: Path, extra: dict[str, str] | None = None) -> 
             continue
         out = dst / p.relative_to(src)
         out.parent.mkdir(parents=True, exist_ok=True)
+        if p.suffix == ".gz":
+            # Never copy compressed streams as opaque binary evidence.
+            text = gzip.decompress(p.read_bytes()).decode("utf-8")
+            out.write_bytes(gzip.compress(redact(text, extra).encode("utf-8"), mtime=0))
+            continue
         try:
             out.write_text(redact(p.read_text(encoding="utf-8"), extra), encoding="utf-8")
         except UnicodeDecodeError:
             shutil.copy2(p, out)
+    require_redacted(dst)
+
+
+def session_timing(rdir: Path | None, wall: float) -> dict[str, float | str]:
+    """CLI duration_ms is per result; API duration is cumulative per session.
+
+    Active time sums session effort; parallel sessions can exceed wall time,
+    so signed idle_s = wall_s - active_s includes gates and other overhead.
+    Missing result timing is unknown, not zero.
+    """
+    active = api = 0.0
+    found = False
+    for path in (rdir / "sessions").glob("*.json") if rdir else []:
+        meta = json.loads(path.read_text())
+        by_session: dict[str, float] = {}
+        for result in meta.get("results", []):
+            if "duration_ms" not in result or "duration_api_ms" not in result:
+                continue
+            found = True
+            active += float(result.get("duration_ms") or 0) / 1000
+            sid = result.get("session_id", "")
+            by_session[sid] = max(by_session.get(sid, 0), float(result.get("duration_api_ms") or 0) / 1000)
+        api += sum(by_session.values())
+    if not found:
+        return {"active_s": "", "api_s": "", "idle_s": ""}
+    return {"active_s": round(active, 3), "api_s": round(api, 3), "idle_s": round(wall - active, 3)}
 
 
 def run_task(
@@ -172,6 +231,7 @@ def run_task(
         "tokens_out": int(usage.get("out", 0)),
         "cost_usd": round(float(usage.get("cost", 0.0)), 4),
         "wall_s": wall,
+        **session_timing(rdir, wall),
         "always_on_tokens": rec.get("always_on_tokens", ""),
         "stability_after": rec.get("stability_after", ""),
         "promoted": " ".join(outcome.get("promoted", [])),
