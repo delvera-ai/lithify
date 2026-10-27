@@ -87,7 +87,7 @@ def test_claude_accounts_for_every_result_from_captured_fixture():
     model = r.meta["model_usage"]["claude-haiku-5-5"]
     assert model["inputTokens"] == 4 and model["outputTokens"] == 8
     assert abs(model["costUSD"] - r.cost_usd) < 1e-12
-    assert model["contextWindow"] == 1000000
+    assert model["contextWindow"] == 1000000 and model["maxOutputTokens"] == 128000
     assert r.meta["calls"][0]["context_tokens"] == 24253
     assert r.raw_stream == capture + json.dumps(followup) + "\n"
 

@@ -57,7 +57,15 @@ class ClaudeAdapter(Adapter):
                 for model, values in billed.items():
                     aggregate = models.setdefault(model, {})
                     for key, value in values.items():
-                        if key.endswith("Tokens") or key in ("costUSD", "webSearchRequests"):
+                        if key in (
+                            "inputTokens",
+                            "outputTokens",
+                            "cacheReadInputTokens",
+                            "cacheCreationInputTokens",
+                            "thinkingTokens",
+                            "costUSD",
+                            "webSearchRequests",
+                        ):
                             aggregate[key] = aggregate.get(key, 0) + (value or 0)
                         else:
                             aggregate[key] = value
