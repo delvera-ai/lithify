@@ -1,0 +1,31 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..9b714a151 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,6 +3203,7 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
++                alias = alias.copy()
+                 alias.append("columns", offset)
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..7c4b56265 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1408,6 +1408,14 @@ FROM json_data, field_ids""",
+             },
+         )
+ 
++        # Rendering the same UNNEST node repeatedly must not mutate its alias
++        unnest = self.parse_one(
++            "SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(x, ord)"
++        ).find(exp.Unnest)
++        expected = "UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(x, ord)"
++        self.assertEqual(unnest.sql(self.dialect, copy=False), expected)
++        self.assertEqual(unnest.sql(self.dialect, copy=False), expected)
++
+     def test_array_offset(self):
+         with self.assertLogs(helper_logger) as cm:
+             self.validate_all(

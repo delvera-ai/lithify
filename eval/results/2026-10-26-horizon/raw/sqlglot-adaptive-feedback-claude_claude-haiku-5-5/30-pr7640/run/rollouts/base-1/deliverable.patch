@@ -1,0 +1,41 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..65c77453a 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8318,6 +8318,14 @@ class Parser:
+         if explicit and not any_token:
+             return this
+ 
++        # A bare WINDOW followed by a name starts a WINDOW clause, not an alias: SELECT 1 WINDOW w AS (...)
++        if (
++            not any_token
++            and self._curr.token_type == TokenType.WINDOW
++            and self._next.token_type in self.ID_VAR_TOKENS
++        ):
++            return this
++
+         if self._match(TokenType.L_PAREN):
+             aliases = self.expression(
+                 exp.Aliases(
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..0c688a424 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -358,6 +358,17 @@ class TestSQLite(Validator):
+             "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
+         )
+ 
++    def test_window_clause_without_from(self):
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY x)")
++        self.validate_identity("SELECT SUM(1) OVER a WINDOW a AS (PARTITION BY x)")
++
++        window = self.parse_one("SELECT 1 WINDOW a AS (PARTITION BY x)").args["windows"][0]
++        self.assertIsInstance(window, exp.Window)
++        self.assertEqual(window.name, "a")
++        self.assertEqual(window.args["partition_by"][0].sql(), "x")
++
++        self.assertEqual(self.parse_one("SELECT 1 window FROM t").expressions[0].alias, "window")
++
+     def test_analyze(self):
+         self.validate_identity("ANALYZE tbl")
+         self.validate_identity("ANALYZE schma.tbl")

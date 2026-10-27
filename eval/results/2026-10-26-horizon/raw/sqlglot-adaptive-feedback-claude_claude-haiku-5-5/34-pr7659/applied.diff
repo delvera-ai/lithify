@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 571a66c81..1403b876f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -512,6 +512,22 @@
+       "always_on_tokens": 1834,
+       "stability_after": 0.5,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261027-095523-bigquery-pipe-syntax-when-a-pipe",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 49308,
++      "tokens_cached": 1095078,
++      "tokens_out": 13177,
++      "cost_usd": 0.0274,
++      "wall_s": 202.3,
++      "always_on_tokens": 2013,
++      "stability_after": 0.5,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 163baa77d..5a6662113 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3812,6 +3812,9 @@ class Parser:
+ 
+             assert this is not None
+             if "with_" in this.arg_types:
++                if existing := this.args.get("with_"):
++                    # e.g. pipe syntax generates CTEs that must follow the leading ones
++                    cte.set("expressions", cte.expressions + existing.expressions)
+                 this.set("with_", cte)
+             else:
+                 self.raise_error(f"{this.key} does not support CTE")
+diff --git a/tests/dialects/test_pipe_syntax.py b/tests/dialects/test_pipe_syntax.py
+index 73e10e7d4..693ebc876 100644
+--- a/tests/dialects/test_pipe_syntax.py
++++ b/tests/dialects/test_pipe_syntax.py
+@@ -463,3 +463,13 @@ WHERE
+             "FROM x |> TABLESAMPLE SYSTEM (1 PERCENT) |> WHERE x.x1 > 0 |> SELECT x1, x2",
+             "WITH __tmp1 AS (SELECT x1, x2 FROM x WHERE x.x1 > 0 TABLESAMPLE SYSTEM (1 PERCENT)) SELECT * FROM __tmp1",
+         )
++
++    def test_with(self):
++        self.validate_identity(
++            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1, 2 AS x2",
++            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
++        )
++        self.validate_identity(
++            "WITH x AS (SELECT 1 AS x1) SELECT * FROM x |> SELECT x1",
++            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1 FROM x) SELECT * FROM __tmp1",
++        )

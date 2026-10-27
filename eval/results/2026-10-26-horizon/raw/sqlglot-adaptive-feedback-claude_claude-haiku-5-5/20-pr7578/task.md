@@ -1,0 +1,1 @@
+Oracle dialect: `JSON_TABLE` fails to parse when the input expression carries `FORMAT JSON` (e.g. `JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS (...))`). Support `FORMAT JSON` there so it parses and round-trips.

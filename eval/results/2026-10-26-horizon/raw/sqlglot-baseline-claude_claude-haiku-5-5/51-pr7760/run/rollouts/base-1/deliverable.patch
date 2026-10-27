@@ -1,0 +1,30 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 9fa6b9261..2010ff893 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3544,7 +3544,7 @@ class Parser:
+             if self._match_text_seq("ON", "CONSTRAINT"):
+                 constraint = self._parse_id_var()
+             elif self._match(TokenType.L_PAREN):
+-                conflict_keys = self._parse_csv(self._parse_id_var)
++                conflict_keys = self._parse_csv(self._parse_assignment)
+                 self._match_r_paren()
+ 
+         index_predicate = self._parse_where()
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 2509021e1..f753d06a6 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -295,6 +295,12 @@ class TestSQLite(Validator):
+         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
+         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
+         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) SELECT x, y, z FROM src WHERE TRUE ON CONFLICT(col_x, LOWER(col_y)) DO UPDATE SET col_z = excluded.col_z"
++        )
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) SELECT x, y, z FROM src WHERE TRUE ON CONFLICT(col_x, LOWER(col_y)) WHERE col_z > 0 DO UPDATE SET col_z = excluded.col_z"
++        )
+         self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
+         self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
+         self.validate_identity("CREATE VIRTUAL TABLE docs USING fts5(title, content)")

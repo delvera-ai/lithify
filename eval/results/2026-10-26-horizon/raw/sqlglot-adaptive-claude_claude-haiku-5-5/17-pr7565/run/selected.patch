@@ -1,0 +1,63 @@
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index d3f2e99e2..b406f1631 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ 
+ from sqlglot import exp, generator, transforms
+ from sqlglot.dialects.dialect import (
++    groupconcat_sql,
+     no_ilike_sql,
+     rename_func,
+     strposition_sql,
+@@ -69,6 +70,7 @@ class OracleGenerator(generator.Generator):
+         ),
+         exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
+         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
++        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
+         exp.ILike: no_ilike_sql,
+         exp.LogicalOr: rename_func("MAX"),
+         exp.LogicalAnd: rename_func("MIN"),
+diff --git a/sqlglot/parsers/oracle.py b/sqlglot/parsers/oracle.py
+index 169b1bcd7..0aede77c3 100644
+--- a/sqlglot/parsers/oracle.py
++++ b/sqlglot/parsers/oracle.py
+@@ -56,6 +56,7 @@ class OracleParser(parser.Parser):
+         "JSON_ARRAY": lambda self: self._parse_oracle_json_array(),
+         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
+         "JSON_EXISTS": lambda self: self._parse_json_exists(),
++        "LISTAGG": lambda self: self._parse_string_agg(),
+     }
+ 
+     PROPERTY_PARSERS = {
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index b2a361ec3..6e30c3c01 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -924,6 +924,26 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
+             'WITH "T" AS (SELECT 1 AS "COL") SELECT "T"."COL" AS "COL", ROWID AS "ROWID" FROM "T" "T" WHERE ROWNUM = 1',
+         )
+ 
++    def test_listagg(self):
++        self.validate_identity(
++            "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(col, '; ' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE WITH COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(col, '; ' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY col ASC) FROM tbl"
++        )
++        self.validate_all(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...') WITHIN GROUP (ORDER BY last_name) FROM t",
++            write={
++                "oracle": "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++            },
++        )
++
+     def test_chr(self):
+         self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
+         self.validate_identity("SELECT CHR(187)")

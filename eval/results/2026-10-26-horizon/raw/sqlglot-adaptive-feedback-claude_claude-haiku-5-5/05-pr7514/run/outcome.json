@@ -1,0 +1,81 @@
+{
+  "task": "Doris and StarRocks dialects: both support the two-argument form of `DATE_ADD` / `DATE_SUB` without the `INTERVAL` keyword (the second argument is a number of days), but sqlglot cannot parse it:\n\n```python\nimport sqlglot\nsqlglot.parse(\"select date_add('2025-01-01', 1) from a\", dialect=\"doris\", error_level=sqlglot.ErrorLevel.IMMEDIATE)\n# ParseError: INTERVAL expression expected but got '1'\n```\n\nSupport the two-argument form for both dialects (parse and generate).",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "inv-2",
+  "why": "Deciding criterion: correctness beyond the tests. c2, c3, c5, c6 and c7 build the negated day count as `exp.Neg(this=args[1])` without wrapping it, so `DATE_SUB(x, a + b)` is rewritten to `DATE_ADD(x, -a + b)`, which changes the result. I ran this against the repo and it prints `-a + b`.\nc1 and c4 use the repo's own `-expr` operator, which wraps sums in parentheses (`-(a + b)`), so the result stays correct.\nRunner-up c4 lost because its new StarRocks generator always writes the two-argument form and drops the unit. A month-based `DATEADD(month, 1, x)` read from Redshift would then come out of StarRocks as `DATE_ADD(x, 1)`, meaning one day instead of one month.\nc1 keeps the `INTERVAL` form for non-day units by reusing `date_add_sql`, and it stays within the requested scope.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": "<run>/repo/.lithify/proposals/20261026-160938-doris-and-starrocks-dialects-bot",
+  "usage": {
+    "in": 1041284,
+    "cached": 17077318,
+    "out": 227884,
+    "cost": 7.33553314,
+    "exec": 8,
+    "roles": 8
+  },
+  "stability_after": 0.3076,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": false,
+      "gates": "test=FAIL(-15)"
+    },
+    "inv-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "inv-2": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "dom-2": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "comp-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "inv-2": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-2": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-2": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

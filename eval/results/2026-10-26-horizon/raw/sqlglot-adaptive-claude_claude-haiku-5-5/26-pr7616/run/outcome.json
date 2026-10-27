@@ -1,0 +1,28 @@
+{
+  "task": "Postgres dialect: `CREATE TYPE` falls back to an unparsed command:\n\n```python\nfrom sqlglot import parse_one\nparse_one(\"CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')\", \"postgres\")\n# '... contains unsupported syntax. Falling back to parsing as a Command.'\n```\n\nParse `CREATE TYPE` statements into proper AST nodes, at least enum types (`AS ENUM (...)`) and composite types (`AS (attr type, ...)`), so they round-trip in Postgres.",
+  "k": 0,
+  "reason": "cruise (S=0.87)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 51970,
+    "cached": 829799,
+    "out": 12620,
+    "cost": 0.02499879,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8683,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,96 @@
+exit 1
+................. [ 17%]
+F................ [ 35%]
+............................ [ 63%]
+...................................             [100%]
+=================================== FAILURES ===================================
+____________________________ TestSnowflake.test_ddl ____________________________
+
+self = <tests.dialects.test_snowflake.TestSnowflake testMethod=test_ddl>
+
+    def test_ddl(self):
+        for constraint_prefix in ("WITH ", ""):
+            with self.subTest(f"Constraint prefix: {constraint_prefix}"):
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p.q.r)",
+                    "CREATE TABLE t (id INT MASKING POLICY p.q.r)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
+                    "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p.q.r)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p.q.r)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
+                    "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
+                )
+    
+        self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
+        self.validate_identity("USE SECONDARY ROLES ALL")
+        self.validate_identity("USE SECONDARY ROLES NONE")
+        self.validate_identity("USE SECONDARY ROLES a, b, c")
+        self.validate_identity("CREATE SECURE VIEW table1 AS (SELECT a FROM table2)")
+        self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
+        self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
+        self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
+        self.validate_identity(
+            "CREATE TABLE t CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1 (id INT)",
+            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1",
+        )
+        self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
+        self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")
+        self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")
+        self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
+        self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
+        self.validate_identity("CREATE TAG cost_center ALLOWED_VALUES 'a', 'b'")
+        self.validate_identity("CREATE WAREHOUSE x").this.assert_is(exp.Identifier)
+        self.validate_identity("CREATE STREAMLIT x").this.assert_is(exp.Identifier)
+        self.validate_identity(
+            "CREATE TEMPORARY STAGE stage1 FILE_FORMAT=(TYPE=PARQUET)"
+        ).this.assert_is(exp.Table)
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT='format1'",
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='format1')",
+        )
+        self.validate_identity("CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=stage1.format1)")
+        self.validate_identity("CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME='stage1.format1')")
+        self.validate_identity(
+            "CREATE STAGE stage1 FILE_FORMAT=schema1.format1",
+            "CREATE STAGE stage1 FILE_FORMAT=(FORMAT_NAME=schema1.format1)",
+        )
+        with self.assertRaises(ParseError):
+            self.parse_one("CREATE STAGE stage1 FILE_FORMAT=123", dialect="snowflake")
+        self.validate_identity(
+            "CREATE STAGE s1 URL='s3://bucket-123' FILE_FORMAT=(TYPE='JSON') CREDENTIALS=(aws_key_id='test' aws_secret_key='test')"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TAG IF NOT EXISTS cost_center COMMENT='cost_center tag'"
+        ).this.assert_is(exp.Identifier)
+        self.validate_identity(
+            "CREATE TEMPORARY FILE FORMAT fileformat1 TYPE=PARQUET COMPRESSION=auto"
+        ).this.assert_is(exp.Table)
+        self.validate_identity(
+            "CREATE DYNAMIC TABLE product (pre_tax_profit, taxes, after_tax_profit) TARGET_LAG='20 minutes' WAREHOUSE=mywh AS SELECT revenue - cost, (revenue - cost) * tax_rate, (revenue - cost) * (1.0 - tax_rate) FROM staging_table"
+        )
+>       self.validate_identity(
+            "CREATE DYNAMIC TABLE dt TARGET_LAG='1 minute' WAREHOUSE=my_wh (id) AS SELECT * FROM bla",
+            "CREATE DYNAMIC TABLE dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_wh AS SELECT * FROM bla",
+        )
+
+tests/dialects/test_snowflake.py:4307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "CREA[15 chars]E dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_w[18 chars] bla" != "CREA[15 chars]E dt TARGET_LAG='1 minute' WAREHOUSE=MY_WH(id)[17 chars] bla"
+E   - CREATE DYNAMIC TABLE dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_wh AS SELECT * FROM bla
+E   ?                        -----                                 ^^ ^^
+E   + CREATE DYNAMIC TABLE dt TARGET_LAG='1 minute' WAREHOUSE=MY_WH(id) AS SELECT * FROM bla
+E   ?                                                         ^^ ^^^^^^
+----------------------------- Captured stdout call -----------------------------
+uu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_snowflake.py::TestSnowflake::test_ddl - AssertionE...
+1 failed, 96 passed, 1547 subtests passed in 0.73s

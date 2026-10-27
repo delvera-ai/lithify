@@ -1,0 +1,69 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 552bf26a5..9a0b626aa 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -736,6 +736,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-100324-hive-spark-and-databricks-dialec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 36716,
++      "tokens_cached": 451735,
++      "tokens_out": 7873,
++      "cost_usd": 0.0158,
++      "wall_s": 162.1,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..732dbe20f 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -1,5 +1,5 @@
+ from tests.dialects.test_dialect import Validator
+-from sqlglot import exp
++from sqlglot import exp, parse_one
+ 
+ 
+ class TestHive(Validator):
+@@ -317,6 +317,17 @@ class TestHive(Validator):
+         )
+ 
+     def test_quotes(self):
++        self.assertEqual(
++            parse_one("CREATE TABLE t (a STRING COMMENT 'Hello ''World!')", read="hive")
++            .find(exp.ColumnDef)
++            .find(exp.Literal)
++            .this,
++            "Hello 'World!",
++        )
++        self.assertEqual(
++            parse_one("SELECT 'it''s'", read="spark").selects[0].this,
++            "it's",
++        )
+         self.validate_all(
+             "'\\''",
+             write={

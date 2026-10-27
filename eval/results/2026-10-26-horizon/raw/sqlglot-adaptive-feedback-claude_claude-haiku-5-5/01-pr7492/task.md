@@ -1,0 +1,1 @@
+Oracle dialect: support the optional `WHERE` clause on the `UPDATE` and `INSERT` branches of a `MERGE` statement (`WHEN MATCHED THEN UPDATE SET ... WHERE ...`, `WHEN NOT MATCHED THEN INSERT ... VALUES ... WHERE ...`), so it parses and round-trips in Oracle. When transpiling to dialects that do not support it, emit an unsupported warning and drop the clause.

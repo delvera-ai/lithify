@@ -1,0 +1,28 @@
+{
+  "task": "SQLite dialect: support the full `PRAGMA` syntax. This query fails to parse:\n\n```python\nimport sqlglot\nsqlglot.parse_one(\"PRAGMA full_column_names=on;\", read=\"sqlite\")\n# ParseError: Required keyword: 'expression' missing for EQ. Line 1, Col: 27.\n```\n\nWith values such as `off`, `1` or `2` instead of `on` it parses. All forms of SQLite's PRAGMA statement (see https://sqlite.org/pragma.html) should parse and round-trip.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 53776,
+    "cached": 888224,
+    "out": 16544,
+    "cost": 0.027905839999999994,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

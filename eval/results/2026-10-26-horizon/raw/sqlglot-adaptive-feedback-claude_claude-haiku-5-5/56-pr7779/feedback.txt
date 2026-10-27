@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-114009-starrocks-dialect-several-functi",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-114009-starrocks-dialect-several-functi-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 157843,
+    "cached": 1807611,
+    "out": 21251,
+    "cost": 2.0489661999999997,
+    "exec": 0,
+    "roles": 3
+  }
+}

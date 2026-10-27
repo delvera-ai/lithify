@@ -1,0 +1,28 @@
+{
+  "task": "Pretty-printing: a multi-line comment attached to an `AND`/`OR` connector gains extra whitespace each time the SQL is formatted with `pretty=True`, so formatting is not idempotent. Formatting a query with such comments repeatedly must produce the same output each time.",
+  "k": 1,
+  "reason": "build (S=0.60)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 35644,
+    "cached": 415909,
+    "out": 4793,
+    "cost": 0.013682390000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,159 @@
+diff --git a/sqlglot/dialects/snowflake.py b/sqlglot/dialects/snowflake.py
+index 83547aab7..291f067dd 100644
+--- a/sqlglot/dialects/snowflake.py
++++ b/sqlglot/dialects/snowflake.py
+@@ -166,6 +166,7 @@ class Snowflake(Dialect):
+             "TAG": TokenType.TAG,
+             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+             "TOP": TokenType.TOP,
++            "UNDROP": TokenType.UNDROP,
+             "VOLUME": TokenType.VOLUME,
+             "WAREHOUSE": TokenType.WAREHOUSE,
+             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index fddbc935a..e885a596c 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -366,6 +366,10 @@ class Drop(Expression):
+         return kind and kind.upper()
+ 
+ 
++class Undrop(Expression):
++    arg_types = {"this": True, "kind": True}
++
++
+ class DropPrimaryKey(Expression):
+     arg_types = {}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26ea7cdf4..8bb926e47 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1805,6 +1805,9 @@ class Generator:
+         sync = " SYNC" if expression.args.get("sync") else ""
+         return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}"
+ 
++    def undrop_sql(self, expression: exp.Undrop) -> str:
++        return f"UNDROP {expression.args['kind']} {self.sql(expression, 'this')}"
++
+     def set_operation(self, expression: exp.SetOperation) -> str:
+         op_type = type(expression)
+         op_name = op_type.key.upper()
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 28db6bf6a..3dce32cc1 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -750,6 +750,7 @@ class Parser:
+         TokenType.TOP,
+         TokenType.TRUE,
+         TokenType.TRUNCATE,
++        TokenType.UNDROP,
+         TokenType.UNIQUE,
+         TokenType.UNNEST,
+         TokenType.UNPIVOT,
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 8c3fed5c3..d402b3ba9 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -760,6 +760,7 @@ class SnowflakeParser(parser.Parser):
+         TokenType.GET: lambda self: self._parse_get(),
+         TokenType.PUT: lambda self: self._parse_put(),
+         TokenType.SHOW: lambda self: self._parse_show(),
++        TokenType.UNDROP: lambda self: self._parse_undrop(),
+     }
+ 
+     PROPERTY_PARSERS = {
+@@ -779,6 +780,21 @@ class SnowflakeParser(parser.Parser):
+         ),
+     }
+ 
++    UNDROP_KINDS: t.ClassVar[tuple[str, ...]] = (
++        "TABLE",
++        "SCHEMA",
++        "DATABASE",
++        "ACCOUNT",
++        "NOTEBOOK",
++        "SNAPSHOT",
++        "STREAMLIT",
++        "TAG",
++        "TYPE",
++        "DYNAMIC TABLE",
++        "EXTERNAL VOLUME",
++        "ICEBERG TABLE",
++    )
++
+     DESCRIBE_QUALIFIER_PARSERS: t.ClassVar[dict[str, t.Callable]] = {
+         "API": lambda self: self.expression(exp.ApiProperty()),
+         "APPLICATION": lambda self: self.expression(exp.ApplicationProperty()),
+@@ -1211,6 +1227,22 @@ class SnowflakeParser(parser.Parser):
+             exp.Get(this=self._parse_string(), target=target, properties=self._parse_properties())
+         )
+ 
++    def _parse_undrop(self) -> exp.Undrop | exp.Command:
++        start = self._prev
++        kind = next(
++            (kind for kind in self.UNDROP_KINDS if self._match_text_seq(*kind.split())),
++            None,
++        )
++        if not kind:
++            return self._parse_as_command(start)
++
++        return self.expression(
++            exp.Undrop(
++                this=self._parse_table_parts(is_db_reference=kind == "SCHEMA"),
++                kind=kind,
++            )
++        )
++
+     def _parse_location_property(self) -> exp.LocationProperty:
+         self._match(TokenType.EQ)
+         return self.expression(exp.LocationProperty(this=self._parse_location_path()))
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8616912c1..77fdcb33c 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -431,6 +431,7 @@ class TokenType(IntEnum):
+     TRIGGER = auto()
+     TYPE = auto()
+     UNCACHE = auto()
++    UNDROP = auto()
+     UNION = auto()
+     UNNEST = auto()
+     UNPIVOT = auto()
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 8eccf066c..f649aedca 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -5201,6 +5201,32 @@ MATCH_RECOGNIZE (
+                             pretty=True,
+                         )
+ 
++    def test_undrop(self):
++        for kind in (
++            "TABLE",
++            "SCHEMA",
++            "DATABASE",
++            "ACCOUNT",
++            "NOTEBOOK",
++            "SNAPSHOT",
++            "STREAMLIT",
++            "TAG",
++            "TYPE",
++            "DYNAMIC TABLE",
++            "EXTERNAL VOLUME",
++            "ICEBERG TABLE",
++        ):
++            with self.subTest(f"UNDROP {kind}"):
++                expr = self.validate_identity(f"UNDROP {kind} x")
++                self.assertIsInstance(expr, exp.Undrop)
++                self.assertEqual(expr.args["kind"], kind)
++
++        self.validate_identity("UNDROP TABLE db.s.t")
++        self.validate_identity("UNDROP SCHEMA db.s")
++        self.validate_identity("UNDROP TABLE IDENTIFIER('\"01a2b3\"')")
++        self.validate_identity("UNDROP DYNAMIC TABLE IDENTIFIER('\"01a2b3\"')")
++        self.assertIsInstance(parse_one("UNDROP FOO x", read="snowflake"), exp.Command)
++
+     def test_show_users(self):
+         self.validate_identity("SHOW USERS")
+         self.validate_identity("SHOW TERSE USERS")

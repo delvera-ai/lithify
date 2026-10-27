@@ -1,0 +1,102 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 7ae4f75b2..52a7de3c8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -192,6 +192,22 @@
+       "always_on_tokens": 1154,
+       "stability_after": 0.5307,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-195405-duckdb-snowflake-duckdb-s-list-c",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 70668,
++      "tokens_cached": 1357138,
++      "tokens_out": 28027,
++      "cost_usd": 0.0417,
++      "wall_s": 269.1,
++      "always_on_tokens": 1154,
++      "stability_after": 0.6191,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26d481a50..cff51951f 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1822,6 +1822,8 @@ class Generator:
+             return f"{this} FILTER({where})"
+ 
+         agg = expression.this
++        if isinstance(agg, exp.List):
++            agg = exp.ArrayAgg(this=agg.expressions[0])
+         agg_arg = agg.this
+         cond = expression.expression.this
+         agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy()))
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..ee848dc7b 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1048,6 +1048,18 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return expr_sql
+ 
++    def list_sql(self, expression: exp.List) -> str:
++        return self.sql(exp.ArrayAgg(this=expression.expressions[0]))
++
++    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
++        arr = expression.this
++
++        # DuckDB's LIST_DISTINCT drops NULLs, whereas Snowflake's ARRAY_DISTINCT keeps them
++        if expression.args.get("check_null") is False:
++            arr = exp.ArrayCompact(this=arr)
++
++        return self.func("ARRAY_DISTINCT", arr)
++
+     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..af5cd1ed3 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -103,6 +103,7 @@ class DuckDBParser(parser.Parser):
+         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k not in ("DATE_SUB", "GLOB")},
+         "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
+         "ARRAY_PREPEND": _build_array_prepend,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(this=seq_get(args, 0), check_null=False),
+         "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+         "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
+         "ARRAY_SORT": exp.SortArray.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..79834686b 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,22 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(x) FROM t",
++            write={"snowflake": "SELECT ARRAY_AGG(x) FROM t"},
++        )
++        self.validate_all(
++            "SELECT LIST(x) FILTER(WHERE NOT x IS NULL) FROM t",
++            write={"snowflake": "SELECT ARRAY_AGG(IFF(NOT x IS NULL, x, NULL)) FROM t"},
++        )
++        self.validate_all(
++            "LIST_DISTINCT(x)",
++            write={
++                "duckdb": "LIST_DISTINCT(x)",
++                "snowflake": "ARRAY_DISTINCT(ARRAY_COMPACT(x))",
++            },
++        )
++        parse_one("LIST_DISTINCT(x)", read="duckdb").assert_is(exp.ArrayDistinct)
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

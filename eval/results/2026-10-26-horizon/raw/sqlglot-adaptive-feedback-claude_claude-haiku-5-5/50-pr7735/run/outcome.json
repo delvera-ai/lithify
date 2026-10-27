@@ -1,0 +1,28 @@
+{
+  "task": "Snowflake dialect: Snowflake's Time Travel `UNDROP` statement raises a `ParseError`. Support parsing and generating `UNDROP` for all Snowflake object types: `TABLE`, `SCHEMA`, `DATABASE`, `ACCOUNT`, `NOTEBOOK`, `SNAPSHOT`, `STREAMLIT`, `TAG`, `TYPE`, `DYNAMIC TABLE`, `EXTERNAL VOLUME` and `ICEBERG TABLE`, including the `IDENTIFIER(<id>)` form for restoring by system ID.",
+  "k": 1,
+  "reason": "build (S=0.70)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 72705,
+    "cached": 1604315,
+    "out": 21854,
+    "cost": 0.04150635000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

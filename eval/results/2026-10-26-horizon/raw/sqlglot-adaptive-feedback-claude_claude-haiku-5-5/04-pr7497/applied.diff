@@ -1,0 +1,84 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a478e907e..6ffa3ab4d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -48,6 +48,22 @@
+       "always_on_tokens": 401,
+       "stability_after": 0.2,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261026-160035-transpiling-duckdb-s-json-array",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 116244,
++      "tokens_cached": 1885468,
++      "tokens_out": 23534,
++      "cost_usd": 0.2985,
++      "wall_s": 275.9,
++      "always_on_tokens": 524,
++      "stability_after": 0.4,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..fce82622c 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -501,6 +501,9 @@ class SnowflakeGenerator(generator.Generator):
+         exp.JSONExtractScalar: lambda self, e: self.func(
+             "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
+         ),
++        exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
++            rename_func("ARRAY_CONSTRUCT")
++        ),
+         exp.JSONKeys: rename_func("OBJECT_KEYS"),
+         exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
+         exp.JSONPathRoot: lambda *_: "",
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..15e00af90 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -131,6 +131,7 @@ class DuckDBParser(parser.Parser):
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+         "LIST_CONCAT": parser.build_array_concat,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..7ae199be4 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1558,6 +1558,19 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_json_array(self):
++        self.assertIsInstance(
++            self.validate_identity("SELECT JSON_ARRAY('a', 'b', 'c')").selects[0], exp.JSONArray
++        )
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++                "mysql": "SELECT JSON_ARRAY('a', 'b', 'c')",
++            },
++        )
++
+     def test_array_index(self):
+         with self.assertLogs(helper_logger) as cm:
+             self.validate_all(

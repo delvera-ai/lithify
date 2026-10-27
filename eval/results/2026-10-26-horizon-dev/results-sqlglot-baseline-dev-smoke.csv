@@ -1,0 +1,2 @@
+experiment,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,always_on_tokens,stability_after,promoted,proposed,adopted,feedback,adopt_policy,lithify_commit
+horizon-dev,baseline,claude@claude-haiku-5-5,20261026-132112-sqlite-dialect-support-the-full,sqlglot#7441,0,1,0,override k=0,True,True,True,False,base-1,1,0,53776,888224,16544,0.0279,190.5,185,0.2,,,,,all,f964993

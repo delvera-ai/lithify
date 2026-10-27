@@ -1,0 +1,90 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..4af0d9dd0 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -372,8 +372,18 @@ def to_node(
+     }
+ 
+     pivots = scope.pivots
+-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
+-    if pivot:
++    pivot = pivots[0] if len(pivots) == 1 else None
++    if pivot and pivot.unpivot:
++        # The value and name columns of an UNPIVOT are fed by the columns listed in its IN clause
++        unpivot_outputs = {e.name for e in pivot.expressions} | {
++            f.this.name for f in pivot.args["fields"]
++        }
++        unpivot_columns = [
++            col.this if isinstance(col, exp.PivotAlias) else col
++            for f in pivot.args["fields"]
++            for col in f.expressions
++        ]
++    if pivot and not pivot.unpivot:
+         # For each aggregation function, the pivot creates a new column for each field in category
+         # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+         # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+@@ -422,19 +432,30 @@ def to_node(
+             downstream_columns = []
+ 
+             column_name = c.name
+-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
++            pivot_parent = pivot.parent
++            if pivot.unpivot and column_name in unpivot_outputs:
++                downstream_columns.extend(
++                    exp.column(col.this, table=pivot_parent.alias_or_name if pivot_parent else "")
++                    for col in unpivot_columns
++                )
++            elif not pivot.unpivot and any(
++                column_name == pivot_column.name for pivot_column in pivot_columns
++            ):
+                 downstream_columns.extend(pivot_column_mapping[column_name])
+             else:
+                 # The column is not in the pivot, so it must be an implicit column of the
+                 # pivoted source -- adapt column to be from the implicit pivoted source.
+-                pivot_parent = pivot.parent
+                 downstream_columns.append(
+                     exp.column(c.this, table=pivot_parent.alias_or_name if pivot_parent else "")
+                 )
+ 
++            # The UNPIVOT alias shadows the CTE it reads from in scope.sources, so look that up directly
++            unpivoted_source = (
++                scope.cte_sources.get(pivot_parent.name) if pivot.unpivot and pivot_parent else None
++            )
+             for downstream_column in downstream_columns:
+                 table = downstream_column.table
+-                col_source = scope.sources.get(table)
++                col_source = unpivoted_source or scope.sources.get(table)
+                 if isinstance(col_source, Scope):
+                     to_node(
+                         downstream_column.name,
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..c065d2a05 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -685,6 +685,26 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].reference_node_name, "t")
+         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+ 
++    def test_unpivot_with_cte(self) -> None:
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
++        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
++
++        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(node.downstream[0].name, "SRC.ID")
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

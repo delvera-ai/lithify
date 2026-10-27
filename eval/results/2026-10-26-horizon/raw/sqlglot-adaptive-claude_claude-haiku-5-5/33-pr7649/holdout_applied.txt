@@ -1,0 +1,122 @@
+exit 1
+................F.....................................                                                                  [100%]
+=================================== FAILURES ===================================
+_________________________ TestTSQL.test_for_modifiers __________________________
+
+self = <tests.dialects.test_tsql.TestTSQL testMethod=test_for_modifiers>
+
+        def test_for_modifiers(self):
+            # https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
+            json_possible_options = [
+                "AUTO",
+                "PATH",
+                "AUTO, ROOT('RootName')",
+                "PATH, ROOT('RootName')",
+                "AUTO, INCLUDE_NULL_VALUES",
+                "PATH, INCLUDE_NULL_VALUES",
+                "AUTO, WITHOUT_ARRAY_WRAPPER",
+                "PATH, WITHOUT_ARRAY_WRAPPER",
+                "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES",
+                "PATH, ROOT('RootName'), WITHOUT_ARRAY_WRAPPER",
+                "PATH, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+                "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+                # SQL Server accepts the modifiers in any order after the mode
+                "PATH, WITHOUT_ARRAY_WRAPPER, ROOT('Root'), INCLUDE_NULL_VALUES",
+            ]
+    
+            for json_option in json_possible_options:
+                with self.subTest(f"Testing FOR JSON option: {json_option}"):
+                    self.validate_identity(f"SELECT * FROM t FOR JSON {json_option}")
+    
+            # Correlated subquery — the canonical SQL Server JSON shaping pattern
+            self.validate_identity(
+                "SELECT (SELECT TOP 5 a, b FROM t ORDER BY b DESC FOR JSON PATH) AS j FROM x"
+            )
+    
+            # Inside a derived table
+            self.validate_identity("SELECT j FROM (SELECT a AS j FROM t FOR JSON PATH) AS x")
+    
+            self.validate_identity(
+                "SELECT * FROM t FOR JSON PATH, ROOT('Root'), INCLUDE_NULL_VALUES",
+                """SELECT
+      *
+    FROM t
+    FOR JSON
+      PATH,
+      ROOT('Root'),
+      INCLUDE_NULL_VALUES""",
+                pretty=True,
+            )
+    
+            # Other dialects don't support FOR JSON — it's silently dropped
+            self.validate_all(
+                "SELECT * FROM t FOR JSON AUTO",
+                read={"tsql": "SELECT * FROM t FOR JSON AUTO"},
+                write={
+                    "tsql": "SELECT * FROM t FOR JSON AUTO",
+                    "postgres": "SELECT * FROM t",
+                    "duckdb": "SELECT * FROM t",
+                },
+            )
+    
+            # FOR BROWSE is a bare keyword — no options follow.
+            # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+>           self.validate_identity("SELECT * FROM t FOR BROWSE")
+
+tests/dialects/test_tsql.py:769: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2035: in parse
+    return self._parse(
+sqlglot/parser.py:2155: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2125: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.tsql.TSQLParser object at 0x10badf050>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.FOR, text: FOR, line: 1, col: 19, start: 16, end: 18, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 19.
+E             SELECT * FROM t [4mFOR[0m BROWSE
+
+sqlglot/parser.py:1992: ParseError
+----------------------------- Captured stdout call -----------------------------
+uuuuuuuuuuuuuuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_tsql.py::TestTSQL::test_for_modifiers - sqlglot.er...
+1 failed, 53 passed, 673 subtests passed in 0.59s

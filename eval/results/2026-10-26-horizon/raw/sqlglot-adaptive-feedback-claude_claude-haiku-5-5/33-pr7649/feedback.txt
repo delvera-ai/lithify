@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-092138-t-sql-dialect-support-the-for-js",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-092138-t-sql-dialect-support-the-for-js-feedback",
+  "components": [
+    "skills/sqlglot-query-modifiers",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 152240,
+    "cached": 1252067,
+    "out": 20170,
+    "cost": 1.8714854,
+    "exec": 0,
+    "roles": 3
+  }
+}

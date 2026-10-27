@@ -1,0 +1,28 @@
+{
+  "task": "BigQuery dialect: support `LOAD DATA INTO TEMP TABLE` (and `TEMPORARY`), which currently fails to parse. These must all round-trip:\n\n```sql\nLOAD DATA OVERWRITE mydataset.table1 FROM FILES(...)\nLOAD DATA INTO TABLE mydataset.table1 FROM FILES(...)\nLOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(...)\n```",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 34599,
+    "cached": 258171,
+    "out": 8517,
+    "cost": 0.013758610000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

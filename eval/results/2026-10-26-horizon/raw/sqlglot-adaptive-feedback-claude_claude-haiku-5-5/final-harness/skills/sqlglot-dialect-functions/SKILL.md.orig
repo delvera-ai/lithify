@@ -1,0 +1,181 @@
+---
+name: sqlglot-dialect-functions
+description: Load when a task reports SQL that fails to parse, round-trips wrongly or transpiles wrongly in a sqlglot dialect (ParseError, "Invalid expression", unsupported function syntax such as ClickHouse parametric aggregates f(p)(x)), or when a dialect must accept a shorthand / optional-keyword form of a function it already parses (e.g. DATE_ADD / DATE_SUB with a bare number instead of INTERVAL), or when adding/mapping a dialect function — any change to a dialect's FUNCTIONS / FUNCTION_PARSERS / AGG_FUNCTIONS or generator TRANSFORMS, including choosing which target-dialect function is "the equivalent" of a source function (e.g. JSON constructors into Snowflake ARRAY_CONSTRUCT / OBJECT_CONSTRUCT / VARIANT).
+---
+
+# Dialect functions and parse fixes in sqlglot
+
+If the failing syntax is SQL/JSON (JSON_TABLE, FORMAT JSON, JSON_OBJECT RETURNING), also load
+the `sqlglot-json-table` skill: that syntax is parsed in the base `sqlglot/parser.py`, not in
+the dialect's parser. If it is a list inside a clause (ON CONFLICT target, index/key column
+list) rather than a function, load `sqlglot-clause-element-lists` instead
+(plus `sqlglot-upsert-on-conflict` for an ON CONFLICT target).
+
+## The invariant: parse into the canonical expression, not a generic node
+sqlglot is AST-first. If a function's meaning already has an expression class, the function must
+parse into THAT class so it can transpile. The generic nodes `exp.Anonymous`, `exp.AnonymousAggFunc`,
+`exp.ParameterizedAgg`, `exp.CombinedAggFunc` and `exp.CombinedParameterizedAgg` (all in
+`sqlglot/expressions/core.py`) are only for functions that have NO canonical class. The tests
+check node types too. A fix that routes the function into a generic node can round-trip as a
+string in its own dialect and still be wrong.
+
+## Procedure
+1. **Reproduce and inspect the node** before editing. Run from the repo root with the project's
+   python (see `memory.md`):
+   `<python> .lithify/harness/skills/sqlglot-dialect-functions/scripts/ast_check.py --read <dialect> --write duckdb,mysql,postgres --repr "<sql>"`
+   Also try the bare form and any other variants of the function. Use these scripts rather
+   than a hand-written `/tmp` probe: their flags are the checks a hand probe leaves out.
+2. **Find the canonical class and a typed precedent.** If the dialect already parses another
+   form of the SAME function name (e.g. an INTERVAL form), that form's node is the precedent:
+   see the shorthand invariant below. Otherwise grep `sqlglot/expressions/*.py` for a class
+   with the function's semantics. For example, string aggregation is `GroupConcat` in
+   `expressions/aggregate.py`, quantile is `Quantile`, and uniq is `ApproxDistinct`. Grep other
+   `sqlglot/parsers/*.py` for the same SQL concept: `LISTAGG`, `GROUP_CONCAT` and `STRING_AGG`
+   all build `exp.GroupConcat`. In the dialect's parser and generator, look at
+   `FUNCTION_PARSERS` and `TRANSFORMS` for a sibling handled the same way.
+3. **Implement the contract below** following that precedent. Map each part of the input
+   (parameter vs argument) to the matching arg of the typed node.
+4. **You are done only when all of these hold, read from actual output:**
+   - `ast_check.py`, rerun AFTER your last source edit (not a hand-written `-c` probe), shows
+     the typed node, with no `GENERIC node` flag, for every input form the task names. Pass
+     them all in one call (e.g. both the ADD and SUB spelling).
+   - No `[FUNCTION CHANGED]` (exit 4): every function the user wrote is still in the round-trip.
+     `DATE_SUB(x, 1)` coming back as `DATE_ADD(x, -1)` is a failure even though the arithmetic
+     is equal. Go back to step 2; don't report it as a caveat or record it in a test.
+   - The round-trip matches the input (no `[DIFFERS]`; case and whitespace are ignored), except
+     for a normalisation you can name. A shorthand spelling of an existing node normalizes to the
+     spelling the dialect's generator already emits for that node (see the shorthand invariant
+     below); its test is `validate_identity(shorthand, canonical)` in its own dialect. A
+     same-dialect `validate_all(read=...)` does not prove a form round-trips.
+   - Transpiling to at least two other dialects gives each dialect's native form, not the source
+     dialect's syntax copied verbatim.
+   - When the task is "dialect X must GENERATE its own spelling" (transpiling INTO X), run
+     `<python> .lithify/harness/skills/sqlglot-dialect-functions/scripts/into_dialect.py --write <X> "<X-native sql>" ...`
+     after your last source edit, with X's spelling of EVERY construct the task names. It reads
+     that text under every other dialect. A hand-picked list of source spellings (e.g. only
+     `@>` and `ARRAY_HAS_ALL`) is not enough: another dialect can parse X's own function name
+     into a different class (an argument-swapped/inverse operator node) that X still emits in
+     foreign syntax. Each `[DIFFERS]` line (exit 4) needs a TRANSFORMS entry for that class, or
+     a reason from that source dialect's docs that the text means something else there.
+   - Each target's output returns the same type as the source function (see the return-type
+     invariant below). Valid SQL with a similar-sounding name is not enough.
+   - Each target's output returns the same VALUE as the source for the edge inputs listed in
+     the value invariant below, not only for the task's example.
+   - The new test asserts the node class (`validate_identity` returns the parsed expression;
+     unwrap an alias if there is one) and adds a `validate_all` with `read=`/`write=` for another
+     dialect where that applies.
+   - The dialect's test file passes, then one full-suite run via
+     `.lithify/harness/scripts/run_suite.py` (see `tool_guidance.md`) ends with `EXIT: 0`.
+5. If `ast_check.py` exits 2, sqlglot was not importable. Rerun it from the repo root with the
+   project's python. If it still fails, inspect `repr()` once by hand; don't retry the script.
+
+If your final message would say a form the task names "does not round-trip" or is rewritten,
+you are not done: that is the failure, not a footnote.
+
+In the final message, name the expression class the new syntax parses into and the result type
+on each side of the translation. "Round-trips" alone is not enough.
+
+## INVARIANT: shorthand forms reuse the node the full form already builds
+When a dialect accepts a second spelling of a function it already parses (an omitted keyword or
+a defaulted argument), the new spelling must build the SAME expression class as the existing
+form, with the omitted part filled in. Do not switch it to another node class.
+- Take the precedent from the dialect's own parent class, not from an unrelated dialect that
+  shares the spelling. Doris and StarRocks extend MySQL (`DorisParser(MySQLParser)`,
+  `StarRocksParser(MySQLParser)`, same for the generators). MySQL builds `DATE_ADD` / `DATE_SUB`
+  as `exp.DateAdd` / `exp.DateSub` (`build_date_delta_with_interval` in
+  `sqlglot/dialects/dialect.py`, wired in `sqlglot/parsers/mysql.py`), so the bare-number form
+  there is `exp.DateAdd` / `exp.DateSub` with `unit` DAY. It is not Hive/Spark's `exp.TsOrDsAdd`
+  (`_build_date_add` in `sqlglot/parsers/hive.py`), which belongs to the Hive family.
+- Keep the operation. A `*_SUB` call stays `exp.DateSub`. Do not rewrite it as an Add with a
+  negated operand: that loses the function name on round-trip.
+- Default units follow existing builders: `build_date_delta(..., default_unit=...)` in
+  `sqlglot/dialects/dialect.py` fills the unit when it is absent. Extend or wrap the existing
+  shared builder there (next to `build_date_delta_with_interval`) rather than creating a
+  parallel one per dialect.
+- Generation needs no new transform when the inherited generator already handles the node.
+  MySQL's `date_add_sql("ADD"/"SUB")` (`sqlglot/generators/mysql.py`) emits
+  `DATE_ADD/DATE_SUB(x, INTERVAL n <unit>)`, and Doris/StarRocks inherit it, so the shorthand
+  normalizes to the INTERVAL form. "Parse and generate" means the parsed node generates valid
+  dialect SQL. It does not mean the shorthand is echoed back verbatim.
+- Do not add or change a generator `TRANSFORMS` entry for a node that other dialects also
+  produce (e.g. `exp.TsOrDsAdd`) just to make your shorthand echo. That changes the output for
+  every source dialect that transpiles into this one. (Doris's generator already maps
+  `exp.TsOrDsAdd` to a two-arg `DATE_ADD` that ignores the unit; StarRocks inherits MySQL's
+  INTERVAL form.)
+- Check: `ast_check.py` shows the full form and the shorthand as the same class, the `SUB`
+  shorthand as the `Sub` class, and the shorthand round-trips to the full form's spelling.
+
+## Contract for mapping a dialect spelling onto a canonical expression
+Change all of these and make them agree:
+1. Parser, `sqlglot/parsers/<dialect>.py`:
+   - `FUNCTIONS` (`"NAME": exp.X.from_arg_list` or a builder) for a plain `name(args)` call.
+     Keys are UPPERCASE.
+   - `FUNCTION_PARSERS` (`"NAME": lambda self: self._parse_x()`) when the syntax is not a plain
+     arg list (keywords, a second paren group, …). It is called after `NAME(` is consumed, and
+     the base parser consumes the final `)`.
+2. Generator, `sqlglot/generators/<dialect>.py`: a `TRANSFORMS` entry or `<exprname>_sql` method
+   that emits the dialect's own spelling. Without it the base generator's spelling is emitted
+   and the identity round-trip breaks. Reuse the shared helpers in `sqlglot/dialects/dialect.py`
+   (`rename_func`, `groupconcat_sql`, …) when they fit.
+3. Tests, `tests/dialects/test_<dialect>.py`: put them next to the existing tests for that
+   function family.
+4. Every form the dialect accepts for the name must keep working: with and without parameters,
+   and with and without the optional argument. Don't emit a missing optional arg.
+5. If the dialect form carries a parameter the canonical class has no arg for, don't drop it
+   silently. Fall back to the generic node for that case, or report it.
+
+## Invariant: the target call must return the SAME VALUE for every input, not just the example
+A task's example output shows the function to emit for ONE input. A mapping that reproduces it
+can still return a different value for other inputs. Before writing tests:
+1. From the SOURCE engine's docs, write down what the function does with: an input/format that
+   omits components (no year, no date, no time part), NULL, unparseable input (error or NULL),
+   and time zones. Do the same for the target function. Defaults for omitted parts often differ
+   between engines; a format-string date/time parser (PARSE_DATETIME, STRPTIME, …) is the usual
+   case: load `sqlglot-time-parsing` for the known defaults and where the pieces live.
+2. Probe those inputs, and execute them in DuckDB when DuckDB is the target:
+   `<python> .lithify/harness/skills/sqlglot-dialect-functions/scripts/value_check.py --read <src> "<sql>" ...`
+   Exit 3 means the `duckdb` module is not installed: compare against the docs instead (do not
+   install it, do not retry) and say so in the final message.
+3. Grep the target generator for how sibling functions of the same family (the other
+   `PARSE_*` / `STR_TO_*` / format-parsing transforms) already compensate for such differences,
+   and follow that precedent, applied to every input rather than special-cased by literal.
+4. If a difference remains, the transpile is not done; fix it in the generator. When the
+   semantically correct output differs from the task's example string, the semantics win: put
+   the correct output in the test and explain the difference in the final message.
+
+## Invariant: the target spelling must return the SAME TYPE as the source function
+sqlglot preserves semantics, not names. Before a target function counts as "the equivalent",
+write down what the source function returns (dialect docs) and what the target returns. If they
+differ, wrap or cast the target call so the types match; don't just rename.
+- A dialect's name for a type is in its generator's `TYPE_MAPPING`. In
+  `sqlglot/generators/snowflake.py`, `exp.DType.JSON` maps to `"VARIANT"`: a JSON-typed source
+  value must arrive in Snowflake as a VARIANT.
+- Snowflake constructors return ARRAY/OBJECT, not VARIANT (`ARRAY_CONSTRUCT` parses as
+  `exp.Array` in `sqlglot/parsers/snowflake.py`). A JSON-returning source constructor mapped onto
+  one of them needs a VARIANT wrapper.
+- The wrapper node is `exp.ToVariant` (`sqlglot/expressions/functions.py`); Snowflake emits it as
+  `TO_VARIANT(...)`. Build the node (`self.sql(exp.ToVariant(this=<node>))`) rather than
+  hand-writing the string. Change only the transform you are adding.
+- A neighbouring transform is not proof of type-correctness. In the Snowflake generator,
+  `exp.JSONObject` maps to a bare `OBJECT_CONSTRUCT_KEEP_NULL`, which would mislead you if you
+  copied it. When a precedent and the type check disagree, the type check wins.
+- Derive the expected target string in your test from this type check, not from what the
+  generator prints after your edit. A test that records your own output can't catch a wrong
+  translation.
+
+## ClickHouse specifics (`sqlglot/parsers/clickhouse.py`, `sqlglot/generators/clickhouse.py`)
+- Parametric aggregate syntax is `name(params)(args)`.
+- The module-level `AGG_FUNCTIONS` set (camelCase names) and `AGG_FUNCTIONS_SUFFIXES` feed
+  `_resolve_clickhouse_agg`. `ClickHouseParser._parse_function` then turns a resolved
+  `Anonymous` into `AnonymousAggFunc`, `ParameterizedAgg` or `Combined*`. Adding a name only to
+  `AGG_FUNCTIONS` therefore yields a generic `ParameterizedAgg`, never a canonical node.
+- `ParameterizedAgg` field names are inverted relative to SQL. `expressions` holds the FIRST
+  paren group (the parameters) and `params` holds the SECOND group (the arguments).
+- `quantile` is the canonical template already in the file:
+  - Parser: `FUNCTION_PARSERS["QUANTILE"] = lambda self: self._parse_quantile()`.
+    `_parse_quantile` parses the first group, then `self._parse_func_params()`, which matches
+    `)(` and parses the second group. With no second group it builds the non-parametric form.
+  - Generator: `exp.Quantile: _quantile_sql` in `TRANSFORMS` emits
+    `self.func("quantile", <param>) + f"({<arg>})"`.
+  - `"quantile"` also stays in `AGG_FUNCTIONS`. The suffixed names (`quantileIf`, …) don't match
+    the exact `FUNCTION_PARSERS` key, so they still parse through the combinator path.

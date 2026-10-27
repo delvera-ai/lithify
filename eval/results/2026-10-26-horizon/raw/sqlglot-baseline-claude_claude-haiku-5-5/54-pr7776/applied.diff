@@ -1,0 +1,84 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 46f2a011f..edfb4689d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -848,6 +848,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-191218-trino-snowflake-and-other-dialec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 34034,
++      "tokens_cached": 558937,
++      "tokens_out": 7860,
++      "cost_usd": 0.0163,
++      "wall_s": 1782.7,
++      "always_on_tokens": 185,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index f6f513435..554dce1a9 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1158,6 +1158,9 @@ class Generator:
+     def pseudocolumn_sql(self, expression: exp.Pseudocolumn) -> str:
+         return self.column_sql(expression)
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
++
+     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
+         this = self.sql(expression, "this")
+         this = f" {this}" if this else ""
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index c6ec1f9a9..b8982a44b 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2676,9 +2676,6 @@ class DuckDBGenerator(generator.Generator):
+         )
+         return self.function_fallback_sql(expression)
+ 
+-    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+-        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+-
+     def strposition_sql(self, expression: exp.StrPosition) -> str:
+         this = expression.this
+         substr = expression.args.get("substr")
+diff --git a/sqlglot/generators/presto.py b/sqlglot/generators/presto.py
+index 2664451cb..bcde13715 100644
+--- a/sqlglot/generators/presto.py
++++ b/sqlglot/generators/presto.py
+@@ -522,6 +522,9 @@ class PrestoGenerator(generator.Generator):
+         coalesced = self.func("COALESCE", self.func("TRY", parse_without_tz), parse_with_tz)
+         return self.func("TO_UNIXTIME", coalesced)
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.function_fallback_sql(expression)
++
+     def bracket_sql(self, expression: exp.Bracket) -> str:
+         if expression.args.get("safe"):
+             return bracket_to_element_at_sql(self, expression)
+diff --git a/tests/dialects/test_presto.py b/tests/dialects/test_presto.py
+index 3aa75f2e8..ddf2ea5fe 100644
+--- a/tests/dialects/test_presto.py
++++ b/tests/dialects/test_presto.py
+@@ -38,6 +38,10 @@ class TestPresto(Validator):
+             write={
+                 "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+                 "presto": "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
++                "snowflake": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
++                "postgres": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
++                "bigquery": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMP)",
++                "tsql": "SELECT CAST('2020-05-11T11:15:05' AS DATETIMEOFFSET)",
+             },
+         )
+         self.validate_all(

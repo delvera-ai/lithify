@@ -1,0 +1,99 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index d9f08c480..66045ff68 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -320,6 +320,9 @@ class Generator:
+     # Whether MERGE ... WHEN MATCHED BY SOURCE is allowed
+     MATCHED_BY_SOURCE = True
+ 
++    # Whether the WHERE clause of a MERGE ... WHEN MATCHED / NOT MATCHED branch is allowed
++    SUPPORTS_MERGE_WHERE = False
++
+     # Whether the INTERVAL expression works only with values like '1 day'
+     SINGLE_STRING_INTERVAL = False
+ 
+@@ -4461,7 +4464,19 @@ class Generator:
+ 
+         else:
+             then = self.sql(then_expression)
+-        return f"WHEN {matched}{source}{condition} THEN {then}"
++
++        where = ""
++        if isinstance(then_expression, (exp.Insert, exp.Update)) and then_expression.args.get(
++            "where"
++        ):
++            if self.SUPPORTS_MERGE_WHERE:
++                where = f" WHERE {self.sql(then_expression, 'where')}"
++            else:
++                self.unsupported(
++                    "WHERE clause in MERGE WHEN MATCHED / NOT MATCHED is not supported"
++                )
++
++        return f"WHEN {matched}{source}{condition} THEN {then}{where}"
+ 
+     def whens_sql(self, expression: exp.Whens) -> str:
+         return self.expressions(expression, sep=" ", indent=False)
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index 6a14abe85..a072ac657 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -37,6 +37,7 @@ class OracleGenerator(generator.Generator):
+     SUPPORTS_WINDOW_EXCLUDE = True
+     QUERY_HINT_SEP = " "
+     SUPPORTS_DECODE_CASE = True
++    SUPPORTS_MERGE_WHERE = True
+ 
+     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+ 
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 7bb9c36b6..021ad5559 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8946,6 +8946,9 @@ class Parser:
+             else:
+                 then = self._parse_var_from_options(self.CONFLICT_ACTIONS)
+ 
++            if isinstance(then, (exp.Insert, exp.Update)) and self._match(TokenType.WHERE):
++                then.set("where", self._parse_disjunction())
++
+             whens.append(
+                 self.expression(
+                     exp.When(matched=matched, source=source, condition=condition, then=then)
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 39f8289d4..6a63d1db0 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -1,4 +1,6 @@
+ from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
++from sqlglot.errors import ErrorLevel
++from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ from sqlglot.optimizer.qualify import qualify
+ 
+@@ -881,6 +883,26 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
+         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
+         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
+ 
++    def test_merge_when_where(self):
++        self.validate_identity(
++            "MERGE INTO my_table USING source_table ON my_table.id = source_table.id "
++            "WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHERE source_table.col1 > 0 "
++            "WHEN NOT MATCHED THEN INSERT (my_table.id) VALUES (source_table.id) WHERE source_table.id > 0"
++        )
++
++        merge = parse_one(
++            "MERGE INTO t USING s ON t.id = s.id "
++            "WHEN MATCHED THEN UPDATE SET t.c = s.c WHERE s.c > 0 "
++            "WHEN NOT MATCHED THEN INSERT (t.id) VALUES (s.id) WHERE s.id > 0",
++            read="oracle",
++        )
++        with self.assertLogs(helper_logger) as cm:
++            self.assertEqual(
++                merge.sql("duckdb", unsupported_level=ErrorLevel.WARN),
++                "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.c = s.c WHEN NOT MATCHED THEN INSERT (t.id) VALUES (s.id)",
++            )
++        self.assertIn("WHERE clause in MERGE", cm.output[0])
++
+     def test_merge_builder_alias(self):
+         merge_stmt = exp.merge(
+             "WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1",

@@ -1,0 +1,137 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 846024106..99408a43d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,21 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261026-153659-oracle-dialect-support-the-optio",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 119030,
++      "tokens_cached": 1738190,
++      "tokens_out": 26791,
++      "cost_usd": 0.3034,
++      "wall_s": 252.7,
++      "always_on_tokens": 185,
++      "stability_after": 0.2,
++      "feedback_failed": false
++    }
++  ]
+ }
+diff --git a/sqlglot/expressions/dml.py b/sqlglot/expressions/dml.py
+index ed5098322..a477fbca0 100644
+--- a/sqlglot/expressions/dml.py
++++ b/sqlglot/expressions/dml.py
+@@ -515,7 +515,7 @@ class Merge(Expression, DML):
+ 
+ 
+ class When(Expression):
+-    arg_types = {"matched": True, "source": False, "condition": False, "then": True}
++    arg_types = {"matched": True, "source": False, "condition": False, "then": True, "where": False}
+ 
+ 
+ class Whens(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index d9f08c480..62142b4bd 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -320,6 +320,9 @@ class Generator:
+     # Whether MERGE ... WHEN MATCHED BY SOURCE is allowed
+     MATCHED_BY_SOURCE = True
+ 
++    # Whether MERGE ... WHEN [NOT] MATCHED THEN UPDATE | INSERT ... WHERE is allowed
++    MERGE_WHEN_WHERE = False
++
+     # Whether the INTERVAL expression works only with values like '1 day'
+     SINGLE_STRING_INTERVAL = False
+ 
+@@ -4461,7 +4464,12 @@ class Generator:
+ 
+         else:
+             then = self.sql(then_expression)
+-        return f"WHEN {matched}{source}{condition} THEN {then}"
++
++        where = self.sql(expression, "where")
++        if where and not self.MERGE_WHEN_WHERE:
++            self.unsupported("MERGE WHEN ... WHERE clause is not supported.")
++            where = ""
++        return f"WHEN {matched}{source}{condition} THEN {then}{where}"
+ 
+     def whens_sql(self, expression: exp.Whens) -> str:
+         return self.expressions(expression, sep=" ", indent=False)
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index 6a14abe85..02b7bac29 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -33,6 +33,7 @@ class OracleGenerator(generator.Generator):
+     TABLESAMPLE_KEYWORDS = "SAMPLE"
+     LAST_DAY_SUPPORTS_DATE_PART = False
+     SUPPORTS_SELECT_INTO = True
++    MERGE_WHEN_WHERE = True
+     TZ_TO_WITH_TIME_ZONE = True
+     SUPPORTS_WINDOW_EXCLUDE = True
+     QUERY_HINT_SEP = " "
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 7bb9c36b6..06c55da94 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8946,9 +8946,17 @@ class Parser:
+             else:
+                 then = self._parse_var_from_options(self.CONFLICT_ACTIONS)
+ 
++            where = self._parse_where() if isinstance(then, (exp.Insert, exp.Update)) else None
++
+             whens.append(
+                 self.expression(
+-                    exp.When(matched=matched, source=source, condition=condition, then=then)
++                    exp.When(
++                        matched=matched,
++                        source=source,
++                        condition=condition,
++                        then=then,
++                        where=where,
++                    )
+                 )
+             )
+         return self.expression(exp.Whens(expressions=whens))
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 39f8289d4..a2a129331 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -1,5 +1,6 @@
+ from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
+ from tests.dialects.test_dialect import Validator
++from sqlglot.generator import logger as generator_logger
+ from sqlglot.optimizer.qualify import qualify
+ 
+ 
+@@ -895,6 +896,22 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
+             "MERGE INTO my_table USING (SELECT * FROM something) source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1)",
+         )
+ 
++    def test_merge_when_where(self):
++        self.validate_identity(
++            "MERGE INTO my_table USING source_table ON my_table.id = source_table.id WHEN MATCHED THEN UPDATE SET my_table.col1 = source_table.col1 WHERE source_table.col1 > 0 WHEN NOT MATCHED THEN INSERT (my_table.id, my_table.col1) VALUES (source_table.id, source_table.col1) WHERE source_table.id > 0"
++        )
++
++        expression = parse_one(
++            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.a = s.a WHERE s.a > 0 WHEN NOT MATCHED THEN INSERT (id, a) VALUES (s.id, s.a) WHERE s.a > 0",
++            read="oracle",
++        )
++        with self.assertLogs(generator_logger, level="WARNING") as cm:
++            self.assertEqual(
++                expression.sql("postgres"),
++                "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a WHEN NOT MATCHED THEN INSERT (id, a) VALUES (s.id, s.a)",
++            )
++        self.assertIn("MERGE WHEN ... WHERE clause is not supported", cm.output[0])
++
+     def test_pseudocolumns(self):
+         ast = self.validate_identity(
+             "WITH t AS (SELECT 1 AS COL) SELECT col, ROWID FROM t WHERE ROWNUM = 1"

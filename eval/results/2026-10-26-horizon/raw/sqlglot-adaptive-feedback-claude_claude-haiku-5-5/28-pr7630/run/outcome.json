@@ -1,0 +1,28 @@
+{
+  "task": "Parser: `COLLATE` is not handled inside nested types and inside `CAST` target types (e.g. `CAST(x AS VARCHAR(10) COLLATE \"C\")`, or a collation on a field inside a struct/array type). Support `COLLATE` in these positions so they parse and round-trip, while `COLLATE` in ordinary expressions keeps working as before.",
+  "k": 1,
+  "reason": "build (S=0.70)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 61289,
+    "cached": 1218729,
+    "out": 14911,
+    "cost": 0.03189599,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

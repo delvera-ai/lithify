@@ -1,0 +1,59 @@
+diff --git a/sqlglot/expressions/query.py b/sqlglot/expressions/query.py
+index e82bd67c1..27ae51f8c 100644
+--- a/sqlglot/expressions/query.py
++++ b/sqlglot/expressions/query.py
+@@ -1942,7 +1942,7 @@ class JSONPathWildcard(JSONPathPart):
+ 
+ 
+ class FormatJson(Expression):
+-    pass
++    arg_types = {"this": True, "encoding": False}
+ 
+ 
+ class JSONKeyValue(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 5b12e0227..d44b57ca2 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3539,7 +3539,9 @@ class Generator:
+         return escaped
+ 
+     def formatjson_sql(self, expression: exp.FormatJson) -> str:
+-        return f"{self.sql(expression, 'this')} FORMAT JSON"
++        encoding = self.sql(expression, "encoding")
++        encoding = f" ENCODING {encoding}" if encoding else ""
++        return f"{self.sql(expression, 'this')} FORMAT JSON{encoding}"
+ 
+     def formatphrase_sql(self, expression: exp.FormatPhrase) -> str:
+         # Output the Teradata column FORMAT override.
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..6fcd6cd23 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7846,7 +7846,8 @@ class Parser:
+         if not this or not self._match_text_seq("FORMAT", "JSON"):
+             return this
+ 
+-        return self.expression(exp.FormatJson(this=this))
++        encoding = self._match_text_seq("ENCODING") and self._parse_var()
++        return self.expression(exp.FormatJson(this=this, encoding=encoding))
+ 
+     def _parse_on_condition(self) -> exp.OnCondition | None:
+         # MySQL uses "X ON EMPTY Y ON ERROR" (e.g. JSON_VALUE) while Oracle uses the opposite (e.g. JSON_EXISTS)
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..85e83593f 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -580,6 +580,12 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
+ )) src""",
+             pretty=True,
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS(id NUMBER PATH '$.id')) t"
++        )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON ENCODING UTF8, '$.items[*]' COLUMNS(id NUMBER PATH '$.id')) t"
++        )
+         self.validate_identity("CONVERT('foo', 'dst')")
+         self.validate_identity("CONVERT('foo', 'dst', 'src')")
+ 

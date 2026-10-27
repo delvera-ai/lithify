@@ -1,0 +1,83 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 898d45bb3..594a2e658 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -912,6 +912,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-195258-exasol-dialect-the-second-argume",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 50279,
++      "tokens_cached": 782848,
++      "tokens_out": 13533,
++      "cost_usd": 0.0246,
++      "wall_s": 209.2,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/exasol.py b/sqlglot/parsers/exasol.py
+index 0d2156035..1c6f45028 100644
+--- a/sqlglot/parsers/exasol.py
++++ b/sqlglot/parsers/exasol.py
+@@ -119,8 +119,9 @@ class ExasolParser(parser.Parser):
+     FUNCTION_PARSERS = {
+         **parser.Parser.FUNCTION_PARSERS,
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
++        "LISTAGG": lambda self: self._parse_listagg(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
+-        **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
++        "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
+         "JSON_VALUE": lambda self: self._parse_json_value(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+@@ -146,6 +147,15 @@ class ExasolParser(parser.Parser):
+             column.set("table", None)
+         return column
+ 
++    def _parse_listagg(self) -> exp.GroupConcat:
++        # LISTAGG([DISTINCT] value [, separator]) [WITHIN GROUP (ORDER BY ...)]
++        distinct = self._match(TokenType.DISTINCT)
++        this: exp.Expr = self._parse_lambda()
++        if distinct:
++            this = self.expression(exp.Distinct(expressions=[this]))
++        separator = self._parse_lambda() if self._match(TokenType.COMMA) else None
++        return self.expression(exp.GroupConcat(this=this, separator=separator))
++
+     def _parse_json_extract(self) -> exp.JSONExtract:
+         args = self._parse_expressions()
+         self._match_r_paren()
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 1404e1a3c..123b59c78 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -334,6 +334,20 @@ class TestExasol(Validator):
+                 "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
+             },
+         )
++        self.validate_identity("LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)")
++        self.validate_identity("LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)")
++        self.validate_all(
++            "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            read={
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "trino": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            },
++            write={
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "snowflake": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "trino": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            },
++        )
+         self.validate_all(
+             "EDIT_DISTANCE(col1, col2)",
+             read={

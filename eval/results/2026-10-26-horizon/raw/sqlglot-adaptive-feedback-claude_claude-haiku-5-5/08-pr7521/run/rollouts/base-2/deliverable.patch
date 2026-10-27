@@ -1,0 +1,38 @@
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..a23cb14eb 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1,4 +1,4 @@
+-from sqlglot import exp, transpile, UnsupportedError, ErrorLevel
++from sqlglot import exp, parse_one, transpile, UnsupportedError, ErrorLevel
+ from tests.dialects.test_dialect import Validator
+ 
+ 
+@@ -887,6 +887,15 @@ class TestExasol(Validator):
+             """SELECT JSON_EXTRACT('{"firstname" : "Ann", "surname" : "Smith", "age" : 29}', '$.firstname', '$.surname', '$.age') EMITS (firstname VARCHAR(100), surname VARCHAR(100), age INT)"""
+         )
+ 
++    def test_minus(self):
++        self.assertEqual(
++            parse_one("SELECT 1 MINUS SELECT 2", read="exasol"),
++            parse_one("SELECT 1 EXCEPT SELECT 2", read="exasol"),
++        )
++        self.assertIsInstance(parse_one("SELECT 1 MINUS SELECT 2", read="exasol"), exp.Except)
++        self.validate_identity("SELECT 1 MINUS SELECT 2", "SELECT 1 EXCEPT SELECT 2")
++        self.validate_identity("SELECT 1 EXCEPT SELECT 2")
++
+     def test_group_by_all(self):
+         self.validate_all(
+             "SELECT id, city, COUNT(*) FROM dealer GROUP BY ALL",

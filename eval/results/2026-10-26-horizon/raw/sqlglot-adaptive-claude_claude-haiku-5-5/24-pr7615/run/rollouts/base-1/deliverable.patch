@@ -1,0 +1,76 @@
+diff --git a/sqlglot/schema.py b/sqlglot/schema.py
+index 816971098..138a873f6 100644
+--- a/sqlglot/schema.py
++++ b/sqlglot/schema.py
+@@ -317,6 +317,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+         self._type_mapping_cache: dict[str, exp.DataType] = {}
+         self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
+         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
++        self._find_cache: dict[tuple[tuple[str, ...], bool, bool], t.Any] = {}
+         self._depth: int = 0
+         schema = {} if schema is None else schema
+         udf_mapping = {} if udf_mapping is None else udf_mapping
+@@ -344,6 +345,14 @@ class MappingSchema(AbstractMappingSchema, Schema):
+     def find(
+         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+     ) -> t.Any | None:
++        key = (
++            tuple(self.table_parts(table)[0 : len(self.supported_table_args)]),
++            raise_on_missing,
++            ensure_data_types,
++        )
++        if key in self._find_cache:
++            return self._find_cache[key]
++
+         schema: dict[str, object] | None = super().find(
+             table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
+         )
+@@ -353,6 +362,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+                 for col, dtype in schema.items()
+             }
+ 
++        self._find_cache[key] = schema
+         return schema
+ 
+     def copy(
+@@ -407,6 +417,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+ 
+         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
+         new_trie([parts], self.mapping_trie)
++        self._find_cache.clear()
+ 
+     def column_names(
+         self,
+diff --git a/tests/test_schema.py b/tests/test_schema.py
+index 2963af231..ed56dfc20 100644
+--- a/tests/test_schema.py
++++ b/tests/test_schema.py
+@@ -340,3 +340,28 @@ class TestSchema(unittest.TestCase):
+         self.assertEqual(found, {"c": "int"})
+         found = schema.find(exp.to_table("x"), ensure_data_types=True)
+         self.assertEqual(found, {"c": exp.DataType.build("int")})
++
++    def test_find_cache(self):
++        schema = MappingSchema({"x": {"c": "int"}})
++        self.assertIsNone(schema.find(exp.to_table("y"), raise_on_missing=False))
++        self.assertEqual(schema.find(exp.to_table("x")), {"c": "int"})
++        self.assertEqual(
++            schema.find(exp.to_table("x"), ensure_data_types=True),
++            {"c": exp.DataType.build("int")},
++        )
++        self.assertEqual(schema.find(exp.to_table("x")), {"c": "int"})
++
++        ambiguous = MappingSchema({"db1": {"x": {"c": "int"}}, "db2": {"x": {"c": "int"}}})
++        self.assertIsNone(ambiguous.find(exp.to_table("x"), raise_on_missing=False))
++        with self.assertRaises(SchemaError):
++            ambiguous.find(exp.to_table("x"))
++
++        schema.add_table("y", {"d": "text"})
++        self.assertEqual(schema.find(exp.to_table("y"), raise_on_missing=False), {"d": "text"})
++        self.assertEqual(
++            schema.find(exp.to_table("y"), ensure_data_types=True),
++            {"d": exp.DataType.build("text")},
++        )
++
++        schema.add_table("y", {"d": "int", "e": "int"})
++        self.assertEqual(schema.find(exp.to_table("y")), {"d": "int", "e": "int"})

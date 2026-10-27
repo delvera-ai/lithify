@@ -1,0 +1,1 @@
+Hive, Spark and Databricks dialects: a doubled single quote (`''`) inside a string literal should be read as an escaped single quote, as these engines do. Today a column comment such as `COMMENT 'Hello ''World!'` is parsed incorrectly. Strings with `''` escapes should parse and round-trip in these dialects.

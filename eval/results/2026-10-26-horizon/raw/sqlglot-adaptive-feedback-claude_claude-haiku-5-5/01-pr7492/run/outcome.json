@@ -1,0 +1,32 @@
+{
+  "task": "Oracle dialect: support the optional `WHERE` clause on the `UPDATE` and `INSERT` branches of a `MERGE` statement (`WHEN MATCHED THEN UPDATE SET ... WHERE ...`, `WHEN NOT MATCHED THEN INSERT ... VALUES ... WHERE ...`), so it parses and round-trips in Oracle. When transpiling to dialects that do not support it, emit an unsupported warning and drop the clause.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-2",
+  "why": "Correctness beyond the tests decided it. c2 reads the trailing `WHERE` after every `INSERT` and `UPDATE` branch of a `MERGE`, including the `INSERT *` form. It only emits or drops the clause for `INSERT`/`UPDATE` actions, and its test confirms both dropped clauses raise a warning. The runner-up, c1, works the same way and uses the repo's flag naming, but it misses the `WHERE` in the `INSERT *` branch. That makes it slightly less consistent: some `INSERT`s would silently not accept the clause while others do.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 122940,
+    "cached": 2035267,
+    "out": 27483,
+    "cost": 0.30408320999999994,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

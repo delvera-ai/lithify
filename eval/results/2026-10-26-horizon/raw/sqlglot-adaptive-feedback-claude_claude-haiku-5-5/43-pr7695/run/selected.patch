@@ -1,0 +1,55 @@
+diff --git a/sqlglot/generators/exasol.py b/sqlglot/generators/exasol.py
+index 644619941..91c96bf09 100644
+--- a/sqlglot/generators/exasol.py
++++ b/sqlglot/generators/exasol.py
+@@ -916,6 +916,16 @@ class ExasolGenerator(generator.Generator):
+             )
+             return self.sql(select)
+ 
++        if expression.name == "DATABASES":
++            select = exp.select(exp.column("SCHEMA_NAME")).from_(
++                exp.table_("EXA_SCHEMAS", db="SYS")
++            )
++            like = expression.args.get("like")
++            if like:
++                pattern = exp.Literal.string(like.name.upper())
++                select = select.where(exp.column("SCHEMA_NAME").like(pattern))
++            return self.sql(select)
++
+         return super().show_sql(expression)
+ 
+     def collate_sql(self, expression: exp.Collate) -> str:
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b65530011..6c10e4f79 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1000,6 +1000,29 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_show_databases(self):
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW DATABASES"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            },
++        )
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW SCHEMAS"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            },
++        )
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS WHERE SCHEMA_NAME LIKE 'TEST%'",
++            read={"mysql": "SHOW DATABASES LIKE 'test%'"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS WHERE SCHEMA_NAME LIKE 'TEST%'",
++            },
++        )
++
+     def test_group_by_alias_local(self):
+         # GROUP BY bare alias -> LOCAL prefix
+         self.validate_all(

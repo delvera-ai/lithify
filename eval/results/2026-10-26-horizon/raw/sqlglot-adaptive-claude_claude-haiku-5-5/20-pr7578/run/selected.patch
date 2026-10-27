@@ -1,0 +1,27 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..ba16bded4 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7923,7 +7923,7 @@ class Parser:
+         if not self._match_text_seq("NESTED"):
+             this = self._parse_id_var()
+             ordinality = self._match_pair(TokenType.FOR, TokenType.ORDINALITY)
+-            kind = self._parse_types(allow_identifiers=False)
++            kind = self._parse_format_json(self._parse_types(allow_identifiers=False))
+             nested = None
+         else:
+             this = None
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..414a98467 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -558,6 +558,9 @@ MATCH_RECOGNIZE (
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS(doc2 CLOB FORMAT JSON PATH '$.x'))"
++        )
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",

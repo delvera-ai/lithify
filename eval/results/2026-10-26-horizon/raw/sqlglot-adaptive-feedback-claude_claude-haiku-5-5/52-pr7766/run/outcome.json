@@ -1,0 +1,28 @@
+{
+  "task": "Postgres dialect: support the JSONB jsonpath predicate operator `@?` (e.g. `SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'`), so it tokenizes, parses into a dedicated expression and generates back as `@?`.",
+  "k": 1,
+  "reason": "build (S=0.70)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 75251,
+    "cached": 1899392,
+    "out": 25455,
+    "cost": 0.04676602,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.7,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

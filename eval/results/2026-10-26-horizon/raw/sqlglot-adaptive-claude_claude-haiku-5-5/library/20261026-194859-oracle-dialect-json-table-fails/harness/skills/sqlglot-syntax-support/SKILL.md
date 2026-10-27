@@ -1,0 +1,46 @@
+---
+name: sqlglot-syntax-support
+description: Load when a task asks to make some SQL syntax parse and/or round-trip (a ParseError, "fails to parse", "support X in dialect Y", wrong regenerated SQL), especially JSON functions such as JSON_TABLE, JSON_OBJECT, JSON_ARRAY, JSON_EXISTS or FORMAT JSON clauses.
+---
+
+# Adding or fixing syntax support in sqlglot
+
+## Contract: a syntax change touches three places that must agree
+1. **Node** — the `exp.<Node>` class in `sqlglot/expressions/*.py`. New information goes in
+   `arg_types` (optional args `False`). Prefer reusing an existing wrapper node over adding a flag.
+2. **Parser** — a `_parse_*` method in `sqlglot/parser.py` (base) or `sqlglot/parsers/<dialect>.py`.
+   Build nodes with `self.expression(exp.Node(...))`; match keywords with `_match_text_seq(...)`,
+   `_match(TokenType.X)`, `_parse_wrapped_csv(...)`. Base parser is preferred when the syntax is not
+   dialect-exclusive (AGENTS.md "The sqlglot Dialect").
+3. **Generator** — `<nodename_lowercase>_sql` in `sqlglot/generator.py` (or the dialect generator)
+   must emit every arg the parser stores, in the same order, or the round-trip drops it.
+Confirm agreement with `self.validate_identity(sql)` (or `validate_identity(sql, canonical_sql)`)
+in `tests/dialects/test_<dialect>.py`; base-dialect identities also live in
+`tests/fixtures/identity.sql`.
+
+## JSON function facts (verified in source)
+- `FORMAT JSON` is represented by wrapping the preceding node: `exp.FormatJson(this=...)`
+  (`sqlglot/expressions/query.py`), produced by `Parser._parse_format_json(this)` and printed by
+  `Generator.formatjson_sql` as `<this> FORMAT JSON`. `_parse_format_json(None)` returns `None`.
+  Existing uses: JSON_TABLE input, JSON_OBJECT key/values and `RETURNING <type> FORMAT JSON`
+  (`_parse_json_object` wraps `self._parse_type()`), Oracle JSON_ARRAY/JSON_ARRAYAGG/JSON_EXISTS
+  (`sqlglot/parsers/oracle.py`). Follow this wrapping idiom for any new FORMAT JSON position.
+- JSON_TABLE lives in the BASE parser/generator, shared by all dialects (MySQL too):
+  `_parse_json_table` -> `_parse_json_schema` (`COLUMNS(...)`, node `exp.JSONSchema`) ->
+  `_parse_json_column_def` (node `exp.JSONColumnDef`: `this, kind, path, nested_schema, ordinality`);
+  generators `jsontable_sql`, `jsonschema_sql`, `jsoncolumndef_sql`. Node `exp.JSONTable` is in
+  `sqlglot/expressions/json.py`; `JSONColumnDef`/`JSONSchema`/`FormatJson` are in `query.py`.
+- The JSON_TABLE **input** (`JSON_TABLE(doc FORMAT JSON, '$...' ...)`) is already parsed via
+  `_parse_format_json(self._parse_bitwise())` and covered by `test_oracle.py::test_json_table`.
+- `_parse_json_column_def` is marked "currently incomplete; only implements the JSON_value_column
+  part": it reads `name [FOR ORDINALITY] [type] [PATH '...']` or `NESTED [PATH] COLUMNS(...)`.
+  Column-level `FORMAT JSON` (Oracle JSON_query_column, `name VARCHAR2(4000) FORMAT JSON PATH '$.x'`)
+  is NOT parsed today (fails with `Expecting )`). Per-column `ERROR ON ERROR` is also not parsed.
+- ON-handling order is dialect-controlled: `Dialect.ON_CONDITION_EMPTY_BEFORE_ERROR`
+  (Oracle sets `False`); use `_parse_on_handling` / `_parse_on_condition`, not ad-hoc matching.
+
+## When the quoted example already works
+If the literal example in the task already parses and round-trips, the requested feature is not
+"done": find the form of the same construct and clause that still fails (the "incomplete" notes
+above are the known gaps) and implement it, with a `validate_identity` test next to the existing ones. A no-change
+deliverable must be justified by evidence that every form of the named construct works.

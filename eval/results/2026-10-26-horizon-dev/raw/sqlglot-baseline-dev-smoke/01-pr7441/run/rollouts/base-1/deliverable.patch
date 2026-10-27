@@ -1,0 +1,50 @@
+diff --git a/sqlglot/parsers/sqlite.py b/sqlglot/parsers/sqlite.py
+index 68eb69046..78ca9e87e 100644
+--- a/sqlglot/parsers/sqlite.py
++++ b/sqlglot/parsers/sqlite.py
+@@ -47,6 +47,7 @@ class SQLiteParser(parser.Parser):
+         **parser.Parser.STATEMENT_PARSERS,
+         TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+         TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
++        TokenType.PRAGMA: lambda self: self._parse_pragma(),
+     }
+ 
+     RANGE_PARSERS = {
+@@ -72,6 +73,14 @@ class SQLiteParser(parser.Parser):
+         )
+         return self.expression(exp.ModuleProperty(this=name, expressions=expressions))
+ 
++    def _parse_pragma(self) -> exp.Pragma:
++        # https://sqlite.org/pragma.html: values may be keywords such as ON, FULL or DELETE
++        this = self._parse_column()
++        if self._match(TokenType.EQ):
++            value = self._parse_unary() or self._parse_var(any_token=True)
++            this = self.expression(exp.EQ(this=this, expression=value))
++        return self.expression(exp.Pragma(this=this))
++
+     def _parse_attach_detach(self, is_attach=True) -> exp.Attach | exp.Detach:
+         self._match(TokenType.DATABASE)
+         this = self._parse_expression()
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 318b4c0e1..f9b728f82 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -364,3 +364,18 @@ class TestSQLite(Validator):
+             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view BEGIN INSERT INTO employees (id, name, department) VALUES (NEW.id, NEW.name, NEW.department) END",
+             check_command_warning=True,
+         )
++
++    def test_pragma(self):
++        self.validate_identity("PRAGMA full_column_names = ON")
++        self.validate_identity("PRAGMA full_column_names = OFF")
++        self.validate_identity("PRAGMA full_column_names = 1")
++        self.validate_identity("PRAGMA full_column_names = 2")
++        self.validate_identity("PRAGMA journal_mode = DELETE")
++        self.validate_identity("PRAGMA synchronous = FULL")
++        self.validate_identity("PRAGMA cache_size = -2000")
++        self.validate_identity("PRAGMA memory_limit = '1GB'")
++        self.validate_identity("PRAGMA schema.synchronous = 2")
++        self.validate_identity('PRAGMA main.table_info("t")')
++        self.validate_identity("PRAGMA quick_check")
++        self.validate_identity("PRAGMA QUICK_CHECK(0)")
++        self.validate_identity("PRAGMA full_column_names=on", "PRAGMA full_column_names = on")

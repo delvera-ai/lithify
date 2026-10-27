@@ -1,0 +1,28 @@
+{
+  "task": "Trino \u2192 Snowflake (and other dialects): `FROM_ISO8601_TIMESTAMP`, a Presto/Trino function that parses an ISO 8601 string into a timestamp with time zone, is only transpiled for DuckDB; every other dialect gets the literal `FROM_ISO8601_TIMESTAMP(...)`, which is invalid there:\n\n```python\nsqlglot.parse_one(\"select from_iso8601_timestamp('2022-07-01T07:00:00+00:00')\", \"trino\").sql(\"snowflake\")\n# \"SELECT FROM_ISO8601_TIMESTAMP('2022-07-01T07:00:00+00:00')\"\n```\n\nTranspile it for the other dialects using their equivalent timezone-aware timestamp conversion (for Snowflake, `TO_TIMESTAMP`-family semantics).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 34034,
+    "cached": 558937,
+    "out": 7860,
+    "cost": 0.01632337,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,28 @@
+{
+  "task": "MySQL dialect: support `CHANGE [COLUMN]`, which redefines a column and can rename it:\n\n```\nALTER TABLE t CHANGE [COLUMN] old_col_name new_col_name column_definition [FIRST | AFTER col_name]\n```\n\nIt should parse and round-trip, consistent with how sqlglot represents MySQL's `MODIFY COLUMN` (the same full redefinition, plus the original column name).",
+  "k": 0,
+  "reason": "cruise (S=0.87)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 42122,
+    "cached": 798457,
+    "out": 9801,
+    "cost": 0.021306070000000003,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8683,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

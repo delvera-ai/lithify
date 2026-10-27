@@ -1,0 +1,21 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261026-132112-sqlite-dialect-support-the-full",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 53776,
+      "tokens_cached": 888224,
+      "tokens_out": 16544,
+      "cost_usd": 0.0279,
+      "wall_s": 190.4,
+      "always_on_tokens": 185,
+      "stability_after": 0.2,
+      "feedback_failed": false
+    }
+  ]
+}

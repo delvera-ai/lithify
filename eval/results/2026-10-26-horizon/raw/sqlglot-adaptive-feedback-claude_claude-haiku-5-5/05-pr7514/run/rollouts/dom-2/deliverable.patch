@@ -1,0 +1,177 @@
+diff --git a/sqlglot/dialects/dialect.py b/sqlglot/dialects/dialect.py
+index bbb4515c5..168d9bf26 100644
+--- a/sqlglot/dialects/dialect.py
++++ b/sqlglot/dialects/dialect.py
+@@ -1613,6 +1613,21 @@ def build_date_delta_with_interval(
+     return _builder
+ 
+ 
++def build_date_delta_with_interval_or_days(
++    expression_class: Type[E], negate_days: bool = False
++) -> t.Callable[[BuilderArgs], E | exp.TsOrDsAdd | None]:
++    interval_builder = build_date_delta_with_interval(expression_class)
++
++    def _builder(args: BuilderArgs) -> E | exp.TsOrDsAdd | None:
++        if len(args) == 2 and not isinstance(args[1], exp.Interval):
++            days = exp.Neg(this=args[1]) if negate_days else args[1]
++            return exp.TsOrDsAdd(this=args[0], expression=days, unit=exp.Literal.string("DAY"))
++
++        return interval_builder(args)
++
++    return _builder
++
++
+ def date_trunc_to_time(args: BuilderArgs) -> exp.DateTrunc | exp.TimestampTrunc:
+     unit = seq_get(args, 0)
+     this = seq_get(args, 1)
+diff --git a/sqlglot/generators/doris.py b/sqlglot/generators/doris.py
+index d2137f835..b9ca30570 100644
+--- a/sqlglot/generators/doris.py
++++ b/sqlglot/generators/doris.py
+@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
+     time_format,
+     unit_to_str,
+ )
+-from sqlglot.generators.mysql import MySQLGenerator
++from sqlglot.generators.mysql import MySQLGenerator, date_add_days_sql
+ 
+ 
+ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
+@@ -72,7 +72,7 @@ class DorisGenerator(MySQLGenerator):
+         exp.StringToArray: rename_func("SPLIT_BY_STRING"),
+         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
+         exp.TimeStrToDate: rename_func("TO_DATE"),
+-        exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
++        exp.TsOrDsAdd: date_add_days_sql,
+         exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
+         exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+         exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, unit_to_str(e)),
+diff --git a/sqlglot/generators/mysql.py b/sqlglot/generators/mysql.py
+index 0a47bb8bc..3fc49944f 100644
+--- a/sqlglot/generators/mysql.py
++++ b/sqlglot/generators/mysql.py
+@@ -84,6 +84,13 @@ def date_add_sql(
+     return func
+ 
+ 
++def date_add_days_sql(self: MySQLGenerator, expression: exp.TsOrDsAdd) -> str:
++    if not expression.unit or expression.text("unit").upper() == "DAY":
++        return self.func("DATE_ADD", expression.this, expression.expression)
++
++    return date_add_sql("ADD")(self, expression)
++
++
+ def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) -> str:
+     time_format = expression.args.get("format")
+     return _str_to_date_sql(self, expression) if time_format else self.func("DATE", expression.this)
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index ef35b920d..ad43e7165 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
+     inline_array_sql,
+     property_sql,
+ )
+-from sqlglot.generators.mysql import MySQLGenerator
++from sqlglot.generators.mysql import MySQLGenerator, date_add_days_sql
+ 
+ 
+ def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
+@@ -106,6 +106,7 @@ class StarRocksGenerator(MySQLGenerator):
+         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
+         exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+         exp.TimeStrToDate: rename_func("TO_DATE"),
++        exp.TsOrDsAdd: date_add_days_sql,
+         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
+         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+     }
+diff --git a/sqlglot/parsers/doris.py b/sqlglot/parsers/doris.py
+index 215731e13..4bfb2455b 100644
+--- a/sqlglot/parsers/doris.py
++++ b/sqlglot/parsers/doris.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ from sqlglot.tokens import TokenType
+@@ -27,6 +28,8 @@ class DorisParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
+         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate_days=True),
+         "DATE_TRUNC": _build_date_trunc,
+         "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
+         "MONTHS_ADD": exp.AddMonths.from_arg_list,
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index 004264297..2341ffcd2 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
+-from sqlglot.dialects.dialect import build_timestamp_trunc
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ 
+@@ -10,6 +10,8 @@ from sqlglot.parsers.mysql import MySQLParser
+ class StarRocksParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate_days=True),
+         "DATE_TRUNC": build_timestamp_trunc,
+         "DATEDIFF": lambda args: exp.DateDiff(
+             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+diff --git a/tests/dialects/test_doris.py b/tests/dialects/test_doris.py
+index a33fed3aa..29e67972c 100644
+--- a/tests/dialects/test_doris.py
++++ b/tests/dialects/test_doris.py
+@@ -1,3 +1,4 @@
++from sqlglot import exp
+ from tests.dialects.test_dialect import Validator
+ 
+ 
+@@ -252,3 +253,16 @@ class TestDoris(Validator):
+         self.validate_identity(
+             "CREATE MATERIALIZED VIEW mv BUILD DEFERRED REFRESH AUTO ON SCHEDULE EVERY 10 MINUTE AS SELECT 1"
+         )
++
++    def test_date_add_days(self):
++        self.validate_identity("DATE_ADD('2025-01-01', 1)").assert_is(exp.TsOrDsAdd)
++        self.validate_identity(
++            "DATE_ADD('2025-01-01', INTERVAL 1 DAY)", "DATE_ADD('2025-01-01', INTERVAL '1' DAY)"
++        ).assert_is(exp.DateAdd)
++        self.validate_identity("DATE_SUB('2025-01-01', 1)", "DATE_ADD('2025-01-01', -1)").assert_is(
++            exp.TsOrDsAdd
++        )
++        self.validate_all(
++            "DATE_ADD(x, INTERVAL 1 MONTH)",
++            read={"redshift": "DATEADD(MONTH, 1, x)"},
++        )
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index a98801725..36bbb3953 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -305,3 +305,16 @@ class TestStarrocks(Validator):
+         self.validate_identity(
+             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
+         )
++
++    def test_date_add_days(self):
++        self.validate_identity("DATE_ADD('2025-01-01', 1)").assert_is(exp.TsOrDsAdd)
++        self.validate_identity(
++            "DATE_ADD('2025-01-01', INTERVAL 1 DAY)", "DATE_ADD('2025-01-01', INTERVAL '1' DAY)"
++        ).assert_is(exp.DateAdd)
++        self.validate_identity("DATE_SUB('2025-01-01', 1)", "DATE_ADD('2025-01-01', -1)").assert_is(
++            exp.TsOrDsAdd
++        )
++        self.validate_all(
++            "DATE_ADD(x, INTERVAL 1 MONTH)",
++            read={"redshift": "DATEADD(MONTH, 1, x)"},
++        )

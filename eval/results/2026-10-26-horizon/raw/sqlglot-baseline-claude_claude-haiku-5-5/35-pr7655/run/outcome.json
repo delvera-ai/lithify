@@ -1,0 +1,28 @@
+{
+  "task": "Postgres dialect: support the PostGIS 3D distance operator `<<->>` (e.g. `SELECT a <<->> b FROM t`), so it tokenizes, parses as a binary operator and generates back as `<<->>`.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 35814,
+    "cached": 480751,
+    "out": 7790,
+    "cost": 0.01586291,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

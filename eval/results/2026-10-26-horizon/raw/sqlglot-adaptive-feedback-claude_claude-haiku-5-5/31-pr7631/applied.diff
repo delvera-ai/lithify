@@ -1,0 +1,133 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 98b55ad99..829e1acad 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -464,6 +464,22 @@
+       "always_on_tokens": 1806,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-091213-mysql-exasol-when-alias-referenc",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 45932,
++      "tokens_cached": 725151,
++      "tokens_out": 13740,
++      "cost_usd": 0.0233,
++      "wall_s": 187.0,
++      "always_on_tokens": 1806,
++      "stability_after": 0.7,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/exasol.py b/sqlglot/generators/exasol.py
+index cd44625e6..41876888d 100644
+--- a/sqlglot/generators/exasol.py
++++ b/sqlglot/generators/exasol.py
+@@ -34,11 +34,16 @@ def _date_diff_sql(self: ExasolGenerator, expression: exp.DateDiff | exp.TsOrDsD
+     return self.func(f"{unit}S_BETWEEN", expression.this, expression.expression)
+ 
+ 
++# Exasol folds unquoted identifiers to upper case, quoted ones are case-sensitive
++def _exasol_identifier_name(identifier: exp.Identifier) -> str:
++    return identifier.name if identifier.quoted else identifier.name.upper()
++
++
+ # https://docs.exasol.com/db/latest/sql/select.htm#:~:text=If%20you%20have,local.x%3E10
+ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+     if isinstance(expression, exp.Select):
+-        aliases: dict[str, bool] = {
+-            alias.name: bool(alias.args.get("quoted"))
++        aliases: dict[str, exp.Identifier] = {
++            _exasol_identifier_name(alias): alias
+             for sel in expression.selects
+             if isinstance(sel, exp.Alias) and (alias := sel.args.get("alias"))
+         }
+@@ -53,11 +58,15 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+         ):
+             table_ident.replace(exp.to_identifier(table_ident.name.upper(), quoted=True))
+ 
+-        def prefix_local(node: exp.Expr, visible_aliases: dict[str, bool]) -> exp.Expr:
+-            if isinstance(node, exp.Column) and not node.table:
+-                if node.name in visible_aliases:
++        def prefix_local(node: exp.Expr, visible_aliases: dict[str, exp.Identifier]) -> exp.Expr:
++            if (
++                isinstance(node, exp.Column)
++                and not node.table
++                and isinstance(node.this, exp.Identifier)
++            ):
++                if alias := visible_aliases.get(_exasol_identifier_name(node.this)):
+                     return exp.Column(
+-                        this=exp.to_identifier(node.name, quoted=visible_aliases[node.name]),
++                        this=alias.copy(),
+                         table=exp.to_identifier("LOCAL", quoted=False),
+                     )
+             return node
+@@ -66,16 +75,15 @@ def _add_local_prefix_for_aliases(expression: exp.Expr) -> exp.Expr:
+             if arg := expression.args.get(key):
+                 expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
+ 
+-        seen_aliases: dict[str, bool] = {}
++        seen_aliases: dict[str, exp.Identifier] = {}
+         new_selects: list[exp.Expr] = []
+         for sel in expression.selects:
+             if isinstance(sel, exp.Alias):
+                 inner = sel.this.transform(lambda node: prefix_local(node, seen_aliases))
+                 sel.set("this", inner)
+ 
+-                alias_node = sel.args.get("alias")
+-
+-                seen_aliases[sel.alias] = bool(alias_node and getattr(alias_node, "quoted", False))
++                if alias_node := sel.args.get("alias"):
++                    seen_aliases[_exasol_identifier_name(alias_node)] = alias_node
+                 new_selects.append(sel)
+             else:
+                 new_selects.append(sel.transform(lambda node: prefix_local(node, seen_aliases)))
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 4c13e18a6..7b504dc6b 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1017,3 +1017,38 @@ class TestExasol(Validator):
+             read={"mysql": "SELECT COUNT(*) AS cnt FROM t HAVING cnt > 1"},
+             write={"exasol": "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1"},
+         )
++
++    def test_local_prefix_for_alias_case_insensitive(self):
++        # Unquoted identifiers fold to upper case in Exasol, so the case of the reference does not matter
++        self.validate_all(
++            "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField",
++            read={"mysql": "SELECT 1 AS idField FROM t GROUP BY idfield"},
++            write={"exasol": "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField"},
++        )
++        self.validate_all(
++            "SELECT 1 AS idField FROM t WHERE LOCAL.idField > 1",
++            read={"mysql": "SELECT 1 AS idField FROM t WHERE IDFIELD > 1"},
++            write={"exasol": "SELECT 1 AS idField FROM t WHERE LOCAL.idField > 1"},
++        )
++        self.validate_all(
++            "SELECT COUNT(*) AS idField FROM t HAVING LOCAL.idField > 1",
++            read={"mysql": "SELECT COUNT(*) AS idField FROM t HAVING idfield > 1"},
++            write={"exasol": "SELECT COUNT(*) AS idField FROM t HAVING LOCAL.idField > 1"},
++        )
++        # Quoted identifiers are case-sensitive, so only the exact spelling matches
++        self.validate_all(
++            'SELECT 1 AS "idField" FROM t GROUP BY LOCAL."idField"',
++            read={"mysql": "SELECT 1 AS `idField` FROM t GROUP BY `idField`"},
++            write={"exasol": 'SELECT 1 AS "idField" FROM t GROUP BY LOCAL."idField"'},
++        )
++        self.validate_all(
++            'SELECT 1 AS "idField" FROM t GROUP BY idfield',
++            read={"mysql": "SELECT 1 AS `idField` FROM t GROUP BY idfield"},
++            write={"exasol": 'SELECT 1 AS "idField" FROM t GROUP BY idfield'},
++        )
++        # A quoted reference to an unquoted alias matches its folded upper case name
++        self.validate_all(
++            "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField",
++            read={"mysql": "SELECT 1 AS idField FROM t GROUP BY `IDFIELD`"},
++            write={"exasol": "SELECT 1 AS idField FROM t GROUP BY LOCAL.idField"},
++        )

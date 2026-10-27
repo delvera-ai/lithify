@@ -1,0 +1,126 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 87350b043..fc4627ee3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -272,6 +272,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-194158-mysql-dialect-alter-table-modify",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 53412,
++      "tokens_cached": 878196,
++      "tokens_out": 15307,
++      "cost_usd": 0.0271,
++      "wall_s": 225.3,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 79e8ac348..24d097bfe 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -245,6 +245,10 @@ class AlterColumn(Expression):
+     }
+ 
+ 
++class ModifyColumn(Expression):
++    arg_types = {"this": True}
++
++
+ class AlterIndex(Expression):
+     arg_types = {"this": True, "visible": True}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26d481a50..51cf8e510 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3973,6 +3973,13 @@ class Generator:
+         new_column = self.sql(expression, "to")
+         return f"RENAME COLUMN{exists} {old_column} TO {new_column}"
+ 
++    def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
++        column = expression.this
++        if column.args.get("constraints") or column.args.get("position"):
++            self.unsupported("MODIFY COLUMN with constraints or a position is not supported")
++
++        return self.sql(exp.AlterColumn(this=column.this, dtype=column.args.get("kind")))
++
+     def alterset_sql(self, expression: exp.AlterSet) -> str:
+         exprs = self.expressions(expression, flat=True)
+         if self.ALTER_SET_WRAPPED:
+diff --git a/sqlglot/generators/mysql.py b/sqlglot/generators/mysql.py
+index 0a47bb8bc..ecb716358 100644
+--- a/sqlglot/generators/mysql.py
++++ b/sqlglot/generators/mysql.py
+@@ -718,6 +718,9 @@ class MySQLGenerator(generator.Generator):
+         this = self.sql(expression, "this")
+         return f"MODIFY COLUMN {this} {dtype}"
+ 
++    def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
++        return f"MODIFY COLUMN {self.sql(expression, 'this')}"
++
+     def _prefixed_sql(self, prefix: str, expression: exp.Expr, arg: str) -> str:
+         sql = self.sql(expression, arg)
+         return f" {prefix} {sql}" if sql else ""
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index d4bf7e3c0..1f376557b 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,7 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+-        "MODIFY": lambda self: self._parse_alter_table_alter(),
++        "MODIFY": lambda self: self._parse_alter_table_modify(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -547,6 +547,22 @@ class MySQLParser(parser.Parser):
+ 
+         return self.expression(exp.AlterIndex(this=index, visible=visible))
+ 
++    def _parse_alter_table_modify(self) -> exp.Expr | None:
++        start = self._index
++        column_def = self._parse_column_def_with_exists()
++        if not isinstance(column_def, exp.ColumnDef):
++            self._retreat(start)
++            return self._parse_alter_table_alter()
++
++        if self._match_texts(("FIRST", "AFTER")):
++            position = self._prev.text
++            column_def.set(
++                "position",
++                self.expression(exp.ColumnPosition(this=self._parse_column(), position=position)),
++            )
++
++        return self.expression(exp.ModifyColumn(this=column_def))
++
+     def _parse_partition_property(
+         self,
+     ) -> exp.Expr | None | list[exp.Expr]:
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 5675aed05..6235775dc 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -38,6 +38,11 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
+         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
+         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL DEFAULT 5")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c VARCHAR(50) NOT NULL DEFAULT 'foo'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'hi'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT FIRST")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT AFTER d")
+         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

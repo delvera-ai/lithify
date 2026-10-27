@@ -1,0 +1,28 @@
+{
+  "task": "Redshift dialect: `APPROXIMATE PERCENTILE_DISC(p) WITHIN GROUP (ORDER BY x)` is valid Redshift syntax but raises a `ParseError` (only `APPROXIMATE COUNT(DISTINCT ...)` is understood). Support it as an approximate quantile so it parses, round-trips in Redshift, and transpiles.",
+  "k": 0,
+  "reason": "cruise (S=0.87)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 55110,
+    "cached": 999269,
+    "out": 18882,
+    "cost": 0.030451890000000002,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8683,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

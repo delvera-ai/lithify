@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-115250-exasol-dialect-the-second-argume",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-115250-exasol-dialect-the-second-argume-feedback",
+  "components": [
+    "skills/sqlglot-dialect-functions",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 186183,
+    "cached": 1653656,
+    "out": 21083,
+    "cost": 2.2415832,
+    "exec": 0,
+    "roles": 3
+  }
+}

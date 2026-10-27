@@ -1,0 +1,18 @@
+{
+  "task_id": "20261026-232946-bigquery-duckdb-a-parameterised",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-232946-bigquery-duckdb-a-parameterised-feedback",
+  "components": [
+    "memory.md",
+    "system.md",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 85184,
+    "cached": 926398,
+    "out": 7782,
+    "cost": 1.2971335000000002,
+    "exec": 0,
+    "roles": 2
+  }
+}

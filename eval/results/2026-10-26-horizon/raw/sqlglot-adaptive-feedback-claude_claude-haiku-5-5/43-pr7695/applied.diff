@@ -1,0 +1,82 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 6e7bcab4d..9d46f1352 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -656,6 +656,22 @@
+       "always_on_tokens": 2170,
+       "stability_after": 0.7,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-103454-exasol-dialect-transpiling-mysql",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 41352,
++      "tokens_cached": 554944,
++      "tokens_out": 7352,
++      "cost_usd": 0.0175,
++      "wall_s": 158.6,
++      "always_on_tokens": 2170,
++      "stability_after": 0.8,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/exasol.py b/sqlglot/generators/exasol.py
+index 644619941..91c96bf09 100644
+--- a/sqlglot/generators/exasol.py
++++ b/sqlglot/generators/exasol.py
+@@ -916,6 +916,16 @@ class ExasolGenerator(generator.Generator):
+             )
+             return self.sql(select)
+ 
++        if expression.name == "DATABASES":
++            select = exp.select(exp.column("SCHEMA_NAME")).from_(
++                exp.table_("EXA_SCHEMAS", db="SYS")
++            )
++            like = expression.args.get("like")
++            if like:
++                pattern = exp.Literal.string(like.name.upper())
++                select = select.where(exp.column("SCHEMA_NAME").like(pattern))
++            return self.sql(select)
++
+         return super().show_sql(expression)
+ 
+     def collate_sql(self, expression: exp.Collate) -> str:
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b65530011..6c10e4f79 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1000,6 +1000,29 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_show_databases(self):
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW DATABASES"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            },
++        )
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW SCHEMAS"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            },
++        )
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS WHERE SCHEMA_NAME LIKE 'TEST%'",
++            read={"mysql": "SHOW DATABASES LIKE 'test%'"},
++            write={
++                "exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS WHERE SCHEMA_NAME LIKE 'TEST%'",
++            },
++        )
++
+     def test_group_by_alias_local(self):
+         # GROUP BY bare alias -> LOCAL prefix
+         self.validate_all(

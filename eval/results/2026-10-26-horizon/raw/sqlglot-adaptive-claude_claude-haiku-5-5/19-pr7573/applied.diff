@@ -1,0 +1,71 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index fc4627ee3..107ca7bdc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -288,6 +288,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-194545-postgres-dialect-when-an-unnest",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 39167,
++      "tokens_cached": 767000,
++      "tokens_out": 9803,
++      "cost_usd": 0.0204,
++      "wall_s": 193.9,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..1ef26dcfe 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,7 +3203,8 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
+-                alias.append("columns", offset)
++                alias = alias.copy()
++                alias.append("columns", offset.copy())
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+             columns = alias.columns
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..5f2a6c4eb 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,5 @@
+ from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot.dialects.postgres import Postgres
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -1408,6 +1409,19 @@ FROM json_data, field_ids""",
+             },
+         )
+ 
++        unnest = exp.Unnest(
++            expressions=[exp.array(exp.Literal.number(1))],
++            offset=exp.to_identifier("ord"),
++            alias=exp.TableAlias(this=exp.to_identifier("t"), columns=[exp.to_identifier("col")]),
++        )
++        generator = Postgres().generator()
++        for _ in range(2):
++            self.assertEqual(
++                generator.generate(unnest, copy=False),
++                "UNNEST(ARRAY[1]) WITH ORDINALITY AS t(col, ord)",
++            )
++        self.assertEqual(len(unnest.args["alias"].columns), 1)
++
+     def test_array_offset(self):
+         with self.assertLogs(helper_logger) as cm:
+             self.validate_all(

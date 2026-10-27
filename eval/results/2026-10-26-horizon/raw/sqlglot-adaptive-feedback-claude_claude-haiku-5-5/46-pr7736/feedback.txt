@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-104426-lineage-further-improve-lineage",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-104426-lineage-further-improve-lineage-feedback",
+  "components": [
+    "skills/sqlglot-lineage",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 164255,
+    "cached": 1619004,
+    "out": 25064,
+    "cost": 2.1388407999999997,
+    "exec": 0,
+    "roles": 3
+  }
+}

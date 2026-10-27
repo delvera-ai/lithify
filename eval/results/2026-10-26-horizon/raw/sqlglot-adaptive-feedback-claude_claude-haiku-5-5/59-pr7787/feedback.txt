@@ -1,0 +1,16 @@
+{
+  "task_id": "20261027-120022-snowflake-dialect-in-create-stat",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-120022-snowflake-dialect-in-create-stat-feedback",
+  "components": [
+    "skills/sqlglot-ddl-statements"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 157346,
+    "cached": 1376297,
+    "out": 23050,
+    "cost": 1.9947713999999999,
+    "exec": 0,
+    "roles": 3
+  }
+}

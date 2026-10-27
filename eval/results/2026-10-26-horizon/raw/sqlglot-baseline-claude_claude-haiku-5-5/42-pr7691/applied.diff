@@ -1,0 +1,71 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1ca9c6f11..e8078155a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -656,6 +656,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-155926-pretty-printing-a-multi-line-com",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32264,
++      "tokens_cached": 488265,
++      "tokens_out": 6226,
++      "cost_usd": 0.0144,
++      "wall_s": 260.2,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 7c9bd3c02..7c6c381ff 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3912,7 +3912,9 @@ class Generator:
+                 if expression.comments and self.comments:
+                     for comment in expression.comments:
+                         if comment:
+-                            op += f" /*{self.sanitize_comment(comment)}*/"
++                            op += (
++                                f" /*{self._replace_line_breaks(self.sanitize_comment(comment))}*/"
++                            )
+                 stack.extend((op, expression.left))
+             return op
+ 
+diff --git a/tests/test_transpile.py b/tests/test_transpile.py
+index 9965cfc0c..ddda46137 100644
+--- a/tests/test_transpile.py
++++ b/tests/test_transpile.py
+@@ -2,7 +2,7 @@ import os
+ import unittest
+ from unittest import mock
+ 
+-from sqlglot import parse_one, transpile
++from sqlglot import exp, parse_one, transpile
+ from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
+ from sqlglot.helper import logger as helper_logger
+ from sqlglot.parser import logger as parser_logger
+@@ -994,6 +994,15 @@ ORDER BY
+             'SELECT\n  "Product\n(Foo, Bar)" AS x\nFROM t',
+         )
+ 
++    def test_pretty_connector_comment_is_idempotent(self):
++        tree = parse_one("SELECT * FROM t WHERE a = 1 AND b = 2")
++        tree.find(exp.And).comments = ["line one\nline two"]
++        pretty = tree.sql(pretty=True)
++        self.assertEqual(
++            pretty, "SELECT\n  *\nFROM t\nWHERE\n  a = 1 AND /* line one\nline two */ b = 2"
++        )
++        self.assertEqual(parse_one(pretty).sql(pretty=True), pretty)
++
+     def test_sql_security(self):
+         sqlglot_sql = "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1"
+ 

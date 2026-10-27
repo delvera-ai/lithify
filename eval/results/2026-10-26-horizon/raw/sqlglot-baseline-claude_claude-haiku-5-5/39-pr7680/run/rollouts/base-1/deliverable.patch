@@ -1,0 +1,44 @@
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index 9e12db747..85f124ae2 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -303,6 +303,19 @@ class MySQLParser(parser.Parser):
+     VALUES_FOLLOWED_BY_PAREN = False
+     SUPPORTS_PARTITION_SELECTION = True
+ 
++    def _parse_join(
++        self, skip_join_token: bool = False, parse_bracket: bool = False
++    ) -> exp.Join | None:
++        # Comma-separated tables in a multi-table UPDATE, where SET must not be parsed as an alias
++        if self._match(TokenType.COMMA, advance=False):
++            self._advance()
++            table = self._try_parse(
++                lambda: self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++            )
++            return self.expression(exp.Join(this=table)) if table else None
++
++        return super()._parse_join(skip_join_token=skip_join_token, parse_bracket=parse_bracket)
++
+     def _parse_alter_table_rename(self):
+         if self._match_texts(("INDEX", "KEY")):
+             old = self._parse_field(any_token=True)
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..6f53c56e8 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -23,6 +23,15 @@ class TestMySQL(Validator):
+         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
+         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+         self.validate_identity("UPDATE /*+ MAX_EXECUTION_TIME(1) */ t SET a = 1")
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a, books AS b SET a.x = 1 WHERE a.id = b.author_id"
++        )
++        self.validate_identity(
++            "UPDATE authors INNER JOIN books ON authors.id = books.author_id SET authors.x = 1, books.y = 2"
++        )
+         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+         self.validate_identity("DELETE /*+ MAX_EXECUTION_TIME(1) */ FROM t WHERE a = 1")
+         self.validate_identity("DELETE FROM t FORCE INDEX (idx) WHERE a > 5 ORDER BY id")

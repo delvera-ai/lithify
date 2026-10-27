@@ -1,0 +1,32 @@
+{
+  "task": "Transpiling DuckDB's `JSON_ARRAY` function to Snowflake produces invalid SQL, because Snowflake has no `JSON_ARRAY` (its equivalent is `ARRAY_CONSTRUCT`):\n\n```sql\n-- DuckDB input\nSELECT JSON_ARRAY('a', 'b', 'c')\n-- Snowflake output today (invalid)\nSELECT JSON_ARRAY('a', 'b', 'c')\n```\n\nDuckDB `JSON_ARRAY(...)` should be understood as a function and generate valid Snowflake SQL.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-2",
+  "why": "Deciding criterion: fidelity to the request and to the repo's existing patterns. The task names `ARRAY_CONSTRUCT` as Snowflake's equivalent, and c1 outputs exactly that. It does so with the same `unsupported_args(...)(rename_func(...))` line that `singlestore.py` already uses for `exp.JSONArray`, so it is a one-line `TRANSFORMS` entry.\nRunner-up c2 is also correct. It builds the result through `exp.array(...)`, so the output is the bracket literal `['a', 'b', 'c']`, not the `ARRAY_CONSTRUCT` the task describes. It also adds a new generator method where the repo's own one-liner would do. Its only edge is that its parser entry sits in alphabetical order.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 116244,
+    "cached": 1885468,
+    "out": 23534,
+    "cost": 0.29852259999999997,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

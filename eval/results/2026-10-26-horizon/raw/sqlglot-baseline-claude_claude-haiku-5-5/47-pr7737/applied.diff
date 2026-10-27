@@ -1,0 +1,127 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index fbab09d3a..a12abd2a6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -736,6 +736,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-181324-optimizer-sqlglot-optimizer-qual",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 77349,
++      "tokens_cached": 1980858,
++      "tokens_out": 28909,
++      "cost_usd": 0.0497,
++      "wall_s": 626.0,
++      "always_on_tokens": 185,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..8483c14c3 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        unnesting_columns: set[int] | None = None,
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -30,6 +36,10 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        # ids of the unnested columns whose types are being resolved, shared with nested resolvers
++        self._unnesting_columns: set[int] = (
++            unnesting_columns if unnesting_columns is not None else set()
++        )
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -371,19 +381,30 @@ class Resolver:
+         Returns:
+             The DataType of the column, or None if not found.
+         """
+-        # if column is qualified, use that table, otherwise disambiguate using the resolver
+-        if column.table:
+-            table_name = column.table
+-        else:
+-            # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+-            table_identifier = parent_resolver.get_table(column)
+-            if not table_identifier:
+-                return None
+-            table_name = table_identifier.name
+-
+-        source = scope.sources.get(table_name)
+-        return self._get_column_type_from_scope(source, column) if source else None
++        # Finding the column's table scans all sources, including the lateral/unnest that unnests this
++        # column, which would re-enter this method for the same column. Bail out to break that cycle.
++        if id(column) in self._unnesting_columns:
++            return None
++
++        self._unnesting_columns.add(id(column))
++        try:
++            # if column is qualified, use that table, otherwise disambiguate using the resolver
++            if column.table:
++                table_name = column.table
++            else:
++                # use the parent scope's resolver to disambiguate the column
++                parent_resolver = Resolver(
++                    scope, self.schema, self._infer_schema, self._unnesting_columns
++                )
++                table_identifier = parent_resolver.get_table(column)
++                if not table_identifier:
++                    return None
++                table_name = table_identifier.name
++
++            source = scope.sources.get(table_name)
++            return self._get_column_type_from_scope(source, column) if source else None
++        finally:
++            self._unnesting_columns.discard(id(column))
+ 
+     def _get_column_type_from_scope(
+         self, source: Scope | exp.Table, column: exp.Column
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..fdf3a0fe8 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -750,6 +750,21 @@ class TestOptimizer(unittest.TestCase):
+         )
+         self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
+ 
++    def test_qualify_unnest_unqualified_column_missing_table(self):
++        # The unnested column's table is absent from the schema, which used to recurse without bound
++        for read, sql in (
++            ("spark", "SELECT x FROM t LATERAL VIEW EXPLODE(arr) v AS x"),
++            ("snowflake", "SELECT f.value FROM t, LATERAL FLATTEN(input => arr) f"),
++            ("bigquery", "SELECT x FROM t, UNNEST(arr) AS x"),
++        ):
++            with self.subTest(sql):
++                with self.assertRaisesRegex(OptimizeError, "could not be resolved"):
++                    optimizer.qualify.qualify(
++                        parse_one(sql, read=read),
++                        schema={"s": {"x": {"a": "int"}}},
++                        dialect=read,
++                    )
++
+     def test_qualify_columns__with_invisible(self):
+         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

@@ -1,0 +1,97 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 85862fc46..22cccab1c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -192,6 +192,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-182307-duckdb-snowflake-duckdb-s-list-c",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 73967,
++      "tokens_cached": 1115946,
++      "tokens_out": 31275,
++      "cost_usd": 0.0416,
++      "wall_s": 320.2,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26d481a50..2299d0487 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -5371,6 +5371,12 @@ class Generator:
+         array_agg = self.function_fallback_sql(expression)
+         return self._add_arrayagg_null_filter(array_agg, expression, expression.this)
+ 
++    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
++        arr = expression.this
++        if expression.args.get("check_null") is False:
++            arr = exp.ArrayCompact(this=arr)
++        return self.func("ARRAY_DISTINCT", arr)
++
+     def slice_sql(self, expression: exp.Slice) -> str:
+         step = self.sql(expression, "step")
+         end = self.sql(expression.expression)
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..c7cdb6486 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1048,6 +1048,11 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return expr_sql
+ 
++    def list_sql(self, expression: exp.List) -> str:
++        if len(expression.expressions) != 1:
++            return self.function_fallback_sql(expression)
++        return self.sql(exp.ArrayAgg(this=expression.expressions[0]))
++
+     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..9d1da95e9 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -138,6 +138,7 @@ class DuckDBParser(parser.Parser):
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(this=seq_get(args, 0), check_null=False),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..6aeae1ae3 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,20 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(x), LIST(DISTINCT x), LIST(x ORDER BY y) FROM t",
++            write={
++                "duckdb": "SELECT LIST(x), LIST(DISTINCT x), LIST(x ORDER BY y) FROM t",
++                "snowflake": "SELECT ARRAY_AGG(x), ARRAY_AGG(DISTINCT x), ARRAY_AGG(x) WITHIN GROUP (ORDER BY y) FROM t",
++            },
++        )
++        self.validate_all(
++            "SELECT LIST_DISTINCT(x) FROM t",
++            write={
++                "duckdb": "SELECT LIST_DISTINCT(x) FROM t",
++                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(x)) FROM t",
++            },
++        )
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a70911776..99ca824ee 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -576,6 +576,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-153614-bigquery-duckdb-bigquery-s-parse",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 43437,
++      "tokens_cached": 681461,
++      "tokens_out": 6848,
++      "cost_usd": 0.0189,
++      "wall_s": 220.7,
++      "always_on_tokens": 185,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 9dd9b0c90..96cccb928 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2651,6 +2651,14 @@ class DuckDBGenerator(generator.Generator):
+             )
+         )
+ 
++    def parsetime_sql(self, expression: exp.ParseTime) -> str:
++        return self.sql(
++            exp.cast(
++                self.func("STRPTIME", expression.this, self.format_time(expression)),
++                exp.DataType(this=exp.DType.TIME),
++            )
++        )
++
+     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+         this = expression.this
+         time_format = self.format_time(expression)
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..ab09ad959 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1824,6 +1824,10 @@ class TestDuckDB(Validator):
+             "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
+             read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
+         )
++        self.validate_all(
++            "SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)",
++            read={"bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')"},
++        )
+         self.validate_all(
+             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
+             read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},

@@ -1,0 +1,28 @@
+{
+  "task": "MySQL dialect: MySQL allows setting the auto-increment counter of an existing table with `ALTER TABLE t AUTO_INCREMENT=3000000000`. sqlglot already parses `AUTO_INCREMENT` as a table property in `CREATE TABLE`. Support it in `ALTER TABLE` too, parsed as the same auto-increment property and round-tripping.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 35927,
+    "cached": 449606,
+    "out": 5663,
+    "cost": 0.014510760000000003,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

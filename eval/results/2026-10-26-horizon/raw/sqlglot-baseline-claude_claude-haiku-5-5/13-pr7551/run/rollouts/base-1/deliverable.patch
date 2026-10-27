@@ -1,0 +1,66 @@
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 2c8f9dfef..4c6404462 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -3310,6 +3310,9 @@ class DuckDBGenerator(generator.Generator):
+ 
+     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+         arr = expression.this
++        if isinstance(arr, exp.ArrayCompact) and not expression.args.get("check_null"):
++            # LIST_DISTINCT already drops NULLs, so the compaction is redundant
++            arr = arr.this
+         func = self.func("LIST_DISTINCT", arr)
+ 
+         if expression.args.get("check_null"):
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..15a7706f1 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1032,6 +1032,9 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return super().createable_sql(expression, locations)
+ 
++    def list_sql(self, expression: exp.List) -> str:
++        return self.sql(exp.ArrayAgg(this=seq_get(expression.expressions, 0)))
++
+     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+         this = expression.this
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..17c06d11c 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -138,6 +138,9 @@ class DuckDBParser(parser.Parser):
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(
++            this=exp.ArrayCompact(this=seq_get(args, 0))
++        ),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..d152f6b5d 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,19 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(x), LIST(DISTINCT x)",
++            write={
++                "snowflake": "SELECT ARRAY_AGG(x), ARRAY_AGG(DISTINCT x)",
++            },
++        )
++        self.validate_all(
++            "SELECT LIST_DISTINCT(x)",
++            write={
++                "duckdb": "SELECT LIST_DISTINCT(x)",
++                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(x))",
++            },
++        )
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

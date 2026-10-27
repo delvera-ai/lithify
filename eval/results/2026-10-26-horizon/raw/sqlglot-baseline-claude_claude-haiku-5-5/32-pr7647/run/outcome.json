@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer: `canonicalize` crashes when a `DATEDIFF` argument has no inferred type:\n\n```python\nfrom sqlglot import parse_one\nfrom sqlglot.optimizer.canonicalize import canonicalize\ncanonicalize(parse_one(\"SELECT DATEDIFF(a, b) FROM t\"))\n# AttributeError: 'NoneType' object has no attribute 'this'\n```\n\nArguments with unknown type must be left alone instead of crashing, like the other date-coercion helpers do.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 37883,
+    "cached": 584914,
+    "out": 6518,
+    "cost": 0.016681940000000003,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

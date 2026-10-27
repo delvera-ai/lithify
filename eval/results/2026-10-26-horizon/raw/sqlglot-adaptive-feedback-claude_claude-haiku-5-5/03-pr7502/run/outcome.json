@@ -1,0 +1,32 @@
+{
+  "task": "Parser: add a safeguard against pathologically large inputs: an option that limits how many AST nodes parsing may build, raising a `ParseError` when the limit is exceeded, while normal queries (including wide ones, such as 500 columns) parse as before. (Stated requirement: the option is the parser/`parse_one` keyword `max_nodes`, and the error message contains \"Maximum number of AST nodes\".)",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-2",
+  "why": "I picked c2 because of correctness beyond the tests, specifically the `into=` path. With `parse_one(..., into=...)`, the repo's `parse_into` (parser.py:2039) catches the inner `ParseError` and raises a generic \"Failed to parse ... into\" error instead. Under c1, that hides the \"Maximum number of AST nodes\" message, which the task requires. c2 checks the limit again inside that `except` and also tests this case.\nc2 also counts nodes across the whole parse, resetting the count in `reset()`. That fits \"how many AST nodes parsing may build\" better than c1's per-statement limit.\nc1 came second. Besides the `into` bug, it walks the whole finished tree after every statement whenever `max_nodes` is set, and its limit applies per statement, which is weaker than the request describes.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 123445,
+    "cached": 1772059,
+    "out": 35337,
+    "cost": 0.29693044,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

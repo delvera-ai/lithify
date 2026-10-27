@@ -1,0 +1,152 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index cff820df7..a27344ce6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -624,6 +624,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-091146-duckdb-dialect-overloaded-macro",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 73464,
++      "tokens_cached": 1405814,
++      "tokens_out": 33143,
++      "cost_usd": 0.0453,
++      "wall_s": 293.2,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 829c917ac..a29f0aacb 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -226,6 +226,14 @@ class UserDefinedFunction(Expression):
+     arg_types = {"this": True, "expressions": False, "wrapped": False}
+ 
+ 
++class MacroOverload(Expression):
++    arg_types = {"expressions": False, "expression": True, "is_table": False}
++
++
++class MacroOverloads(Expression):
++    arg_types = {"expressions": True}
++
++
+ class CharacterSet(Expression):
+     arg_types = {"this": True, "default": False}
+ 
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 49a4d486b..decf9781e 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2181,6 +2181,23 @@ class DuckDBGenerator(generator.Generator):
+         """
+     )
+ 
++    def create_sql(self, expression: exp.Create) -> str:
++        if not isinstance(expression.expression, exp.MacroOverloads):
++            return super().create_sql(expression)
++
++        replace = " OR REPLACE" if expression.args.get("replace") else ""
++        exists = " IF NOT EXISTS" if expression.args.get("exists") else ""
++        kind = self.sql(expression, "kind")
++        return f"CREATE{replace} {kind}{exists} {self.sql(expression, 'this')}{self.sql(expression, 'expression')}"
++
++    def macrooverloads_sql(self, expression: exp.MacroOverloads) -> str:
++        return self.expressions(expression, flat=True)
++
++    def macrooverload_sql(self, expression: exp.MacroOverload) -> str:
++        params = self.wrap(self.no_identify(self.expressions, expression))
++        table = "TABLE " if expression.args.get("is_table") else ""
++        return f"{params} AS {table}{self.sql(expression, 'expression')}"
++
+     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
+         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
+         return self.sql(
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index 40d144d26..cc285a3da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -246,6 +246,43 @@ class DuckDBParser(parser.Parser):
+             )
+         return super()._parse_function_properties()
+ 
++    def _parse_create(self) -> exp.Create | exp.Command:
++        create = super()._parse_create()
++        if (
++            not isinstance(create, exp.Create)
++            or create.args.get("kind") != "MACRO"
++            or not self._match(TokenType.COMMA)
++        ):
++            return create
++
++        this = create.this
++        params = this.expressions if isinstance(this, exp.UserDefinedFunction) else []
++        name = this.this if isinstance(this, exp.UserDefinedFunction) else this
++        properties = create.args.get("properties")
++        is_table = bool(properties and any(p.args.get("is_table") for p in properties.expressions))
++
++        overloads = [
++            exp.MacroOverload(expressions=params, expression=create.expression, is_table=is_table),
++            self._parse_macro_overload(),
++        ]
++        while self._match(TokenType.COMMA):
++            overloads.append(self._parse_macro_overload())
++
++        create.set("this", name)
++        create.set("expression", exp.MacroOverloads(expressions=overloads))
++        create.set("properties", None)
++        return create
++
++    def _parse_macro_overload(self) -> exp.MacroOverload:
++        params = self._parse_wrapped_csv(self._parse_function_parameter)
++        self._match(TokenType.ALIAS)
++        is_table = bool(self._match(TokenType.TABLE))
++        return self.expression(
++            exp.MacroOverload(
++                expressions=params, expression=self._parse_statement(), is_table=is_table
++            )
++        )
++
+     def _parse_lambda(self, alias: bool = False) -> exp.Expr | None:
+         index = self._index
+         if not self._match_text_seq("LAMBDA"):
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 073262879..b86c1bb3a 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -2608,6 +2608,25 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_macro_overloads(self):
++        self.validate_identity("CREATE MACRO add_x(a, b) AS a + b, (a, b, c) AS a + b + c")
++        self.validate_identity(
++            "CREATE OR REPLACE MACRO add_x(a, b) AS a + b, (a, b, c) AS a + b + c"
++        )
++        self.validate_identity("CREATE MACRO IF NOT EXISTS f() AS 1, (a) AS a")
++        self.validate_identity("CREATE MACRO f(a) AS a + 1, (a, b) AS TABLE SELECT a, b")
++
++        ast = self.parse_one(
++            """
++            CREATE MACRO add_x
++                (a, b) AS a + b,
++                (a, b, c) AS a + b + c;
++            """
++        )
++        ast.assert_is(exp.Create).expression.assert_is(exp.MacroOverloads)
++        self.assertEqual(len(ast.expression.expressions), 2)
++        self.assertEqual(len(ast.expression.expressions[1].expressions), 3)
++
+     def test_bitwise_agg(self):
+         self.validate_all(
+             "SELECT BIT_OR(int_value) FROM t",

@@ -1,0 +1,32 @@
+{
+  "task": "MySQL dialect: MySQL allows optimizer hints (`/*+ ... */`) on all DML statements. sqlglot parses them on `SELECT` and `INSERT` but not on `UPDATE` or `DELETE`. Support hints there too, so they parse and round-trip.",
+  "k": 2,
+  "reason": "genesis (S=0.27)",
+  "selected": "base-1",
+  "why": "Scope, fidelity and correctness are the same for both: identical parser and expression changes, and identical generator output. The tests decided it. c1's round-trip tests use hints that take table arguments (`NO_INDEX(t)`, `NO_INDEX(t1)`), which is the usual way MySQL hints are written and covers more of the hint parsing. c1 also covers multi-table DELETE with `INNER JOIN`.\nc2, the runner-up, only tests `NO_MERGE`, a hint with no arguments, so it covers less. Its one advantage is cosmetic: it declares `hint` at the top of `delete_sql`, as `insert_sql` does, and that doesn't change behaviour.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 108445,
+    "cached": 1519124,
+    "out": 17257,
+    "cost": 0.26263493000000004,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.3579,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

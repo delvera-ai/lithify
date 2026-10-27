@@ -1,0 +1,132 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 5d8afdc95..4ac85058f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261026-153659-oracle-dialect-support-the-optio",
+@@ -928,6 +928,22 @@
+       "always_on_tokens": 2789,
+       "stability_after": 0.6,
+       "feedback_failed": true
++    },
++    {
++      "task_id": "20261027-120759-snowflake-dialect-snowflake-can",
++      "k": 1,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 71088,
++      "tokens_cached": 1408097,
++      "tokens_out": 21477,
++      "cost_usd": 0.039,
++      "wall_s": 231.3,
++      "always_on_tokens": 2822,
++      "stability_after": 0.6,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/core.py b/sqlglot/expressions/core.py
+index c2cbee6d4..a12076e8c 100644
+--- a/sqlglot/expressions/core.py
++++ b/sqlglot/expressions/core.py
+@@ -1812,6 +1812,12 @@ class DynamicIdentifier(Expression, Func):
+     pass
+ 
+ 
++# A call whose callee is a dynamically resolved name, e.g. IDENTIFIER($fn)(1, 2)
++class DynamicFunction(Expression, Func):
++    arg_types = {"this": True, "expressions": False}
++    is_var_len_args = True
++
++
+ class Opclass(Expression):
+     arg_types = {"this": True, "expression": True}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 023304e55..15c47768d 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1964,6 +1964,9 @@ class Generator:
+         self.unsupported("IDENTIFIER() with non-literal arguments is not supported")
+         return self.func("IDENTIFIER", this)
+ 
++    def dynamicfunction_sql(self, expression: exp.DynamicFunction) -> str:
++        return self.func(self.sql(expression, "this"), *expression.expressions, normalize=False)
++
+     def identifier_sql(self, expression: exp.Identifier) -> str:
+         text = expression.name
+         lower = text.lower()
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 99dbb2759..3ca9430f2 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1156,6 +1156,32 @@ class SnowflakeParser(parser.Parser):
+ 
+         return table
+ 
++    def _parse_function_call(
++        self,
++        functions: dict[str, t.Callable] | None = None,
++        anonymous: bool = False,
++        optional_parens: bool = True,
++        any_token: bool = False,
++    ) -> exp.Expr | None:
++        func = super()._parse_function_call(
++            functions=functions,
++            anonymous=anonymous,
++            optional_parens=optional_parens,
++            any_token=any_token,
++        )
++
++        # In a table part (optional_parens=False), a following paren list is a column alias
++        if (
++            optional_parens
++            and isinstance(func, exp.DynamicIdentifier)
++            and self._match(TokenType.L_PAREN)
++        ):
++            args = self._parse_function_args()
++            self._match_r_paren()
++            return self.expression(exp.DynamicFunction(this=func, expressions=args))
++
++        return func
++
+     def _parse_id_var(
+         self,
+         any_token: bool = True,
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 35ba37674..039226138 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -769,6 +769,25 @@ class TestSnowflake(Validator):
+         self.validate_identity("SELECT KURTOSIS(x) OVER (PARTITION BY 1)")
+         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
+         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
++        self.assertIsInstance(
++            self.validate_identity("SELECT IDENTIFIER($fn)(41)").selects[0], exp.DynamicFunction
++        )
++        self.assertIsInstance(
++            self.validate_identity("SELECT IDENTIFIER('my_func')(1, 2)").selects[0],
++            exp.DynamicFunction,
++        )
++        self.validate_identity("SELECT IDENTIFIER($fn)()")
++        self.validate_identity("SELECT IDENTIFIER('f')(1) AS r FROM IDENTIFIER('t')")
++        self.validate_identity(
++            "SELECT * FROM IDENTIFIER('t') AS x (a, b)", "SELECT * FROM IDENTIFIER('t') AS x(a, b)"
++        )
++        self.validate_all(
++            "SELECT IDENTIFIER('my_func')(1, 2)",
++            write={
++                "snowflake": "SELECT IDENTIFIER('my_func')(1, 2)",
++                "duckdb": "SELECT my_func(1, 2)",
++            },
++        )
+         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
+         self.validate_identity("OBJECT_CONSTRUCT(*)")
+         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")

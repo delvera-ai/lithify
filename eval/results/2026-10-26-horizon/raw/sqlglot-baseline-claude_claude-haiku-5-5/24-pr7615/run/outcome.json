@@ -1,0 +1,28 @@
+{
+  "task": "Schema performance: `MappingSchema.find` lookups are repeated for the same table many times during `annotate_types` on wide queries (e.g. thousands of column references across a few tables). Cache these lookups so repeated calls for the same table, with the same `ensure_data_types` setting, don't redo the work. Results must be identical, and the cache must stay correct when the schema changes (e.g. when tables are added).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 46069,
+    "cached": 778816,
+    "out": 12270,
+    "cost": 0.02313376,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

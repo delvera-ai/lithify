@@ -1,0 +1,32 @@
+{
+  "task": "Exasol dialect: Exasol allows both `MINUS` and `EXCEPT` as set operators. Support `MINUS` in Exasol (parse it as the except set operation).",
+  "k": 2,
+  "reason": "genesis (S=0.36)",
+  "selected": "base-1",
+  "why": "The source changes are identical and both fit the request and the repo's conventions, so maintainability decided it.\nc2's test is shorter: it checks the identity round-trip (MINUS\u2192EXCEPT), that EXCEPT round-trips unchanged, and the `exp.Except` node type, using realistic `FROM` queries.\nc1, the runner-up, adds an extra `parse_one(...) == parse_one(...)` equality assertion. That check is already covered by its `validate_identity` and `assertIsInstance` lines, so the test is longer without testing anything more.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 83144,
+    "cached": 876057,
+    "out": 9622,
+    "cost": 0.19990666,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4278,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

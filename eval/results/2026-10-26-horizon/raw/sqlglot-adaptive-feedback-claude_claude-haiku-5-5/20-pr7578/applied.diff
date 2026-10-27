@@ -1,0 +1,83 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 2cf21541d..603ad4167 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -288,6 +288,22 @@
+       "always_on_tokens": 1154,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-203349-oracle-dialect-json-table-fails",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 46152,
++      "tokens_cached": 770538,
++      "tokens_out": 13596,
++      "cost_usd": 0.0237,
++      "wall_s": 204.3,
++      "always_on_tokens": 1154,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/query.py b/sqlglot/expressions/query.py
+index e82bd67c1..27ae51f8c 100644
+--- a/sqlglot/expressions/query.py
++++ b/sqlglot/expressions/query.py
+@@ -1942,7 +1942,7 @@ class JSONPathWildcard(JSONPathPart):
+ 
+ 
+ class FormatJson(Expression):
+-    pass
++    arg_types = {"this": True, "encoding": False}
+ 
+ 
+ class JSONKeyValue(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 5b12e0227..d44b57ca2 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3539,7 +3539,9 @@ class Generator:
+         return escaped
+ 
+     def formatjson_sql(self, expression: exp.FormatJson) -> str:
+-        return f"{self.sql(expression, 'this')} FORMAT JSON"
++        encoding = self.sql(expression, "encoding")
++        encoding = f" ENCODING {encoding}" if encoding else ""
++        return f"{self.sql(expression, 'this')} FORMAT JSON{encoding}"
+ 
+     def formatphrase_sql(self, expression: exp.FormatPhrase) -> str:
+         # Output the Teradata column FORMAT override.
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..6fcd6cd23 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7846,7 +7846,8 @@ class Parser:
+         if not this or not self._match_text_seq("FORMAT", "JSON"):
+             return this
+ 
+-        return self.expression(exp.FormatJson(this=this))
++        encoding = self._match_text_seq("ENCODING") and self._parse_var()
++        return self.expression(exp.FormatJson(this=this, encoding=encoding))
+ 
+     def _parse_on_condition(self) -> exp.OnCondition | None:
+         # MySQL uses "X ON EMPTY Y ON ERROR" (e.g. JSON_VALUE) while Oracle uses the opposite (e.g. JSON_EXISTS)
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..d96ccf4aa 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -558,6 +558,9 @@ MATCH_RECOGNIZE (
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(foo FORMAT JSON ENCODING UTF8, 'bla' COLUMNS(foo PATH 'bar'))"
++        )
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",

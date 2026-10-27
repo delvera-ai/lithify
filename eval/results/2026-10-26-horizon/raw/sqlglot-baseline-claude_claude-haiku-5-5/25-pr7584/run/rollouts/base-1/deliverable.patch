@@ -1,0 +1,33 @@
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index f40beaca2..191a61ca7 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2181,6 +2181,12 @@ class DuckDBGenerator(generator.Generator):
+             exp.replace_placeholders(self.ARRAY_BAG_TEMPLATE, arr1=arr1, arr2=arr2, cond=cond)
+         )
+ 
++    def datatype_sql(self, expression: exp.DataType) -> str:
++        if expression.is_type(exp.DType.BIGDECIMAL) and expression.expressions:
++            return f"DECIMAL({self.expressions(expression, flat=True)})"
++
++        return super().datatype_sql(expression)
++
+     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+         """
+         Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index 798b3a5fa..b13320de0 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -3831,3 +3831,11 @@ OPTIONS (
+                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                     },
+                 )
++
++                self.validate_all(
++                    f"DECLARE x {type_}(76, 38)",
++                    write={
++                        "bigquery": "DECLARE x BIGNUMERIC(76, 38)",
++                        "duckdb": "DECLARE x DECIMAL(76, 38)",
++                    },
++                )

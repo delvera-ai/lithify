@@ -1,0 +1,12 @@
+exit 1
+................. [ 17%]
+................................................................................                                                              [100%]
+=================================== FAILURES ===================================
+_ TestSnowflake.test_snowflake [SELECT IDENTIFIER('my_func')(1, 2) -> duckdb] __
+tests/dialects/test_dialect.py:98: in validate_all
+    with self.assertRaises(UnsupportedError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: UnsupportedError not raised
+=========================== short test summary info ============================
+SUBFAILED[SELECT IDENTIFIER('my_func')(1, 2) -> duckdb] tests/dialects/test_snowflake.py::TestSnowflake::test_snowflake
+1 failed, 97 passed, 1569 subtests passed in 0.77s

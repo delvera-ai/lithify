@@ -1,0 +1,28 @@
+{
+  "task": "Parser: names that are also no-parenthesis functions (e.g. `CURRENT_DATE`, `CURRENT_USER`, `SYSDATE`) are turned into function calls when they appear after a dot in a column reference:\n\n```\nSELECT mytable.current_user FROM mytable\n-> SELECT mytable.CURRENT_USER() FROM mytable\n```\n\nAfter a dot they are identifiers (column names) and must round-trip as such.",
+  "k": 0,
+  "reason": "cruise (S=0.87)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 44373,
+    "cached": 833530,
+    "out": 12890,
+    "cost": 0.0236513,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8683,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

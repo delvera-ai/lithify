@@ -1,0 +1,32 @@
+{
+  "task": "Oracle dialect: support the optional `WHERE` clause on the `UPDATE` and `INSERT` branches of a `MERGE` statement (`WHEN MATCHED THEN UPDATE SET ... WHERE ...`, `WHEN NOT MATCHED THEN INSERT ... VALUES ... WHERE ...`), so it parses and round-trips in Oracle. When transpiling to dialects that do not support it, emit an unsupported warning and drop the clause.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "Fidelity decided it. c1 stores the branch condition as a proper `exp.Where` on a new optional `When.where` argument, parses it with the existing `_parse_where`, and prints it with the existing `where_sql`.\nc2 instead puts a bare condition (not wrapped in `exp.Where`) into `Update.where` / `Insert.where`. Everywhere else in the code base those arguments hold a `Where` node. So the tree has an unusual shape, and rendering that `Update` on its own would lose the `WHERE` keyword. Only c2's custom handling inside `when_sql` covers this.\nBoth patches have the same scope: they parse and round-trip the clause for Oracle and warn and drop it for other dialects. Both pass all tests. c2 also adds extra test imports (`ErrorLevel`, `helper_logger`) and an explicit `unsupported_level` argument that c1's test does without.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 119030,
+    "cached": 1738190,
+    "out": 26791,
+    "cost": 0.30338502999999994,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

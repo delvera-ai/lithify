@@ -1,0 +1,28 @@
+{
+  "task": "DuckDB (or any source where NULLs sort last) \u2192 MySQL: MySQL has no `NULLS FIRST/LAST`, so `ORDER BY` is simulated as `ORDER BY CASE WHEN <col> IS NULL THEN 1 ELSE 0 END, <col>`. The simulated `CASE` copies the raw expression, often a bare column name. In a multi-table `FROM` where that name exists in several tables, MySQL then fails with `Column '<name>' in order clause is ambiguous`. When the `ORDER BY` expression refers to a qualified column, or a projection alias, the simulation must keep the column reference unambiguous (e.g. qualified the same way as the `ORDER BY` reference).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 53393,
+    "cached": 1235878,
+    "out": 22975,
+    "cost": 0.03452008,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

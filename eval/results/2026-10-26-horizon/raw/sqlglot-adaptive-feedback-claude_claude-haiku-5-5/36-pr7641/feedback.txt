@@ -1,0 +1,17 @@
+{
+  "task_id": "20261027-100136-duckdb-or-any-source-where-nulls",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-100136-duckdb-or-any-source-where-nulls-feedback",
+  "components": [
+    "skills/sqlglot-null-ordering",
+    "system.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 158382,
+    "cached": 1600956,
+    "out": 23760,
+    "cost": 2.0621592,
+    "exec": 0,
+    "roles": 3
+  }
+}

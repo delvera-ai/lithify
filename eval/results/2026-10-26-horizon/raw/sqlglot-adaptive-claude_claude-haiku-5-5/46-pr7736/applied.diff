@@ -1,0 +1,142 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 7d2871bcc..4a8f921f0 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -704,6 +704,22 @@
+       "always_on_tokens": 369,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-095509-lineage-further-improve-lineage",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 61150,
++      "tokens_cached": 1045221,
++      "tokens_out": 26092,
++      "cost_usd": 0.0357,
++      "wall_s": 247.3,
++      "always_on_tokens": 369,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..2b3392c7a 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -371,9 +371,7 @@ def to_node(
+         if dt.comments and dt.comments[0].startswith("source: ")
+     }
+ 
+-    pivots = scope.pivots
+-    pivot = pivots[0] if len(pivots) == 1 else None
+-    pivot_column_mapping = _pivot_column_mapping(pivot) if pivot else {}
++    pivots = {pivot.alias_or_name: pivot for pivot in scope.pivots}
+ 
+     for c in source_columns:
+         table = c.table
+@@ -401,7 +399,9 @@ def to_node(
+                 _scope_meta=_scope_meta,
+                 on_node=on_node,
+             )
+-        elif pivot and pivot.alias_or_name == c.table:
++        elif c.table in pivots:
++            pivot = pivots[c.table]
++            pivot_column_mapping = _pivot_column_mapping(pivot)
+             downstream_columns = []
+ 
+             column_name = c.name
+@@ -471,17 +471,29 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
+-        unpivot_columns = [
+-            col
+-            for field in pivot.fields
+-            for e in field.expressions
+-            for col in e.find_all(exp.Column)
+-        ]
+-        for value_column in pivot.expressions:
++        # UNPIVOT(val FOR name IN (a, b)): the name column is derived from all of the IN-list
++        # source columns, while each value column is derived from the IN-list columns at its
++        # position, e.g. UNPIVOT((x, y) FOR name IN ((a, b) AS 'p', (c, d) AS 'q')) maps x to
++        # a and c, and y to b and d
++        positional_columns: list[list[exp.Column]] = []
++        for field in pivot.fields:
++            for entry in field.expressions:
++                entry = entry.this if isinstance(entry, exp.Alias) else entry
++                values = entry.expressions if isinstance(entry, exp.Tuple) else [entry]
++                for i, value in enumerate(values):
++                    if i == len(positional_columns):
++                        positional_columns.append([])
++                    positional_columns[i].extend(value.find_all(exp.Column))
++
++        value_columns = pivot.expressions
++        if len(value_columns) == 1 and isinstance(value_columns[0], exp.Tuple):
++            value_columns = value_columns[0].expressions
++
++        for value_column, columns in zip(value_columns, positional_columns):
+             for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
++                mapping[identifier.name] = columns
++
++        unpivot_columns = [col for columns in positional_columns for col in columns]
+         for field in pivot.fields:
+             if isinstance(field, exp.In):
+                 mapping[field.this.name] = unpivot_columns
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..2aedb2710 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,44 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_with_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT id, q, amt, qty
++        FROM sales UNPIVOT ((amt, qty) FOR q IN ((jan, feb) AS 'Q1', (feb, jan) AS 'Q2'))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("amt", sql, schema=schema, dialect="oracle")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
++
++        node = lineage("qty", sql, schema=schema, dialect="oracle")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.FEB", "SALES.JAN"])
++
++        node = lineage("q", sql, schema=schema, dialect="oracle")
++        self.assertEqual(
++            [d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB", "SALES.FEB", "SALES.JAN"]
++        )
++
++    def test_unpivot_with_multiple_sources(self) -> None:
++        sql = """
++        SELECT u.score, v.price, u.id
++        FROM sales UNPIVOT (score FOR metric_name IN (jan, feb)) AS u
++        JOIN prices UNPIVOT (price FOR month IN (mar, apr)) AS v ON u.id = v.id
++        """
++        schema = {
++            "sales": {"id": "int", "jan": "int", "feb": "int"},
++            "prices": {"id": "int", "mar": "int", "apr": "int"},
++        }
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
++
++        node = lineage("price", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["PRICES.MAR", "PRICES.APR"])
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.ID"])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

@@ -1,0 +1,16 @@
+{
+  "task_id": "20261027-091521-optimizer-canonicalize-crashes-w",
+  "proposal": "<run>/repo/.lithify/proposals/20261027-091521-optimizer-canonicalize-crashes-w-feedback",
+  "components": [
+    "skills/sqlglot-optimizer-rewrites"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 121755,
+    "cached": 730497,
+    "out": 15306,
+    "cost": 1.4260834,
+    "exec": 0,
+    "roles": 3
+  }
+}

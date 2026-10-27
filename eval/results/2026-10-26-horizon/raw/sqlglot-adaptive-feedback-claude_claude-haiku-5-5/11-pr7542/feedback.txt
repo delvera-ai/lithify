@@ -1,0 +1,17 @@
+{
+  "task_id": "20261026-193501-optimizer-qualifying-a-table-fun",
+  "proposal": "<run>/repo/.lithify/proposals/20261026-193501-optimizer-qualifying-a-table-fun-feedback",
+  "components": [
+    "skills/sqlglot-optimizer-rewrites",
+    "tool_guidance.md"
+  ],
+  "marked": true,
+  "usage": {
+    "in": 131168,
+    "cached": 1068385,
+    "out": 17795,
+    "cost": 1.618697,
+    "exec": 0,
+    "roles": 3
+  }
+}

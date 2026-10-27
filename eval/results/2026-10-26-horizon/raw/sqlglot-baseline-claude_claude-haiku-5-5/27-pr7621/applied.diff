@@ -1,0 +1,80 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1983bfefa..b0fb66272 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -416,6 +416,22 @@
+       "always_on_tokens": 185,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261026-150116-parser-names-that-are-also-no-pa",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 44093,
++      "tokens_cached": 673875,
++      "tokens_out": 10912,
++      "cost_usd": 0.021,
++      "wall_s": 268.5,
++      "always_on_tokens": 185,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 42f98dec9..4939013ec 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6679,7 +6679,10 @@ class Parser:
+                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
+                     field = self._parse_column_ops(field)
+             else:
+-                field = self._parse_field(any_token=True, anonymous_func=True)
++                # After a dot, a bare name is a column identifier, even if it's a no-paren function
++                field = self._parse_field(
++                    any_token=True, anonymous_func=True, optional_parens=False
++                )
+ 
+             # Function calls can be qualified, e.g., x.y.FOO()
+             # This converts the final AST to a series of Dots leading to the function call
+@@ -6781,10 +6784,13 @@ class Parser:
+         any_token: bool = False,
+         tokens: t.Collection[TokenType] | None = None,
+         anonymous_func: bool = False,
++        optional_parens: bool = True,
+     ) -> exp.Expr | None:
+         if anonymous_func:
+             field = (
+-                self._parse_function(anonymous=anonymous_func, any_token=any_token)
++                self._parse_function(
++                    anonymous=anonymous_func, optional_parens=optional_parens, any_token=any_token
++                )
+                 or self._parse_primary()
+             )
+         else:
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index c13ad3f84..920319a06 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -97,6 +97,17 @@ class TestParser(unittest.TestCase):
+ 
+         self.assertIsNotNone(parse_one("date").find(exp.Column))
+ 
++    def test_no_paren_function_names_as_column_identifiers(self):
++        for sql in (
++            "SELECT mytable.current_user FROM mytable",
++            "SELECT t.sysdate, t.current_date FROM t",
++        ):
++            with self.subTest(sql=sql):
++                self.assertEqual(parse_one(sql).sql(), sql)
++                for column in parse_one(sql).find_all(exp.Column):
++                    self.assertIsInstance(column.this, exp.Identifier)
++                self.assertFalse(list(parse_one(sql).find_all(exp.CurrentUser, exp.CurrentDate)))
++
+     def test_tuple(self):
+         parse_one("(a,)").assert_is(exp.Tuple)
+ 

@@ -1,0 +1,55 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 787be573d..1f30e269f 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -2366,6 +2366,9 @@ class Parser:
+         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
+             self._advance()
+ 
++        if self._match_text_seq("TYPE"):
++            return self._parse_create_type(start, replace)
++
+         properties = None
+         create_token = self._match_set(self.CREATABLES) and self._prev
+ 
+@@ -2584,6 +2587,24 @@ class Parser:
+             )
+         )
+ 
++    def _parse_create_type(self, start: Token, replace: bool) -> exp.Create | exp.Command:
++        this = self._parse_table_parts()
++        if not this or not self._match_text_seq("AS"):
++            return self._parse_as_command(start)
++
++        if self._match_text_seq("ENUM"):
++            values = self._try_parse(lambda: self._parse_wrapped_csv(self._parse_string))
++            expression = values and exp.DataType(this=exp.DataType.Type.ENUM, expressions=values)
++        else:
++            expression = self._parse_schema()
++
++        if not expression or not expression.expressions or self._curr:
++            return self._parse_as_command(start)
++
++        return self.expression(
++            exp.Create(this=this, kind="TYPE", replace=replace, expression=expression)
++        )
++
+     def _parse_sequence_properties(self) -> exp.SequenceProperties | None:
+         seq = exp.SequenceProperties()
+ 
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 420db449b..033d8f079 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1683,6 +1683,11 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+         _validate_udt('CAST(5 AS MySchema."MyType")')
+         _validate_udt('CAST(5 AS "MyCatalog"."MySchema"."MyType")')
+ 
++    def test_create_type(self):
++        self.validate_identity("CREATE TYPE book_type AS ENUM('FICTION', 'NONFICTION')")
++        self.validate_identity("CREATE TYPE public.mood AS ENUM('sad', 'ok', 'happy')")
++        self.validate_identity("CREATE TYPE complex AS (r DOUBLE PRECISION, i DOUBLE PRECISION)")
++
+     def test_round(self):
+         self.validate_identity("ROUND(x)")
+         self.validate_identity("ROUND(x, y)")

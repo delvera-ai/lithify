@@ -1,0 +1,28 @@
+{
+  "task": "Doris and StarRocks dialects: both support the two-argument form of `DATE_ADD` / `DATE_SUB` without the `INTERVAL` keyword (the second argument is a number of days), but sqlglot cannot parse it:\n\n```python\nimport sqlglot\nsqlglot.parse(\"select date_add('2025-01-01', 1) from a\", dialect=\"doris\", error_level=sqlglot.ErrorLevel.IMMEDIATE)\n# ParseError: INTERVAL expression expected but got '1'\n```\n\nSupport the two-argument form for both dialects (parse and generate).",
+  "k": 0,
+  "reason": "cruise (S=0.80)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 72242,
+    "cached": 1402523,
+    "out": 25429,
+    "cost": 0.041183330000000004,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

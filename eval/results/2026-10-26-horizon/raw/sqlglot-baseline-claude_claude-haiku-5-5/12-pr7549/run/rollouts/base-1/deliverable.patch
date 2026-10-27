@@ -1,0 +1,79 @@
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..f4fb3b376 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -88,6 +88,13 @@ def qualify_columns(
+             allow_partial_qualification=allow_partial_qualification,
+         )
+ 
++        if isinstance(scope_expression, exp.Lateral):
++            # Type the exploded expression so its struct fields are visible to the enclosing scope
++            for source in scope.sources.values():
++                if isinstance(source, Scope):
++                    annotator.annotate_scope(source)
++            annotator.annotate_scope(scope)
++
+         if not schema.empty and expand_alias_refs:
+             _expand_alias_refs(scope, resolver, dialect)
+ 
+@@ -546,6 +553,17 @@ def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
+         raise OptimizeError(f"Unknown output column: {node.name}")
+ 
+ 
++def _is_exploded_struct_field(source: exp.Table | Scope, alias: str, field: str) -> bool:
++    expression = source.expression if isinstance(source, Scope) else None
++    return (
++        isinstance(expression, exp.Lateral)
++        and isinstance(expression.this, exp.Explode)
++        and alias in expression.alias_column_names
++        and expression.this.is_type(exp.DType.STRUCT)
++        and any(f.name == field for f in expression.this.type.expressions)
++    )
++
++
+ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+     """
+     Converts `Column` instances that represent STRUCT or JSON field lookup into chained `Dots`.
+@@ -589,6 +607,17 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+                     new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
+ 
+                 column.replace(exp.Dot.build([new_column, *parts]))
++        elif (
++            column_table
++            and column_table in scope.sources
++            and column.name not in resolver.get_source_columns(column_table)
++            and _is_exploded_struct_field(scope.sources[column_table], column_table, column.name)
++        ):
++            # e.g. `LATERAL VIEW EXPLODE(structs) t AS t`, where `t.field` is a struct field lookup
++            converted = True
++            column.replace(
++                exp.Dot.build([exp.column(column_table, table=column_table), column.this.copy()])
++            )
+ 
+     if converted:
+         # We want to re-aggregate the converted columns, otherwise they'd be skipped in
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..64f4d8812 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1341,6 +1341,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_struct_field(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++        expression = optimizer.optimize(
++            parse_one(
++                "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci", read="spark"
++            ),
++            schema=schema,
++            dialect="spark",
++        )
++        self.assertEqual(
++            expression.sql("spark"),
++            "SELECT `ci`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++        )
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """
