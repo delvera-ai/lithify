@@ -28,4 +28,4 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 
 | date | phase | arm / run | tasks | cost USD | cumulative round-2 USD | status |
 |---|---|---|---|---|---|---|
-| 2026-10-27 | 0 | A / r1-A-rep2 | 0/60 | 0.0000 | 0.0000 | starting; cap $3, total cap $30, glob `*-r2-*` |
+| 2026-10-27 | 0 | A / r1-A-rep2 | 2/60 | 3.6267 | 3.6267 | stopped by $3 between-task cap (overshoot $0.6267); invalid environment; preserved, excluded from noise analysis |
