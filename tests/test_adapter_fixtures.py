@@ -197,3 +197,10 @@ def test_claude_2_1_310_real_background_results():
     assert model["inputTokens"] == 82 and model["cacheCreationInputTokens"] == 57105
     assert model["outputTokens"] == 15956 and model["costBasis"] == "list"
     assert result.raw_stream == capture
+
+
+def test_claude_captured_per_result_timing_scopes():
+    capture = (FIX / "claude_2.1.310_background_results.jsonl").read_text()
+    result = ClaudeAdapter().parse(capture, "", 0)
+    assert [r["duration_ms"] for r in result.meta["results"]] == [140554, 8266, 9581, 4924]
+    assert [r["duration_api_ms"] for r in result.meta["results"]] == [112582, 120593, 129804, 134645]

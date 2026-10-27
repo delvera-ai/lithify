@@ -223,6 +223,8 @@ class Pipeline:
                 {
                     "label": label,
                     "ok": res.ok,
+                    "returncode": res.returncode,
+                    "error": res.error,
                     "tokens_in": res.tokens_in,
                     "tokens_cached": res.tokens_cached,
                     "tokens_out": res.tokens_out,

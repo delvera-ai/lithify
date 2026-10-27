@@ -57,6 +57,8 @@ class ClaudeAdapter(Adapter):
                         "modelUsage": billed,
                         "total_cost_usd": ev.get("total_cost_usd", 0.0),
                         "num_turns": ev.get("num_turns", 0),
+                        "duration_ms": ev.get("duration_ms", 0),
+                        "duration_api_ms": ev.get("duration_api_ms", 0),
                         "is_error": ev.get("is_error", False),
                     }
                 )
