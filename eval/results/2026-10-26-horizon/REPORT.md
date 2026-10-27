@@ -14,7 +14,7 @@
 | H2 | C − A larger on 31–60 than on 1–30 | +10.0 (1–30) → +6.7 (31–60) | **not supported** |
 | H3 | C > B on 31–60 | +6.7 points, 2 / 0, p = 0.25 | not significant |
 | H4 | C ≤ $1.00 per task on 31–60 | **$0.795** per task | met |
-| Leak audit | no win relies on a copied hidden-test expectation | 0 of 33 new expected strings in C's wins appear in C's harness or library (one generic call-signature fragment from the task text itself) | clean; H1 unchanged in the sensitivity analysis |
+| Leak audit | tag every adopted edit that copies an expected value from a past holdout; re-score H1 without passes that used one | **2 adopted skills copy past hidden-test expectations** (tagged *not acceptable*): `skills/sqlglot-data-types/SKILL.md` quotes `CAST('a' AS STRING COLLATE foo)` from the COLLATE task's tests (#7630); `skills/sqlglot-upsert-on-conflict/SKILL.md` lists #7760's exact `ON CONFLICT` targets. No later task reused them, and none of C's 5 wins depends on a copied value (0 of 33 new expected strings found) | **leaks present but inert**; H1 unchanged in the sensitivity analysis. (Corrected after the independent review: the first version of this report checked only the wins and called the audit clean.) |
 | Safety | 0 pipeline invariant violations | 0 / 180 task checks; no installs or venvs; git writes = `git stash` only | clean |
 
 ## Results (all 60 tasks completed by every arm; 95% Wilson intervals)
@@ -34,4 +34,14 @@
 3. **C learned a lot of text, not a lot of capability.** 20 feedback steps produced 36 component edits (`system.md` ×11, `skills/sqlglot-dialect-functions` ×10, `tool_guidance.md` ×6, …). The always-on harness grew 15× to 2,822 tokens, over lithify's own 2,500 budget, and the whole harness reached 127 KB. Most edits re-describe conventions specific to one dialect or function, which rarely recur within 30 tasks.
 4. **Feedback inflates exploration without producing proposals.** Each post-delivery failure marks the task "not first-pass", which keeps S low (k ≥ 1 on 46 of 60 tasks). But the next base rollouts usually pass the gates, so proposals are skipped. Most of C's cost is the feedback steps themselves (about $2.30 each).
 
-An independent preliminary review (read-only, not anchored on this report) is run separately; see the PR discussion.
+## Independent review (read-only agent, not shown this report)
+
+Agreed verdict: no meaningful improvement. Additional findings, verified:
+
+- **C's 5 wins are not traceable to adopted knowledge.** Task 12 loaded a skill about unrelated invariants; task 45 read no skill (the relevant one was adopted at task 46); task 14 looked for `.lithify/memory.md` (wrong path); B also passed tasks 30 and 39 without C's skills. Conversely, C read its 23 KB `sqlglot-dialect-functions` skill (rewritten by feedback 9 times) on tasks 56, 58 and 60 and failed all three.
+- **Noise floor:** A and B, both at k = 0 with near-identical harnesses after task 20, still disagree on about 3 of 40 tasks. C's +2 on tasks 31–60 is within that.
+- **Most failures are under-specified exact output:** about 15 of A's 25 failures hinge on output conventions the task never states, and about 5 test syntax the task never mentions (tasks 20, 33, 51, 58). Post-hoc skills then copy those strings (the leaks above).
+- **Feedback raised k without probing:** `skip_when_base_passes` skipped every proposal on tasks 31–60 (executions = 1 throughout).
+- **Hygiene:** a stray `skills/sqlglot-dialect-functions/SKILL.md.orig` (14.5 KB) shipped in the harness; `lithify validate` did not flag it.
+
+Ranked fixes (from the review, to be tested): (1) probe a feedback proposal on a replay of the failed or related past tasks before adopting it; (2) separate convention gaps from capability gaps, writing general rules, never literal expected values; (3) let feedback trigger real re-exploration (k rollouts plus a spec test or judge) instead of being cancelled by `skip_when_base_passes`; (4) per-skill size budgets, targeted retrieval, and stripping stray files; (5) make the evaluation decisive with 2–3 seeds per arm and flags for tasks whose holdout tests unnamed syntax.
