@@ -14,6 +14,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02257653,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 13082,
+                "thinkingTokens": 5764,
+                "cacheReadInputTokens": 644033,
+                "cacheCreationInputTokens": 47962,
+                "webSearchRequests": 0,
+                "costUSD": 0.02257653
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -33,6 +50,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.024827100000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 12030,
+                "thinkingTokens": 4352,
+                "cacheReadInputTokens": 939710,
+                "cacheCreationInputTokens": 47055,
+                "webSearchRequests": 0,
+                "costUSD": 0.024827100000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -52,6 +86,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 25,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03797320999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 50,
+                "outputTokens": 24150,
+                "thinkingTokens": 14610,
+                "cacheReadInputTokens": 1374661,
+                "cacheCreationInputTokens": 60733,
+                "webSearchRequests": 0,
+                "costUSD": 0.03797320999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -71,6 +122,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01973737,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 7490,
+                "thinkingTokens": 1872,
+                "cacheReadInputTokens": 812437,
+                "cacheCreationInputTokens": 39321,
+                "webSearchRequests": 0,
+                "costUSD": 0.01973737
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -90,6 +158,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021093890000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 12172,
+                "thinkingTokens": 4884,
+                "cacheReadInputTokens": 638309,
+                "cacheCreationInputTokens": 43110,
+                "webSearchRequests": 0,
+                "costUSD": 0.021093890000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -109,6 +194,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021514800000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 11079,
+                "thinkingTokens": 3775,
+                "cacheReadInputTokens": 768250,
+                "cacheCreationInputTokens": 41447,
+                "webSearchRequests": 0,
+                "costUSD": 0.021514800000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -128,6 +230,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.041183330000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 25429,
+                "thinkingTokens": 13538,
+                "cacheReadInputTokens": 1402523,
+                "cacheCreationInputTokens": 72194,
+                "webSearchRequests": 0,
+                "costUSD": 0.041183330000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -147,6 +266,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01654723,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 5752,
+                "thinkingTokens": 1466,
+                "cacheReadInputTokens": 568803,
+                "cacheCreationInputTokens": 39903,
+                "webSearchRequests": 0,
+                "costUSD": 0.01654723
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -166,6 +302,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01610018,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 7357,
+                "thinkingTokens": 1316,
+                "cacheReadInputTokens": 496728,
+                "cacheCreationInputTokens": 37260,
+                "webSearchRequests": 0,
+                "costUSD": 0.01610018
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -185,6 +338,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 8,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01014887,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 16,
+                "outputTokens": 3807,
+                "thinkingTokens": 638,
+                "cacheReadInputTokens": 279317,
+                "cacheCreationInputTokens": 27253,
+                "webSearchRequests": 0,
+                "costUSD": 0.01014887
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -204,6 +374,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01711943,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 8340,
+                "thinkingTokens": 3157,
+                "cacheReadInputTokens": 567343,
+                "cacheCreationInputTokens": 36366,
+                "webSearchRequests": 0,
+                "costUSD": 0.01711943
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -223,6 +410,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 29,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.029769479999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 62,
+                "outputTokens": 12568,
+                "thinkingTokens": 4129,
+                "cacheReadInputTokens": 1428188,
+                "cacheCreationInputTokens": 45987,
+                "webSearchRequests": 0,
+                "costUSD": 0.029769479999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -242,6 +446,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02410346,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 9721,
+                "thinkingTokens": 1840,
+                "cacheReadInputTokens": 1097556,
+                "cacheCreationInputTokens": 41313,
+                "webSearchRequests": 0,
+                "costUSD": 0.02410346
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -261,6 +482,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 32,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0554186,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 64,
+                "outputTokens": 37286,
+                "thinkingTokens": 22820,
+                "cacheReadInputTokens": 2077280,
+                "cacheCreationInputTokens": 79982,
+                "webSearchRequests": 0,
+                "costUSD": 0.0554186
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -280,6 +518,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.041586760000000014,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 31275,
+                "thinkingTokens": 20085,
+                "cacheReadInputTokens": 1115946,
+                "cacheCreationInputTokens": 73931,
+                "webSearchRequests": 0,
+                "costUSD": 0.041586760000000014
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -299,6 +554,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 41,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0598333,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 82,
+                "outputTokens": 32388,
+                "thinkingTokens": 16812,
+                "cacheReadInputTokens": 2690910,
+                "cacheCreationInputTokens": 83610,
+                "webSearchRequests": 0,
+                "costUSD": 0.0598333
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -318,6 +590,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 35,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.18438026000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 70,
+                "outputTokens": 53870,
+                "thinkingTokens": 37298,
+                "cacheReadInputTokens": 2863990,
+                "cacheCreationInputTokens": 105331,
+                "webSearchRequests": 0,
+                "costUSD": 0.18438026000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -337,6 +626,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01868701,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 9014,
+                "thinkingTokens": 3267,
+                "cacheReadInputTokens": 657901,
+                "cacheCreationInputTokens": 37989,
+                "webSearchRequests": 0,
+                "costUSD": 0.01868701
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -356,6 +662,23 @@
         "terminal_notification": true,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02880303,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 50,
+                "outputTokens": 11780,
+                "thinkingTokens": 2709,
+                "cacheReadInputTokens": 1226263,
+                "cacheCreationInputTokens": 53227,
+                "webSearchRequests": 0,
+                "costUSD": 0.02880303
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -375,6 +698,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027114460000000007,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 15307,
+                "thinkingTokens": 8030,
+                "cacheReadInputTokens": 878196,
+                "cacheCreationInputTokens": 53378,
+                "webSearchRequests": 0,
+                "costUSD": 0.027114460000000007
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -394,6 +734,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0204013,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 9803,
+                "thinkingTokens": 2972,
+                "cacheReadInputTokens": 767000,
+                "cacheCreationInputTokens": 39131,
+                "webSearchRequests": 0,
+                "costUSD": 0.0204013
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -413,6 +770,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 9,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0157123,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 18,
+                "outputTokens": 9451,
+                "thinkingTokens": 3124,
+                "cacheReadInputTokens": 354220,
+                "cacheCreationInputTokens": 37214,
+                "webSearchRequests": 0,
+                "costUSD": 0.0157123
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -432,6 +806,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01743511,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 9038,
+                "thinkingTokens": 3029,
+                "cacheReadInputTokens": 503511,
+                "cacheCreationInputTokens": 39393,
+                "webSearchRequests": 0,
+                "costUSD": 0.01743511
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -451,6 +842,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 7,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01031544,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 14,
+                "outputTokens": 3710,
+                "thinkingTokens": 865,
+                "cacheReadInputTokens": 251724,
+                "cacheCreationInputTokens": 29709,
+                "webSearchRequests": 0,
+                "costUSD": 0.01031544
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -470,6 +878,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.022014489999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 12601,
+                "thinkingTokens": 4706,
+                "cacheReadInputTokens": 676319,
+                "cacheCreationInputTokens": 44739,
+                "webSearchRequests": 0,
+                "costUSD": 0.022014489999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -489,6 +914,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.028023100000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 19681,
+                "thinkingTokens": 8012,
+                "cacheReadInputTokens": 789940,
+                "cacheCreationInputTokens": 51400,
+                "webSearchRequests": 0,
+                "costUSD": 0.028023100000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -508,6 +950,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.030451890000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 18882,
+                "thinkingTokens": 8980,
+                "cacheReadInputTokens": 999269,
+                "cacheCreationInputTokens": 55072,
+                "webSearchRequests": 0,
+                "costUSD": 0.030451890000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -527,6 +986,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.024431060000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 11193,
+                "thinkingTokens": 4462,
+                "cacheReadInputTokens": 951176,
+                "cacheCreationInputTokens": 46594,
+                "webSearchRequests": 0,
+                "costUSD": 0.024431060000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -546,6 +1022,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.022772650000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 11704,
+                "thinkingTokens": 3957,
+                "cacheReadInputTokens": 806025,
+                "cacheCreationInputTokens": 44285,
+                "webSearchRequests": 0,
+                "costUSD": 0.022772650000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -565,6 +1058,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01557106,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 6736,
+                "thinkingTokens": 1873,
+                "cacheReadInputTokens": 528966,
+                "cacheCreationInputTokens": 34554,
+                "webSearchRequests": 0,
+                "costUSD": 0.01557106
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -584,6 +1094,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02499879,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 12620,
+                "thinkingTokens": 5234,
+                "cacheReadInputTokens": 829799,
+                "cacheCreationInputTokens": 51938,
+                "webSearchRequests": 0,
+                "costUSD": 0.02499879
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -603,6 +1130,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0236513,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 12890,
+                "thinkingTokens": 5111,
+                "cacheReadInputTokens": 833530,
+                "cacheCreationInputTokens": 44337,
+                "webSearchRequests": 0,
+                "costUSD": 0.0236513
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -622,6 +1166,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.026764980000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 15922,
+                "thinkingTokens": 8102,
+                "cacheReadInputTokens": 852258,
+                "cacheCreationInputTokens": 51390,
+                "webSearchRequests": 0,
+                "costUSD": 0.026764980000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -641,6 +1202,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021306070000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 9801,
+                "thinkingTokens": 3128,
+                "cacheReadInputTokens": 798457,
+                "cacheCreationInputTokens": 42088,
+                "webSearchRequests": 0,
+                "costUSD": 0.021306070000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -661,6 +1239,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 33,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03916799,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 64,
+                "outputTokens": 19258,
+                "thinkingTokens": 8492,
+                "cacheReadInputTokens": 1782319,
+                "cacheCreationInputTokens": 58547,
+                "webSearchRequests": 0,
+                "costUSD": 0.03916799
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -680,6 +1275,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02358928,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 8005,
+                "thinkingTokens": 1854,
+                "cacheReadInputTokens": 653358,
+                "cacheCreationInputTokens": 65253,
+                "webSearchRequests": 0,
+                "costUSD": 0.02358928
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -699,6 +1311,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 30,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.029758450000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 64,
+                "outputTokens": 13674,
+                "thinkingTokens": 3625,
+                "cacheReadInputTokens": 1392325,
+                "cacheCreationInputTokens": 44959,
+                "webSearchRequests": 0,
+                "costUSD": 0.029758450000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -718,6 +1347,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03507514,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 42,
+                "outputTokens": 23860,
+                "thinkingTokens": 13643,
+                "cacheReadInputTokens": 1148574,
+                "cacheCreationInputTokens": 58276,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 58276,
+                "webSearchRequests": 0,
+                "costUSD": 0.03507514
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -737,6 +1385,25 @@
         "terminal_notification": true,
         "matched_at_session_end": true,
         "call_count": 33,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.034379450000000006,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 74,
+                "outputTokens": 13348,
+                "thinkingTokens": 4215,
+                "cacheReadInputTokens": 1766725,
+                "cacheCreationInputTokens": 50154,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 50154,
+                "webSearchRequests": 0,
+                "costUSD": 0.034379450000000006
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -756,6 +1423,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 40,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04738324000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 98,
+                "outputTokens": 17105,
+                "thinkingTokens": 5229,
+                "cacheReadInputTokens": 2565174,
+                "cacheCreationInputTokens": 65846,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 65846,
+                "webSearchRequests": 0,
+                "costUSD": 0.04738324000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -775,6 +1461,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02563079,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 14997,
+                "thinkingTokens": 8767,
+                "cacheReadInputTokens": 840129,
+                "cacheCreationInputTokens": 48636,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 48636,
+                "webSearchRequests": 0,
+                "costUSD": 0.02563079
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -794,6 +1499,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.014938219999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5586,
+                "thinkingTokens": 1421,
+                "cacheReadInputTokens": 466762,
+                "cacheCreationInputTokens": 37377,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 37377,
+                "webSearchRequests": 0,
+                "costUSD": 0.014938219999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -813,6 +1537,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021774170000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 10848,
+                "thinkingTokens": 3865,
+                "cacheReadInputTokens": 833277,
+                "cacheCreationInputTokens": 40068,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 40068,
+                "webSearchRequests": 0,
+                "costUSD": 0.021774170000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -832,6 +1575,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02854192,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 13386,
+                "thinkingTokens": 4285,
+                "cacheReadInputTokens": 1154712,
+                "cacheCreationInputTokens": 51486,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 51486,
+                "webSearchRequests": 0,
+                "costUSD": 0.02854192
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -851,6 +1613,25 @@
         "terminal_notification": true,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.014652860000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 6523,
+                "thinkingTokens": 1198,
+                "cacheReadInputTokens": 488916,
+                "cacheCreationInputTokens": 32498,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 32498,
+                "webSearchRequests": 0,
+                "costUSD": 0.014652860000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -870,6 +1651,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.045317840000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 33143,
+                "thinkingTokens": 23088,
+                "cacheReadInputTokens": 1405814,
+                "cacheCreationInputTokens": 73418,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 73418,
+                "webSearchRequests": 0,
+                "costUSD": 0.045317840000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -889,6 +1689,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01885901,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 7466,
+                "thinkingTokens": 1904,
+                "cacheReadInputTokens": 714661,
+                "cacheCreationInputTokens": 39880,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 39880,
+                "webSearchRequests": 0,
+                "costUSD": 0.01885901
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -908,6 +1727,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01192452,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 4570,
+                "thinkingTokens": 859,
+                "cacheReadInputTokens": 371812,
+                "cacheCreationInputTokens": 29597,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 29597,
+                "webSearchRequests": 0,
+                "costUSD": 0.01192452
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -927,6 +1765,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.023024450000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 50,
+                "outputTokens": 8712,
+                "thinkingTokens": 1889,
+                "cacheReadInputTokens": 1037845,
+                "cacheCreationInputTokens": 41425,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 41425,
+                "webSearchRequests": 0,
+                "costUSD": 0.023024450000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -946,6 +1803,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03734268,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 25526,
+                "thinkingTokens": 16875,
+                "cacheReadInputTokens": 1218608,
+                "cacheCreationInputTokens": 61946,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 61946,
+                "webSearchRequests": 0,
+                "costUSD": 0.03734268
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -965,6 +1841,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.035724410000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 26092,
+                "thinkingTokens": 16015,
+                "cacheReadInputTokens": 1045221,
+                "cacheCreationInputTokens": 61112,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 61112,
+                "webSearchRequests": 0,
+                "costUSD": 0.035724410000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -984,6 +1879,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03254148,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 22125,
+                "thinkingTokens": 12507,
+                "cacheReadInputTokens": 963378,
+                "cacheCreationInputTokens": 59208,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 59208,
+                "webSearchRequests": 0,
+                "costUSD": 0.03254148
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1003,6 +1917,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.015794850000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 7873,
+                "thinkingTokens": 2280,
+                "cacheReadInputTokens": 451735,
+                "cacheCreationInputTokens": 36694,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 36694,
+                "webSearchRequests": 0,
+                "costUSD": 0.015794850000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1022,6 +1955,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01360723,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 5790,
+                "thinkingTokens": 1355,
+                "cacheReadInputTokens": 395363,
+                "cacheCreationInputTokens": 33783,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 33783,
+                "webSearchRequests": 0,
+                "costUSD": 0.01360723
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1041,6 +1993,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03736207,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 20533,
+                "thinkingTokens": 9245,
+                "cacheReadInputTokens": 1439077,
+                "cacheCreationInputTokens": 63500,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 63500,
+                "webSearchRequests": 0,
+                "costUSD": 0.03736207
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1060,6 +2031,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.011466690000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 4115,
+                "thinkingTokens": 762,
+                "cacheReadInputTokens": 366559,
+                "cacheCreationInputTokens": 28708,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 28708,
+                "webSearchRequests": 0,
+                "costUSD": 0.011466690000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1079,6 +2069,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.018707869999999995,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 10075,
+                "thinkingTokens": 4059,
+                "cacheReadInputTokens": 532617,
+                "cacheCreationInputTokens": 41709,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 41709,
+                "webSearchRequests": 0,
+                "costUSD": 0.018707869999999995
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1098,6 +2107,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 8,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.011978190000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 16,
+                "outputTokens": 4390,
+                "thinkingTokens": 1035,
+                "cacheReadInputTokens": 308019,
+                "cacheCreationInputTokens": 33507,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 33507,
+                "webSearchRequests": 0,
+                "costUSD": 0.011978190000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1117,6 +2145,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.017889060000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 8130,
+                "thinkingTokens": 2613,
+                "cacheReadInputTokens": 642306,
+                "cacheCreationInputTokens": 36990,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 36990,
+                "webSearchRequests": 0,
+                "costUSD": 0.017889060000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1136,6 +2183,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 7,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01149154,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 14,
+                "outputTokens": 4824,
+                "thinkingTokens": 863,
+                "cacheReadInputTokens": 260134,
+                "cacheCreationInputTokens": 32384,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 32384,
+                "webSearchRequests": 0,
+                "costUSD": 0.01149154
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1155,6 +2221,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.07174302,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 25687,
+                "outputTokens": 32426,
+                "thinkingTokens": 16953,
+                "cacheReadInputTokens": 1676392,
+                "cacheCreationInputTokens": 80987,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 80987,
+                "webSearchRequests": 2,
+                "costUSD": 0.07174302
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1174,6 +2259,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 7,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.011172179999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 14,
+                "outputTokens": 4088,
+                "thinkingTokens": 784,
+                "cacheReadInputTokens": 266018,
+                "cacheCreationInputTokens": 32333,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 32333,
+                "webSearchRequests": 0,
+                "costUSD": 0.011172179999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1193,6 +2297,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 9,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01420794,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 18,
+                "outputTokens": 5835,
+                "thinkingTokens": 1560,
+                "cacheReadInputTokens": 366944,
+                "cacheCreationInputTokens": 38096,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 38096,
+                "webSearchRequests": 0,
+                "costUSD": 0.01420794
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1212,6 +2335,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0195058,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 10686,
+                "thinkingTokens": 5404,
+                "cacheReadInputTokens": 504460,
+                "cacheCreationInputTokens": 45580,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 45580,
+                "webSearchRequests": 0,
+                "costUSD": 0.0195058
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1231,6 +2373,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027337910000000007,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 13454,
+                "thinkingTokens": 5749,
+                "cacheReadInputTokens": 1092431,
+                "cacheCreationInputTokens": 48411,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 48411,
+                "webSearchRequests": 0,
+                "costUSD": 0.027337910000000007
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1250,6 +2411,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.025793939999999994,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 13129,
+                "thinkingTokens": 5584,
+                "cacheReadInputTokens": 932184,
+                "cacheCreationInputTokens": 49519,
+                "webSearchRequests": 0,
+                "costUSD": 0.025793939999999994
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1269,6 +2447,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02580807,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 12833,
+                "thinkingTokens": 4530,
+                "cacheReadInputTokens": 951257,
+                "cacheCreationInputTokens": 49375,
+                "webSearchRequests": 0,
+                "costUSD": 0.02580807
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1288,6 +2483,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03294649,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 18695,
+                "thinkingTokens": 10270,
+                "cacheReadInputTokens": 1156659,
+                "cacheCreationInputTokens": 60140,
+                "webSearchRequests": 0,
+                "costUSD": 0.03294649
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1307,6 +2519,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01687592,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 6289,
+                "thinkingTokens": 1201,
+                "cacheReadInputTokens": 654302,
+                "cacheCreationInputTokens": 35926,
+                "webSearchRequests": 0,
+                "costUSD": 0.01687592
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1326,6 +2555,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.030760140000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 19272,
+                "thinkingTokens": 8629,
+                "cacheReadInputTokens": 1028874,
+                "cacheCreationInputTokens": 54157,
+                "webSearchRequests": 0,
+                "costUSD": 0.030760140000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1345,6 +2591,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0225833,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 14538,
+                "thinkingTokens": 6490,
+                "cacheReadInputTokens": 615710,
+                "cacheCreationInputTokens": 45773,
+                "webSearchRequests": 0,
+                "costUSD": 0.0225833
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1364,6 +2627,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.023640819999999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 10814,
+                "thinkingTokens": 3890,
+                "cacheReadInputTokens": 890162,
+                "cacheCreationInputTokens": 46643,
+                "webSearchRequests": 0,
+                "costUSD": 0.023640819999999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1383,6 +2663,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.023134180000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 11061,
+                "thinkingTokens": 3732,
+                "cacheReadInputTokens": 836588,
+                "cacheCreationInputTokens": 46172,
+                "webSearchRequests": 0,
+                "costUSD": 0.023134180000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1402,6 +2699,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 51,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.07033932000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 102,
+                "outputTokens": 28916,
+                "thinkingTokens": 10480,
+                "cacheReadInputTokens": 3901992,
+                "cacheCreationInputTokens": 84256,
+                "webSearchRequests": 0,
+                "costUSD": 0.07033932000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1421,6 +2735,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 36,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.05105126,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 80,
+                "outputTokens": 23488,
+                "thinkingTokens": 9520,
+                "cacheReadInputTokens": 2471866,
+                "cacheCreationInputTokens": 72903,
+                "webSearchRequests": 0,
+                "costUSD": 0.05105126
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1440,6 +2771,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.028973159999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 17134,
+                "thinkingTokens": 8205,
+                "cacheReadInputTokens": 881656,
+                "cacheCreationInputTokens": 57932,
+                "webSearchRequests": 0,
+                "costUSD": 0.028973159999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1459,6 +2807,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.030125240000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 20538,
+                "thinkingTokens": 10557,
+                "cacheReadInputTokens": 807644,
+                "cacheCreationInputTokens": 58884,
+                "webSearchRequests": 0,
+                "costUSD": 0.030125240000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1478,6 +2843,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03197667,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 19129,
+                "thinkingTokens": 7057,
+                "cacheReadInputTokens": 1042417,
+                "cacheCreationInputTokens": 59922,
+                "webSearchRequests": 0,
+                "costUSD": 0.03197667
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1497,6 +2879,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.035419210000000007,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 19918,
+                "thinkingTokens": 9903,
+                "cacheReadInputTokens": 1127601,
+                "cacheCreationInputTokens": 70904,
+                "webSearchRequests": 0,
+                "costUSD": 0.035419210000000007
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1516,6 +2915,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 25,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.043303150000000006,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 50,
+                "outputTokens": 25033,
+                "thinkingTokens": 12335,
+                "cacheReadInputTokens": 1604125,
+                "cacheCreationInputTokens": 73702,
+                "webSearchRequests": 0,
+                "costUSD": 0.043303150000000006
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1535,6 +2951,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.045756530000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 27388,
+                "thinkingTokens": 13199,
+                "cacheReadInputTokens": 1587633,
+                "cacheCreationInputTokens": 80908,
+                "webSearchRequests": 0,
+                "costUSD": 0.045756530000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1554,6 +2987,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013969880000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 4417,
+                "thinkingTokens": 827,
+                "cacheReadInputTokens": 430498,
+                "cacheCreationInputTokens": 37272,
+                "webSearchRequests": 0,
+                "costUSD": 0.013969880000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1573,6 +3023,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.020424829999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 8493,
+                "thinkingTokens": 2643,
+                "cacheReadInputTokens": 779853,
+                "cacheCreationInputTokens": 41882,
+                "webSearchRequests": 0,
+                "costUSD": 0.020424829999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1592,6 +3059,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01783093,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 7208,
+                "thinkingTokens": 1138,
+                "cacheReadInputTokens": 591573,
+                "cacheCreationInputTokens": 41542,
+                "webSearchRequests": 0,
+                "costUSD": 0.01783093
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1611,6 +3095,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021449799999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 9048,
+                "thinkingTokens": 1692,
+                "cacheReadInputTokens": 800200,
+                "cacheCreationInputTokens": 44601,
+                "webSearchRequests": 0,
+                "costUSD": 0.021449799999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1630,6 +3131,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.012635790000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 4363,
+                "thinkingTokens": 697,
+                "cacheReadInputTokens": 392049,
+                "cacheCreationInputTokens": 32659,
+                "webSearchRequests": 0,
+                "costUSD": 0.012635790000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1649,6 +3167,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.012890669999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 4718,
+                "thinkingTokens": 421,
+                "cacheReadInputTokens": 422087,
+                "cacheCreationInputTokens": 31543,
+                "webSearchRequests": 0,
+                "costUSD": 0.012890669999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1668,6 +3203,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.017599680000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 8822,
+                "thinkingTokens": 2951,
+                "cacheReadInputTokens": 455728,
+                "cacheCreationInputTokens": 43147,
+                "webSearchRequests": 0,
+                "costUSD": 0.017599680000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1687,6 +3239,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.018138320000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 7512,
+                "thinkingTokens": 2730,
+                "cacheReadInputTokens": 687232,
+                "cacheCreationInputTokens": 37534,
+                "webSearchRequests": 0,
+                "costUSD": 0.018138320000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1706,6 +3275,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013604780000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5551,
+                "thinkingTokens": 1164,
+                "cacheReadInputTokens": 444768,
+                "cacheCreationInputTokens": 31897,
+                "webSearchRequests": 0,
+                "costUSD": 0.013604780000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1725,6 +3311,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 31,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.046266180000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 62,
+                "outputTokens": 25560,
+                "thinkingTokens": 12886,
+                "cacheReadInputTokens": 1939598,
+                "cacheCreationInputTokens": 70420,
+                "webSearchRequests": 0,
+                "costUSD": 0.046266180000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1744,6 +3347,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04171428000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 42,
+                "outputTokens": 28027,
+                "thinkingTokens": 19206,
+                "cacheReadInputTokens": 1357138,
+                "cacheCreationInputTokens": 70626,
+                "webSearchRequests": 0,
+                "costUSD": 0.04171428000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1763,6 +3383,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 28,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.047661770000000006,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 56,
+                "outputTokens": 31443,
+                "thinkingTokens": 19598,
+                "cacheReadInputTokens": 1710107,
+                "cacheCreationInputTokens": 74168,
+                "webSearchRequests": 0,
+                "costUSD": 0.047661770000000006
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1782,6 +3419,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 40,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.12310039000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 80,
+                "outputTokens": 40107,
+                "thinkingTokens": 22296,
+                "cacheReadInputTokens": 3029833,
+                "cacheCreationInputTokens": 95244,
+                "webSearchRequests": 0,
+                "costUSD": 0.12310039000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1801,6 +3455,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.025749880000000006,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 14338,
+                "thinkingTokens": 7095,
+                "cacheReadInputTokens": 813028,
+                "cacheCreationInputTokens": 52237,
+                "webSearchRequests": 0,
+                "costUSD": 0.025749880000000006
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1820,6 +3491,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.025421970000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 13618,
+                "thinkingTokens": 5736,
+                "cacheReadInputTokens": 790597,
+                "cacheCreationInputTokens": 53518,
+                "webSearchRequests": 0,
+                "costUSD": 0.025421970000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1839,6 +3527,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.032716180000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 21510,
+                "thinkingTokens": 11954,
+                "cacheReadInputTokens": 931498,
+                "cacheCreationInputTokens": 63214,
+                "webSearchRequests": 0,
+                "costUSD": 0.032716180000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1858,6 +3563,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02661614999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 15614,
+                "thinkingTokens": 5827,
+                "cacheReadInputTokens": 941395,
+                "cacheCreationInputTokens": 46956,
+                "webSearchRequests": 0,
+                "costUSD": 0.02661614999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1877,6 +3599,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.023730579999999994,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 13596,
+                "thinkingTokens": 5392,
+                "cacheReadInputTokens": 770538,
+                "cacheCreationInputTokens": 46120,
+                "webSearchRequests": 0,
+                "costUSD": 0.023730579999999994
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1896,6 +3635,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03873352000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 24301,
+                "thinkingTokens": 12197,
+                "cacheReadInputTokens": 1393122,
+                "cacheCreationInputTokens": 63236,
+                "webSearchRequests": 0,
+                "costUSD": 0.03873352000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1915,6 +3671,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 26,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.042085620000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 54,
+                "outputTokens": 22702,
+                "thinkingTokens": 10891,
+                "cacheReadInputTokens": 1695002,
+                "cacheCreationInputTokens": 68896,
+                "webSearchRequests": 0,
+                "costUSD": 0.042085620000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1934,6 +3707,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.030819629999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 52,
+                "outputTokens": 12318,
+                "thinkingTokens": 3431,
+                "cacheReadInputTokens": 1322523,
+                "cacheCreationInputTokens": 57151,
+                "webSearchRequests": 0,
+                "costUSD": 0.030819629999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1954,6 +3744,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027038939999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 9201,
+                "thinkingTokens": 2851,
+                "cacheReadInputTokens": 1147024,
+                "cacheCreationInputTokens": 54821,
+                "webSearchRequests": 0,
+                "costUSD": 0.027038939999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1973,6 +3780,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02135277,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 9392,
+                "thinkingTokens": 3374,
+                "cacheReadInputTokens": 771177,
+                "cacheCreationInputTokens": 44709,
+                "webSearchRequests": 0,
+                "costUSD": 0.02135277
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -1992,6 +3816,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 25,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.037920489999999994,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 52,
+                "outputTokens": 20707,
+                "thinkingTokens": 11767,
+                "cacheReadInputTokens": 1496339,
+                "cacheCreationInputTokens": 62992,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 62992,
+                "webSearchRequests": 0,
+                "costUSD": 0.037920489999999994
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2011,6 +3854,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.025326449999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 11367,
+                "thinkingTokens": 3220,
+                "cacheReadInputTokens": 958475,
+                "cacheCreationInputTokens": 50271,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 50271,
+                "webSearchRequests": 0,
+                "costUSD": 0.025326449999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2030,6 +3892,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03189599,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 14911,
+                "thinkingTokens": 5210,
+                "cacheReadInputTokens": 1218729,
+                "cacheCreationInputTokens": 61243,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 61243,
+                "webSearchRequests": 0,
+                "costUSD": 0.03189599
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2049,6 +3930,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03504419,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 16807,
+                "thinkingTokens": 7559,
+                "cacheReadInputTokens": 1361329,
+                "cacheCreationInputTokens": 65114,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 65114,
+                "webSearchRequests": 0,
+                "costUSD": 0.03504419
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2068,6 +3968,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 25,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03159679,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 54,
+                "outputTokens": 12455,
+                "thinkingTokens": 4469,
+                "cacheReadInputTokens": 1421869,
+                "cacheCreationInputTokens": 55726,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 55726,
+                "webSearchRequests": 0,
+                "costUSD": 0.03159679
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2087,6 +4006,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.023304909999999995,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 13740,
+                "thinkingTokens": 5257,
+                "cacheReadInputTokens": 725151,
+                "cacheCreationInputTokens": 45902,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 45902,
+                "webSearchRequests": 0,
+                "costUSD": 0.023304909999999995
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2106,6 +4044,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.016232580000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 5579,
+                "thinkingTokens": 1171,
+                "cacheReadInputTokens": 576648,
+                "cacheCreationInputTokens": 38370,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 38370,
+                "webSearchRequests": 0,
+                "costUSD": 0.016232580000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2125,6 +4082,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04546396,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 50,
+                "outputTokens": 31756,
+                "thinkingTokens": 20325,
+                "cacheReadInputTokens": 1545836,
+                "cacheCreationInputTokens": 70613,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 70613,
+                "webSearchRequests": 0,
+                "costUSD": 0.04546396
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2144,6 +4120,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027396479999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 13177,
+                "thinkingTokens": 5735,
+                "cacheReadInputTokens": 1095078,
+                "cacheCreationInputTokens": 49264,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 49264,
+                "webSearchRequests": 0,
+                "costUSD": 0.027396479999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2163,6 +4158,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.020715119999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 10399,
+                "thinkingTokens": 4529,
+                "cacheReadInputTokens": 672642,
+                "cacheCreationInputTokens": 43932,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 43932,
+                "webSearchRequests": 0,
+                "costUSD": 0.020715119999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2182,6 +4196,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027404060000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 17770,
+                "thinkingTokens": 11062,
+                "cacheReadInputTokens": 796246,
+                "cacheCreationInputTokens": 52768,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 52768,
+                "webSearchRequests": 0,
+                "costUSD": 0.027404060000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2201,6 +4234,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01933739000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 7855,
+                "thinkingTokens": 2756,
+                "cacheReadInputTokens": 642129,
+                "cacheCreationInputTokens": 44930,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 44930,
+                "webSearchRequests": 0,
+                "costUSD": 0.01933739000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2220,6 +4272,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.020020800000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 8875,
+                "thinkingTokens": 3918,
+                "cacheReadInputTokens": 556370,
+                "cacheCreationInputTokens": 50086,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 50086,
+                "webSearchRequests": 0,
+                "costUSD": 0.020020800000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2239,6 +4310,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03150257,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 16631,
+                "thinkingTokens": 7996,
+                "cacheReadInputTokens": 1065367,
+                "cacheCreationInputTokens": 62649,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 62649,
+                "webSearchRequests": 0,
+                "costUSD": 0.03150257
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2258,6 +4348,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01554833,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5826,
+                "thinkingTokens": 1901,
+                "cacheReadInputTokens": 486673,
+                "cacheCreationInputTokens": 38832,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 38832,
+                "webSearchRequests": 0,
+                "costUSD": 0.01554833
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2277,6 +4386,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 33,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.09430612000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 66,
+                "outputTokens": 42332,
+                "thinkingTokens": 26544,
+                "cacheReadInputTokens": 2410244,
+                "cacheCreationInputTokens": 90385,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 90385,
+                "webSearchRequests": 0,
+                "costUSD": 0.09430612000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2296,6 +4424,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013682390000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 4793,
+                "thinkingTokens": 729,
+                "cacheReadInputTokens": 415909,
+                "cacheCreationInputTokens": 35624,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 35624,
+                "webSearchRequests": 0,
+                "costUSD": 0.013682390000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2315,6 +4462,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.017493440000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 7352,
+                "thinkingTokens": 2592,
+                "cacheReadInputTokens": 554944,
+                "cacheCreationInputTokens": 41328,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 41328,
+                "webSearchRequests": 0,
+                "costUSD": 0.017493440000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2334,6 +4500,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021474,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 7596,
+                "thinkingTokens": 1605,
+                "cacheReadInputTokens": 857340,
+                "cacheCreationInputTokens": 45496,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 45496,
+                "webSearchRequests": 0,
+                "costUSD": 0.021474
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2353,6 +4538,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03978302000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 27068,
+                "thinkingTokens": 17635,
+                "cacheReadInputTokens": 1211462,
+                "cacheCreationInputTokens": 70653,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 70653,
+                "webSearchRequests": 0,
+                "costUSD": 0.03978302000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2372,6 +4576,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03449576000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 22841,
+                "thinkingTokens": 11674,
+                "cacheReadInputTokens": 1070426,
+                "cacheCreationInputTokens": 61837,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 61837,
+                "webSearchRequests": 0,
+                "costUSD": 0.03449576000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2391,6 +4614,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03213804,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 20157,
+                "thinkingTokens": 8620,
+                "cacheReadInputTokens": 966974,
+                "cacheCreationInputTokens": 61932,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 61932,
+                "webSearchRequests": 0,
+                "costUSD": 0.03213804
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2410,6 +4652,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02290032,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 10435,
+                "thinkingTokens": 4096,
+                "cacheReadInputTokens": 810402,
+                "cacheCreationInputTokens": 47878,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 47878,
+                "webSearchRequests": 0,
+                "costUSD": 0.02290032
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2429,6 +4690,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 31,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03537511000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 62,
+                "outputTokens": 15350,
+                "thinkingTokens": 6135,
+                "cacheReadInputTokens": 1678751,
+                "cacheCreationInputTokens": 54532,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 54532,
+                "webSearchRequests": 0,
+                "costUSD": 0.03537511000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2448,6 +4728,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04150635000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 21854,
+                "thinkingTokens": 11938,
+                "cacheReadInputTokens": 1604315,
+                "cacheCreationInputTokens": 72657,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 72657,
+                "webSearchRequests": 0,
+                "costUSD": 0.04150635000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2467,6 +4766,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03049604000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 16556,
+                "thinkingTokens": 8270,
+                "cacheReadInputTokens": 1014804,
+                "cacheCreationInputTokens": 60332,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 60332,
+                "webSearchRequests": 0,
+                "costUSD": 0.03049604000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2486,6 +4804,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 28,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04676602,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 56,
+                "outputTokens": 25455,
+                "thinkingTokens": 10622,
+                "cacheReadInputTokens": 1899392,
+                "cacheCreationInputTokens": 75195,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 75195,
+                "webSearchRequests": 0,
+                "costUSD": 0.04676602
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2505,6 +4842,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.052457929999999986,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 14855,
+                "outputTokens": 22724,
+                "thinkingTokens": 10919,
+                "cacheReadInputTokens": 1560843,
+                "cacheCreationInputTokens": 70010,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 70010,
+                "webSearchRequests": 1,
+                "costUSD": 0.052457929999999986
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2524,6 +4880,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.0255268,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 12425,
+                "thinkingTokens": 5812,
+                "cacheReadInputTokens": 864350,
+                "cacheCreationInputTokens": 53338,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 53338,
+                "webSearchRequests": 0,
+                "costUSD": 0.0255268
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2543,6 +4918,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.022412559999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 9818,
+                "thinkingTokens": 2679,
+                "cacheReadInputTokens": 780196,
+                "cacheCreationInputTokens": 48493,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 48493,
+                "webSearchRequests": 0,
+                "costUSD": 0.022412559999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2562,6 +4956,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 31,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.26530932,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 63137,
+                "outputTokens": 52395,
+                "thinkingTokens": 29035,
+                "cacheReadInputTokens": 2930668,
+                "cacheCreationInputTokens": 118622,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 118622,
+                "webSearchRequests": 3,
+                "costUSD": 0.26530932
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2581,6 +4994,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01682074,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 5495,
+                "thinkingTokens": 1002,
+                "cacheReadInputTokens": 570224,
+                "cacheCreationInputTokens": 41843,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 41843,
+                "webSearchRequests": 0,
+                "costUSD": 0.01682074
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2600,6 +5032,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04612079,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 18147,
+                "outputTokens": 18491,
+                "thinkingTokens": 9572,
+                "cacheReadInputTokens": 1206019,
+                "cacheCreationInputTokens": 65002,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 65002,
+                "webSearchRequests": 1,
+                "costUSD": 0.04612079
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2619,6 +5070,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.031483779999999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 13819,
+                "thinkingTokens": 6225,
+                "cacheReadInputTokens": 1273908,
+                "cacheCreationInputTokens": 59154,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 59154,
+                "webSearchRequests": 0,
+                "costUSD": 0.031483779999999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2638,6 +5108,25 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.039032870000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 42,
+                "outputTokens": 21477,
+                "thinkingTokens": 12373,
+                "cacheReadInputTokens": 1408097,
+                "cacheCreationInputTokens": 71046,
+                "cacheCreationEphemeral5mInputTokens": 0,
+                "cacheCreationEphemeral1hInputTokens": 71046,
+                "webSearchRequests": 0,
+                "costUSD": 0.039032870000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -2657,6 +5146,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02944021,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 44,
+                "outputTokens": 16356,
+                "thinkingTokens": 7032,
+                "cacheReadInputTokens": 1083661,
+                "cacheCreationInputTokens": 52106,
+                "webSearchRequests": 0,
+                "costUSD": 0.02944021
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": [
           {
             "model": "claude-haiku-5-5",
@@ -3513,6 +6019,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.015318790000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 5766,
+                "thinkingTokens": 972,
+                "cacheReadInputTokens": 529599,
+                "cacheCreationInputTokens": 35686,
+                "webSearchRequests": 0,
+                "costUSD": 0.015318790000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3532,6 +6055,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.024816659999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 16229,
+                "thinkingTokens": 8188,
+                "cacheReadInputTokens": 575616,
+                "cacheCreationInputTokens": 54718,
+                "webSearchRequests": 0,
+                "costUSD": 0.024816659999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3551,6 +6091,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01708705,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 8491,
+                "thinkingTokens": 2946,
+                "cacheReadInputTokens": 538955,
+                "cacheCreationInputTokens": 37247,
+                "webSearchRequests": 0,
+                "costUSD": 0.01708705
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3570,6 +6127,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 26,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.041004420000000014,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 52,
+                "outputTokens": 22736,
+                "thinkingTokens": 10779,
+                "cacheReadInputTokens": 1516882,
+                "cacheCreationInputTokens": 72312,
+                "webSearchRequests": 0,
+                "costUSD": 0.041004420000000014
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3589,6 +6163,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.014510760000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5663,
+                "thinkingTokens": 1953,
+                "cacheReadInputTokens": 449606,
+                "cacheCreationInputTokens": 35905,
+                "webSearchRequests": 0,
+                "costUSD": 0.014510760000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3608,6 +6199,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01782193,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 7687,
+                "thinkingTokens": 1713,
+                "cacheReadInputTokens": 545343,
+                "cacheCreationInputTokens": 42613,
+                "webSearchRequests": 0,
+                "costUSD": 0.01782193
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3627,6 +6235,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 6,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.00841579,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 12,
+                "outputTokens": 2783,
+                "thinkingTokens": 426,
+                "cacheReadInputTokens": 197509,
+                "cacheCreationInputTokens": 25240,
+                "webSearchRequests": 0,
+                "costUSD": 0.00841579
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3646,6 +6271,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.016425380000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 7792,
+                "thinkingTokens": 2216,
+                "cacheReadInputTokens": 549678,
+                "cacheCreationInputTokens": 35149,
+                "webSearchRequests": 0,
+                "costUSD": 0.016425380000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3665,6 +6307,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01706707,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 7050,
+                "thinkingTokens": 2179,
+                "cacheReadInputTokens": 637707,
+                "cacheCreationInputTokens": 35809,
+                "webSearchRequests": 0,
+                "costUSD": 0.01706707
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3684,6 +6343,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01400937,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5684,
+                "thinkingTokens": 1525,
+                "cacheReadInputTokens": 434897,
+                "cacheCreationInputTokens": 34081,
+                "webSearchRequests": 0,
+                "costUSD": 0.01400937
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3703,6 +6379,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 29,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04910785,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 58,
+                "outputTokens": 33646,
+                "thinkingTokens": 18332,
+                "cacheReadInputTokens": 1797905,
+                "cacheCreationInputTokens": 71500,
+                "webSearchRequests": 0,
+                "costUSD": 0.04910785
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3722,6 +6415,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03374929000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 22659,
+                "thinkingTokens": 14044,
+                "cacheReadInputTokens": 1017839,
+                "cacheCreationInputTokens": 61188,
+                "webSearchRequests": 0,
+                "costUSD": 0.03374929000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3741,6 +6451,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 27,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.038170279999999994,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 54,
+                "outputTokens": 22203,
+                "thinkingTokens": 10506,
+                "cacheReadInputTokens": 1468338,
+                "cacheCreationInputTokens": 61900,
+                "webSearchRequests": 0,
+                "costUSD": 0.038170279999999994
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3760,6 +6487,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 50,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.31831162,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 100,
+                "outputTokens": 71904,
+                "thinkingTokens": 47131,
+                "cacheReadInputTokens": 4764054,
+                "cacheCreationInputTokens": 127974,
+                "webSearchRequests": 0,
+                "costUSD": 0.31831162
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3779,6 +6523,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 20,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.027082000000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 13674,
+                "thinkingTokens": 6659,
+                "cacheReadInputTokens": 978160,
+                "cacheCreationInputTokens": 52297,
+                "webSearchRequests": 0,
+                "costUSD": 0.027082000000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3798,6 +6559,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.029623920000000005,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 18409,
+                "thinkingTokens": 8611,
+                "cacheReadInputTokens": 883822,
+                "cacheCreationInputTokens": 57889,
+                "webSearchRequests": 0,
+                "costUSD": 0.029623920000000005
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3817,6 +6595,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.028130610000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 15720,
+                "thinkingTokens": 8094,
+                "cacheReadInputTokens": 928881,
+                "cacheCreationInputTokens": 54891,
+                "webSearchRequests": 0,
+                "costUSD": 0.028130610000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3836,6 +6631,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01629559,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 7606,
+                "thinkingTokens": 2145,
+                "cacheReadInputTokens": 527779,
+                "cacheCreationInputTokens": 36061,
+                "webSearchRequests": 0,
+                "costUSD": 0.01629559
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3855,6 +6667,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01540923,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 8495,
+                "thinkingTokens": 2749,
+                "cacheReadInputTokens": 385513,
+                "cacheCreationInputTokens": 36523,
+                "webSearchRequests": 0,
+                "costUSD": 0.01540923
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3874,6 +6703,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 27,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03893266000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 54,
+                "outputTokens": 23885,
+                "thinkingTokens": 10173,
+                "cacheReadInputTokens": 1529596,
+                "cacheCreationInputTokens": 58444,
+                "webSearchRequests": 0,
+                "costUSD": 0.03893266000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3893,6 +6739,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02660934,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 42,
+                "outputTokens": 13724,
+                "thinkingTokens": 5308,
+                "cacheReadInputTokens": 1022174,
+                "cacheCreationInputTokens": 47607,
+                "webSearchRequests": 0,
+                "costUSD": 0.02660934
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3912,6 +6775,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02245401,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 11639,
+                "thinkingTokens": 5173,
+                "cacheReadInputTokens": 783811,
+                "cacheCreationInputTokens": 43964,
+                "webSearchRequests": 0,
+                "costUSD": 0.02245401
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3931,6 +6811,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02313376,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 12270,
+                "thinkingTokens": 4769,
+                "cacheReadInputTokens": 778816,
+                "cacheCreationInputTokens": 46037,
+                "webSearchRequests": 0,
+                "costUSD": 0.02313376
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3950,6 +6847,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.016215010000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 7081,
+                "thinkingTokens": 2140,
+                "cacheReadInputTokens": 560131,
+                "cacheCreationInputTokens": 35352,
+                "webSearchRequests": 0,
+                "costUSD": 0.016215010000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3969,6 +6883,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 19,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02659617,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 38,
+                "outputTokens": 15874,
+                "thinkingTokens": 9034,
+                "cacheReadInputTokens": 919737,
+                "cacheCreationInputTokens": 47290,
+                "webSearchRequests": 0,
+                "costUSD": 0.02659617
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -3988,6 +6919,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.021010349999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 10912,
+                "thinkingTokens": 4185,
+                "cacheReadInputTokens": 673875,
+                "cacheCreationInputTokens": 44063,
+                "webSearchRequests": 0,
+                "costUSD": 0.021010349999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4007,6 +6955,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 23,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.032749629999999995,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 46,
+                "outputTokens": 17784,
+                "thinkingTokens": 6738,
+                "cacheReadInputTokens": 1221883,
+                "cacheCreationInputTokens": 58171,
+                "webSearchRequests": 0,
+                "costUSD": 0.032749629999999995
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4026,6 +6991,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.017123120000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 8565,
+                "thinkingTokens": 3176,
+                "cacheReadInputTokens": 499842,
+                "cacheCreationInputTokens": 39199,
+                "webSearchRequests": 0,
+                "costUSD": 0.017123120000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4045,6 +7027,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 11,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013300980000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 22,
+                "outputTokens": 5088,
+                "thinkingTokens": 1322,
+                "cacheReadInputTokens": 420518,
+                "cacheCreationInputTokens": 32748,
+                "webSearchRequests": 0,
+                "costUSD": 0.013300980000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4064,6 +7063,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.018335810000000004,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 10295,
+                "thinkingTokens": 4423,
+                "cacheReadInputTokens": 571611,
+                "cacheCreationInputTokens": 37347,
+                "webSearchRequests": 0,
+                "costUSD": 0.018335810000000004
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4083,6 +7099,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.016681940000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 6518,
+                "thinkingTokens": 1713,
+                "cacheReadInputTokens": 584914,
+                "cacheCreationInputTokens": 37855,
+                "webSearchRequests": 0,
+                "costUSD": 0.016681940000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4102,6 +7135,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02687241,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 17616,
+                "thinkingTokens": 9792,
+                "cacheReadInputTokens": 750441,
+                "cacheCreationInputTokens": 52785,
+                "webSearchRequests": 0,
+                "costUSD": 0.02687241
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4121,6 +7171,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 21,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02342898,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 42,
+                "outputTokens": 10457,
+                "thinkingTokens": 4028,
+                "cacheReadInputTokens": 945868,
+                "cacheCreationInputTokens": 43688,
+                "webSearchRequests": 0,
+                "costUSD": 0.02342898
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4140,6 +7207,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01586291,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 7790,
+                "thinkingTokens": 2973,
+                "cacheReadInputTokens": 480751,
+                "cacheCreationInputTokens": 35790,
+                "webSearchRequests": 0,
+                "costUSD": 0.01586291
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4159,6 +7243,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03452008,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 22975,
+                "thinkingTokens": 13477,
+                "cacheReadInputTokens": 1235878,
+                "cacheCreationInputTokens": 53345,
+                "webSearchRequests": 0,
+                "costUSD": 0.03452008
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4178,6 +7279,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 15,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.018923009999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 30,
+                "outputTokens": 6848,
+                "thinkingTokens": 1166,
+                "cacheReadInputTokens": 681461,
+                "cacheCreationInputTokens": 43407,
+                "webSearchRequests": 0,
+                "costUSD": 0.018923009999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4197,6 +7315,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 7,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013758610000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 14,
+                "outputTokens": 8517,
+                "thinkingTokens": 4299,
+                "cacheReadInputTokens": 258171,
+                "cacheCreationInputTokens": 34585,
+                "webSearchRequests": 0,
+                "costUSD": 0.013758610000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4216,6 +7351,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03190786999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 36,
+                "outputTokens": 21853,
+                "thinkingTokens": 13793,
+                "cacheReadInputTokens": 927317,
+                "cacheCreationInputTokens": 58523,
+                "webSearchRequests": 0,
+                "costUSD": 0.03190786999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4235,6 +7387,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 12,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013894150000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 24,
+                "outputTokens": 5202,
+                "thinkingTokens": 1347,
+                "cacheReadInputTokens": 474795,
+                "cacheCreationInputTokens": 32714,
+                "webSearchRequests": 0,
+                "costUSD": 0.013894150000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4254,6 +7423,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 62,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.32973811999999997,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 124,
+                "outputTokens": 70575,
+                "thinkingTokens": 42384,
+                "cacheReadInputTokens": 5659618,
+                "cacheCreationInputTokens": 122564,
+                "webSearchRequests": 0,
+                "costUSD": 0.32973811999999997
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4273,6 +7459,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.014445849999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 6226,
+                "thinkingTokens": 899,
+                "cacheReadInputTokens": 488265,
+                "cacheCreationInputTokens": 32238,
+                "webSearchRequests": 0,
+                "costUSD": 0.014445849999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4292,6 +7495,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01570096,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 5497,
+                "thinkingTokens": 576,
+                "cacheReadInputTokens": 634066,
+                "cacheCreationInputTokens": 33043,
+                "webSearchRequests": 0,
+                "costUSD": 0.01570096
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4311,6 +7531,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01615909,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 6039,
+                "thinkingTokens": 829,
+                "cacheReadInputTokens": 664159,
+                "cacheCreationInputTokens": 32473,
+                "webSearchRequests": 0,
+                "costUSD": 0.01615909
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4330,6 +7567,23 @@
         "terminal_notification": true,
         "matched_at_session_end": true,
         "call_count": 33,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04497337999999999,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 76,
+                "outputTokens": 22412,
+                "thinkingTokens": 10573,
+                "cacheReadInputTokens": 2088818,
+                "cacheCreationInputTokens": 64358,
+                "webSearchRequests": 0,
+                "costUSD": 0.04497337999999999
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4349,6 +7603,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 22,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.031239869999999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 17414,
+                "thinkingTokens": 6479,
+                "cacheReadInputTokens": 1171827,
+                "cacheCreationInputTokens": 54049,
+                "webSearchRequests": 0,
+                "costUSD": 0.031239869999999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4368,6 +7639,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 30,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.04972688000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 60,
+                "outputTokens": 28909,
+                "thinkingTokens": 13754,
+                "cacheReadInputTokens": 1980858,
+                "cacheCreationInputTokens": 77289,
+                "webSearchRequests": 0,
+                "costUSD": 0.04972688000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4387,6 +7675,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.019213940000000002,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 10572,
+                "thinkingTokens": 2912,
+                "cacheReadInputTokens": 564154,
+                "cacheCreationInputTokens": 41419,
+                "webSearchRequests": 0,
+                "costUSD": 0.019213940000000002
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4406,6 +7711,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 17,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01788273,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 34,
+                "outputTokens": 7945,
+                "thinkingTokens": 1513,
+                "cacheReadInputTokens": 685683,
+                "cacheCreationInputTokens": 35250,
+                "webSearchRequests": 0,
+                "costUSD": 0.01788273
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4425,6 +7747,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 27,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.031521429999999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 54,
+                "outputTokens": 16432,
+                "thinkingTokens": 6334,
+                "cacheReadInputTokens": 1337923,
+                "cacheCreationInputTokens": 49604,
+                "webSearchRequests": 0,
+                "costUSD": 0.031521429999999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4444,6 +7783,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 13,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01548488,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 26,
+                "outputTokens": 6879,
+                "thinkingTokens": 1603,
+                "cacheReadInputTokens": 513098,
+                "cacheCreationInputTokens": 34559,
+                "webSearchRequests": 0,
+                "costUSD": 0.01548488
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4463,6 +7819,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 10,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.013923640000000001,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 20,
+                "outputTokens": 6862,
+                "thinkingTokens": 2288,
+                "cacheReadInputTokens": 387684,
+                "cacheCreationInputTokens": 33069,
+                "webSearchRequests": 0,
+                "costUSD": 0.013923640000000001
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4482,6 +7855,23 @@
         "terminal_notification": true,
         "matched_at_session_end": true,
         "call_count": 18,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.017325040000000003,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 40,
+                "outputTokens": 5830,
+                "thinkingTokens": 568,
+                "cacheReadInputTokens": 738004,
+                "cacheCreationInputTokens": 35130,
+                "webSearchRequests": 0,
+                "costUSD": 0.017325040000000003
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4501,6 +7891,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 14,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01632337,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 28,
+                "outputTokens": 7860,
+                "thinkingTokens": 2298,
+                "cacheReadInputTokens": 558937,
+                "cacheCreationInputTokens": 34006,
+                "webSearchRequests": 0,
+                "costUSD": 0.01632337
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4520,6 +7927,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 8,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.01115943,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 16,
+                "outputTokens": 4478,
+                "thinkingTokens": 528,
+                "cacheReadInputTokens": 289783,
+                "cacheCreationInputTokens": 30105,
+                "webSearchRequests": 0,
+                "costUSD": 0.01115943
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4539,6 +7963,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 29,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.08866704499999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 70966,
+                "outputTokens": 36324,
+                "thinkingTokens": 15524,
+                "cacheReadInputTokens": 2032827,
+                "cacheCreationInputTokens": 137902,
+                "webSearchRequests": 2,
+                "costUSD": 0.08866704499999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4558,6 +7999,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 9,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.011474919999999998,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 18,
+                "outputTokens": 4208,
+                "thinkingTokens": 1075,
+                "cacheReadInputTokens": 331752,
+                "cacheCreationInputTokens": 30258,
+                "webSearchRequests": 0,
+                "costUSD": 0.011474919999999998
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4577,6 +8035,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 16,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.02464758,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 32,
+                "outputTokens": 13533,
+                "thinkingTokens": 6547,
+                "cacheReadInputTokens": 782848,
+                "cacheCreationInputTokens": 50247,
+                "webSearchRequests": 0,
+                "costUSD": 0.02464758
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4596,6 +8071,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 28,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.03242152,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 56,
+                "outputTokens": 16034,
+                "thinkingTokens": 6332,
+                "cacheReadInputTokens": 1412392,
+                "cacheCreationInputTokens": 51375,
+                "webSearchRequests": 0,
+                "costUSD": 0.03242152
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]
@@ -4615,6 +8107,23 @@
         "terminal_notification": false,
         "matched_at_session_end": true,
         "call_count": 24,
+        "cost_states": [
+          {
+            "totalCostUSD": 0.034242379999999996,
+            "modelUsage": {
+              "claude-haiku-5-5": {
+                "inputTokens": 48,
+                "outputTokens": 19533,
+                "thinkingTokens": 11802,
+                "cacheReadInputTokens": 1256468,
+                "cacheCreationInputTokens": 59532,
+                "webSearchRequests": 0,
+                "costUSD": 0.034242379999999996
+              }
+            },
+            "hasUnknownModelCost": false
+          }
+        ],
         "calls": []
       }
     ]

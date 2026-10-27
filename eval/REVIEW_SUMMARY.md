@@ -226,6 +226,11 @@ Evidence and per-call token/context metadata:
 No missing result events or missing dollar costs were reconstructed or invented.
 
 The session metadata contradicts the static environment document: A reports
-Claude Code 2.1.310, B/C 2.1.310–2.1.311, rather than 2.1.309. Models in these
-message logs are not equivalent to a `modelUsage` billing record. Calibration
-must report this comparability limitation before using A1 as a noise reference.
+Claude Code 2.1.310, B/C 2.1.310–2.1.311, rather than 2.1.309. The surviving session logs also contain cost-state records with modelUsage.
+The task-1 baseline cost-state reports claude-haiku-5-5, $0.02944021, and
+22 unique assistant calls (context sizes 32,289–63,442 tokens). Its aggregate
+usage matches the archived CSV: 52,150 input plus cache-write tokens,
+1,083,661 cache-read tokens, and 16,356 output tokens. Thus the recorded
+low task-1 cost is not explained by missing task-1 token usage. The audit JSON
+retains this billing evidence for comparison with calibration; no correction
+is applied to the frozen original CSVs.

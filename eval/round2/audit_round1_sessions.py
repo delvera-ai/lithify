@@ -30,6 +30,7 @@ def main() -> None:
                     continue
                 for session in directory.glob("*.jsonl"):
                     versions, models, calls = set(), set(), {}
+                    cost_states = []
                     last_user, last_assistant, matching_user = "", "", None
                     for line in session.open():
                         try:
@@ -38,6 +39,10 @@ def main() -> None:
                             continue
                         if event.get("version"):
                             versions.add(event["version"])
+                        if event.get("type") == "cost-state":
+                            cost_states.append(
+                                {key: event.get(key) for key in ("totalCostUSD", "modelUsage", "hasUnknownModelCost")}
+                            )
                         message = event.get("message") or {}
                         if event.get("type") == "user":
                             last_user = content_text(message.get("content"))
@@ -66,6 +71,7 @@ def main() -> None:
                                 "terminal_notification": matching_user.lstrip().startswith("<task-notification>"),
                                 "matched_at_session_end": last_assistant == final,
                                 "call_count": len(calls),
+                                "cost_states": cost_states,
                                 "calls": list(calls.values()) if task.name.startswith("01-") and "baseline" in arm.name else [],
                             }
                         )
