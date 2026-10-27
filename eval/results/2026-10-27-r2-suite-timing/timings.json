@@ -1,0 +1,32 @@
+[
+  {
+    "label": "isolated",
+    "base": "8c8d06264d320ff40fcbb0044ab1345e1994f2bb",
+    "suite_concurrency": 1,
+    "replicate_concurrency": 1,
+    "pipeline_concurrency": 4,
+    "executor_timeout_s": 900,
+    "returncode": 0,
+    "wall_s": 43.003,
+    "round1_range_s": [
+      60,
+      80
+    ],
+    "over_2x_upper_reference": false
+  },
+  {
+    "label": "planned-replicate-load",
+    "base": "8c8d06264d320ff40fcbb0044ab1345e1994f2bb",
+    "suite_concurrency": 1,
+    "replicate_concurrency": 1,
+    "pipeline_concurrency": 4,
+    "executor_timeout_s": 900,
+    "returncode": 0,
+    "wall_s": 42.442,
+    "round1_range_s": [
+      60,
+      80
+    ],
+    "over_2x_upper_reference": false
+  }
+]
