@@ -30,3 +30,11 @@ The subsequent all-rollout session audit found A actually ran Claude Code
 The owner-requested 2.1.309 pin is available, but it does not reproduce A's
 actual CLI version. Treat the calibration as a setup/cost measurement, not a
 valid replicate of A1. Ask before changing the noise plan.
+
+## Remaining tool versions
+
+Verified git 2.54.0, gh 2.90.0, and Codex 0.163.0 match the record.
+Antigravity is now 1.4.6 vs 1.4.3 (unused by the Claude calibration).
+The launch shell has Node 22.23.2 / npm 10.9.8 vs recorded Node 24.15.0 /
+npm 11.12.1; install a run-local Node/npm pin before calibration so npm-based
+Claude runs under the recorded runtime. Global tools remain unchanged.
