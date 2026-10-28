@@ -39,3 +39,4 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 | 2026-10-27 | 0 before A replicates | PR #31 durations and gzip export guards | zero live tokens | 0.0000 | 3.6681 | merged 89020d7 after green CI; fixture, demo, strict sim-sweep and plugin passed |
 | 2026-10-27 | 0 A replicate | A / r1-A-rep2 | 21/60 | 0.7704 | 4.4385 | interrupted unexpectedly at task 22; 21 outcomes retained; no paid restart |
 | 2026-10-28 | 0 interruption audit | A / r1-A-rep2 task 22 | no outcome | >= 0.00394290 estimated | >= 4.44244290 | one deduplicated billed response; second request unresolved; paid work held |
+| 2026-10-28 | 0 owner-requested recovery | A2 unresolved request hold | no outcome | 0.1000 reservation | 4.54244290 encumbered | reservation only; caps unchanged; actual unknown usage unresolved |

@@ -86,6 +86,8 @@ def post_summary(out: Path, states: list[dict], final_status: str) -> None:
         text += "\nPartial data: no noise floor is estimated.\n"
     text += "\nExplicit timeout 900 / concurrency 4; A arms sequential. Tripwires: $0.068 mean/task, 620s median wall. "
     text += "B has not started. Full report and raw redacted evidence: " + str(out.relative_to(ROOT))
+    if (out / "RECOVERY.json").exists():
+        text += "\nCost totals include the separately recorded $0.10 unresolved-request budget reservation, not observed spend.\n"
     report = out / "A_SUMMARY.md"
     report.write_text(text + "\n")
     require_redacted(out)
@@ -98,6 +100,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--python", type=Path, required=True)
     ap.add_argument("--product-commit", required=True)
+    ap.add_argument("--resume-a2", action="store_true", help="explicit owner-reviewed A2 recovery only")
     a = ap.parse_args()
     a.out = a.out.resolve()
     a.work = a.work.resolve()
@@ -130,7 +133,20 @@ def main() -> int:
     for replicate in range(2, 6):
         label = f"r1-A-rep{replicate}"
         run_dir = a.work / f"replay-r2-noise-verified-{label}"
-        if run_dir.exists():
+        recover = a.resume_a2 and replicate == 2
+        if recover:
+            recovery = json.loads((a.out / "RECOVERY.json").read_text())
+            checkpoint = run_dir / "progress.json"
+            assert hashlib.sha256(checkpoint.read_bytes()).hexdigest() == recovery["adjusted_progress_sha256"]
+            progress = json.loads(checkpoint.read_text())
+            rows = list(csv.DictReader((a.out / f"results-{label}.csv").open()))
+            assert progress["next_pos"] == recovery["resume_position"] == 22
+            assert len(rows) == len(progress["audit"]) == 21
+            assert [int(row["position"]) for row in rows] == list(range(1, 22))
+            assert abs(progress["run_cost"] - recovery["adjusted_run_cost_usd"]) < 1e-9
+            assert progress["run_cost"] < 3 and progress["run_cost"] / len(rows) <= 0.068
+            assert statistics.median(float(row["wall_s"]) for row in rows) <= 620
+        elif run_dir.exists():
             raise RuntimeError(f"existing run {label}: inspect progress; never restart silently")
         total = sum(spent(p) for p in (ROOT / "eval/results").glob("*-r2-*") if p.is_dir())
         if 30 - total < 3.5:
@@ -181,7 +197,10 @@ def main() -> int:
             "--product-commit",
             a.product_commit,
         ]
-        resumes = []
+        if recover:
+            command.append("--resume")
+        resumes_path = a.out / f"{label}-AUTO_RESUMES.json"
+        resumes = json.loads(resumes_path.read_text()) if resumes_path.exists() else []
         log_path = a.out / f"{label}.log"
         while True:
             update_ledger(summarize(a.out, label), "running; explicit $3/$30 caps and owner tripwires")
@@ -196,6 +215,8 @@ def main() -> int:
                     if "run total" in line:
                         update_ledger(summarize(a.out, label), "running; explicit $3/$30 caps and owner tripwires")
                 code = child.wait()
+            with (a.out / "CHILD_EXITS.jsonl").open("a") as exits:
+                exits.write(json.dumps({"label": label, "exit_code": code, "timestamp": datetime.now(UTC).isoformat()}) + "\n")
             summary = summarize(a.out, label)
             if code != 75:
                 break

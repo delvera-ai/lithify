@@ -1,0 +1,31 @@
+{
+  "authorized_at": "2026-10-28T06:46:39.732442+00:00",
+  "authorization": "Owner requested: Can you continue the execution where we left off",
+  "resume_position": 22,
+  "completed_tasks_retained": 21,
+  "known_interruption_cost_usd": 0.0039429,
+  "unknown_request_reservation_usd": 0.1,
+  "adjusted_run_cost_usd": 0.8743429,
+  "adjusted_progress_sha256": "466c2b83262462a573a9a3209ae3eb90f229077b74cf4b2ac0014d970193cbe4",
+  "original_checkpoint": "interruptions/r1-A-rep2/22-crash-audit/progress.json",
+  "local_scratch_archive": "recovery-20261028-A2-before-resume.tar.gz",
+  "local_scratch_archive_sha256": "caaafcdd8e0ccbc3195ed6fcd33768085b67ed8c70a05244ef4eafbde52339e6",
+  "reservation_basis": {
+    "model": "claude-haiku-5-5",
+    "max_output_tokens": 128000,
+    "previous_prompt_tokens": 32206,
+    "overcounted_added_event_utf8_bytes": 16431,
+    "conservative_prompt_bound": 48637,
+    "price_boundary_tokens": 100000,
+    "input_cost_upper_bound_usd": 0.009727399999999999,
+    "output_cost_upper_bound_usd": 0.064,
+    "notes": "Count added assistant/user/blob events including duplicates and metadata. Same request shape; all input pessimistically priced as one-hour cache writes. $0.10 holds more than reconstructed single-request maximum; actual bill remains unknown. Reservation is encumbered budget, not observed spend."
+  },
+  "phase_budget_encumbered_usd": 4.542442899999999,
+  "caps_unchanged": {
+    "run": 3,
+    "phase": 30,
+    "mean": 0.068,
+    "median_wall": 620
+  }
+}
