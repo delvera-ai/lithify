@@ -1,0 +1,104 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index cf7339cc1..f367cfe5c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -192,6 +192,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-162852-duckdb-snowflake-duckdb-s-list-c",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 55322,
++      "tokens_cached": 1028490,
++      "tokens_out": 21176,
++      "cost_usd": 0.0319,
++      "wall_s": 224.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..63d16758f 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1048,6 +1048,19 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return expr_sql
+ 
++    def list_sql(self, expression: exp.List) -> str:
++        if len(expression.expressions) == 1:
++            return self.sql(exp.ArrayAgg(this=expression.expressions[0]))
++        return self.function_fallback_sql(expression)
++
++    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
++        # DuckDB's LIST_DISTINCT drops NULLs (check_null=False), Snowflake's ARRAY_DISTINCT keeps them
++        if expression.args.get("check_null") is False:
++            return self.sql(
++                exp.ArrayCompact(this=exp.ArrayDistinct(this=expression.this, check_null=True))
++            )
++        return self.function_fallback_sql(expression)
++
+     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..9d1da95e9 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -138,6 +138,7 @@ class DuckDBParser(parser.Parser):
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(this=seq_get(args, 0), check_null=False),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..10321bbaa 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -2617,6 +2617,36 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_list_aggregates(self):
++        self.validate_all(
++            "SELECT LIST(x) FROM t",
++            write={
++                "duckdb": "SELECT LIST(x) FROM t",
++                "snowflake": "SELECT ARRAY_AGG(x) FROM t",
++            },
++        )
++        self.validate_all(
++            "SELECT LIST(DISTINCT x) FROM t",
++            write={
++                "duckdb": "SELECT LIST(DISTINCT x) FROM t",
++                "snowflake": "SELECT ARRAY_AGG(DISTINCT x) FROM t",
++            },
++        )
++        self.validate_all(
++            "SELECT LIST(x ORDER BY y) FROM t",
++            write={
++                "duckdb": "SELECT LIST(x ORDER BY y) FROM t",
++                "snowflake": "SELECT ARRAY_AGG(x) WITHIN GROUP (ORDER BY y) FROM t",
++            },
++        )
++        self.validate_all(
++            "SELECT LIST_DISTINCT(x) FROM t",
++            write={
++                "duckdb": "SELECT LIST_DISTINCT(x) FROM t",
++                "snowflake": "SELECT ARRAY_COMPACT(ARRAY_DISTINCT(x)) FROM t",
++            },
++        )
++
+     def test_approx_percentile(self):
+         self.validate_all(
+             "SELECT APPROX_QUANTILE(a, 0.5) FROM t",

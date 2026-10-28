@@ -1,0 +1,18 @@
+lithify ▸ 20261027-232448-oracle-dialect-json-table-fails  k=0 (override k=0) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✗ probe base-1: test=pass
+lithify ◂ delivered=False first_pass=False S=0.90 executions=1 role_sessions=0 tokens(in/cached/out)=38947/437700/9545 cost=$0.02
+{
+  "task_id": "20261027-232448-oracle-dialect-json-table-fails",
+  "k": 0,
+  "delivered": false,
+  "applied": false,
+  "first_pass": false,
+  "selected": "",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.9,
+  "executions": 1,
+  "role_sessions": 0
+}
+

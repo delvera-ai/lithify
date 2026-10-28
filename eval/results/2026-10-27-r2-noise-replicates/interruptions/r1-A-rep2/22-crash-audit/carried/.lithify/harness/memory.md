@@ -1,0 +1,1 @@
+- The project's checks run with `~/.cache/lithify-dev/r2-noise-scratch/env-sqlglot/bin/python -m pytest -q -p no:cacheprovider --color=no`.

@@ -1,0 +1,104 @@
+diff --git a/sqlglot/dialects/dialect.py b/sqlglot/dialects/dialect.py
+index 28eb67b6d..4d775e767 100644
+--- a/sqlglot/dialects/dialect.py
++++ b/sqlglot/dialects/dialect.py
+@@ -2431,9 +2431,7 @@ def groupconcat_sql(
+     if order and order.this:
+         this = order.this.pop()
+ 
+-    args = self.format_args(
+-        this, f"{separator}{on_overflow_sql}" if separator or on_overflow_sql else None
+-    )
++    args = self.format_args(this, separator or None) + on_overflow_sql
+ 
+     listagg: exp.Expr = exp.Anonymous(this=func_name, expressions=[args])
+ 
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index d3f2e99e2..1e6d334e2 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ 
+ from sqlglot import exp, generator, transforms
+ from sqlglot.dialects.dialect import (
++    groupconcat_sql,
+     no_ilike_sql,
+     rename_func,
+     strposition_sql,
+@@ -69,6 +70,7 @@ class OracleGenerator(generator.Generator):
+         ),
+         exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
+         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
++        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=None, on_overflow=True),
+         exp.ILike: no_ilike_sql,
+         exp.LogicalOr: rename_func("MAX"),
+         exp.LogicalAnd: rename_func("MIN"),
+diff --git a/sqlglot/parsers/oracle.py b/sqlglot/parsers/oracle.py
+index 169b1bcd7..4d5a2829c 100644
+--- a/sqlglot/parsers/oracle.py
++++ b/sqlglot/parsers/oracle.py
+@@ -56,6 +56,7 @@ class OracleParser(parser.Parser):
+         "JSON_ARRAY": lambda self: self._parse_oracle_json_array(),
+         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
+         "JSON_EXISTS": lambda self: self._parse_json_exists(),
++        "LISTAGG": lambda self: self._parse_oracle_listagg(),
+     }
+ 
+     PROPERTY_PARSERS = {
+@@ -122,6 +123,13 @@ class OracleParser(parser.Parser):
+             order=self._parse_order(),
+         )
+ 
++    def _parse_oracle_listagg(self) -> exp.GroupConcat:
++        listagg = self._parse_string_agg()
++        # Oracle's LISTAGG concatenates without a delimiter when none is given
++        if not listagg.args.get("separator"):
++            listagg.set("separator", exp.Literal.string(""))
++        return listagg
++
+     def _parse_json_array(self, expr_type: type[E], **kwargs) -> E:
+         return self.expression(
+             expr_type(
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index b2a361ec3..794d2be2f 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -375,6 +375,38 @@ class TestOracle(Validator):
+         self.validate_identity("L2_DISTANCE(x, y)")
+         self.validate_identity("BITMAP_OR_AGG(x)")
+ 
++    def test_listagg(self):
++        self.validate_identity(
++            "SELECT LISTAGG(last_name) WITHIN GROUP (ORDER BY last_name) FROM t",
++            "SELECT LISTAGG(last_name, '') WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ') WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '' ON OVERFLOW TRUNCATE WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++            "SELECT LISTAGG(last_name, '' ON OVERFLOW TRUNCATE WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...') WITHIN GROUP (ORDER BY last_name) FROM t",
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM t",
++        )
++        self.assertEqual(
++            parse_one(
++                "SELECT LISTAGG(last_name) WITHIN GROUP (ORDER BY last_name) FROM t", read="oracle"
++            ).sql("duckdb"),
++            "SELECT LISTAGG(last_name, '' ORDER BY last_name) FROM t",
++        )
++
+     def test_join_marker(self):
+         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
+ 

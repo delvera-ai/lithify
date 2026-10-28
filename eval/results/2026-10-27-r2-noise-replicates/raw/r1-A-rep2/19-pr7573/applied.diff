@@ -1,0 +1,71 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 28376b408..c3a52bff1 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -288,6 +288,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-225214-postgres-dialect-when-an-unnest",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 41558,
++      "tokens_cached": 1158354,
++      "tokens_out": 11111,
++      "cost_usd": 0.0254,
++      "wall_s": 1952.8,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..1ef26dcfe 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,7 +3203,8 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
+-                alias.append("columns", offset)
++                alias = alias.copy()
++                alias.append("columns", offset.copy())
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+             columns = alias.columns
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..7009726e0 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,5 @@
+ from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot.dialects.dialect import Dialect
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -1768,6 +1769,19 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+             with self.subTest(f"Testing PostgreSQL's advanced REVOKE statement: {sql}"):
+                 self.validate_identity(sql, check_command_warning=True)
+ 
++    def test_unnest_with_ordinality_render_is_stable(self):
++        unnest = self.parse_one(
++            "SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(col, ord)"
++        ).find(exp.Unnest)
++        generator = Dialect.get_or_raise("postgres").generator()
++
++        for _ in range(3):
++            self.assertEqual(
++                generator.sql(unnest),
++                "UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(col, ord)",
++            )
++        self.assertEqual(len(unnest.args["alias"].columns), 1)
++
+     def test_begin_transaction(self):
+         self.validate_all(
+             "BEGIN",

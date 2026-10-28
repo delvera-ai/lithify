@@ -1,0 +1,69 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261027-154910-oracle-dialect-support-the-optio",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 48818,
+      "tokens_cached": 997996,
+      "tokens_out": 14306,
+      "cost_usd": 0.0269,
+      "wall_s": 196.4,
+      "always_on_tokens": 165,
+      "stability_after": 0.2,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261027-155227-clickhouse-dialect-the-parametri",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 35658,
+      "tokens_cached": 527466,
+      "tokens_out": 5733,
+      "cost_usd": 0.0153,
+      "wall_s": 128.1,
+      "always_on_tokens": 165,
+      "stability_after": 0.4,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261027-155436-parser-add-a-safeguard-against-p",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 49636,
+      "tokens_cached": 813588,
+      "tokens_out": 14298,
+      "cost_usd": 0.0252,
+      "wall_s": 174.9,
+      "always_on_tokens": 165,
+      "stability_after": 0.6,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261027-155739-transpiling-duckdb-s-json-array",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 37705,
+      "tokens_cached": 409590,
+      "tokens_out": 7984,
+      "cost_usd": 0.0156,
+      "wall_s": 150.2,
+      "always_on_tokens": 165,
+      "stability_after": 0.8,
+      "feedback_failed": false
+    }
+  ]
+}

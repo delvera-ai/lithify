@@ -1,0 +1,21 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261027-154910-oracle-dialect-support-the-optio",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 48818,
+      "tokens_cached": 997996,
+      "tokens_out": 14306,
+      "cost_usd": 0.0269,
+      "wall_s": 196.4,
+      "always_on_tokens": 165,
+      "stability_after": 0.2,
+      "feedback_failed": false
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9783c9e8f..58e09bbcc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -160,6 +160,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-161909-optimizer-qualifying-a-table-fun",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33603,
++      "tokens_cached": 431088,
++      "tokens_out": 6494,
++      "cost_usd": 0.0143,
++      "wall_s": 189.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/qualify_tables.py b/sqlglot/optimizer/qualify_tables.py
+index ffd2c1dec..b8544f883 100644
+--- a/sqlglot/optimizer/qualify_tables.py
++++ b/sqlglot/optimizer/qualify_tables.py
+@@ -96,7 +96,7 @@ def qualify_tables(
+ 
+         alias.set("this", exp.to_identifier(new_alias_name))
+ 
+-        if columns:
++        if columns and not alias.columns:
+             alias.set("columns", [exp.to_identifier(c) for c in columns])
+ 
+         expression.set("alias", alias)
+diff --git a/tests/fixtures/optimizer/qualify_tables.sql b/tests/fixtures/optimizer/qualify_tables.sql
+index f5a22d423..10eb82cd5 100644
+--- a/tests/fixtures/optimizer/qualify_tables.sql
++++ b/tests/fixtures/optimizer/qualify_tables.sql
+@@ -281,3 +281,9 @@ SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
+ # canonicalize_table_aliases: true
+ SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+ SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g);
++
++# title: Qualify GENERATE_SERIES with typed column alias and canonicalize_table_aliases
++# dialect: postgres
++# canonicalize_table_aliases: true
++SELECT g FROM GENERATE_SERIES(1,2) AS t(g INT);
++SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g INT);

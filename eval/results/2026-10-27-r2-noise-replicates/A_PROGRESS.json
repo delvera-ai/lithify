@@ -1,0 +1,17 @@
+[
+  {
+    "label": "r1-A-rep2",
+    "status": "interrupted; paid work held pending billing reconciliation and owner recovery review",
+    "tasks": 21,
+    "passes": 14,
+    "timeouts": 0,
+    "completed_cost_usd": 0.7704,
+    "interrupted_known_cost_estimate_usd": 0.0039429,
+    "cost_usd": 0.7743429,
+    "cost_lower_bound": true,
+    "round2_cost_usd_lower_bound": 4.4424429,
+    "mean_completed_cost_usd": 0.03668571428571429,
+    "median_wall_s": 225.0,
+    "next_pos": 22
+  }
+]

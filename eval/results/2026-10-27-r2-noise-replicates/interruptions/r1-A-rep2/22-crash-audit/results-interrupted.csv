@@ -1,0 +1,2 @@
+replicate,position,task,outcome,cost_usd,cost_lower_bound,cost_basis
+r1-A-rep2,22,sqlglot#7585,crash-unrecorded,0.00394290,True,deduplicated observed response; pinned CLI local rate estimate; second request unresolved

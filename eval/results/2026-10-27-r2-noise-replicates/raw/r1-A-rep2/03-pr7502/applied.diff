@@ -1,0 +1,158 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 78740162b..99fdc6aaa 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -32,6 +32,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.4,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-155436-parser-add-a-safeguard-against-p",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 49636,
++      "tokens_cached": 813588,
++      "tokens_out": 14298,
++      "cost_usd": 0.0252,
++      "wall_s": 174.9,
++      "always_on_tokens": 165,
++      "stability_after": 0.6,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/_typing.py b/sqlglot/_typing.py
+index fe7e80ee3..578d6c262 100644
+--- a/sqlglot/_typing.py
++++ b/sqlglot/_typing.py
+@@ -29,6 +29,7 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
+     error_level: ErrorLevel | None
+     error_message_context: int
+     max_errors: int
++    max_nodes: int | None
+ 
+ 
+ class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 107ad1ec0..38d3f2851 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -291,12 +291,15 @@ class Parser:
+         max_errors: Maximum number of error messages to include in a raised ParseError.
+             This is only relevant if error_level is ErrorLevel.RAISE.
+             Default: 3
++        max_nodes: Maximum number of AST nodes that parsing may build. Exceeding it raises a ParseError.
++            Default: None (no limit)
+     """
+ 
+     __slots__ = (
+         "error_level",
+         "error_message_context",
+         "max_errors",
++        "max_nodes",
+         "dialect",
+         "sql",
+         "errors",
+@@ -307,6 +310,7 @@ class Parser:
+         "_prev",
+         "_prev_comments",
+         "_pipe_cte_counter",
++        "_node_count",
+         "_chunks",
+         "_chunk_index",
+         "_tokens_size",
+@@ -1826,10 +1830,12 @@ class Parser:
+         error_message_context: int = 100,
+         max_errors: int = 3,
+         dialect: DialectType = None,
++        max_nodes: int | None = None,
+     ):
+         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
+         self.error_message_context: int = error_message_context
+         self.max_errors: int = max_errors
++        self.max_nodes: int | None = max_nodes
+         self.dialect: t.Any = _resolve_dialect(dialect)
+         self.sql: str = ""
+         self.errors: list[ParseError] = []
+@@ -1841,6 +1847,7 @@ class Parser:
+         self._prev: Token = SENTINEL_NONE
+         self._prev_comments: list[str] = []
+         self._pipe_cte_counter: int = 0
++        self._node_count: i64 = 0
+         self._chunks: list[list[Token]] = []
+         self._chunk_index: i64 = 0
+ 
+@@ -1855,6 +1862,7 @@ class Parser:
+         self._prev = SENTINEL_NONE
+         self._prev_comments = []
+         self._pipe_cte_counter = 0
++        self._node_count = 0
+         self._chunks = []
+         self._chunk_index = 0
+ 
+@@ -2056,12 +2064,20 @@ class Parser:
+                 errors=merge_errors(self.errors),
+             )
+ 
++    def _check_max_nodes(self, node_count: int) -> None:
++        if self.max_nodes is not None and node_count > self.max_nodes:
++            raise ParseError(f"Maximum number of AST nodes ({self.max_nodes}) exceeded")
++
+     def expression(
+         self,
+         instance: E,
+         token: Token | None = None,
+         comments: list[str] | None = None,
+     ) -> E:
++        if self.max_nodes is not None:
++            self._node_count += 1
++            self._check_max_nodes(self._node_count)
++
+         if token:
+             instance.update_positions(token)
+         instance.add_comments(comments) if comments else self._add_comments(instance)
+@@ -2125,7 +2141,16 @@ class Parser:
+ 
+         self._chunks = chunks
+ 
+-        return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
++        expressions = self._parse_batch_statements(
++            parse_method=parse_method, sep_first_statement=False
++        )
++
++        # Nodes built without self.expression() (e.g. direct constructor calls) are only visible in the trees
++        if self.max_nodes is not None:
++            built = sum(1 for e in expressions if e for _ in e.walk(bfs=False))
++            self._check_max_nodes(max(built, self._node_count))
++
++        return expressions
+ 
+     def _warn_unsupported(self) -> None:
+         if self._tokens_size <= 1:
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index 321703828..425e0fa76 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -1084,3 +1084,18 @@ class TestParser(unittest.TestCase):
+         self.assertIsInstance(
+             parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
+         )
++
++    def test_max_nodes(self):
++        wide = "SELECT " + ", ".join(f"col{i}" for i in range(500)) + " FROM t"
++        node_count = sum(1 for _ in parse_one(wide).walk(bfs=False))
++
++        self.assertEqual(parse_one(wide, max_nodes=node_count).sql(), parse_one(wide).sql())
++        self.assertEqual(parse_one(wide, max_nodes=10**6).sql(), parse_one(wide).sql())
++
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one(wide, max_nodes=node_count - 1)
++
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one("SELECT a, b, c FROM t WHERE x IN (1, 2, 3, 4)", max_nodes=5)
++
++        self.assertEqual(len(parse("SELECT 1; SELECT 2", max_nodes=20)), 2)

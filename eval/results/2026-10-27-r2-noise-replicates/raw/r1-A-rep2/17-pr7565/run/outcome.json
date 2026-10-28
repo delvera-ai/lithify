@@ -1,0 +1,28 @@
+{
+  "task": "Oracle dialect: support `LISTAGG(expr, sep ON OVERFLOW TRUNCATE '...' [WITH|WITHOUT COUNT])` and `ON OVERFLOW ERROR`, e.g. `LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...')`. sqlglot already supports this clause for Snowflake; add it for Oracle so it parses and round-trips.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 58313,
+    "cached": 1622728,
+    "out": 18464,
+    "cost": 0.03711628000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

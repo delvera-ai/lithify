@@ -1,0 +1,1 @@
+2026-10-28: A2 wrapper disappeared during task 22; final summary/status not emitted. Retain 21 outcomes; archive partial paid usage separately, deduplicate assistant message IDs, and hold paid work pending reconciliation and recovery review. No automatic resume. See INTERRUPTION_REPORT.md.

@@ -1,0 +1,13 @@
+exit 1
+.......................................................................................................................................... [ 99%]
+.                                                                        [100%]
+=================================== FAILURES ===================================
+_______ TestDuckDB.test_duckdb [SELECT LIST_DISTINCT(col) -> snowflake] ________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT ARRAY_COMPACT(ARRAY_DISTINCT(col))' != 'SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))'
+E   - SELECT ARRAY_COMPACT(ARRAY_DISTINCT(col))
+E   + SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))
+=========================== short test summary info ============================
+SUBFAILED[SELECT LIST_DISTINCT(col) -> snowflake] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+1 failed, 139 passed, 2165 subtests passed in 0.88s

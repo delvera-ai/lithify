@@ -1,0 +1,51 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0fe7243a0..869acc319 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -112,6 +112,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261027-161028-exasol-dialect-exasol-allows-bot",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 28489,
++      "tokens_cached": 245491,
++      "tokens_out": 2891,
++      "cost_usd": 0.0096,
++      "wall_s": 126.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..3680095ec 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -21,6 +21,7 @@ class TestExasol(Validator):
+         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
+         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
+         self.validate_identity("SELECT FROM_POSIX_TIME(1234567890)")
++        self.validate_identity("SELECT 1 MINUS SELECT 2", "SELECT 1 EXCEPT SELECT 2")
+         self.validate_all(
+             "SELECT FROM_POSIX_TIME(col)",
+             read={

@@ -1,0 +1,1 @@
+DuckDB → Snowflake: DuckDB's `list(col)` aggregate and `list_distinct(col)` are not transpiled to Snowflake. Generate Snowflake's `ARRAY_AGG` for `list`, and its distinct-array function for `list_distinct`, preserving semantics: DuckDB's `list_distinct` drops NULLs, while Snowflake's array-distinct keeps them.

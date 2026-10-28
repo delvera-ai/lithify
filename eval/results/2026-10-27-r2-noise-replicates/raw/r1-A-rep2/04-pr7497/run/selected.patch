@@ -1,0 +1,45 @@
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..087d92ac2 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -923,6 +923,10 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
+ 
++    @unsupported_args("null_handling", "return_type", "strict")
++    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
++        return self.func("ARRAY_CONSTRUCT", *expression.expressions)
++
+     @unsupported_args("weight", "accuracy")
+     def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+         return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..a2910a2da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
+         ),
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..2b6234a75 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -85,6 +85,13 @@ class TestDuckDB(Validator):
+                 "postgres": UnsupportedError,
+             },
+         )
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++            },
++        )
+         self.validate_all(
+             "CAST(x AS UUID)",
+             write={

@@ -1,0 +1,120 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 846024106..d80778eb7 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,4 +1,21 @@
+ {
+   "consecutive_failures": 0,
+-  "history": []
++  "history": [
++    {
++      "task_id": "20261027-154910-oracle-dialect-support-the-optio",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 48818,
++      "tokens_cached": 997996,
++      "tokens_out": 14306,
++      "cost_usd": 0.0269,
++      "wall_s": 196.4,
++      "always_on_tokens": 165,
++      "stability_after": 0.2,
++      "feedback_failed": false
++    }
++  ]
+ }
+diff --git a/sqlglot/expressions/dml.py b/sqlglot/expressions/dml.py
+index ed5098322..a477fbca0 100644
+--- a/sqlglot/expressions/dml.py
++++ b/sqlglot/expressions/dml.py
+@@ -515,7 +515,7 @@ class Merge(Expression, DML):
+ 
+ 
+ class When(Expression):
+-    arg_types = {"matched": True, "source": False, "condition": False, "then": True}
++    arg_types = {"matched": True, "source": False, "condition": False, "then": True, "where": False}
+ 
+ 
+ class Whens(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index d9f08c480..d00b1c56b 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -320,6 +320,9 @@ class Generator:
+     # Whether MERGE ... WHEN MATCHED BY SOURCE is allowed
+     MATCHED_BY_SOURCE = True
+ 
++    # Whether MERGE ... WHEN [NOT] MATCHED THEN UPDATE/INSERT can have a trailing WHERE clause
++    MERGE_ACTION_WHERE = False
++
+     # Whether the INTERVAL expression works only with values like '1 day'
+     SINGLE_STRING_INTERVAL = False
+ 
+@@ -4461,7 +4464,13 @@ class Generator:
+ 
+         else:
+             then = self.sql(then_expression)
+-        return f"WHEN {matched}{source}{condition} THEN {then}"
++
++        where = self.sql(expression, "where")
++        if where and not self.MERGE_ACTION_WHERE:
++            self.unsupported("WHERE clause in MERGE WHEN actions is not supported.")
++            where = ""
++
++        return f"WHEN {matched}{source}{condition} THEN {then}{where}"
+ 
+     def whens_sql(self, expression: exp.Whens) -> str:
+         return self.expressions(expression, sep=" ", indent=False)
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index 6a14abe85..60ea1bd88 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -37,6 +37,7 @@ class OracleGenerator(generator.Generator):
+     SUPPORTS_WINDOW_EXCLUDE = True
+     QUERY_HINT_SEP = " "
+     SUPPORTS_DECODE_CASE = True
++    MERGE_ACTION_WHERE = True
+ 
+     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+ 
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 7bb9c36b6..8c85ab0c0 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8946,9 +8946,13 @@ class Parser:
+             else:
+                 then = self._parse_var_from_options(self.CONFLICT_ACTIONS)
+ 
++            where = self._parse_where() if isinstance(then, (exp.Insert, exp.Update)) else None
++
+             whens.append(
+                 self.expression(
+-                    exp.When(matched=matched, source=source, condition=condition, then=then)
++                    exp.When(
++                        matched=matched, source=source, condition=condition, then=then, where=where
++                    )
+                 )
+             )
+         return self.expression(exp.Whens(expressions=whens))
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 39f8289d4..6034b7535 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -971,3 +971,15 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
+             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view FOR EACH ROW BEGIN INSERT INTO employees (id, name, dept_id) VALUES (:NEW.id, :NEW.name, :NEW.dept_id) END",
+             check_command_warning=True,
+         )
++
++    def test_merge_where(self):
++        sql = "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v WHERE s.v > 0 WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v) WHERE s.v > 0"
++        self.validate_identity(sql)
++
++        expression = parse_one(sql, read="oracle")
++        with self.assertLogs("sqlglot", level="WARNING") as cm:
++            self.assertEqual(
++                expression.sql("duckdb"),
++                "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v)",
++            )
++        self.assertIn("WHERE clause in MERGE WHEN actions is not supported", cm.output[0])

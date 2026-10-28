@@ -1,0 +1,27 @@
+diff --git a/sqlglot/optimizer/qualify_tables.py b/sqlglot/optimizer/qualify_tables.py
+index ffd2c1dec..b8544f883 100644
+--- a/sqlglot/optimizer/qualify_tables.py
++++ b/sqlglot/optimizer/qualify_tables.py
+@@ -96,7 +96,7 @@ def qualify_tables(
+ 
+         alias.set("this", exp.to_identifier(new_alias_name))
+ 
+-        if columns:
++        if columns and not alias.columns:
+             alias.set("columns", [exp.to_identifier(c) for c in columns])
+ 
+         expression.set("alias", alias)
+diff --git a/tests/fixtures/optimizer/qualify_tables.sql b/tests/fixtures/optimizer/qualify_tables.sql
+index f5a22d423..10eb82cd5 100644
+--- a/tests/fixtures/optimizer/qualify_tables.sql
++++ b/tests/fixtures/optimizer/qualify_tables.sql
+@@ -281,3 +281,9 @@ SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
+ # canonicalize_table_aliases: true
+ SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
+ SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g);
++
++# title: Qualify GENERATE_SERIES with typed column alias and canonicalize_table_aliases
++# dialect: postgres
++# canonicalize_table_aliases: true
++SELECT g FROM GENERATE_SERIES(1,2) AS t(g INT);
++SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g INT);

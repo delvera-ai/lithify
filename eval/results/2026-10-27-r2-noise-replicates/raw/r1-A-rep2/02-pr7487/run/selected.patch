@@ -1,0 +1,29 @@
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..399a55592 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -124,6 +124,7 @@ AGG_FUNCTIONS = {
+     "topKWeighted",
+     "deltaSum",
+     "deltaSumTimestamp",
++    "groupConcat",
+     "groupArray",
+     "groupArrayLast",
+     "groupUniqArray",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..60bad476a 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1461,6 +1461,12 @@ LIFETIME(MIN 0 MAX 0)""",
+         self.validate_identity("SELECT approx_top_sum(N, reserved)(column, weight) FROM t").selects[
+             0
+         ].assert_is(exp.ParameterizedAgg)
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        ).selects[0].this.assert_is(exp.ParameterizedAgg)
++        self.validate_identity("SELECT groupConcat(part_name) FROM t").selects[0].assert_is(
++            exp.AnonymousAggFunc
++        )
+ 
+     def test_agg_functions_multiple_suffixes(self):
+         # Regression test: single-suffix
