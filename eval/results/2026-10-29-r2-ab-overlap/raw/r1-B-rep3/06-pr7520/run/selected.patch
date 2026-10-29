@@ -1,0 +1,28 @@
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..610b2e7ad 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,6 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
+     }
+ 
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..d03b51e5e 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -196,6 +196,11 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
+         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
+         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
++        self.validate_identity(
++            "ALTER TABLE t AUTO_INCREMENT 5",
++            "ALTER TABLE t AUTO_INCREMENT=5",
++        )
+         self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+         self.validate_identity(
+             "ALTER TABLE t RENAME KEY a TO b",

@@ -1,0 +1,78 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3f6d0f5e6..f28931640 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -560,6 +560,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-093456-duckdb-or-any-source-where-nulls",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 39568,
++      "tokens_cached": 456283,
++      "tokens_out": 12746,
++      "cost_usd": 0.0188,
++      "wall_s": 173.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..289cc8303 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,25 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        sort_key = expression.this
++
++                        # A projection alias is resolved to its expression so the null check
++                        # doesn't become an ambiguous bare column name in a multi-table FROM
++                        if (
++                            isinstance(window, exp.Select)
++                            and isinstance(sort_key, exp.Column)
++                            and not sort_key.table
++                        ):
++                            sort_key = next(
++                                (
++                                    p.this
++                                    for p in window.expressions
++                                    if isinstance(p, exp.Alias) and p.alias == sort_key.name
++                                ),
++                                sort_key,
++                            )
++
++                        this = f"CASE WHEN {self.sql(sort_key)} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..f57bfdcb1 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -155,6 +155,13 @@ class TestDuckDB(Validator):
+                 "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
+             },
+         )
++        self.validate_all(
++            "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "duckdb": "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY x",
++                "mysql": "SELECT a.x AS x, b.y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
+         self.validate_all(
+             "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+             write={

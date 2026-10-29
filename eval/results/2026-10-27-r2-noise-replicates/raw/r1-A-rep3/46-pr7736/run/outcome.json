@@ -1,0 +1,28 @@
+{
+  "task": "Lineage: further improve `lineage()` support for `UNPIVOT` (a follow-up to the initial UNPIVOT lineage support): lineage through `UNPIVOT` should be correct in more query shapes, including the name and value columns and the columns that pass through the unpivot unchanged.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 85160,
+    "cached": 3225081,
+    "out": 41574,
+    "cost": 0.07006080999999997,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

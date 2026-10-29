@@ -1,0 +1,28 @@
+{
+  "task": "Postgres dialect: `COMMENT ON` fails for schema-qualified targets of some object kinds:\n\n```python\nfrom sqlglot import parse\nfor sql in [\"COMMENT ON TYPE foo.mood IS 'x';\", \"COMMENT ON VIEW foo.bat IS 'x';\"]:\n    parse(sql, read=\"postgres\")   # fails\n```\n\n(`COMMENT ON TABLE foo.bar IS 'x'` works.) Support schema-qualified `COMMENT ON TYPE`, `VIEW`, `SEQUENCE` and `INDEX` so they parse and round-trip.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 34899,
+    "cached": 632338,
+    "out": 6296,
+    "cost": 0.01644798,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

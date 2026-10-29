@@ -1,0 +1,60 @@
+diff --git a/sqlglot/generators/clickhouse.py b/sqlglot/generators/clickhouse.py
+index eef1a97ad..0b09a8d9b 100644
+--- a/sqlglot/generators/clickhouse.py
++++ b/sqlglot/generators/clickhouse.py
+@@ -615,6 +615,11 @@ class ClickHouseGenerator(generator.Generator):
+     def nestedjsonselect_sql(self, expression: exp.NestedJSONSelect) -> str:
+         return f"{self.sql(expression, 'this')}.^{self.sql(expression, 'expression')}"
+ 
++    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
++        if separator := expression.args.get("separator"):
++            return self.func("groupConcat", separator) + f"({self.sql(expression, 'this')})"
++        return self.func("groupConcat", expression.this)
++
+     def is_sql(self, expression: exp.Is) -> str:
+         is_sql = super().is_sql(expression)
+ 
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..39aab5a47 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -364,6 +364,7 @@ class ClickHouseParser(parser.Parser):
+         "ARRAYJOIN": lambda self: self.expression(exp.Explode(this=self._parse_expression())),
+         "QUANTILE": lambda self: self._parse_quantile(),
+         "MEDIAN": lambda self: self._parse_quantile(),
++        "GROUPCONCAT": lambda self: self._parse_group_concat_parametric(),
+         "COLUMNS": lambda self: self._parse_columns(),
+         "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
+         "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
+@@ -736,6 +737,14 @@ class ClickHouseParser(parser.Parser):
+             return self.expression(exp.Quantile(this=params[0], quantile=this))
+         return self.expression(exp.Quantile(this=this, quantile=exp.Literal.number(0.5)))
+ 
++    # https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/groupconcat
++    def _parse_group_concat_parametric(self) -> exp.GroupConcat:
++        this = self._parse_lambda()
++        params = self._parse_func_params()
++        if params:
++            return self.expression(exp.GroupConcat(this=params[0], separator=this))
++        return self.expression(exp.GroupConcat(this=this))
++
+     def _parse_wrapped_id_vars(self, optional: bool = False) -> list[exp.Expr]:
+         return super()._parse_wrapped_id_vars(optional=True)
+ 
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..3914086d1 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -520,6 +520,12 @@ class TestClickhouse(Validator):
+                 "clickhouse": "SELECT quantileIf(0.5)(a, TRUE)",
+             },
+         )
++        self.validate_identity("SELECT groupConcat(', ')(part_name) AS concatenated FROM t")
++        self.validate_identity("SELECT groupConcat(part_name) FROM t")
++        self.validate_all(
++            "SELECT groupConcat(',')(x) FROM t",
++            read={"mysql": "SELECT GROUP_CONCAT(x SEPARATOR ',') FROM t"},
++        )
+         self.validate_identity(
+             "SELECT POSITION(needle IN haystack)", "SELECT POSITION(haystack, needle)"
+         )

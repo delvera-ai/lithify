@@ -1,0 +1,57 @@
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 2c8f9dfef..8e82e6cfc 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -3310,7 +3310,8 @@ class DuckDBGenerator(generator.Generator):
+ 
+     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+         arr = expression.this
+-        func = self.func("LIST_DISTINCT", arr)
++        # LIST_DISTINCT already drops NULLs, so an inner ArrayCompact is redundant
++        func = self.func("LIST_DISTINCT", arr.this if isinstance(arr, exp.ArrayCompact) else arr)
+ 
+         if expression.args.get("check_null"):
+             add_null_to_array = exp.func(
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..f90831043 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -133,11 +133,16 @@ class DuckDBParser(parser.Parser):
+         "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
++        "LIST": exp.ArrayAgg.from_arg_list,
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+         "LIST_CONCAT": parser.build_array_concat,
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        # LIST_DISTINCT drops NULLs, unlike ArrayDistinct which keeps them
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(
++            this=exp.ArrayCompact(this=seq_get(args, 0))
++        ),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..1df2705a1 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,17 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(x)",
++            write={"duckdb": "SELECT ARRAY_AGG(x)", "snowflake": "SELECT ARRAY_AGG(x)"},
++        )
++        self.validate_all(
++            "SELECT LIST_DISTINCT(x)",
++            write={
++                "duckdb": "SELECT LIST_DISTINCT(x)",
++                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(x))",
++            },
++        )
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

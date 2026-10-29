@@ -42,7 +42,10 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 | 2026-10-28 | 0 A replicate | A / r1-A-rep2 | 60/60 | 2.0841 | 5.7522 | completed |
 | 2026-10-28 | 0 A replicate | A / r1-A-rep3 | 60/60 | 2.0681 | 7.8203 | completed |
 | 2026-10-29 | 0 A replicate | A / r1-A-rep4 | 60/60 | 1.9010 | 9.7213 | completed |
-| 2026-10-29 | 0 A replicate | A / r1-A-rep5 | 35/60 | 0.9257 | 11.1604 | stopped exit 76; owner review |
 | 2026-10-29 | 0 B replicate | B / r1-B-rep2 | 3/60 | 0.5358 | 11.1828 | stopped; owner review; max two runs |
 | 2026-10-29 | 0 B replicate | B / r1-B-rep3 | 0/60 | 0.0000 | 11.1828 | stopped; owner review; max two runs |
 | 2026-10-29 | 0 A5 reconciliation | A / task35 rounding only | no new task | 0.00003272 | 11.18287562 | 25/25 requests matched; cumulative CLI estimate reconciled; timeout failure retained; owner requested resume36 only |
+| 2026-10-29 | 0 A replicate | A / r1-A-rep5 | 60/60 | 1.7010 | 11.9582 | completed; task35 timeout retained; billing reconciled |
+| 2026-10-29 | 0 B recovery | B / r1-B-rep2 | 60/60 | 2.2667 (2.8025 total) | 14.2249 | sequential recovery after A5; archived scratch; carry repaired 2→3 tasks; recovery posted on #29; completed 38 pass, 0 timeouts |
+| 2026-10-29 | 0 B replicate | B / r1-B-rep3 | 60/60 | 2.3232 | 16.5481 | fresh run, seed 3, after B2; completed 39 pass, 1 non-delivery, 0 timeouts |
+| 2026-10-29 | 0 analysis | reanalysis + power | zero tokens | 0.0000 | 16.5481 | `reanalysis.py` and `power.py` run; outputs in `eval/results/2026-10-29-r2-noise/`; REPORT.md and POWER.md written; Phase 1 not started |

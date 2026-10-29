@@ -1,0 +1,1 @@
+Oracle dialect: support `LISTAGG(expr, sep ON OVERFLOW TRUNCATE '...' [WITH|WITHOUT COUNT])` and `ON OVERFLOW ERROR`, e.g. `LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...')`. sqlglot already supports this clause for Snowflake; add it for Oracle so it parses and round-trips.

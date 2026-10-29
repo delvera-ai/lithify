@@ -1,0 +1,144 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..22388753f 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
+ from sqlglot import Schema, exp, maybe_parse
+ from sqlglot.errors import SqlglotError
+ from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
++from sqlglot.optimizer.qualify_columns import pivoted_source_name
+ from sqlglot.optimizer.scope import ScopeType
+ 
+ if t.TYPE_CHECKING:
+@@ -410,9 +411,8 @@ def to_node(
+             else:
+                 # The column is not in the pivot, so it must be an implicit column of the
+                 # pivoted source -- adapt column to be from the implicit pivoted source.
+-                pivot_parent = pivot.parent
+                 downstream_columns.append(
+-                    exp.column(c.this, table=pivot_parent.alias_or_name if pivot_parent else "")
++                    exp.column(c.this, table=pivoted_source_name(pivot, scope))
+                 )
+ 
+             for downstream_column in downstream_columns:
+@@ -471,20 +471,27 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
+-        unpivot_columns = [
+-            col
++        # UNPIVOT((v1, v2) FOR name IN ((a1, a2) AS 'x', (b1, b2) AS 'y')): the i-th value column
++        # is derived from the i-th column of every IN-list entry, and the name column from all of them
++        value_columns = [
++            v
++            for e in pivot.expressions
++            for v in (e.expressions if isinstance(e, exp.Tuple) else [e])
++        ]
++        in_entries = [
++            entry.this if isinstance(entry, exp.PivotAlias) else entry
+             for field in pivot.fields
+-            for e in field.expressions
+-            for col in e.find_all(exp.Column)
++            for entry in field.expressions
++        ]
++        in_columns = [
++            list(entry.expressions) if isinstance(entry, exp.Tuple) else [entry]
++            for entry in in_entries
+         ]
+-        for value_column in pivot.expressions:
+-            for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
++        for i, value_column in enumerate(value_columns):
++            mapping[value_column.name] = [cols[i] for cols in in_columns if i < len(cols)]
+         for field in pivot.fields:
+             if isinstance(field, exp.In):
+-                mapping[field.this.name] = unpivot_columns
++                mapping[field.this.name] = [col for cols in in_columns for col in cols]
+ 
+         return mapping
+ 
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index e9e40c61a..e3b4428bd 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -639,12 +639,28 @@ def _qualify_columns(
+ 
+     for pivot in scope.pivots:
+         for column in pivot.find_all(exp.Column):
+-            if not column.table and column.name in resolver.all_columns:
+-                table = resolver.get_table(column.name)
++            if not column.table:
++                table = (
++                    resolver.get_table(column.name) if column.name in resolver.all_columns else None
++                )
++                if not table and pivot.parent:
++                    # The pivot's columns always come from the pivoted source itself, which the
++                    # resolver can miss e.g. for a CTE that is aliased and then unpivoted
++                    source_name = pivoted_source_name(pivot, scope)
++                    table = exp.to_identifier(source_name) if source_name else None
+                 if table:
+                     column.set("table", table)
+ 
+ 
++def pivoted_source_name(pivot: exp.Pivot, scope: Scope) -> str:
++    """The name under which the source of a (UN)PIVOT is found in the scope's sources."""
++    parent = pivot.parent
++    # A pivoted CTE reference is keyed by its CTE name in the scope, not by its alias
++    if parent and parent.name in scope.cte_sources:
++        return parent.name
++    return parent.alias_or_name if parent else ""
++
++
+ def _expand_struct_stars_no_parens(
+     expression: exp.Dot,
+ ) -> list[exp.Alias]:
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..45a36120b 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,43 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_with_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT id, k, v1, v2
++        FROM sales UNPIVOT ((v1, v2) FOR k IN ((a1, a2) AS 'x', (b1, b2) AS 'y'))
++        """
++        schema = {"sales": {"id": "int", "a1": "int", "a2": "int", "b1": "int", "b2": "int"}}
++
++        node = lineage("v1", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.A1", "SALES.B1"])
++
++        node = lineage("v2", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.A2", "SALES.B2"])
++
++        node = lineage("k", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            [d.name for d in node.downstream], ["SALES.A1", "SALES.A2", "SALES.B1", "SALES.B2"]
++        )
++
++    def test_unpivot_with_aliased_cte(self) -> None:
++        sql = """
++        WITH src AS (
++          SELECT id, jan, feb FROM sales
++        )
++        SELECT id, score
++        FROM src AS s UNPIVOT (score FOR metric_name IN (jan, feb)) AS u
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
++        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(node.downstream[0].name, "SRC.ID")
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

@@ -1,0 +1,28 @@
+{
+  "task": "DuckDB dialect: overloaded `MACRO` definitions fail to parse:\n\n```python\nimport sqlglot\nsqlglot.parse_one(\"CREATE OR REPLACE MACRO add_2(a, b) AS a + b;\", dialect=\"duckdb\")   # OK\nsqlglot.parse_one('''\nCREATE MACRO add_x\n    (a, b) AS a + b,\n    (a, b, c) AS a + b + c;''', read=\"duckdb\")                                        # fails\n```\n\nSupport DuckDB's overloaded macro syntax (several parameter lists, each with its own body, for scalar and table macros), round-tripping in DuckDB. (Stated requirement: the overloads are represented by an `exp.MacroOverloads` node holding one entry per overload.)",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 74438,
+    "cached": 2088693,
+    "out": 32388,
+    "cost": 0.05196132999999999,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

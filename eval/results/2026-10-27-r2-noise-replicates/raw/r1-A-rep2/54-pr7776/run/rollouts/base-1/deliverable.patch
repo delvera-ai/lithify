@@ -1,0 +1,55 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index f6f513435..bd408172b 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3991,6 +3991,9 @@ class Generator:
+         zone = self.sql(expression, "zone")
+         return f"{this} AT TIME ZONE {zone} AT TIME ZONE 'UTC'"
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
++
+     def add_sql(self, expression: exp.Add) -> str:
+         return self.binary(expression, "+")
+ 
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index c6ec1f9a9..b8982a44b 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2676,9 +2676,6 @@ class DuckDBGenerator(generator.Generator):
+         )
+         return self.function_fallback_sql(expression)
+ 
+-    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+-        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+-
+     def strposition_sql(self, expression: exp.StrPosition) -> str:
+         this = expression.this
+         substr = expression.args.get("substr")
+diff --git a/sqlglot/generators/presto.py b/sqlglot/generators/presto.py
+index 2664451cb..29855bad0 100644
+--- a/sqlglot/generators/presto.py
++++ b/sqlglot/generators/presto.py
+@@ -488,6 +488,9 @@ class PrestoGenerator(generator.Generator):
+ 
+         return self.function_fallback_sql(expression)
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.function_fallback_sql(expression)
++
+     def md5_sql(self, expression: exp.MD5) -> str:
+         this = expression.this
+ 
+diff --git a/tests/dialects/test_presto.py b/tests/dialects/test_presto.py
+index 3aa75f2e8..e1ebb51fd 100644
+--- a/tests/dialects/test_presto.py
++++ b/tests/dialects/test_presto.py
+@@ -38,6 +38,8 @@ class TestPresto(Validator):
+             write={
+                 "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+                 "presto": "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
++                "snowflake": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
++                "bigquery": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMP)",
+             },
+         )
+         self.validate_all(

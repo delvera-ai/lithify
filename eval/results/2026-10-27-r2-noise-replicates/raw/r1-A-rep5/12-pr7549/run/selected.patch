@@ -1,0 +1,82 @@
+diff --git a/sqlglot/optimizer/annotate_types.py b/sqlglot/optimizer/annotate_types.py
+index 5d6b2b47a..d936d6cee 100644
+--- a/sqlglot/optimizer/annotate_types.py
++++ b/sqlglot/optimizer/annotate_types.py
+@@ -289,7 +289,7 @@ class TypeAnnotator:
+ 
+                     if isinstance(expression, exp.Lateral):
+                         if isinstance(expression.this, exp.Explode):
+-                            values = [expression.this.this]
++                            values = [expression.this]
+                     elif isinstance(expression, exp.Unnest):
+                         values = [expression]
+                     elif not isinstance(expression, exp.TableFromRows):
+@@ -776,7 +776,9 @@ class TypeAnnotator:
+         return expression
+ 
+     def _annotate_explode(self, expression: exp.Explode) -> exp.Explode:
+-        self._set_type(expression, seq_get(expression.this.type.expressions, 0))
++        this_type = expression.this.type
++        element_type = seq_get(this_type.expressions, 0)
++        self._set_type(expression, this_type if element_type is None else element_type)
+         return expression
+ 
+     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..f2ace1c80 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -560,6 +560,22 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+ 
+         column_table: str | exp.Identifier | None = column.table
+         dot_parts = column.meta.pop("dot_parts", [])
++
++        # e.g. `LATERAL VIEW EXPLODE(items) ci AS ci`: `ci.name` is the exploded column `ci` followed by
++        # the struct field `name`, since the `ci` table alias has no `name` column
++        source = scope.sources.get(column_table) if column_table else None
++        if (
++            isinstance(source, Scope)
++            and isinstance(source.expression, exp.Lateral)
++            and column.name not in resolver.get_source_columns(column_table)
++            and column_table in resolver.get_source_columns(column_table)
++        ):
++            column.replace(
++                exp.Dot.build([exp.column(column_table, table=column_table), column.this])
++            )
++            converted = True
++            continue
++
+         if (
+             column_table
+             and column_table not in scope.sources
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..efe59c396 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1341,6 +1341,26 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_struct_field_access(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++
++        for sql, expected in (
++            (
++                "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
++                "SELECT `ci`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++            ),
++            (
++                "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) t AS ci",
++                "SELECT `t`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) t AS `ci`",
++            ),
++        ):
++            with self.subTest(sql):
++                optimized = optimizer.optimize(
++                    parse_one(sql, read="spark"), schema=schema, dialect="spark"
++                )
++                self.assertEqual(optimized.sql("spark"), expected)
++                self.assertEqual(optimized.selects[0].type.this, exp.DataType.Type.TEXT)
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

@@ -1,0 +1,85 @@
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 9576a1aa0..2a7009e16 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -61,6 +61,10 @@ class Create(Expression, DDL):
+         return kind and kind.upper()
+ 
+ 
++class EnumType(Expression):
++    arg_types = {"expressions": True}
++
++
+ class SequenceProperties(Expression):
+     arg_types = {
+         "increment": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd0ec288b..f71aa7b20 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3205,6 +3205,9 @@ class Generator:
+ 
+         return sql
+ 
++    def enumtype_sql(self, expression: exp.EnumType) -> str:
++        return f"ENUM ({self.expressions(expression, flat=True)})"
++
+     def schema_sql(self, expression: exp.Schema) -> str:
+         this = self.sql(expression, "this")
+         sql = self.schema_columns_sql(expression)
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 787be573d..b91617057 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -2369,6 +2369,9 @@ class Parser:
+         properties = None
+         create_token = self._match_set(self.CREATABLES) and self._prev
+ 
++        if not create_token and self._match_text_seq("TYPE"):
++            create_token = self._prev
++
+         if not create_token:
+             # exp.Properties.Location.POST_CREATE
+             properties = self._parse_properties()
+@@ -2435,6 +2438,16 @@ class Parser:
+                 anonymous = True
+ 
+             this = self._parse_index(index=index, anonymous=anonymous)
++        elif create_token.text.upper() == "TYPE":
++            this = self._parse_table_parts()
++
++            if self._match(TokenType.ALIAS):
++                if self._match(TokenType.ENUM):
++                    expression = self.expression(
++                        exp.EnumType(expressions=self._parse_wrapped_csv(self._parse_string))
++                    )
++                else:
++                    expression = self._try_parse(self._parse_schema)
+         elif (
+             create_token_type == TokenType.CONSTRAINT and self._match(TokenType.TRIGGER)
+         ) or create_token_type == TokenType.TRIGGER:
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 420db449b..0f9b85b34 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1683,6 +1683,20 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+         _validate_udt('CAST(5 AS MySchema."MyType")')
+         _validate_udt('CAST(5 AS "MyCatalog"."MySchema"."MyType")')
+ 
++    def test_create_type(self):
++        self.validate_identity("CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')")
++        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok', 'happy')")
++        self.validate_identity("CREATE TYPE complex AS (r DOUBLE PRECISION, i DOUBLE PRECISION)")
++        self.validate_identity("CREATE TYPE shell_type")
++
++        self.assertIsInstance(
++            self.parse_one("CREATE TYPE book_type AS ENUM ('FICTION')").args["expression"],
++            exp.EnumType,
++        )
++        self.assertIsInstance(
++            self.parse_one("CREATE TYPE complex AS (r INT)").args["expression"], exp.Schema
++        )
++
+     def test_round(self):
+         self.validate_identity("ROUND(x)")
+         self.validate_identity("ROUND(x, y)")

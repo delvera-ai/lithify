@@ -1,0 +1,85 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3fb77ff19..779001fcb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -208,6 +208,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-171257-optimizer-select-from-cte-unpivo",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 107979,
++      "tokens_cached": 4302072,
++      "tokens_out": 45990,
++      "cost_usd": 0.1937,
++      "wall_s": 464.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index 1868c662f..0d3544b88 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -139,6 +139,10 @@ class Resolver:
+ 
+             source = self.scope.sources[name]
+ 
++            # A pivoted CTE reference is a Table whose columns are those of the CTE it refers to
++            if isinstance(source, exp.Table) and source.args.get("pivots"):
++                source = self.scope.cte_sources.get(source.name) or source
++
+             if isinstance(source, exp.Table):
+                 columns = self.schema.column_names(source, only_visible)
+             elif isinstance(source, Scope) and isinstance(
+diff --git a/sqlglot/optimizer/scope.py b/sqlglot/optimizer/scope.py
+index 47e4ef798..224e8307f 100644
+--- a/sqlglot/optimizer/scope.py
++++ b/sqlglot/optimizer/scope.py
+@@ -586,6 +586,9 @@ class Scope:
+ 
+         for scope in self.traverse():
+             for _, source in scope.selected_sources.values():
++                # A pivoted CTE reference is a Table, but it still references the CTE's scope
++                if isinstance(source, exp.Table) and source.args.get("pivots"):
++                    source = scope.cte_sources.get(source.name) or source
+                 scope_ref_count[id(source)] += 1
+ 
+             for name in scope._semi_anti_join_tables:
+diff --git a/tests/fixtures/optimizer/optimizer.sql b/tests/fixtures/optimizer/optimizer.sql
+index 60ae89d49..6e56d10b3 100644
+--- a/tests/fixtures/optimizer/optimizer.sql
++++ b/tests/fixtures/optimizer/optimizer.sql
+@@ -775,6 +775,24 @@ UNPIVOT((`first_half_sales`, `second_half_sales`) FOR
+   )
+ ) AS `produce`;
+ 
++# title: unpivoted cte source, unpivot columns can't be qualified but the cte's columns can
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH `c` AS (
++  SELECT
++    `t`.`id` AS `id`,
++    `t`.`jan` AS `jan`,
++    `t`.`feb` AS `feb`
++  FROM `t` AS `t`
++)
++SELECT
++  `c`.`id` AS `id`,
++  `c`.`m` AS `m`,
++  `c`.`v` AS `v`
++FROM `c` AS `c`
++UNPIVOT(`v` FOR `m` IN (`c`.`jan`, `c`.`feb`)) AS `c`;
++
+ # title: quoting is preserved
+ # dialect: snowflake
+ with cte1("id", foo) as (select 1, 2) select "id" from cte1;

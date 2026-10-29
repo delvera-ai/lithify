@@ -1,0 +1,35 @@
+exit 1
+........F.......... [100%]
+=================================== FAILURES ===================================
+____________________ TestExasol.test_local_prefix_for_alias ____________________
+
+self = <tests.dialects.test_exasol.TestExasol testMethod=test_local_prefix_for_alias>
+
+    def test_local_prefix_for_alias(self):
+        self.validate_identity(
+            'SELECT ID FROM local WHERE "LOCAL".ID IS NULL',
+            'SELECT ID FROM "LOCAL" WHERE "LOCAL".ID IS NULL',
+        )
+        self.validate_identity(
+            'SELECT YEAR(a_date) AS "a_year" FROM MY_SUMMARY_TABLE GROUP BY LOCAL."a_year"',
+        )
+        self.validate_identity(
+            'SELECT a_year AS a_year FROM "LOCAL" GROUP BY "LOCAL".a_year',
+        )
+>       self.validate_identity(
+            "SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE a_year > 2020",
+            "SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.A_YEAR > 2020",
+        )
+
+tests/dialects/test_exasol.py:823: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.A_YEAR > 2020' != 'SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.a_year > 2020'
+E   - SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.A_YEAR > 2020
+E   ?                                                         ^ ^^^^
+E   + SELECT YEAR(a_date) AS A_YEAR FROM my_table WHERE LOCAL.a_year > 2020
+E   ?                                                         ^ ^^^^
+=========================== short test summary info ============================
+FAILED tests/dialects/test_exasol.py::TestExasol::test_local_prefix_for_alias
+1 failed, 18 passed, 557 subtests passed in 0.40s

@@ -1,0 +1,56 @@
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_databricks.py b/tests/dialects/test_databricks.py
+index 3d4a6bb54..2ba7fab93 100644
+--- a/tests/dialects/test_databricks.py
++++ b/tests/dialects/test_databricks.py
+@@ -8,6 +8,10 @@ class TestDatabricks(Validator):
+ 
+     def test_databricks(self):
+         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
++        self.validate_all(
++            "CREATE TABLE t (a INT COMMENT 'Hello ''World!')",
++            write={"databricks": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')"},
++        )
+         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")
+         self.validate_identity("SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)")
+         self.validate_identity("SELECT COSH(1.5)")
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..a1488dcb1 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -383,6 +383,23 @@ class TestHive(Validator):
+             },
+         )
+ 
++    def test_doubled_quote_escape(self):
++        self.validate_all(
++            "CREATE TABLE t (a INT COMMENT 'Hello ''World!')",
++            write={
++                "hive": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "spark": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++                "databricks": "CREATE TABLE t (a INT COMMENT 'Hello \\'World!')",
++            },
++        )
++        self.validate_all(
++            "SELECT 'a''b', 'a\\'b'",
++            write={
++                "hive": "SELECT 'a\\'b', 'a\\'b'",
++                "spark": "SELECT 'a\\'b', 'a\\'b'",
++            },
++        )
++
+     def test_time(self):
+         self.validate_all(
+             "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000",

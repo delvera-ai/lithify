@@ -1,0 +1,31 @@
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index c19a6c8e4..962179162 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1027,6 +1027,10 @@ class SnowflakeParser(parser.Parser):
+ 
+         return self.expression(exp.RowAccessProperty(this=policy, expressions=expressions))
+ 
++    def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
++        # Snowflake allows KEY=VALUE properties between the table name and its column definitions
++        return super()._parse_property_before() or self._try_parse(self._parse_property)
++
+     def _parse_create(self) -> exp.Create | exp.Command:
+         expression = super()._parse_create()
+         if isinstance(expression, exp.Create) and expression.kind in self.NON_TABLE_CREATABLES:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 0757d1a12..2d4dd5b4f 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -4258,6 +4258,11 @@ class TestSnowflake(Validator):
+                 )
+ 
+         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
++        self.validate_identity(
++            "CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)",
++            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE",
++        )
++        self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
+         self.validate_identity("USE SECONDARY ROLES ALL")
+         self.validate_identity("USE SECONDARY ROLES NONE")
+         self.validate_identity("USE SECONDARY ROLES a, b, c")

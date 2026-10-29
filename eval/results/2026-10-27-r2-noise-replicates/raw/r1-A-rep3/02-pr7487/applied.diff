@@ -1,0 +1,57 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9b004ac2a..9f7e9ce8c 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -16,6 +16,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.2,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-110559-clickhouse-dialect-the-parametri",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 38483,
++      "tokens_cached": 709204,
++      "tokens_out": 7916,
++      "cost_usd": 0.0187,
++      "wall_s": 136.4,
++      "always_on_tokens": 165,
++      "stability_after": 0.4,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..033382ee0 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -94,6 +94,7 @@ AGG_FUNCTIONS = {
+     "sum",
+     "avg",
+     "any",
++    "groupConcat",
+     "stddevPop",
+     "stddevSamp",
+     "varPop",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..26b89da4e 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1462,6 +1462,13 @@ LIFETIME(MIN 0 MAX 0)""",
+             0
+         ].assert_is(exp.ParameterizedAgg)
+ 
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        ).selects[0].assert_is(exp.Alias)
++        self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts").selects[
++            0
++        ].assert_is(exp.ParameterizedAgg)
++
+     def test_agg_functions_multiple_suffixes(self):
+         # Regression test: single-suffix
+         self.validate_identity("SELECT uniqExactIf(x, y) FROM t").selects[0].assert_is(

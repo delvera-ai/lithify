@@ -1,0 +1,121 @@
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..f60032515 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        excluded_sources: frozenset[str] = frozenset(),
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -29,6 +35,7 @@ class Resolver:
+         self._unambiguous_columns: Mapping[str, str] | None = None
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
++        self._excluded_sources: frozenset[str] = excluded_sources
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+@@ -164,7 +171,9 @@ class Resolver:
+                     if not source_expr.type or source_expr.type.is_type(exp.DType.UNKNOWN):
+                         unnest_expr = seq_get(source_expr.expressions, 0)
+                         if isinstance(unnest_expr, exp.Column) and self.scope.parent:
+-                            col_type = self._get_unnest_column_type(unnest_expr, self.scope.parent)
++                            col_type = self._get_unnest_column_type(
++                                unnest_expr, self.scope.parent, name
++                            )
+                             if col_type and col_type.is_type(exp.DType.ARRAY):
+                                 element_types = col_type.expressions
+                                 if element_types:
+@@ -179,7 +188,7 @@ class Resolver:
+                     explode_col = source_expr.this.this
+ 
+                     if isinstance(explode_col, exp.Column) and source.parent:
+-                        col_type = self._get_unnest_column_type(explode_col, source.parent)
++                        col_type = self._get_unnest_column_type(explode_col, source.parent, name)
+                         columns.extend(self._struct_field_names(col_type))
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+@@ -221,6 +230,7 @@ class Resolver:
+                 for source_name, source in itertools.chain(
+                     self.scope.selected_sources.items(), self.scope.lateral_sources.items()
+                 )
++                if source_name not in self._excluded_sources
+             }
+         return self._source_columns
+ 
+@@ -360,13 +370,17 @@ class Resolver:
+             else []
+         )
+ 
+-    def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
++    def _get_unnest_column_type(
++        self, column: exp.Column, scope: Scope, source_name: str
++    ) -> exp.DataType | None:
+         """
+         Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
+ 
+         Args:
+             column: The column expression being unnested/exploded.
+             scope: The scope to resolve the column in.
++            source_name: The name of the unnest/lateral source that owns the column. It is excluded
++                when disambiguating the column, since its own columns can't feed its input.
+ 
+         Returns:
+             The DataType of the column, or None if not found.
+@@ -376,7 +390,12 @@ class Resolver:
+             table_name = column.table
+         else:
+             # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
++            parent_resolver = Resolver(
++                scope,
++                self.schema,
++                self._infer_schema,
++                excluded_sources=self._excluded_sources | {source_name},
++            )
+             table_identifier = parent_resolver.get_table(column)
+             if not table_identifier:
+                 return None
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..03b5fce2f 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -2472,6 +2472,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+             "ON `production_tier`.`timeline_date` = `timeline_date`",
+         )
+ 
++    def test_lateral_explode_unqualified_column_recursion(self):
++        sql = "SELECT x FROM t LATERAL VIEW EXPLODE(arr) e AS x"
++
++        # The table is absent from the schema, so `arr` can't be resolved, but qualification must
++        # still terminate with a regular error rather than recursing without bound
++        with self.assertRaisesRegex(OptimizeError, "Column 'arr' could not be resolved"):
++            optimizer.optimize(
++                parse_one(sql, read="spark"),
++                schema={"other": {"x": "int"}},
++                dialect="spark",
++            )
++
++        result = optimizer.optimize(
++            parse_one(sql, read="spark"),
++            schema={"t": {"arr": "array<int>"}},
++            dialect="spark",
++        )
++        self.assertEqual(
++            result.sql(dialect="spark"),
++            "SELECT `e`.`x` AS `x` FROM `t` AS `t` LATERAL VIEW EXPLODE(`t`.`arr`) e AS `x`",
++        )
++
+     def test_struct_field_case_sensitivity_annotation(self):
+         schema = {"t": {"struct_col": "STRUCT<fooBar STRING>"}}
+ 

@@ -1,0 +1,84 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index beba0e2cd..28215d198 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -560,6 +560,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-203129-duckdb-or-any-source-where-nulls",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 42962,
++      "tokens_cached": 1214580,
++      "tokens_out": 13087,
++      "cost_usd": 0.0273,
++      "wall_s": 2768.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..b351e0b7c 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,31 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = this
++
++                        # A bare column may be ambiguous across the joined sources, so reuse the
++                        # table qualifier of the projection it refers to
++                        select = expression.find_ancestor(exp.Select)
++                        if (
++                            isinstance(expression.this, exp.Column)
++                            and not expression.this.table
++                            and select
++                            and select.args.get("joins")
++                        ):
++                            projection = next(
++                                (
++                                    p.unalias()
++                                    for p in select.expressions
++                                    if isinstance(p.unalias(), exp.Column)
++                                    and p.unalias().table
++                                    and p.unalias().name == expression.this.name
++                                ),
++                                None,
++                            )
++                            if projection:
++                                null_check = self.sql(projection)
++
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..e25ecf7c0 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -155,6 +155,13 @@ class TestDuckDB(Validator):
+                 "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
+             },
+         )
++        self.validate_all(
++            "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "duckdb": "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY x",
++                "mysql": "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
+         self.validate_all(
+             "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+             write={

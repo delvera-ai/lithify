@@ -1,0 +1,35 @@
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..a1ddbd1a7 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -144,6 +144,18 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_minus(self):
++        self.validate_all(
++            "SELECT a FROM x EXCEPT SELECT a FROM y",
++            read={
++                "exasol": "SELECT a FROM x MINUS SELECT a FROM y",
++                "oracle": "SELECT a FROM x MINUS SELECT a FROM y",
++            },
++            write={
++                "exasol": "SELECT a FROM x EXCEPT SELECT a FROM y",
++            },
++        )
++
+     def test_bits(self):
+         self.validate_all(
+             "SELECT BIT_AND(x, 1)",

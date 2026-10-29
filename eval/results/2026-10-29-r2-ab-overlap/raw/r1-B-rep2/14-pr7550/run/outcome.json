@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer: `SELECT * FROM cte UNPIVOT(...)` does not qualify correctly in BigQuery and other dialects: column resolution for an unpivoted CTE does not see the CTE's columns. The value column(s) before `FOR` and the `FOR` name column in `UNPIVOT` are new output names, not references to existing columns; only the `IN (...)` items reference source columns. Make `qualify` handle `UNPIVOT` over CTE sources, e.g.:\n\n```sql\nWITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb))\n```",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 83500,
+    "cached": 3136911,
+    "out": 34535,
+    "cost": 0.06532761000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

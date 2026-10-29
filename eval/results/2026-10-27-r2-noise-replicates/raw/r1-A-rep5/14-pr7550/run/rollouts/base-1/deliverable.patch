@@ -1,0 +1,103 @@
+diff --git a/sqlglot/optimizer/eliminate_ctes.py b/sqlglot/optimizer/eliminate_ctes.py
+index 6821b4c3b..5119a8a61 100644
+--- a/sqlglot/optimizer/eliminate_ctes.py
++++ b/sqlglot/optimizer/eliminate_ctes.py
+@@ -46,8 +46,10 @@ def eliminate_ctes(expression: E) -> E:
+                         with_node.pop()
+ 
+                     # Decrement the ref count for all sources this CTE selects from
+-                    for _, source in scope.selected_sources.values():
++                    for node, source in scope.selected_sources.values():
+                         if isinstance(source, Scope):
+                             ref_count[id(source)] -= 1
++                        elif pivoted_cte := scope.pivoted_cte_scope(node):
++                            ref_count[id(pivoted_cte)] -= 1
+ 
+     return expression
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index 1868c662f..44386d161 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -139,6 +139,15 @@ class Resolver:
+ 
+             source = self.scope.sources[name]
+ 
++            if (
++                isinstance(source, exp.Table)
++                and source.args.get("pivots")
++                and not source.db
++                and source.name in self.scope.cte_sources
++            ):
++                # A pivoted CTE reference stays a Table source, so resolve its columns from the CTE
++                source = self.scope.cte_sources[source.name]
++
+             if isinstance(source, exp.Table):
+                 columns = self.schema.column_names(source, only_visible)
+             elif isinstance(source, Scope) and isinstance(
+diff --git a/sqlglot/optimizer/scope.py b/sqlglot/optimizer/scope.py
+index 47e4ef798..c8bb283d6 100644
+--- a/sqlglot/optimizer/scope.py
++++ b/sqlglot/optimizer/scope.py
+@@ -575,6 +575,21 @@ class Scope:
+ 
+         yield from reversed(result)
+ 
++    def pivoted_cte_scope(self, node: exp.Expr) -> Scope | None:
++        """
++        The CTE scope behind a pivoted CTE reference, which is kept as a Table source.
++
++        Args:
++            node: the selected source node, e.g. a Table.
++        Returns:
++            Scope | None: the CTE scope if `node` is a pivoted reference to a CTE.
++        """
++        if isinstance(node, exp.Table) and node.args.get("pivots") and not node.db:
++            cte_source = self.cte_sources.get(node.name)
++            if isinstance(cte_source, Scope):
++                return cte_source
++        return None
++
+     def ref_count(self) -> dict[int, int]:
+         """
+         Count the number of times each scope in this tree is referenced.
+@@ -585,8 +600,10 @@ class Scope:
+         scope_ref_count: dict[int, int] = defaultdict(int)
+ 
+         for scope in self.traverse():
+-            for _, source in scope.selected_sources.values():
++            for node, source in scope.selected_sources.values():
+                 scope_ref_count[id(source)] += 1
++                if pivoted_cte := scope.pivoted_cte_scope(node):
++                    scope_ref_count[id(pivoted_cte)] += 1
+ 
+             for name in scope._semi_anti_join_tables:
+                 # semi/anti join sources are not actually selected but we still need to
+diff --git a/tests/fixtures/optimizer/optimizer.sql b/tests/fixtures/optimizer/optimizer.sql
+index 60ae89d49..7b0087275 100644
+--- a/tests/fixtures/optimizer/optimizer.sql
++++ b/tests/fixtures/optimizer/optimizer.sql
+@@ -758,6 +758,24 @@ SELECT
+ FROM `produce` AS `produce`
+ UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `produce`;
+ 
++# title: unpivoted CTE source, unpivot columns can be qualified
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH `c` AS (
++  SELECT
++    `t`.`id` AS `id`,
++    `t`.`jan` AS `jan`,
++    `t`.`feb` AS `feb`
++  FROM `t` AS `t`
++)
++SELECT
++  `c`.`id` AS `id`,
++  `c`.`m` AS `m`,
++  `c`.`v` AS `v`
++FROM `c` AS `c`
++UNPIVOT(`v` FOR `m` IN (`c`.`jan`, `c`.`feb`)) AS `c`;
++
+ # title: unpivoted table source with multiple value columns
+ # execute: false
+ # dialect: bigquery

@@ -1,0 +1,40 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..0130523ee 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -5559,6 +5559,11 @@ class Parser:
+ 
+         return result
+ 
++    def _can_parse_window_clause(self) -> bool:
++        return self._curr.token_type == TokenType.WINDOW and bool(
++            self._try_parse(self._parse_window_clause, retreat=True)
++        )
++
+     def _parse_limit_by(self) -> list[exp.Expr] | None:
+         return self._parse_csv(self._parse_bitwise) if self._match_text_seq("BY") else None
+ 
+@@ -8309,7 +8314,7 @@ class Parser:
+         # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+         # so this section tries to parse the clause version and if it fails, it treats the token
+         # as an identifier (alias)
+-        if self._can_parse_limit_or_offset():
++        if self._can_parse_limit_or_offset() or self._can_parse_window_clause():
+             return this
+ 
+         any_token = self._match(TokenType.ALIAS)
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..bed4f911a 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -253,6 +253,10 @@ class TestSQLite(Validator):
+             },
+         )
+ 
++    def test_window_clause_without_from(self):
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY fake_column)")
++        self.validate_identity("SELECT 1 AS window")
++
+     def test_longvarchar_dtype(self):
+         self.validate_all(
+             "CREATE TABLE foo (bar LONGVARCHAR)",

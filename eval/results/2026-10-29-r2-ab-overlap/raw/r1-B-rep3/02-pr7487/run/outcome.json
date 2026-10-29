@@ -1,0 +1,32 @@
+{
+  "task": "ClickHouse dialect: the parametric aggregate syntax of `groupConcat` fails to parse (reported from Superset):\n\n```sql\nSELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts\n```\n\nraises `ParseError: Invalid expression`. Support `groupConcat`'s parametric form (separator as the parameter, column as the argument) so it parses and round-trips in ClickHouse.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-1",
+  "why": "- Decided on scope and fidelity: c1 is a one-line addition of `groupConcat` to `AGG_FUNCTIONS`. That reuses the parser's existing parametric-aggregate path (the same one `groupUniqArray(2)(a)` uses), so it needs no new parser method or generator override.\n- I applied both diffs to scratch copies and parsed them. c1 round-trips the reported query and also `groupConcat(', ', 3)(a)`, `groupConcat(',')(x)` and `groupConcatIf(...)`. Plain `groupConcat(x)` output is unchanged across ClickHouse, MySQL, DuckDB and Spark.\n- Runner-up c2 is more elaborate (new `_parse_group_concat_parametric`, a generator override, and `GroupConcat` AST nodes). It parses the reported query and gives a semantic separator, but it rejects `groupConcat(a, ',')`, which the base accepted, and it fails on `groupConcat(', ', 3)(a)`.\n- Both candidates passed the test gate (1081 passed). I did not run the candidates' own harness files; I only applied the diffs to copies and parsed SQL.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 148077,
+    "cached": 2822311,
+    "out": 35264,
+    "cost": 0.07545951000000001,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

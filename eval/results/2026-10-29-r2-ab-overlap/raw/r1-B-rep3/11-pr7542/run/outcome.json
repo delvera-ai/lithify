@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer: qualifying a table function with a typed column alias list fails:\n\n```python\nfrom sqlglot.optimizer.qualify_tables import qualify_tables\nqualify_tables(sqlglot.parse_one(\"SELECT * FROM fn() AS t(col INT)\"), canonicalize_table_aliases=True)\n# ValueError: Name needs to be a string or an Identifier, got: ColumnDef\n```\n\nTyped alias columns (column definitions) in a table alias must be handled when qualifying tables, keeping them intact.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 34892,
+    "cached": 323401,
+    "out": 5178,
+    "cost": 0.01279981,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

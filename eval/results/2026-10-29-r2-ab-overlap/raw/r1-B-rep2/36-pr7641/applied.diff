@@ -1,0 +1,101 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1e07c425f..23755db89 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -560,6 +560,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-155113-duckdb-or-any-source-where-nulls",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 47732,
++      "tokens_cached": 890547,
++      "tokens_out": 14437,
++      "cost_usd": 0.0257,
++      "wall_s": 193.4,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..fef6644cf 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2955,6 +2955,25 @@ class Generator:
+     def sort_sql(self, expression: exp.Sort) -> str:
+         return self.op_expressions("SORT BY", expression)
+ 
++    def _ordered_null_check_source(self, expression: exp.Ordered) -> exp.Expression:
++        # An unqualified ORDER BY column that names a qualified projection is checked through that
++        # projection, since the bare name may be ambiguous across the FROM / JOIN sources
++        column = expression.this
++        order = expression.parent
++        select = order.parent if isinstance(order, exp.Order) else None
++
++        if isinstance(column, exp.Column) and not column.table and isinstance(select, exp.Select):
++            for projection in select.expressions:
++                source = projection.this if isinstance(projection, exp.Alias) else projection
++                if (
++                    isinstance(source, exp.Column)
++                    and source.table
++                    and projection.output_name == column.name
++                ):
++                    return source
++
++        return column
++
+     def ordered_sql(self, expression: exp.Ordered) -> str:
+         desc = expression.args.get("desc")
+         asc = not desc
+@@ -3026,9 +3045,8 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = self.sql(self._ordered_null_check_source(expression))
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..cd1e58ab6 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1612,6 +1612,27 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_nulls_ordering_ambiguous_columns(self):
++        self.validate_all(
++            "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "duckdb": "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY x",
++                "mysql": "SELECT a.x, b.x FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
++        self.validate_all(
++            "SELECT b.z AS x FROM a JOIN b ON a.id = b.id ORDER BY x",
++            write={
++                "mysql": "SELECT b.z AS x FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN b.z IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
++        self.validate_all(
++            "SELECT a.x AS y FROM a JOIN b ON a.id = b.id ORDER BY y",
++            write={
++                "mysql": "SELECT a.x AS y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, y",
++            },
++        )
++
+     def test_array_index(self):
+         with self.assertLogs(helper_logger) as cm:
+             self.validate_all(

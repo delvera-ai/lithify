@@ -1,0 +1,28 @@
+{
+  "task": "Lineage: extend `sqlglot.lineage.lineage()`:\n\n1. Passing `column=None` returns a dict mapping every top-level output column name to its lineage `Node`. The single-column form keeps returning a `Node`, and typing overloads distinguish the two.\n2. An `on_node` callback, called for every `Node` created during the walk (after its downstream nodes are populated), plus a caller-managed `Node.payload` dict, so callers can attach per-node data while the graph is built.\n\n(Stated requirement: the names are `column=None`, `on_node` and `Node.payload`.)",
+  "k": 1,
+  "reason": "anomaly: last task failed in cruise",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 53797,
+    "cached": 1021413,
+    "out": 17977,
+    "cost": 0.029958230000000006,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8305,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

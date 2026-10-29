@@ -1,0 +1,69 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 557a44bdd..beb752fdd 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -288,6 +288,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-173806-postgres-dialect-when-an-unnest",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 39898,
++      "tokens_cached": 951477,
++      "tokens_out": 11138,
++      "cost_usd": 0.0231,
++      "wall_s": 182.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..1ef26dcfe 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,7 +3203,8 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
+-                alias.append("columns", offset)
++                alias = alias.copy()
++                alias.append("columns", offset.copy())
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+             columns = alias.columns
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..1b2e2a17f 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,5 @@
+-from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
++from sqlglot.dialects.dialect import Dialect
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -1548,6 +1549,16 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+ 
+         self.validate_all(expected_postgres, read={"trino": trino_input}, pretty=True)
+ 
++    def test_unnest_ordinality_render_is_idempotent(self):
++        unnest = parse_one(
++            "SELECT * FROM UNNEST([1, 2]) AS x WITH OFFSET AS pos", read="bigquery"
++        ).find(exp.Unnest)
++        generator = Dialect.get_or_raise("postgres").generator()
++
++        self.assertIn("(x, pos)", generator.generate(unnest, copy=False))
++        self.assertIn("(x, pos)", generator.generate(unnest, copy=False))
++        self.assertEqual(len(unnest.args["alias"].columns), 1)
++
+     def test_rows_from(self):
+         self.validate_identity("""SELECT * FROM ROWS FROM (FUNC1(col1, col2))""")
+         self.validate_identity(

@@ -1,0 +1,29 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 163baa77d..d23da35e8 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3812,6 +3812,9 @@ class Parser:
+ 
+             assert this is not None
+             if "with_" in this.arg_types:
++                # Pipe syntax may have already attached CTEs (e.g. __tmp1) to this node
++                if existing := this.args.get("with_"):
++                    cte.set("expressions", [*cte.expressions, *existing.expressions])
+                 this.set("with_", cte)
+             else:
+                 self.raise_error(f"{this.key} does not support CTE")
+diff --git a/tests/dialects/test_pipe_syntax.py b/tests/dialects/test_pipe_syntax.py
+index 73e10e7d4..e4883ac40 100644
+--- a/tests/dialects/test_pipe_syntax.py
++++ b/tests/dialects/test_pipe_syntax.py
+@@ -43,6 +43,10 @@ class TestPipeSyntax(Validator):
+             "SELECT x1, x2, x3 FROM x |> AS a_x |> WHERE a_x.x1 > 0",
+             "WITH a_x AS (SELECT x1, x2, x3 FROM x) SELECT * FROM a_x WHERE a_x.x1 > 0",
+         )
++        self.validate_identity(
++            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1, 2 AS x2",
++            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
++        )
+         self.validate_identity(
+             "SELECT x,y FROM (SELECT 1 as x, 2 as y) |> SELECT x, y",
+             "WITH __tmp1 AS (SELECT x, y FROM (SELECT 1 AS x, 2 AS y)) SELECT * FROM __tmp1",

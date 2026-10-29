@@ -1,0 +1,59 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 059fea903..2d56c1ded 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -464,6 +464,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-091525-sqlite-and-other-dialects-a-wind",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 37376,
++      "tokens_cached": 560273,
++      "tokens_out": 9666,
++      "cost_usd": 0.0179,
++      "wall_s": 212.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..731db869d 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8328,6 +8328,12 @@ class Parser:
+             self._match_r_paren(aliases)
+             return aliases
+ 
++        # `SELECT 1 WINDOW w AS (...)` starts a WINDOW clause rather than aliasing the projection
++        if self._curr and self._curr.token_type == TokenType.WINDOW:
++            after_name = self._tokens[self._index + 2 : self._index + 3]
++            if any(t.token_type == TokenType.ALIAS for t in after_name):
++                return this
++
+         alias = self._parse_id_var(any_token, tokens=self.ALIAS_TOKENS) or (
+             self.STRING_ALIASES and self._parse_string_as_identifier()
+         )
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..b556a9905 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -358,6 +358,10 @@ class TestSQLite(Validator):
+             "CREATE TABLE store (store_id INTEGER PRIMARY KEY AUTOINCREMENT, mgr_id INTEGER NOT NULL UNIQUE REFERENCES staff ON UPDATE CASCADE)"
+         )
+ 
++    def test_window_clause_without_from(self):
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY c)")
++        self.validate_identity("SELECT x AS window FROM t")
++
+     def test_analyze(self):
+         self.validate_identity("ANALYZE tbl")
+         self.validate_identity("ANALYZE schma.tbl")

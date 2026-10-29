@@ -1,0 +1,39 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 581f4da44..4d6c79c91 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2409,11 +2409,12 @@ class Generator:
+         )
+         laterals = self.expressions(expression, key="laterals", sep="")
+ 
+-        file_format = self.sql(expression, "format")
+-        if file_format:
+-            pattern = self.sql(expression, "pattern")
+-            pattern = f", PATTERN => {pattern}" if pattern else ""
+-            file_format = f" (FILE_FORMAT => {file_format}{pattern})"
++        file_format_params = []
++        if file_format := self.sql(expression, "format"):
++            file_format_params.append(f"FILE_FORMAT => {file_format}")
++        if pattern := self.sql(expression, "pattern"):
++            file_format_params.append(f"PATTERN => {pattern}")
++        file_format = f" ({', '.join(file_format_params)})" if file_format_params else ""
+ 
+         ordinality = expression.args.get("ordinality") or ""
+         if ordinality:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index f5b36d7d5..10bcd5b1c 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -3458,6 +3458,12 @@ class TestSnowflake(Validator):
+             "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",
+             "SELECT * FROM @test.public.thing/location/somefile.csv (FILE_FORMAT => 'fmt')",
+         )
++        self.validate_identity(
++            "SELECT * FROM @mystage (PATTERN => '.*data-100.*')",
++        )
++        self.validate_identity(
++            "SELECT * FROM @mystage (PATTERN => '.*data-100.*') AS t",
++        )
+ 
+     def test_sample(self):
+         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")

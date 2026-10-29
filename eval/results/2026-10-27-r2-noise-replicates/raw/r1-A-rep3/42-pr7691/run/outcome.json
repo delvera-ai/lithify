@@ -1,0 +1,28 @@
+{
+  "task": "Pretty-printing: a multi-line comment attached to an `AND`/`OR` connector gains extra whitespace each time the SQL is formatted with `pretty=True`, so formatting is not idempotent. Formatting a query with such comments repeatedly must produce the same output each time.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 32598,
+    "cached": 588231,
+    "out": 6126,
+    "cost": 0.015461910000000004,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

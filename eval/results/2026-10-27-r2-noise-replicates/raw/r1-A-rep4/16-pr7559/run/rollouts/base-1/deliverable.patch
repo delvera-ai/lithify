@@ -1,0 +1,40 @@
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 8f006c49a..8f0e57247 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -16,6 +16,11 @@ class JSONArray(Expression, Func):
+         "return_type": False,
+         "strict": False,
+     }
++    is_var_len_args = True
++
++    @classmethod
++    def from_arg_list(cls, args):
++        return cls(expressions=args)
+ 
+ 
+ class JSONArrayAgg(Expression, AggFunc):
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 82118285c..8b96d1180 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -577,6 +577,7 @@ class TestDuckDB(Validator):
+                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+             },
+         )
++        self.validate_identity("SELECT JSON_ARRAY(1, 2, 3, 4, 5, 6)")
+         self.validate_identity(
+             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
+             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",
+diff --git a/tests/test_expressions.py b/tests/test_expressions.py
+index 8c7b3cf57..317625b49 100644
+--- a/tests/test_expressions.py
++++ b/tests/test_expressions.py
+@@ -379,6 +379,7 @@ class TestExprs(unittest.TestCase):
+         self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, foo)")
+         self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
+         self.assertEqual(exp.func("bloo").sql(), "BLOO()")
++        self.assertEqual(exp.func("JSON_ARRAY", *range(1, 7)).sql(), "JSON_ARRAY(1, 2, 3, 4, 5, 6)")
+         self.assertEqual(
+             exp.func("concat", exp.convert("a"), dialect="duckdb").sql("duckdb"), "CONCAT('a')"
+         )

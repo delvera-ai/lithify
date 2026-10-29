@@ -1,0 +1,56 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..08ec9c13c 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,8 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = self._ordered_null_check(expression, this)
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+@@ -3036,6 +3035,21 @@ class Generator:
+ 
+         return f"{this}{sort_order}{nulls_sort_change}{with_fill}"
+ 
++    def _ordered_null_check(self, expression: exp.Ordered, this: str) -> str:
++        # A bare column that names a projection is resolved by MySQL to that projection in ORDER BY,
++        # but inside the CASE it is resolved against the FROM tables, so it may be ambiguous
++        column = expression.this
++        order = expression.parent
++        select = order.parent if isinstance(order, exp.Order) else None
++
++        if isinstance(column, exp.Column) and not column.table and isinstance(select, exp.Select):
++            for projection in select.expressions:
++                source = projection.unalias()
++                if projection.output_name == column.name and isinstance(source, exp.Column):
++                    return self.sql(source)
++
++        return this
++
+     def matchrecognizemeasure_sql(self, expression: exp.MatchRecognizeMeasure) -> str:
+         window_frame = self.sql(expression, "window_frame")
+         window_frame = f"{window_frame} " if window_frame else ""
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..a556016f1 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -85,6 +85,13 @@ class TestDuckDB(Validator):
+                 "postgres": UnsupportedError,
+             },
+         )
++        self.validate_all(
++            "SELECT b.id AS id FROM a JOIN b ON a.k = b.k ORDER BY id",
++            write={
++                "duckdb": "SELECT b.id AS id FROM a JOIN b ON a.k = b.k ORDER BY id",
++                "mysql": "SELECT b.id AS id FROM a JOIN b ON a.k = b.k ORDER BY CASE WHEN b.id IS NULL THEN 1 ELSE 0 END, id",
++            },
++        )
+         self.validate_all(
+             "CAST(x AS UUID)",
+             write={

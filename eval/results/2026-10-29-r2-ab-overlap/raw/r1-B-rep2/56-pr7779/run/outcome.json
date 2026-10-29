@@ -1,0 +1,28 @@
+{
+  "task": "StarRocks dialect: several functions are generated in forms StarRocks rejects (inherited from MySQL or the base dialect). StarRocks needs:\n\n- `MIN_BY` / `MAX_BY` (it has no `ARG_MIN` / `ARG_MAX`), including the window form;\n- `MAP(k1, v1, k2, v2, ...)`: its variadic map constructor, for maps read from other dialects too (e.g. the two-array form from DuckDB, Presto or Snowflake);\n- `ARRAY_CONTAINS_ALL(a, b)` rather than the Postgres `@>` operator;\n- a `TRIM` syntax StarRocks accepts.\n\nGenerate StarRocks-native syntax for these, and parse StarRocks' own forms back.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 112476,
+    "cached": 2719751,
+    "out": 45454,
+    "cost": 0.23030062999999998,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

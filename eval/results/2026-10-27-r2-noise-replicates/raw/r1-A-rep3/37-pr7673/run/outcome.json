@@ -1,0 +1,28 @@
+{
+  "task": "BigQuery \u2192 DuckDB: BigQuery's `PARSE_TIME` is emitted verbatim for DuckDB, which has no such function:\n\n```python\nsqlglot.transpile(\"SELECT PARSE_TIME('%H:%M', '14:30')\", read=\"bigquery\", write=\"duckdb\")\n# [\"SELECT PARSE_TIME('14:30', '%H:%M')\"]   (invalid in DuckDB)\n```\n\n`PARSE_DATE` already transpiles (to `CAST(STRPTIME(...) AS DATE)`). Transpile `PARSE_TIME` to DuckDB in the equivalent way, producing a `TIME`.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 35332,
+    "cached": 489588,
+    "out": 5489,
+    "cost": 0.014704380000000001,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

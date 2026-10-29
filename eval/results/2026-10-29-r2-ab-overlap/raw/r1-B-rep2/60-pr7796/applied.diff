@@ -1,0 +1,93 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index beb8fc655..87fe60429 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -944,6 +944,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-171401-snowflake-dialect-snowflake-can",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 63333,
++      "tokens_cached": 1824158,
++      "tokens_out": 21767,
++      "cost_usd": 0.0418,
++      "wall_s": 284.9,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 023304e55..74178ae6e 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3937,9 +3937,13 @@ class Generator:
+         # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
+         parent = expression.parent
+         is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
++        # A callee that is an expression, e.g. IDENTIFIER('name')(...), may contain literals
++        is_expr_callee = isinstance(expression.this, exp.Expr)
+ 
+         return self.func(
+-            self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified
++            self.sql(expression, "this"),
++            *expression.expressions,
++            normalize=not (is_qualified or is_expr_callee),
+         )
+ 
+     def paren_sql(self, expression: exp.Paren) -> str:
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 99dbb2759..4abf877a9 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1170,6 +1170,24 @@ class SnowflakeParser(parser.Parser):
+ 
+         return super()._parse_id_var(any_token=any_token, tokens=tokens)
+ 
++    def _parse_field(
++        self,
++        any_token: bool = False,
++        tokens: Collection[TokenType] | None = None,
++        anonymous_func: bool = False,
++    ) -> exp.Expr | None:
++        field = super()._parse_field(
++            any_token=any_token, tokens=tokens, anonymous_func=anonymous_func
++        )
++
++        # Dynamic invocation: IDENTIFIER(<name_expr>)(<args>) calls the function named by <name_expr>
++        if isinstance(field, exp.DynamicIdentifier) and self._match(TokenType.L_PAREN):
++            args = self._parse_function_args()
++            self._match_r_paren(field)
++            return self.expression(exp.Anonymous(this=field, expressions=args))
++
++        return field
++
+     def _parse_show_snowflake(
+         self, this: str, terse: bool = False, iceberg: bool = False
+     ) -> exp.Show:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 35ba37674..a8e660622 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -769,6 +769,13 @@ class TestSnowflake(Validator):
+         self.validate_identity("SELECT KURTOSIS(x) OVER (PARTITION BY 1)")
+         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
+         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
++        self.validate_identity("SELECT IDENTIFIER($fn)(41)")
++        self.validate_identity("SELECT IDENTIFIER('my_func')(1, 2)")
++        self.validate_identity("SELECT IDENTIFIER($fn)()")
++        self.validate_identity("SELECT IDENTIFIER('my_func')(x, y + 1) FROM t")
++        self.validate_identity(
++            "SELECT * FROM IDENTIFIER('t') (a, b)", "SELECT * FROM IDENTIFIER('t') AS _t0(a, b)"
++        )
+         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
+         self.validate_identity("OBJECT_CONSTRUCT(*)")
+         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")

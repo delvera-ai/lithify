@@ -1,0 +1,33 @@
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index c19a6c8e4..c6d85e0f1 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -1035,6 +1035,12 @@ class SnowflakeParser(parser.Parser):
+ 
+         return expression
+ 
++    def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
++        # Snowflake also accepts KEY = VALUE properties before the column definitions
++        if self._next.token_type == TokenType.EQ:
++            return super()._parse_property_before() or self._parse_property()
++        return super()._parse_property_before()
++
+     # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
+     # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
+     def _parse_date_part(self) -> exp.Expr | None:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 0757d1a12..4650a4796 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -459,6 +459,11 @@ class TestSnowflake(Validator):
+         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
+         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
+         self.validate_identity("CREATE TABLE table1 CLUSTER BY (name1, name2, name3)")
++        self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
++        self.validate_identity(
++            "CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)",
++            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE",
++        )
+         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name)")
+         self.validate_identity("SELECT rename, replace")
+         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")

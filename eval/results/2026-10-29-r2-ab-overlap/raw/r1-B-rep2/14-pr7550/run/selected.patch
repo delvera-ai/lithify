@@ -1,0 +1,69 @@
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..058ccac2c 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -602,10 +602,18 @@ def _qualify_columns(
+     allow_partial_qualification: bool,
+ ) -> None:
+     """Disambiguate columns, ensuring each column specifies a source"""
++    # The columns produced by an UNPIVOT are new output names, not references to source columns
++    unpivot_output_ids = {
++        id(c) for pivot in scope.pivots if pivot.unpivot for c in _unpivot_columns(pivot)
++    }
++
+     for column in scope.columns:
+         column_table = column.table
+         column_name = column.name
+ 
++        if id(column) in unpivot_output_ids:
++            continue
++
+         if column_table and column_table in scope.sources:
+             source_columns = resolver.get_source_columns(column_table)
+             if (
+@@ -645,7 +653,11 @@ def _qualify_columns(
+ 
+     for pivot in scope.pivots:
+         for column in pivot.find_all(exp.Column):
+-            if not column.table and column.name in resolver.all_columns:
++            if (
++                not column.table
++                and column.name in resolver.all_columns
++                and id(column) not in unpivot_output_ids
++            ):
+                 table = resolver.get_table(column.name)
+                 if table:
+                     column.set("table", table)
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index 1868c662f..b67f5de95 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -141,6 +141,12 @@ class Resolver:
+ 
+             if isinstance(source, exp.Table):
+                 columns = self.schema.column_names(source, only_visible)
++
++                # An UNPIVOTed CTE is kept as a Table, so its columns come from the CTE's projections
++                cte = self.scope.cte_sources.get(source.name)
++                pivot = seq_get(source.args.get("pivots") or [], 0)
++                if cte and isinstance(pivot, exp.Pivot) and pivot.unpivot:
++                    columns = cte.expression.named_selects
+             elif isinstance(source, Scope) and isinstance(
+                 source_expr := source.expression, (exp.Values, exp.Unnest, exp.Lateral)
+             ):
+diff --git a/tests/fixtures/optimizer/qualify_columns.sql b/tests/fixtures/optimizer/qualify_columns.sql
+index 39c3470e1..45a0687a6 100644
+--- a/tests/fixtures/optimizer/qualify_columns.sql
++++ b/tests/fixtures/optimizer/qualify_columns.sql
+@@ -1051,3 +1051,11 @@ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y A
+ # title: ANTI + normal joins reinclude the table on scope
+ SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
+ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
++
++# title: UNPIVOT over a CTE, the new columns are not qualified and the IN list columns are
++WITH c AS (SELECT a, b FROM x) SELECT * FROM c UNPIVOT(v FOR m IN (a, b));
++WITH c AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT c.m AS m, c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.a, c.b)) AS c;
++
++# title: UNPIVOT over a CTE, selecting the new columns qualifies them with the unpivoted source
++WITH c AS (SELECT a, b FROM x) SELECT v, m FROM c UNPIVOT(v FOR m IN (a, b));
++WITH c AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT c.v AS v, c.m AS m FROM c AS c UNPIVOT(v FOR m IN (c.a, c.b)) AS c;

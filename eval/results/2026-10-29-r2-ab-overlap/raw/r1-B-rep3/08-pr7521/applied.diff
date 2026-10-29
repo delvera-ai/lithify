@@ -1,0 +1,62 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b2b0b4ee7..c686a3fe1 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -112,6 +112,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-174458-exasol-dialect-exasol-allows-bot",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 30198,
++      "tokens_cached": 295694,
++      "tokens_out": 3702,
++      "cost_usd": 0.0108,
++      "wall_s": 123.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..a1ddbd1a7 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -144,6 +144,18 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_minus(self):
++        self.validate_all(
++            "SELECT a FROM x EXCEPT SELECT a FROM y",
++            read={
++                "exasol": "SELECT a FROM x MINUS SELECT a FROM y",
++                "oracle": "SELECT a FROM x MINUS SELECT a FROM y",
++            },
++            write={
++                "exasol": "SELECT a FROM x EXCEPT SELECT a FROM y",
++            },
++        )
++
+     def test_bits(self):
+         self.validate_all(
+             "SELECT BIT_AND(x, 1)",

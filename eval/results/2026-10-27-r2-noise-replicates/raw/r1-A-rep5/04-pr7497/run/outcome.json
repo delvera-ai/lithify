@@ -1,0 +1,28 @@
+{
+  "task": "Transpiling DuckDB's `JSON_ARRAY` function to Snowflake produces invalid SQL, because Snowflake has no `JSON_ARRAY` (its equivalent is `ARRAY_CONSTRUCT`):\n\n```sql\n-- DuckDB input\nSELECT JSON_ARRAY('a', 'b', 'c')\n-- Snowflake output today (invalid)\nSELECT JSON_ARRAY('a', 'b', 'c')\n```\n\nDuckDB `JSON_ARRAY(...)` should be understood as a function and generate valid Snowflake SQL.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 35628,
+    "cached": 356251,
+    "out": 7980,
+    "cost": 0.01467631,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.8,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

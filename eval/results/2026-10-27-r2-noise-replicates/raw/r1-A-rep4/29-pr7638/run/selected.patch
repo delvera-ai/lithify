@@ -1,0 +1,82 @@
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 9576a1aa0..15c31d594 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -246,7 +246,7 @@ class AlterColumn(Expression):
+ 
+ 
+ class ModifyColumn(Expression):
+-    pass
++    arg_types = {"this": True, "old_name": False}
+ 
+ 
+ class AlterIndex(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index e47b24bf8..6b81f100c 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4009,6 +4009,9 @@ class Generator:
+     def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
+         if not self.SUPPORTS_MODIFY_COLUMN:
+             self.unsupported("MODIFY COLUMN is not supported in this dialect")
++        old_name = self.sql(expression, "old_name")
++        if old_name:
++            return f"CHANGE COLUMN {old_name} {self.sql(expression, 'this')}"
+         return f"MODIFY COLUMN {self.sql(expression, 'this')}"
+ 
+     def alterindex_sql(self, expression: exp.AlterIndex) -> str:
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index 8fb5301cd..ea9f28836 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+         "MODIFY": lambda self: self._parse_alter_table_modify(),
++        "CHANGE": lambda self: self._parse_alter_table_change(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -328,6 +329,20 @@ class MySQLParser(parser.Parser):
+ 
+         return self.expression(exp.ModifyColumn(this=column_def))
+ 
++    def _parse_alter_table_change(self) -> exp.Expr | None:
++        self._match(TokenType.COLUMN)
++
++        old_name = self._parse_field(any_token=True)
++        new_name = self._parse_field(any_token=True)
++        if old_name is None or new_name is None:
++            return None
++
++        column_def = self._parse_column_def(new_name)
++        if not isinstance(column_def, exp.ColumnDef):
++            return None
++
++        return self.expression(exp.ModifyColumn(this=column_def, old_name=old_name))
++
+     def _parse_generated_as_identity(
+         self,
+     ) -> (
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index f8a818ebc..45af87e82 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -46,6 +46,17 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT FIRST")
+         self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT AFTER d")
+         self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL AFTER d")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT")
++        self.validate_identity(
++            "ALTER TABLE t CHANGE a b INT NOT NULL DEFAULT 5",
++            "ALTER TABLE t CHANGE COLUMN a b INT NOT NULL DEFAULT 5",
++        )
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b VARCHAR(50) COMMENT 'hi' FIRST")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT NOT NULL AFTER d")
++        self.validate_identity(
++            "ALTER TABLE t CHANGE a b INT",
++            "ALTER TABLE t CHANGE COLUMN a b INT",
++        )
+         self.validate_identity(
+             "ALTER TABLE t MODIFY c INT NOT NULL",
+             "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",

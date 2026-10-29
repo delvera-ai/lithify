@@ -1,0 +1,33 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 7c9bd3c02..2f7b64676 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3912,7 +3912,9 @@ class Generator:
+                 if expression.comments and self.comments:
+                     for comment in expression.comments:
+                         if comment:
+-                            op += f" /*{self.sanitize_comment(comment)}*/"
++                            op += self._replace_line_breaks(
++                                f" /*{self.sanitize_comment(comment)}*/"
++                            )
+                 stack.extend((op, expression.left))
+             return op
+ 
+diff --git a/tests/test_transpile.py b/tests/test_transpile.py
+index 9965cfc0c..c2b36a7ea 100644
+--- a/tests/test_transpile.py
++++ b/tests/test_transpile.py
+@@ -994,6 +994,13 @@ ORDER BY
+             'SELECT\n  "Product\n(Foo, Bar)" AS x\nFROM t',
+         )
+ 
++    def test_pretty_connector_comment_is_idempotent(self):
++        sql = "SELECT a FROM t WHERE x = 1 AND /* line one\nline two */ y = 2 OR z = 3"
++        expected = "SELECT\n  a\nFROM t\nWHERE\n  x = 1 AND /* line one\nline two */ y = 2 OR z = 3"
++        self.assertEqual(transpile(sql, pretty=True)[0], expected)
++        for _ in range(3):
++            self.assertEqual(transpile(expected, pretty=True)[0], expected)
++
+     def test_sql_security(self):
+         sqlglot_sql = "CREATE VIEW v SQL SECURITY INVOKER AS SELECT 1"
+ 

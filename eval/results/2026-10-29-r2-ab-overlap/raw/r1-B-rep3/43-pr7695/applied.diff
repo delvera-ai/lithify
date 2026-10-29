@@ -1,0 +1,67 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0f0db6d58..5787e0035 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -672,6 +672,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-195303-exasol-dialect-transpiling-mysql",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 35180,
++      "tokens_cached": 528931,
++      "tokens_out": 4984,
++      "cost_usd": 0.0148,
++      "wall_s": 132.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/exasol.py b/sqlglot/generators/exasol.py
+index 644619941..5806f6293 100644
+--- a/sqlglot/generators/exasol.py
++++ b/sqlglot/generators/exasol.py
+@@ -916,6 +916,12 @@ class ExasolGenerator(generator.Generator):
+             )
+             return self.sql(select)
+ 
++        if expression.name == "DATABASES":
++            select = exp.select(exp.column("SCHEMA_NAME")).from_(
++                exp.table_("EXA_SCHEMAS", db="SYS")
++            )
++            return self.sql(select)
++
+         return super().show_sql(expression)
+ 
+     def collate_sql(self, expression: exp.Collate) -> str:
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b65530011..59d3a1267 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -1000,6 +1000,18 @@ class TestExasol(Validator):
+             },
+         )
+ 
++    def test_show_databases(self):
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW DATABASES"},
++            write={"exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS"},
++        )
++        self.validate_all(
++            "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS",
++            read={"mysql": "SHOW SCHEMAS"},
++            write={"exasol": "SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS"},
++        )
++
+     def test_group_by_alias_local(self):
+         # GROUP BY bare alias -> LOCAL prefix
+         self.validate_all(

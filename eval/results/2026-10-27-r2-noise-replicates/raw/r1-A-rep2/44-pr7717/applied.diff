@@ -1,0 +1,56 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 11dde697f..aea4e4924 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -688,6 +688,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-100502-clickhouse-dialect-the-file-tabl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 30293,
++      "tokens_cached": 600655,
++      "tokens_out": 5594,
++      "cost_usd": 0.0149,
++      "wall_s": 145.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index bf5c50ec8..59171bde2 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -833,6 +833,7 @@ class Parser:
+         TokenType.CURRENT_TIME,
+         TokenType.CURRENT_USER,
+         TokenType.CURRENT_CATALOG,
++        TokenType.FILE,
+         TokenType.FILTER,
+         TokenType.FIRST,
+         TokenType.FORMAT,
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..087cc330b 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1543,6 +1543,12 @@ LIFETIME(MIN 0 MAX 0)""",
+                     f"DETACH {kind} IF EXISTS db.t ON CLUSTER c PERMANENTLY SYNC"
+                 )
+ 
++    def test_file_table_function(self):
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
++        self.validate_identity("SELECT * FROM file('a.csv', CSV) AS f")
++
+     def test_drop_on_cluster(self):
+         for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
+             with self.subTest(f"Test DROP {creatable} ON CLUSTER"):

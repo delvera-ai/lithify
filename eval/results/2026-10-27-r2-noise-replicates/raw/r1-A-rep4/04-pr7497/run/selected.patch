@@ -1,0 +1,47 @@
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..1e7a1dc36 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -968,6 +968,10 @@ class SnowflakeGenerator(generator.Generator):
+             )
+         )
+ 
++    @unsupported_args("null_handling", "return_type", "strict")
++    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
++        return self.func("ARRAY_CONSTRUCT", *expression.expressions)
++
+     def jsonextract_sql(self, expression: exp.JSONExtract):
+         this = expression.this
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..a2910a2da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
+         ),
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..ae4a239ab 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1951,6 +1951,15 @@ class TestDuckDB(Validator):
+         self.validate_identity("ARRAY(SELECT id FROM t)")
+         self.validate_identity("ARRAY((SELECT id FROM t))")
+ 
++    def test_json_array(self):
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++            },
++        )
++
+     def test_cast(self):
+         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
+         self.validate_identity("CAST(x AS REAL)")

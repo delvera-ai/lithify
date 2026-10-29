@@ -1,0 +1,57 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 00247c0b4..3349f3ff2 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -656,6 +656,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-161656-pretty-printing-a-multi-line-com",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 37647,
++      "tokens_cached": 839127,
++      "tokens_out": 7044,
++      "cost_usd": 0.0194,
++      "wall_s": 230.4,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 7c9bd3c02..baaf6fb08 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3912,7 +3912,7 @@ class Generator:
+                 if expression.comments and self.comments:
+                     for comment in expression.comments:
+                         if comment:
+-                            op += f" /*{self.sanitize_comment(comment)}*/"
++                            op += f" {self._replace_line_breaks(f'/*{self.sanitize_comment(comment)}*/')}"
+                 stack.extend((op, expression.left))
+             return op
+ 
+diff --git a/tests/test_transpile.py b/tests/test_transpile.py
+index 9965cfc0c..e63925ff9 100644
+--- a/tests/test_transpile.py
++++ b/tests/test_transpile.py
+@@ -245,6 +245,12 @@ WHERE
+   1 = 1 /* comment at the end */""",
+             pretty=True,
+         )
++        for connector in ("AND", "OR"):
++            sql = f"SELECT * FROM t WHERE x = 1 {connector} /* multi\nline */ y = 2"
++            expected = f"SELECT\n  *\nFROM t\nWHERE\n  x = 1 {connector} /* multi\nline */ y = 2"
++            self.validate(sql, expected, pretty=True)
++            # Formatting must be idempotent
++            self.validate(expected, expected, pretty=True)
+         self.validate(
+             """
+             /* multi

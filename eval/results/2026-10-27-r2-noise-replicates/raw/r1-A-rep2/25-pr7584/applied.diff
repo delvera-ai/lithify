@@ -1,0 +1,56 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b8fc4aa40..dfbff0bb3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -384,6 +384,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-085840-bigquery-duckdb-a-parameterised",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 30235,
++      "tokens_cached": 406740,
++      "tokens_out": 5116,
++      "cost_usd": 0.0127,
++      "wall_s": 190.0,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index f40beaca2..521c6d843 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2441,6 +2441,11 @@ class DuckDBGenerator(generator.Generator):
+                 result = self.func("TO_BINARY", value)
+         return f"TRY({result})" if is_safe else result
+ 
++    def datatype_sql(self, expression: exp.DataType) -> str:
++        if expression.this == exp.DType.BIGDECIMAL and expression.expressions:
++            return f"DECIMAL({self.expressions(expression, flat=True)})"
++        return super().datatype_sql(expression)
++
+     def tonumber_sql(self, expression: exp.ToNumber) -> str:
+         fmt = expression.args.get("format")
+         precision = expression.args.get("precision")
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index 798b3a5fa..aea75d15e 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -3831,3 +3831,8 @@ OPTIONS (
+                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                     },
+                 )
++
++                self.validate_all(
++                    f"SELECT CAST(1 AS {type_}(76, 38))",
++                    write={"duckdb": "SELECT CAST(1 AS DECIMAL(76, 38))"},
++                )

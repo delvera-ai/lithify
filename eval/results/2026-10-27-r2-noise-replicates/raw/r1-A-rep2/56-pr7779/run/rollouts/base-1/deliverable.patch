@@ -1,0 +1,157 @@
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index e71176c1f..38f004eec 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -51,6 +51,27 @@ def st_distance_sphere(self, expression: exp.StDistance) -> str:
+     return self.func("ST_Distance_Sphere", point1_x, point1_y, point2_x, point2_y)
+ 
+ 
++# https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/
++def map_sql(self: StarRocksGenerator, expression: exp.Map | exp.VarMap) -> str:
++    keys = expression.args.get("keys")
++    values = expression.args.get("values")
++
++    if keys is None and values is None:
++        return self.func("MAP")
++
++    # MAP(k1, v1, k2, v2, ...) takes alternating arguments, so literal key/value arrays are interleaved.
++    # Otherwise the arrays are only known at runtime, so MAP_FROM_ARRAYS is used instead.
++    if (
++        isinstance(keys, exp.Array)
++        and isinstance(values, exp.Array)
++        and len(keys.expressions) == len(values.expressions)
++    ):
++        pairs = [arg for pair in zip(keys.expressions, values.expressions) for arg in pair]
++        return self.func("MAP", *pairs)
++
++    return self.func("MAP_FROM_ARRAYS", keys, values)
++
++
+ class StarRocksGenerator(MySQLGenerator):
+     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
+     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
+@@ -86,20 +107,28 @@ class StarRocksGenerator(MySQLGenerator):
+     }
+ 
+     TRANSFORMS = {
+-        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k is not exp.DateTrunc},
++        # TRIM/LTRIM/RTRIM take the characters as a second argument, not MySQL's TRIM(... FROM ...)
++        **{
++            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
++        },
+         exp.Array: inline_array_sql,
+         exp.ArrayAgg: rename_func("ARRAY_AGG"),
++        exp.ArrayContainsAll: rename_func("ARRAY_CONTAINS_ALL"),
+         exp.ArrayFilter: rename_func("ARRAY_FILTER"),
+         exp.ArrayToString: rename_func("ARRAY_JOIN"),
+         exp.ApproxDistinct: approx_count_distinct_sql,
++        exp.ArgMax: rename_func("MAX_BY"),
++        exp.ArgMin: rename_func("MIN_BY"),
+         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
+         exp.DateDiff: lambda self, e: self.func("DATE_DIFF", unit_to_str(e), e.this, e.expression),
+         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
+         exp.Flatten: rename_func("ARRAY_FLATTEN"),
+         exp.JSONExtractScalar: arrow_json_extract_sql,
+         exp.JSONExtract: arrow_json_extract_sql,
++        exp.Map: map_sql,
+         exp.Property: property_sql,
+         exp.RegexpLike: rename_func("REGEXP"),
++        exp.VarMap: map_sql,
+         # Inherited from MySQL, minus operations StarRocks supports natively
+         # (QUALIFY, FULL OUTER JOIN, SEMI/ANTI JOIN)
+         exp.Select: transforms.preprocess(
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index eb5387154..26b802458 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ 
+ 
+-from sqlglot import exp
++from sqlglot import exp, parser
+ from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+@@ -27,6 +27,8 @@ class StarRocksParser(MySQLParser):
+             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
+         ),
+         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
++        "MAP": parser.build_var_map,
++        "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
+         "REGEXP": exp.RegexpLike.from_arg_list,
+     }
+ 
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index b6b27b254..8bfd9ed44 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -170,6 +170,68 @@ class TestStarrocks(Validator):
+         self.validate_identity("SELECT ADDDATE(x, 7)", "SELECT DATE_ADD(x, INTERVAL 7 DAY)")
+         self.validate_identity("SELECT SUBDATE(x, 7)", "SELECT DATE_SUB(x, INTERVAL 7 DAY)")
+ 
++    def test_min_max_by(self):
++        self.validate_identity("SELECT MIN_BY(x, y) FROM t")
++        self.validate_identity("SELECT MAX_BY(x, y) FROM t")
++        self.validate_identity("SELECT MAX_BY(x, y) OVER (PARTITION BY g ORDER BY z) FROM t")
++        self.validate_all(
++            "SELECT MIN_BY(x, y) FROM t",
++            read={"": "SELECT ARG_MIN(x, y) FROM t", "spark": "SELECT MIN_BY(x, y) FROM t"},
++        )
++        self.validate_all(
++            "SELECT MAX_BY(x, y) OVER (PARTITION BY g) FROM t",
++            read={"": "SELECT ARG_MAX(x, y) OVER (PARTITION BY g) FROM t"},
++        )
++
++    def test_map(self):
++        self.validate_identity("SELECT MAP()")
++        self.validate_identity("SELECT MAP('a', 1, 'b', 2)")
++        self.validate_identity("SELECT MAP_FROM_ARRAYS(k, v) FROM t")
++        self.validate_all(
++            "SELECT MAP('a', 1, 'b', 2)",
++            read={
++                "duckdb": "SELECT MAP(['a', 'b'], [1, 2])",
++                "presto": "SELECT MAP(ARRAY['a', 'b'], ARRAY[1, 2])",
++                "spark": "SELECT MAP('a', 1, 'b', 2)",
++            },
++        )
++        self.validate_all(
++            "SELECT MAP_FROM_ARRAYS(k, v) FROM t",
++            read={
++                "duckdb": "SELECT MAP(k, v) FROM t",
++                "spark": "SELECT MAP_FROM_ARRAYS(k, v) FROM t",
++            },
++        )
++
++    def test_array_contains_all(self):
++        self.validate_identity("SELECT ARRAY_CONTAINS_ALL([1, 2], [1])")
++        self.validate_all(
++            "SELECT ARRAY_CONTAINS_ALL([1, 2], [1])",
++            read={
++                "postgres": "SELECT ARRAY[1, 2] @> ARRAY[1]",
++                "duckdb": "SELECT ARRAY_HAS_ALL([1, 2], [1])",
++            },
++        )
++
++    def test_trim(self):
++        self.validate_identity("SELECT TRIM('  a  ')")
++        self.validate_identity("SELECT TRIM('xax', 'x')")
++        self.validate_identity("SELECT LTRIM('xax', 'x')")
++        self.validate_identity("SELECT RTRIM('xax', 'x')")
++        self.validate_all(
++            "SELECT TRIM('xax', 'x')",
++            read={
++                "": "SELECT TRIM(BOTH 'x' FROM 'xax')",
++                "duckdb": "SELECT TRIM('x' FROM 'xax')",
++            },
++        )
++        self.validate_all(
++            "SELECT LTRIM('xax', 'x')", read={"": "SELECT TRIM(LEADING 'x' FROM 'xax')"}
++        )
++        self.validate_all(
++            "SELECT RTRIM('xax', 'x')", read={"": "SELECT TRIM(TRAILING 'x' FROM 'xax')"}
++        )
++
+     def test_regex(self):
+         self.validate_all(
+             "SELECT REGEXP(abc, '%foo%')",

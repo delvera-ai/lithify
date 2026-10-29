@@ -1,0 +1,2 @@
+experiment,arm,seed,replicate,tooling_commit,strategy,executor,task_id,task,order_seed,position,k,reason,delivered,applied,first_pass,holdout_pass,outcome,timeout_kind,cost_lower_bound,selected,executions,role_sessions,tokens_in,tokens_cached,tokens_out,cost_usd,wall_s,active_s,api_s,idle_s,always_on_tokens,stability_after,promoted,proposed,adopted,feedback,adopt_policy,lithify_commit
+,,,r1-A-rep3,,,,20261028-143612-snowflake-dialect-in-create-stat,,,,,,False,False,False,False,cli-limit,,True,,1,0,0,0,0,0.0,4.0,0.555,0.0,3.445,,,,,,,,

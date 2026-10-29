@@ -1,0 +1,106 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4cf0bea79..56b4b9393 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -448,6 +448,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-104758-mysql-dialect-support-change-col",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 40497,
++      "tokens_cached": 403922,
++      "tokens_out": 8310,
++      "cost_usd": 0.0163,
++      "wall_s": 167.5,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 9576a1aa0..15c31d594 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -246,7 +246,7 @@ class AlterColumn(Expression):
+ 
+ 
+ class ModifyColumn(Expression):
+-    pass
++    arg_types = {"this": True, "old_name": False}
+ 
+ 
+ class AlterIndex(Expression):
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index e47b24bf8..6b81f100c 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4009,6 +4009,9 @@ class Generator:
+     def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
+         if not self.SUPPORTS_MODIFY_COLUMN:
+             self.unsupported("MODIFY COLUMN is not supported in this dialect")
++        old_name = self.sql(expression, "old_name")
++        if old_name:
++            return f"CHANGE COLUMN {old_name} {self.sql(expression, 'this')}"
+         return f"MODIFY COLUMN {self.sql(expression, 'this')}"
+ 
+     def alterindex_sql(self, expression: exp.AlterIndex) -> str:
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index 8fb5301cd..726167e6f 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+         "MODIFY": lambda self: self._parse_alter_table_modify(),
++        "CHANGE": lambda self: self._parse_alter_table_change(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -328,6 +329,20 @@ class MySQLParser(parser.Parser):
+ 
+         return self.expression(exp.ModifyColumn(this=column_def))
+ 
++    def _parse_alter_table_change(self) -> exp.Expr | None:
++        self._match(TokenType.COLUMN)
++
++        old_name = self._parse_field(any_token=True)
++        column = self._parse_field(any_token=True)
++        if old_name is None or column is None:
++            return None
++
++        column_def = self._parse_column_def(column)
++        if not isinstance(column_def, exp.ColumnDef):
++            return None
++
++        return self.expression(exp.ModifyColumn(this=column_def, old_name=old_name))
++
+     def _parse_generated_as_identity(
+         self,
+     ) -> (
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index f8a818ebc..182343d0f 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -50,6 +50,14 @@ class TestMySQL(Validator):
+             "ALTER TABLE t MODIFY c INT NOT NULL",
+             "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
+         )
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT NOT NULL")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT DEFAULT 5 COMMENT 'hi'")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT FIRST")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT AFTER d")
++        self.validate_identity(
++            "ALTER TABLE t CHANGE a b INT NOT NULL",
++            "ALTER TABLE t CHANGE COLUMN a b INT NOT NULL",
++        )
+         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

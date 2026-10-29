@@ -1,0 +1,36 @@
+lithify ▸ 20261029-144515-oracle-dialect-json-table-fails  k=0 (cruise (S=1.00)) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✗ probe base-1: test=pass
+  ! cruise execution failed its gates — escalating to k=1 on this task
+  ▸ propose inv-1 (claude)
+  ▸ propose dom-1 (claude)
+  ✓ inv-1: candidate harness ready
+  ✓ dom-1: candidate harness ready
+  ▸ probe inv-1: executing with claude@claude-haiku-5-5
+  ▸ probe dom-1: executing with claude@claude-haiku-5-5
+  ✗ probe dom-1: test=pass
+  ✓ probe inv-1: test=pass
+  ▸ compose comp-1 (claude)
+  ✓ comp-1: candidate harness ready
+  ▸ probe comp-1: executing with claude@claude-haiku-5-5
+  ✗ probe comp-1: test=pass
+  base rollout base-1: failed on first execution
+  ✓ applied deliverable from inv-1: only one distinct deliverable passed the gates (no LLM judge needed)
+  ▸ reflect (claude)
+  ✎ library: lesson recorded; 6 edit row(s)
+  ⧗ proposal for review: .lithify/proposals/20261029-144515-oracle-dialect-json-table-fails (scripts/probe_parse.py, skills/parse-failure-triage, tool_guidance.md) — `lithify adopt 20261029-144515-oracle-dialect-json-table-fails`
+lithify ◂ delivered=True first_pass=False S=0.83 executions=4 role_sessions=4 tokens(in/cached/out)=418100/4019593/105603 cost=$0.19
+{
+  "task_id": "20261029-144515-oracle-dialect-json-table-fails",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": false,
+  "selected": "inv-1",
+  "promoted": [],
+  "proposal": "<run>/repo/.lithify/proposals/20261029-144515-oracle-dialect-json-table-fails",
+  "stability": 0.8305,
+  "executions": 4,
+  "role_sessions": 4
+}
+

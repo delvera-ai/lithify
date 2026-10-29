@@ -1,0 +1,61 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 5cea63c00..0562eeae8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -240,6 +240,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-120331-json-array-accepts-at-most-four",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 46080,
++      "tokens_cached": 856264,
++      "tokens_out": 11441,
++      "cost_usd": 0.0235,
++      "wall_s": 184.8,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 8f006c49a..8f0e57247 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -16,6 +16,11 @@ class JSONArray(Expression, Func):
+         "return_type": False,
+         "strict": False,
+     }
++    is_var_len_args = True
++
++    @classmethod
++    def from_arg_list(cls, args):
++        return cls(expressions=args)
+ 
+ 
+ class JSONArrayAgg(Expression, AggFunc):
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 82118285c..056cf37fd 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -577,6 +577,13 @@ class TestDuckDB(Validator):
+                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+             },
+         )
++        self.validate_all(
++            "SELECT JSON_ARRAY(1, 2, 3, 4, 5, 6)",
++            write={
++                "duckdb": "SELECT JSON_ARRAY(1, 2, 3, 4, 5, 6)",
++                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(1, 2, 3, 4, 5, 6))",
++            },
++        )
+         self.validate_identity(
+             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
+             "SELECT col FROM t WHERE NOT (col ->> '$.id') IN ('b')",

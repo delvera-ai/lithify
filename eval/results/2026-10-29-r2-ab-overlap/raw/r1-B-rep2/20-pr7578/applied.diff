@@ -1,0 +1,113 @@
+diff --git a/.lithify/library/INDEX.md b/.lithify/library/INDEX.md
+index 26cc7e553..71ec05e03 100644
+--- a/.lithify/library/INDEX.md
++++ b/.lithify/library/INDEX.md
+@@ -3,3 +3,4 @@
+ Each entry: what situation a lesson applies to, and the harness operation that helped.
+ Read an entry's EXPERIENCE.md and harness/ before reusing a component.
+ 
++- [20261029-144515-oracle-dialect-json-table-fails](20261029-144515-oracle-dialect-json-table-fails/EXPERIENCE.md) — **when** A bug report says a clause of a SQL construct fails to parse (here, JSON_TABLE with FORMAT JSON). The reported form already parses. Probing sibling variants of that same clause finds one that errors with the report's message shape, and the repo has no local grammar reference for that variant. **then** In skills/parse-failure-triage step 3, keep the bound that an accepted clause needs its parent construct, but do not make the fix conditional on verifying the grammar. State that an in-scope ERR matching the report's wording is fixed in the owning parser, and that the grammar source goes in the final message as a disclosure. The conditional wording in comp-1 was read as a veto and produced no fix, the unconditional wording in inv-1 produced the fix, and base-1 with no skill also produced no fix.
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 39ad4bb9b..9b8fdf74d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 0,
++  "consecutive_failures": 1,
+   "history": [
+     {
+       "task_id": "20261029-111417-oracle-dialect-support-the-optio",
+@@ -304,6 +304,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-144515-oracle-dialect-json-table-fails",
++      "k": 1,
++      "first_pass": false,
++      "delivered": true,
++      "churn_lines": 103,
++      "executions": 4,
++      "tokens_in": 418100,
++      "tokens_cached": 4019593,
++      "tokens_out": 105603,
++      "cost_usd": 0.1885,
++      "wall_s": 718.5,
++      "always_on_tokens": 165,
++      "stability_after": 0.8305,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 63e0f6588..32c240080 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -202,6 +202,7 @@ class StripNullValue(Expression, Func):
+ class JSONTable(Expression, Func):
+     arg_types = {
+         "this": True,
++        "encoding": False,
+         "schema": True,
+         "path": False,
+         "error_handling": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 5b12e0227..906b376b5 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3618,6 +3618,8 @@ class Generator:
+ 
+     def jsontable_sql(self, expression: exp.JSONTable) -> str:
+         this = self.sql(expression, "this")
++        encoding = self.sql(expression, "encoding")
++        encoding = f" ENCODING {encoding}" if encoding else ""
+         path = self.sql(expression, "path")
+         path = f", {path}" if path else ""
+         error_handling = expression.args.get("error_handling")
+@@ -3626,7 +3628,9 @@ class Generator:
+         empty_handling = f" {empty_handling}" if empty_handling else ""
+         schema = self.sql(expression, "schema")
+         return self.func(
+-            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling} {schema})"
++            "JSON_TABLE",
++            f"{this}{encoding}",
++            suffix=f"{path}{error_handling}{empty_handling} {schema})",
+         )
+ 
+     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..013bc41f0 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7950,6 +7950,7 @@ class Parser:
+ 
+     def _parse_json_table(self) -> exp.JSONTable:
+         this = self._parse_format_json(self._parse_bitwise())
++        encoding = self._match_text_seq("ENCODING") and self._parse_var()
+         path = self._match(TokenType.COMMA) and self._parse_string()
+         error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
+         empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
+@@ -7957,6 +7958,7 @@ class Parser:
+ 
+         return exp.JSONTable(
+             this=this,
++            encoding=encoding,
+             schema=schema,
+             path=path,
+             error_handling=error_handling,
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..06532c5ff 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -558,6 +558,9 @@ MATCH_RECOGNIZE (
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON ENCODING UTF8, '$.items[*]' COLUMNS(id NUMBER PATH '$.id'))"
++        )
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",

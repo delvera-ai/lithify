@@ -1,0 +1,60 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 381e30f2d..b56284b05 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -624,6 +624,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-121619-postgres-dialect-comment-on-fail",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 31792,
++      "tokens_cached": 467509,
++      "tokens_out": 4834,
++      "cost_usd": 0.0134,
++      "wall_s": 253.8,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index f7295acdf..1a382fb6b 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -2190,6 +2190,13 @@ class Parser:
+             this = self._parse_user_defined_function(kind=kind.token_type)
+         elif kind.token_type == TokenType.TABLE:
+             this = self._parse_table(alias_tokens=self.COMMENT_TABLE_ALIAS_TOKENS)
++        elif kind.token_type in (
++            TokenType.INDEX,
++            TokenType.SEQUENCE,
++            TokenType.TYPE,
++            TokenType.VIEW,
++        ):
++            this = self._parse_table_parts()
+         elif kind.token_type == TokenType.COLUMN:
+             this = self._parse_column()
+         else:
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index cba9d4887..6c3678ed7 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -69,6 +69,10 @@ class TestPostgres(Validator):
+         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+         self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
++        self.validate_identity("COMMENT ON TYPE foo.mood IS 'x'")
++        self.validate_identity("COMMENT ON VIEW foo.bat IS 'x'")
++        self.validate_identity("COMMENT ON SEQUENCE foo.seq IS 'x'")
++        self.validate_identity("COMMENT ON INDEX foo.idx IS 'x'")
+         self.validate_identity("SELECT e'\\xDEADBEEF'")
+         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")

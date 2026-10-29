@@ -1,0 +1,53 @@
+{
+  "task": "Oracle dialect: `JSON_TABLE` fails to parse when the input expression carries `FORMAT JSON` (e.g. `JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS (...))`). Support `FORMAT JSON` there so it parses and round-trips.",
+  "k": 1,
+  "reason": "cruise (S=1.00) \u2192 escalated",
+  "selected": "",
+  "why": "no rollout passed the gates",
+  "applied": false,
+  "first_pass": false,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 350713,
+    "cached": 2624958,
+    "out": 70569,
+    "cost": 0.13166348,
+    "exec": 4,
+    "roles": 4
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": false,
+      "gates": "test=pass"
+    },
+    "inv-1": {
+      "passed": false,
+      "gates": "test=pass"
+    },
+    "dom-1": {
+      "passed": false,
+      "gates": "test=pass"
+    },
+    "comp-1": {
+      "passed": false,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {
+    "inv-1": {
+      "valid": true,
+      "issues": []
+    },
+    "dom-1": {
+      "valid": true,
+      "issues": []
+    },
+    "comp-1": {
+      "valid": true,
+      "issues": []
+    }
+  }
+}

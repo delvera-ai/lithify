@@ -1,0 +1,32 @@
+{
+  "task": "ClickHouse dialect: the parametric aggregate syntax of `groupConcat` fails to parse (reported from Superset):\n\n```sql\nSELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts\n```\n\nraises `ParseError: Invalid expression`. Support `groupConcat`'s parametric form (separator as the parameter, column as the argument) so it parses and round-trips in ClickHouse.",
+  "k": 2,
+  "reason": "genesis (S=0.20)",
+  "selected": "base-2",
+  "why": "The two patches make the same one-line fix: they add `\"groupConcat\"` to ClickHouse's `AGG_FUNCTIONS` and test the exact query from the report. Both stay in scope, follow the repo's existing pattern, and pass all checks. Coverage decided it. c1 also tests the combinator form, `groupConcatIf(', ')(part_name, x > 1)`. That form only works because names in this list automatically get combinator suffixes, so c1 checks that path too. c2 (the runner-up) is just as correct but only tests the base case.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 103057,
+    "cached": 1835994,
+    "out": 15626,
+    "cost": 0.22800864,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.4,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

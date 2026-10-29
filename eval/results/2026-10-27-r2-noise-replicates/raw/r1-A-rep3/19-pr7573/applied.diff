@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9c44134cb..78789cf49 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -288,6 +288,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-121241-postgres-dialect-when-an-unnest",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 38588,
++      "tokens_cached": 857256,
++      "tokens_out": 8198,
++      "cost_usd": 0.0204,
++      "wall_s": 164.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..1ef26dcfe 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,7 +3203,8 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
+-                alias.append("columns", offset)
++                alias = alias.copy()
++                alias.append("columns", offset.copy())
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+             columns = alias.columns
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..6242fc318 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,4 @@
+-from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -140,6 +140,14 @@ class TestPostgres(Validator):
+         self.validate_identity(
+             "SELECT * FROM JSON_ARRAY_ELEMENTS('[1,true, [2,false]]') WITH ORDINALITY AS kv_json(a, b)"
+         )
++        unnest = parse_one(
++            "SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(col, ord)", read="postgres"
++        )
++        for _ in range(2):
++            self.assertEqual(
++                unnest.sql("postgres", copy=False),
++                "SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS t(col, ord)",
++            )
+         self.validate_identity(
+             "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
+         )

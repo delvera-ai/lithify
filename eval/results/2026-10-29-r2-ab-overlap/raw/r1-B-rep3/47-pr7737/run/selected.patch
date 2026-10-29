@@ -1,0 +1,85 @@
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..dceee4b10 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        pending_laterals: set[int] | None = None,
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -30,6 +36,9 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        # ids of lateral sources whose explode argument is currently being resolved, shared with
++        # child resolvers so that a lateral referencing itself through its parent scope terminates
++        self._pending_laterals: set[int] = set() if pending_laterals is None else pending_laterals
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -178,8 +187,16 @@ class Resolver:
+                 ):
+                     explode_col = source_expr.this.this
+ 
+-                    if isinstance(explode_col, exp.Column) and source.parent:
+-                        col_type = self._get_unnest_column_type(explode_col, source.parent)
++                    if (
++                        isinstance(explode_col, exp.Column)
++                        and source.parent
++                        and id(source) not in self._pending_laterals
++                    ):
++                        self._pending_laterals.add(id(source))
++                        try:
++                            col_type = self._get_unnest_column_type(explode_col, source.parent)
++                        finally:
++                            self._pending_laterals.discard(id(source))
+                         columns.extend(self._struct_field_names(col_type))
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+@@ -376,7 +393,9 @@ class Resolver:
+             table_name = column.table
+         else:
+             # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
++            parent_resolver = Resolver(
++                scope, self.schema, self._infer_schema, self._pending_laterals
++            )
+             table_identifier = parent_resolver.get_table(column)
+             if not table_identifier:
+                 return None
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..974ccb15a 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1694,6 +1694,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_unqualified_column_terminates(self):
++        sql = "SELECT x FROM t LATERAL VIEW EXPLODE(arr) v AS x"
++        for schema in ({"other": {"x": "int"}}, {"t": {"id": "int"}}):
++            with self.subTest(schema=schema):
++                with self.assertRaises(OptimizeError):
++                    qualify(parse_one(sql, read="spark"), schema=schema, dialect="spark")
++
++        expression = qualify(
++            parse_one(sql, read="spark"), schema={"t": {"arr": "array<int>"}}, dialect="spark"
++        )
++        self.assertEqual(
++            expression.sql("spark"),
++            "SELECT `v`.`x` AS `x` FROM `t` AS `t` LATERAL VIEW EXPLODE(`t`.`arr`) v AS `x`",
++        )
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

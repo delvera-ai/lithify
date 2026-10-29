@@ -1,0 +1,112 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 375a6d309..3338e91a1 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -448,6 +448,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-190613-mysql-dialect-support-change-col",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 40949,
++      "tokens_cached": 626316,
++      "tokens_out": 9182,
++      "cost_usd": 0.019,
++      "wall_s": 141.4,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 9576a1aa0..15c31d594 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -246,7 +246,7 @@ class AlterColumn(Expression):
+ 
+ 
+ class ModifyColumn(Expression):
+-    pass
++    arg_types = {"this": True, "old_name": False}
+ 
+ 
+ class AlterIndex(Expression):
+diff --git a/sqlglot/generators/mysql.py b/sqlglot/generators/mysql.py
+index ff87e38bf..671372bcf 100644
+--- a/sqlglot/generators/mysql.py
++++ b/sqlglot/generators/mysql.py
+@@ -719,6 +719,13 @@ class MySQLGenerator(generator.Generator):
+         this = self.sql(expression, "this")
+         return f"MODIFY COLUMN {this} {dtype}"
+ 
++    def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
++        old_name = self.sql(expression, "old_name")
++        if not old_name:
++            return super().modifycolumn_sql(expression)
++
++        return f"CHANGE COLUMN {old_name} {self.sql(expression, 'this')}"
++
+     def _prefixed_sql(self, prefix: str, expression: exp.Expr, arg: str) -> str:
+         sql = self.sql(expression, arg)
+         return f" {prefix} {sql}" if sql else ""
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index 8fb5301cd..d6612c9c1 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+         "MODIFY": lambda self: self._parse_alter_table_modify(),
++        "CHANGE": lambda self: self._parse_alter_table_change(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -317,7 +318,14 @@ class MySQLParser(parser.Parser):
+ 
+     def _parse_alter_table_modify(self) -> exp.Expr | None:
+         self._match(TokenType.COLUMN)
++        return self._parse_modify_column()
+ 
++    def _parse_alter_table_change(self) -> exp.Expr | None:
++        self._match(TokenType.COLUMN)
++        old_name = self._parse_field(any_token=True)
++        return self._parse_modify_column(old_name=old_name)
++
++    def _parse_modify_column(self, old_name: exp.Expr | None = None) -> exp.Expr | None:
+         column = self._parse_field(any_token=True)
+         if column is None:
+             return None
+@@ -326,7 +334,7 @@ class MySQLParser(parser.Parser):
+         if not isinstance(column_def, exp.ColumnDef):
+             return None
+ 
+-        return self.expression(exp.ModifyColumn(this=column_def))
++        return self.expression(exp.ModifyColumn(this=column_def, old_name=old_name))
+ 
+     def _parse_generated_as_identity(
+         self,
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index f8a818ebc..3da90cdec 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -50,6 +50,13 @@ class TestMySQL(Validator):
+             "ALTER TABLE t MODIFY c INT NOT NULL",
+             "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
+         )
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT NOT NULL")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b INT DEFAULT 5 FIRST")
++        self.validate_identity("ALTER TABLE t CHANGE COLUMN a b VARCHAR(50) COMMENT 'hi' AFTER c")
++        self.validate_identity(
++            "ALTER TABLE t CHANGE a b INT NOT NULL",
++            "ALTER TABLE t CHANGE COLUMN a b INT NOT NULL",
++        )
+         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

@@ -1,0 +1,64 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f24dc33bb..a25bbb1c8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -576,6 +576,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-193203-bigquery-duckdb-bigquery-s-parse",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32212,
++      "tokens_cached": 392293,
++      "tokens_out": 4168,
++      "cost_usd": 0.0124,
++      "wall_s": 125.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 9dd9b0c90..96cccb928 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2651,6 +2651,14 @@ class DuckDBGenerator(generator.Generator):
+             )
+         )
+ 
++    def parsetime_sql(self, expression: exp.ParseTime) -> str:
++        return self.sql(
++            exp.cast(
++                self.func("STRPTIME", expression.this, self.format_time(expression)),
++                exp.DataType(this=exp.DType.TIME),
++            )
++        )
++
+     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+         this = expression.this
+         time_format = self.format_time(expression)
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index fabf9a6cc..0bec61fb9 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -549,6 +549,13 @@ LANGUAGE js AS
+                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+             },
+         )
++        self.validate_all(
++            "PARSE_TIME('%H:%M', '14:30')",
++            write={
++                "bigquery": "PARSE_TIME('%H:%M', '14:30')",
++                "duckdb": "CAST(STRPTIME('14:30', '%H:%M') AS TIME)",
++            },
++        )
+         self.validate_all(
+             "SELECT results FROM Coordinates, Coordinates.position AS results",
+             write={

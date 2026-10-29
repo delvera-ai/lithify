@@ -1,0 +1,28 @@
+{
+  "task": "Lineage: `sqlglot.lineage.lineage()` does not trace the value and name columns produced by `UNPIVOT` back to their source columns. It returns a phantom column on the input relation instead:\n\n```python\nfrom sqlglot.lineage import lineage\nsql = '''\nWITH src AS (SELECT id, jan, feb FROM sales)\nSELECT id, metric_name, score\nFROM src UNPIVOT (score FOR metric_name IN (jan, feb))\n'''\nschema = {\"sales\": {\"id\": \"int\", \"jan\": \"int\", \"feb\": \"int\"}}\nlineage(\"score\", sql, schema=schema, dialect=\"snowflake\")\n```\n\nLineage of an `UNPIVOT` value column should reach the unpivoted source columns (`jan`, `feb`), and the name column should be handled correctly.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 48080,
+    "cached": 971539,
+    "out": 14875,
+    "cost": 0.026765090000000002,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

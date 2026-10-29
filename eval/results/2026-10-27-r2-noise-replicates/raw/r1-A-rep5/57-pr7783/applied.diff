@@ -1,0 +1,62 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c8a787afb..6c05c6187 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -896,6 +896,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-132335-snowflake-dialect-the-pattern-cl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 34992,
++      "tokens_cached": 654856,
++      "tokens_out": 6649,
++      "cost_usd": 0.0169,
++      "wall_s": 181.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 581f4da44..880d6a185 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2410,10 +2410,13 @@ class Generator:
+         laterals = self.expressions(expression, key="laterals", sep="")
+ 
+         file_format = self.sql(expression, "format")
++        pattern = self.sql(expression, "pattern")
++        staged_options = []
+         if file_format:
+-            pattern = self.sql(expression, "pattern")
+-            pattern = f", PATTERN => {pattern}" if pattern else ""
+-            file_format = f" (FILE_FORMAT => {file_format}{pattern})"
++            staged_options.append(f"FILE_FORMAT => {file_format}")
++        if pattern:
++            staged_options.append(f"PATTERN => {pattern}")
++        file_format = f" ({', '.join(staged_options)})" if staged_options else ""
+ 
+         ordinality = expression.args.get("ordinality") or ""
+         if ordinality:
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index f5b36d7d5..5107eab0c 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -3453,6 +3453,9 @@ class TestSnowflake(Validator):
+             "SELECT * FROM @foo/bar (PATTERN => 'test', FILE_FORMAT => ds_sandbox.test.my_csv_format) AS bla",
+             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
+         )
++        self.validate_identity(
++            "SELECT * FROM @mystage (PATTERN => '.*data-100.*')",
++        )
+ 
+         self.validate_identity(
+             "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",

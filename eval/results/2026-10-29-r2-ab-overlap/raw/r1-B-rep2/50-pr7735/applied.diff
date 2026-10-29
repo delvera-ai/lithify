@@ -1,0 +1,177 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 116eb430b..fee157a28 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -784,6 +784,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-164303-snowflake-dialect-snowflake-s-ti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 76524,
++      "tokens_cached": 2508747,
++      "tokens_out": 27723,
++      "cost_usd": 0.0542,
++      "wall_s": 249.0,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/snowflake.py b/sqlglot/dialects/snowflake.py
+index 83547aab7..291f067dd 100644
+--- a/sqlglot/dialects/snowflake.py
++++ b/sqlglot/dialects/snowflake.py
+@@ -166,6 +166,7 @@ class Snowflake(Dialect):
+             "TAG": TokenType.TAG,
+             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+             "TOP": TokenType.TOP,
++            "UNDROP": TokenType.UNDROP,
+             "VOLUME": TokenType.VOLUME,
+             "WAREHOUSE": TokenType.WAREHOUSE,
+             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index fddbc935a..e885a596c 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -366,6 +366,10 @@ class Drop(Expression):
+         return kind and kind.upper()
+ 
+ 
++class Undrop(Expression):
++    arg_types = {"this": True, "kind": True}
++
++
+ class DropPrimaryKey(Expression):
+     arg_types = {}
+ 
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index bee254c35..8e11cc9df 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -887,6 +887,9 @@ class SnowflakeGenerator(generator.Generator):
+         expressions = f" {expressions}" if expressions else ""
+         return f"DESCRIBE{kind}{this}{expressions}"
+ 
++    def undrop_sql(self, expression: exp.Undrop) -> str:
++        return f"UNDROP {expression.args['kind']} {self.sql(expression, 'this')}"
++
+     def generatedasidentitycolumnconstraint_sql(
+         self, expression: exp.GeneratedAsIdentityColumnConstraint
+     ) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 28db6bf6a..3dce32cc1 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -750,6 +750,7 @@ class Parser:
+         TokenType.TOP,
+         TokenType.TRUE,
+         TokenType.TRUNCATE,
++        TokenType.UNDROP,
+         TokenType.UNIQUE,
+         TokenType.UNNEST,
+         TokenType.UNPIVOT,
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 8c3fed5c3..7fe49124d 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -760,8 +760,24 @@ class SnowflakeParser(parser.Parser):
+         TokenType.GET: lambda self: self._parse_get(),
+         TokenType.PUT: lambda self: self._parse_put(),
+         TokenType.SHOW: lambda self: self._parse_show(),
++        TokenType.UNDROP: lambda self: self._parse_undrop(),
+     }
+ 
++    UNDROP_KINDS = (
++        "ACCOUNT",
++        "DATABASE",
++        "DYNAMIC TABLE",
++        "EXTERNAL VOLUME",
++        "ICEBERG TABLE",
++        "NOTEBOOK",
++        "SCHEMA",
++        "SNAPSHOT",
++        "STREAMLIT",
++        "TABLE",
++        "TAG",
++        "TYPE",
++    )
++
+     PROPERTY_PARSERS = {
+         **parser.Parser.PROPERTY_PARSERS,
+         "CREDENTIALS": lambda self: self._parse_credentials_property(),
+@@ -1211,6 +1227,18 @@ class SnowflakeParser(parser.Parser):
+             exp.Get(this=self._parse_string(), target=target, properties=self._parse_properties())
+         )
+ 
++    def _parse_undrop(self) -> exp.Undrop | exp.Command:
++        # https://docs.snowflake.com/en/sql-reference/sql/undrop-table
++        start = self._prev
++        kind = next(
++            (kind for kind in self.UNDROP_KINDS if self._match_text_seq(*kind.split())),
++            None,
++        )
++        if not kind:
++            return self._parse_as_command(start)
++
++        return self.expression(exp.Undrop(this=self._parse_table_parts(schema=True), kind=kind))
++
+     def _parse_location_property(self) -> exp.LocationProperty:
+         self._match(TokenType.EQ)
+         return self.expression(exp.LocationProperty(this=self._parse_location_path()))
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8616912c1..77fdcb33c 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -431,6 +431,7 @@ class TokenType(IntEnum):
+     TRIGGER = auto()
+     TYPE = auto()
+     UNCACHE = auto()
++    UNDROP = auto()
+     UNION = auto()
+     UNNEST = auto()
+     UNPIVOT = auto()
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 8eccf066c..88a99a3ba 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -5356,6 +5356,32 @@ MATCH_RECOGNIZE (
+         self.assertTrue(ast.args["restrict"])
+         self.validate_identity("DROP ICEBERG TABLE IF EXISTS t RESTRICT")
+ 
++    def test_undrop(self):
++        ast = self.validate_identity("UNDROP TABLE db.s.t")
++        self.assertIsInstance(ast, exp.Undrop)
++        self.assertEqual(ast.args["kind"], "TABLE")
++
++        for kind in (
++            "ACCOUNT",
++            "DATABASE",
++            "DYNAMIC TABLE",
++            "EXTERNAL VOLUME",
++            "ICEBERG TABLE",
++            "NOTEBOOK",
++            "SCHEMA",
++            "SNAPSHOT",
++            "STREAMLIT",
++            "TABLE",
++            "TAG",
++            "TYPE",
++        ):
++            with self.subTest(kind=kind):
++                self.validate_identity(f"UNDROP {kind} x")
++
++        self.validate_identity("UNDROP TABLE IDENTIFIER('\"1234567\"')")
++        self.validate_identity("UNDROP DATABASE IDENTIFIER($id)")
++        self.validate_identity("undrop table t", "UNDROP TABLE t")
++
+     def test_show_primary_keys(self):
+         self.validate_identity("SHOW PRIMARY KEYS")
+         self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")

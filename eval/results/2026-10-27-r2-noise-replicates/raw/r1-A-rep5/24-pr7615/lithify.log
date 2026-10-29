@@ -1,0 +1,19 @@
+lithify ▸ 20261029-102433-schema-performance-mappingschema  k=0 (override k=0) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ✓ applied deliverable from base-1: cruise: gates passed on first execution
+lithify ◂ delivered=True first_pass=True S=0.90 executions=1 role_sessions=0 tokens(in/cached/out)=42502/744624/10371 cost=$0.02
+{
+  "task_id": "20261029-102433-schema-performance-mappingschema",
+  "k": 0,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.9,
+  "executions": 1,
+  "role_sessions": 0
+}
+

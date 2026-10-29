@@ -1,0 +1,58 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 56b4b9393..d1973fa23 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -464,6 +464,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-105046-sqlite-and-other-dialects-a-wind",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32425,
++      "tokens_cached": 418832,
++      "tokens_out": 5666,
++      "cost_usd": 0.0135,
++      "wall_s": 150.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..9985234c9 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8312,6 +8312,12 @@ class Parser:
+         if self._can_parse_limit_or_offset():
+             return this
+ 
++        # A WINDOW clause can directly follow a select list when there's no FROM clause
++        if self._match(TokenType.WINDOW, advance=False) and self._try_parse(
++            self._parse_window_clause, retreat=True
++        ):
++            return this
++
+         any_token = self._match(TokenType.ALIAS)
+         comments = self._prev_comments
+ 
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..ffb47609a 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -378,3 +378,9 @@ class TestSQLite(Validator):
+             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view BEGIN INSERT INTO employees (id, name, department) VALUES (NEW.id, NEW.name, NEW.department) END",
+             check_command_warning=True,
+         )
++
++    def test_window_clause_without_from(self):
++        self.validate_identity(
++            "SELECT 1 WINDOW a AS (PARTITION BY fake_column)",
++            "SELECT 1 WINDOW a AS (PARTITION BY fake_column)",
++        )

@@ -1,0 +1,54 @@
+A5 owner-requested recovery: completed.
+
+[
+  {
+    "label": "r1-A-rep2",
+    "tasks": 60,
+    "passes": 37,
+    "timeouts": 0,
+    "cost_usd": 2.0841,
+    "mean_cost_usd": 0.03473571499999999,
+    "median_wall_s": 191.95,
+    "median_active_s": 129.5905,
+    "median_api_s": 59.684,
+    "median_idle_s": 54.1425
+  },
+  {
+    "label": "r1-A-rep3",
+    "tasks": 60,
+    "passes": 35,
+    "timeouts": 0,
+    "cost_usd": 2.0681,
+    "mean_cost_usd": 0.03446833333333333,
+    "median_wall_s": 183.10000000000002,
+    "median_active_s": 130.5725,
+    "median_api_s": 59.7645,
+    "median_idle_s": 53.652
+  },
+  {
+    "label": "r1-A-rep4",
+    "tasks": 60,
+    "passes": 38,
+    "timeouts": 0,
+    "cost_usd": 1.901,
+    "mean_cost_usd": 0.031683333333333334,
+    "median_wall_s": 210.55,
+    "median_active_s": 133.91899999999998,
+    "median_api_s": 66.1875,
+    "median_idle_s": 53.328
+  },
+  {
+    "label": "r1-A-rep5",
+    "tasks": 60,
+    "passes": 37,
+    "timeouts": 1,
+    "cost_usd": 1.701,
+    "mean_cost_usd": 0.028350545333333334,
+    "median_wall_s": 183.2,
+    "median_active_s": 124.937,
+    "median_api_s": 65.0635,
+    "median_idle_s": 56.0815
+  }
+]
+
+Task35 remains a timeout failure. Its 25 matched requests reconcile to cumulative $0.02313272; no repeated task or billing. B remains stopped. Phase-0 analysis/report still required before Phase1.

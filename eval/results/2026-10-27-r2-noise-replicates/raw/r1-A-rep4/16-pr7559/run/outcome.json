@@ -1,0 +1,28 @@
+{
+  "task": "`JSON_ARRAY` accepts at most four arguments when built through sqlglot's expression machinery; calls with more elements (e.g. `JSON_ARRAY(1, 2, 3, 4, 5, 6)`) fail argument validation. `JSON_ARRAY` takes any number of values. Remove the artificial limit without changing how existing dialects parse it.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 44535,
+    "cached": 950622,
+    "out": 11627,
+    "cost": 0.024222719999999996,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

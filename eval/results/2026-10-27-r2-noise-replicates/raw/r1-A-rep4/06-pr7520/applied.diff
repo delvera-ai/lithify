@@ -1,0 +1,52 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c7cf162ca..891b682f2 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -80,6 +80,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-164356-mysql-dialect-mysql-allows-setti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 38952,
++      "tokens_cached": 565223,
++      "tokens_out": 6802,
++      "cost_usd": 0.0168,
++      "wall_s": 148.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..4889df6a4 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+     ALTER_ALTER_PARSERS = {
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..8379655f3 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -201,6 +201,8 @@ class TestMySQL(Validator):
+             "ALTER TABLE t RENAME KEY a TO b",
+             "ALTER TABLE t RENAME INDEX a TO b",
+         )
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT 5", "ALTER TABLE t AUTO_INCREMENT=5")
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )

@@ -1,0 +1,284 @@
+{
+  "seed": 20261027,
+  "experiments_per_cell": 5000,
+  "permutations": 1999,
+  "alpha": 0.05,
+  "empirical_pass_fraction_mean": 0.6067,
+  "jeffreys_pass_fraction_mean": 0.5889,
+  "mean_one_minus_p_empirical": 0.3933,
+  "measured_A_mean_cost_usd_per_task": 0.03237,
+  "measured_A_median_wall_s": 195.04,
+  "E_cost": "unknown until Phase 1; not priced as B",
+  "cost_table": [
+    {
+      "window_total": 60,
+      "warmup": 20,
+      "primary_n": 40,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 20,
+      "baseline_arm_tasks": 60,
+      "baseline_arm_usd_at_measured_A_mean": 1.94,
+      "baseline_arm_median_wall_hours_serial": 3.25
+    },
+    {
+      "window_total": 60,
+      "warmup": 20,
+      "primary_n": 40,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 120,
+      "baseline_arm_usd_at_measured_A_mean": 3.88,
+      "baseline_arm_median_wall_hours_serial": 6.5
+    },
+    {
+      "window_total": 60,
+      "warmup": 20,
+      "primary_n": 40,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 180,
+      "baseline_arm_usd_at_measured_A_mean": 5.83,
+      "baseline_arm_median_wall_hours_serial": 9.75
+    },
+    {
+      "window_total": 60,
+      "warmup": 30,
+      "primary_n": 30,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 30,
+      "baseline_arm_tasks": 60,
+      "baseline_arm_usd_at_measured_A_mean": 1.94,
+      "baseline_arm_median_wall_hours_serial": 3.25
+    },
+    {
+      "window_total": 60,
+      "warmup": 30,
+      "primary_n": 30,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 120,
+      "baseline_arm_usd_at_measured_A_mean": 3.88,
+      "baseline_arm_median_wall_hours_serial": 6.5
+    },
+    {
+      "window_total": 60,
+      "warmup": 30,
+      "primary_n": 30,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 90,
+      "baseline_arm_tasks": 180,
+      "baseline_arm_usd_at_measured_A_mean": 5.83,
+      "baseline_arm_median_wall_hours_serial": 9.75
+    },
+    {
+      "window_total": 60,
+      "warmup": 40,
+      "primary_n": 20,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 60,
+      "baseline_arm_usd_at_measured_A_mean": 1.94,
+      "baseline_arm_median_wall_hours_serial": 3.25
+    },
+    {
+      "window_total": 60,
+      "warmup": 40,
+      "primary_n": 20,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 80,
+      "baseline_arm_tasks": 120,
+      "baseline_arm_usd_at_measured_A_mean": 3.88,
+      "baseline_arm_median_wall_hours_serial": 6.5
+    },
+    {
+      "window_total": 60,
+      "warmup": 40,
+      "primary_n": 20,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 120,
+      "baseline_arm_tasks": 180,
+      "baseline_arm_usd_at_measured_A_mean": 5.83,
+      "baseline_arm_median_wall_hours_serial": 9.75
+    },
+    {
+      "window_total": 100,
+      "warmup": 20,
+      "primary_n": 80,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 20,
+      "baseline_arm_tasks": 100,
+      "baseline_arm_usd_at_measured_A_mean": 3.24,
+      "baseline_arm_median_wall_hours_serial": 5.42
+    },
+    {
+      "window_total": 100,
+      "warmup": 20,
+      "primary_n": 80,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 200,
+      "baseline_arm_usd_at_measured_A_mean": 6.47,
+      "baseline_arm_median_wall_hours_serial": 10.84
+    },
+    {
+      "window_total": 100,
+      "warmup": 20,
+      "primary_n": 80,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 100,
+      "warmup": 30,
+      "primary_n": 70,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 30,
+      "baseline_arm_tasks": 100,
+      "baseline_arm_usd_at_measured_A_mean": 3.24,
+      "baseline_arm_median_wall_hours_serial": 5.42
+    },
+    {
+      "window_total": 100,
+      "warmup": 30,
+      "primary_n": 70,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 200,
+      "baseline_arm_usd_at_measured_A_mean": 6.47,
+      "baseline_arm_median_wall_hours_serial": 10.84
+    },
+    {
+      "window_total": 100,
+      "warmup": 30,
+      "primary_n": 70,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 90,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 100,
+      "warmup": 40,
+      "primary_n": 60,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 100,
+      "baseline_arm_usd_at_measured_A_mean": 3.24,
+      "baseline_arm_median_wall_hours_serial": 5.42
+    },
+    {
+      "window_total": 100,
+      "warmup": 40,
+      "primary_n": 60,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 80,
+      "baseline_arm_tasks": 200,
+      "baseline_arm_usd_at_measured_A_mean": 6.47,
+      "baseline_arm_median_wall_hours_serial": 10.84
+    },
+    {
+      "window_total": 100,
+      "warmup": 40,
+      "primary_n": 60,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 120,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 150,
+      "warmup": 20,
+      "primary_n": 130,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 20,
+      "baseline_arm_tasks": 150,
+      "baseline_arm_usd_at_measured_A_mean": 4.86,
+      "baseline_arm_median_wall_hours_serial": 8.13
+    },
+    {
+      "window_total": 150,
+      "warmup": 20,
+      "primary_n": 130,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 150,
+      "warmup": 20,
+      "primary_n": 130,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 450,
+      "baseline_arm_usd_at_measured_A_mean": 14.57,
+      "baseline_arm_median_wall_hours_serial": 24.38
+    },
+    {
+      "window_total": 150,
+      "warmup": 30,
+      "primary_n": 120,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 30,
+      "baseline_arm_tasks": 150,
+      "baseline_arm_usd_at_measured_A_mean": 4.86,
+      "baseline_arm_median_wall_hours_serial": 8.13
+    },
+    {
+      "window_total": 150,
+      "warmup": 30,
+      "primary_n": 120,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 60,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 150,
+      "warmup": 30,
+      "primary_n": 120,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 90,
+      "baseline_arm_tasks": 450,
+      "baseline_arm_usd_at_measured_A_mean": 14.57,
+      "baseline_arm_median_wall_hours_serial": 24.38
+    },
+    {
+      "window_total": 150,
+      "warmup": 40,
+      "primary_n": 110,
+      "seeds": 1,
+      "paid_warmup_tasks_all_seeds": 40,
+      "baseline_arm_tasks": 150,
+      "baseline_arm_usd_at_measured_A_mean": 4.86,
+      "baseline_arm_median_wall_hours_serial": 8.13
+    },
+    {
+      "window_total": 150,
+      "warmup": 40,
+      "primary_n": 110,
+      "seeds": 2,
+      "paid_warmup_tasks_all_seeds": 80,
+      "baseline_arm_tasks": 300,
+      "baseline_arm_usd_at_measured_A_mean": 9.71,
+      "baseline_arm_median_wall_hours_serial": 16.25
+    },
+    {
+      "window_total": 150,
+      "warmup": 40,
+      "primary_n": 110,
+      "seeds": 3,
+      "paid_warmup_tasks_all_seeds": 120,
+      "baseline_arm_tasks": 450,
+      "baseline_arm_usd_at_measured_A_mean": 14.57,
+      "baseline_arm_median_wall_hours_serial": 24.38
+    }
+  ]
+}

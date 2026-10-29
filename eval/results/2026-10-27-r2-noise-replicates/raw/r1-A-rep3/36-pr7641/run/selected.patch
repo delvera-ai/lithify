@@ -1,0 +1,50 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..a974203bd 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,25 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_key = expression.this
++                        order = expression.parent
++                        # A bare projection alias may be ambiguous with FROM columns inside the CASE,
++                        # so reference the aliased projection instead
++                        if (
++                            isinstance(null_key, exp.Column)
++                            and not null_key.table
++                            and isinstance(order, exp.Order)
++                            and isinstance(order.parent, exp.Select)
++                        ):
++                            for projection in order.parent.expressions:
++                                if (
++                                    isinstance(projection, exp.Alias)
++                                    and projection.alias == null_key.name
++                                ):
++                                    null_key = projection.this
++                                    break
++                        null_key_sql = self.sql(null_key)
++                        this = f"CASE WHEN {null_key_sql} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 1e8495da0..97447d915 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1126,6 +1126,12 @@ class TestDuckDB(Validator):
+                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC, lname",
+             },
+         )
++        self.validate_all(
++            "SELECT t1.a AS x, t2.b FROM t1 JOIN t2 ON t1.id = t2.id ORDER BY x",
++            write={
++                "mysql": "SELECT t1.a AS x, t2.b FROM t1 JOIN t2 ON t1.id = t2.id ORDER BY CASE WHEN t1.a IS NULL THEN 1 ELSE 0 END, x",
++            },
++        )
+         self.validate_all(
+             "MONTH('2021-03-01')",
+             write={

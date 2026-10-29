@@ -1,0 +1,56 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1d5b56c30..ed8afbffd 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -768,6 +768,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-102308-bigquery-duckdb-bigquery-s-parse",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33402,
++      "tokens_cached": 461410,
++      "tokens_out": 5660,
++      "cost_usd": 0.0141,
++      "wall_s": 148.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 9b46b731f..f59fad168 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2668,6 +2668,9 @@ class DuckDBGenerator(generator.Generator):
+             )
+         )
+ 
++    def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
++        return str_to_time_sql(self, expression)
++
+     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+         this = expression.this
+         time_format = self.format_time(expression)
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 08b62577e..9dcf48dd5 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1837,6 +1837,10 @@ class TestDuckDB(Validator):
+             "SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)",
+             read={"bigquery": "SELECT PARSE_TIME('%H:%M:%E6S', '15:30:00.123456')"},
+         )
++        self.validate_all(
++            "SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')",
++            read={"bigquery": "SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2023-01-15 14:30:00')"},
++        )
+         self.validate_all(
+             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
+             read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},

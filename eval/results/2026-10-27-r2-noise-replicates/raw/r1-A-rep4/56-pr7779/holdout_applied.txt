@@ -1,0 +1,19 @@
+exit 1
+................                                     [100%]
+=================================== FAILURES ===================================
+_ TestStarrocks.test_array_contains_all [duckdb -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT [1, 2] <@ [1, 2, 3]' != 'SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])'
+E   - SELECT [1, 2] <@ [1, 2, 3]
+E   + SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])
+_ TestStarrocks.test_array_contains_all [postgres -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT [1, 2] <@ [1, 2, 3]' != 'SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])'
+E   - SELECT [1, 2] <@ [1, 2, 3]
+E   + SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])
+=========================== short test summary info ============================
+SUBFAILED[duckdb -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] tests/dialects/test_starrocks.py::TestStarrocks::test_array_contains_all
+SUBFAILED[postgres -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] tests/dialects/test_starrocks.py::TestStarrocks::test_array_contains_all
+2 failed, 16 passed, 90 subtests passed in 0.36s

@@ -1,0 +1,106 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9f095e822..559bbba77 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -816,6 +816,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-141457-postgres-dialect-support-the-jso",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33296,
++      "tokens_cached": 335777,
++      "tokens_out": 6119,
++      "cost_usd": 0.0131,
++      "wall_s": 143.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index c79d25697..68acbd7fa 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -79,6 +79,7 @@ class Postgres(Dialect):
+             "<@": TokenType.LT_AT,
+             "?&": TokenType.QMARK_AMP,
+             "?|": TokenType.QMARK_PIPE,
++            "@?": TokenType.AT_QMARK,
+             "#-": TokenType.HASH_DASH,
+             "|/": TokenType.PIPE_SLASH,
+             "||/": TokenType.DPIPE_SLASH,
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 63e0f6588..4298c4061 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -62,6 +62,10 @@ class JSONBDeleteAtPath(Expression, Binary, Func):
+     pass
+ 
+ 
++class JSONBPathExists(Expression, Binary, Func):
++    _sql_names = ["JSONB_PATH_EXISTS"]
++
++
+ class JSONBExists(Expression, Func):
+     arg_types = {"this": True, "path": True}
+     _sql_names = ["JSONB_EXISTS"]
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 3dc6ea069..43264fa33 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -204,6 +204,7 @@ class Generator:
+         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
+         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
+         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
++        exp.JSONBPathExists: lambda self, e: self.binary(e, "@?"),
+         exp.JSONObject: lambda self, e: self._jsonobject_sql(e),
+         exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e),
+         exp.LanguageProperty: lambda self, e: self.naked_property(e),
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 84fa38f6d..85ac3d540 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -1200,6 +1200,7 @@ class Parser:
+         TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
+         TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
+         TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
++        TokenType.AT_QMARK: binary_range_parser(exp.JSONBPathExists),
+         TokenType.ADJACENT: binary_range_parser(exp.Adjacent),
+         TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
+         TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 77fdcb33c..0685314d8 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -79,6 +79,7 @@ class TokenType(IntEnum):
+     DSTAR = auto()
+     QMARK_AMP = auto()
+     QMARK_PIPE = auto()
++    AT_QMARK = auto()
+     HASH_DASH = auto()
+     EXCLAMATION = auto()
+ 
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 556c3f6b1..52aeee8eb 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1042,6 +1042,11 @@ FROM json_data, field_ids""",
+             """SELECT CAST('{"a":1, "b":2, "c":3}' AS JSONB) ?| ARRAY['b', 'c']""",
+         )
+ 
++        self.validate_identity("doc @? '$.a[*] ? (@ > 2)'").assert_is(exp.JSONBPathExists)
++        self.validate_identity(
++            "SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'",
++        )
++
+         self.validate_identity("a ?& b").assert_is(exp.JSONBContainsAllTopKeys)
+         self.validate_identity(
+             """SELECT '["a", "b"]'::jsonb ?& array['a', 'b']""",

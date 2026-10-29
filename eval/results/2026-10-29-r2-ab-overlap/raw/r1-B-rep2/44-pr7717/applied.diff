@@ -1,0 +1,58 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 48fef5706..b819f7db3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -688,6 +688,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-162323-clickhouse-dialect-the-file-tabl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 43956,
++      "tokens_cached": 992481,
++      "tokens_out": 8356,
++      "cost_usd": 0.0229,
++      "wall_s": 170.9,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index efdebd18d..ea21db556 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -316,6 +316,7 @@ class ClickHouseParser(parser.Parser):
+     FUNC_TOKENS = {
+         *parser.Parser.FUNC_TOKENS,
+         TokenType.AND,
++        TokenType.FILE,
+         TokenType.OR,
+         TokenType.SET,
+     }
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..43723c308 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -604,6 +604,14 @@ class TestClickhouse(Validator):
+             """INSERT INTO TABLE FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
+             """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES (('test'), (1), (2))""",
+         )
++        self.validate_identity("SELECT c1 FROM file('base/dir/*.parquet', Parquet)")
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
++        self.validate_identity("SELECT f.c1 FROM file('base/dir/*.parquet', Parquet) AS f")
++        self.validate_identity(
++            "SELECT t.c1 FROM t JOIN file('base/dir/*.parquet', Parquet) AS f ON t.c1 = f.c1"
++        )
+ 
+         self.validate_identity(
+             "INSERT INTO t (n.a, n.b) VALUES (1, [1, 2])",

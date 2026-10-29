@@ -1,0 +1,29 @@
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index efdebd18d..5ff310a64 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -318,6 +318,7 @@ class ClickHouseParser(parser.Parser):
+         TokenType.AND,
+         TokenType.OR,
+         TokenType.SET,
++        TokenType.FILE,
+     }
+ 
+     RESERVED_TOKENS = parser.Parser.RESERVED_TOKENS - {TokenType.SELECT}
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..2461fb91c 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1855,6 +1855,12 @@ LIFETIME(MIN 0 MAX 0)""",
+         )
+         self.validate_identity("splitByChar('', x)")
+ 
++    def test_file_table_function(self):
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
++        self.validate_identity("SELECT * FROM file('data.csv', 'CSV') AS t")
++
+     def test_sql_security(self):
+         stmts = [
+             "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",

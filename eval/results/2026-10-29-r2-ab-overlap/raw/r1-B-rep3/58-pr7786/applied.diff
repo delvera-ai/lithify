@@ -1,0 +1,62 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d6f255897..1e523f529 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -912,6 +912,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-204117-exasol-dialect-the-second-argume",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 38711,
++      "tokens_cached": 516566,
++      "tokens_out": 5999,
++      "cost_usd": 0.0159,
++      "wall_s": 135.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/exasol.py b/sqlglot/parsers/exasol.py
+index 0d2156035..4ccaa563a 100644
+--- a/sqlglot/parsers/exasol.py
++++ b/sqlglot/parsers/exasol.py
+@@ -119,8 +119,9 @@ class ExasolParser(parser.Parser):
+     FUNCTION_PARSERS = {
+         **parser.Parser.FUNCTION_PARSERS,
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
++        "LISTAGG": lambda self: self._parse_string_agg(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
+-        **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
++        "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
+         "JSON_VALUE": lambda self: self._parse_json_value(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 1404e1a3c..27002749e 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -334,6 +334,15 @@ class TestExasol(Validator):
+                 "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
+             },
+         )
++        self.validate_all(
++            "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++            read={
++                "oracle": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++                "snowflake": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++                "trino": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++                "duckdb": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
++            },
++        )
+         self.validate_all(
+             "EDIT_DISTANCE(col1, col2)",
+             read={

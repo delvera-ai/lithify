@@ -1,0 +1,52 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 808dff3b9..5c12ccb9d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -832,6 +832,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-131052-druid-dialect-the-returning-type",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33068,
++      "tokens_cached": 381556,
++      "tokens_out": 4622,
++      "cost_usd": 0.0127,
++      "wall_s": 130.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/druid.py b/sqlglot/parsers/druid.py
+index 20f2cef3a..ecdb528a1 100644
+--- a/sqlglot/parsers/druid.py
++++ b/sqlglot/parsers/druid.py
+@@ -4,4 +4,7 @@ from sqlglot.parser import Parser
+ 
+ 
+ class DruidParser(Parser):
+-    pass
++    FUNCTION_PARSERS = {
++        **Parser.FUNCTION_PARSERS,
++        "JSON_VALUE": lambda self: self._parse_json_value(),
++    }
+diff --git a/tests/dialects/test_druid.py b/tests/dialects/test_druid.py
+index fb5e4e756..fe9c50eb3 100644
+--- a/tests/dialects/test_druid.py
++++ b/tests/dialects/test_druid.py
+@@ -15,6 +15,7 @@ class TestDruid(Validator):
+         self.validate_identity("SELECT FLOOR(price, 2) AS rounded_price FROM t")
+         self.validate_identity("SELECT CURRENT_TIMESTAMP")
+         self.validate_identity("SELECT ARRAY[1, 2, 3]")
++        self.validate_identity("SELECT JSON_VALUE(x, '$.a' RETURNING BIGINT) FROM t")
+ 
+         # validate across all dialects
+         write = {dialect.value: "FLOOR(__time TO WEEK)" for dialect in Dialects}

@@ -1,0 +1,54 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 9ab19c7c5..a169c67d4 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -16,6 +16,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.2,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-111747-clickhouse-dialect-the-parametri",
++      "k": 2,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 2,
++      "tokens_in": 103057,
++      "tokens_cached": 1835994,
++      "tokens_out": 15626,
++      "cost_usd": 0.228,
++      "wall_s": 176.2,
++      "always_on_tokens": 165,
++      "stability_after": 0.4,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..dda19b6d6 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -131,6 +131,7 @@ AGG_FUNCTIONS = {
+     "groupArrayMovingAvg",
+     "groupArrayMovingSum",
+     "groupArraySample",
++    "groupConcat",
+     "groupBitAnd",
+     "groupBitOr",
+     "groupBitXor",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..392aed13a 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -104,6 +104,10 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")
+         self.validate_identity("SELECT histogram(5)(a)")
+         self.validate_identity("SELECT groupUniqArray(2)(a)")
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        )
++        self.validate_identity("SELECT groupConcatIf(', ')(part_name, x > 1) FROM system.parts")
+         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
+         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
+         self.validate_identity("jaroWinklerSimilarity('hello', 'world')")

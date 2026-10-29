@@ -1,0 +1,121 @@
+exit 1
+TRUE ([4mid[0m) AS SELECT * FROM my_table
+
+sqlglot/parser.py:2007: ParseError
+____________________________ TestSnowflake.test_ddl ____________________________
+
+self = <tests.dialects.test_snowflake.TestSnowflake testMethod=test_ddl>
+
+    def test_ddl(self):
+        for constraint_prefix in ("WITH ", ""):
+            with self.subTest(f"Constraint prefix: {constraint_prefix}"):
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p.q.r)",
+                    "CREATE TABLE t (id INT MASKING POLICY p.q.r)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}MASKING POLICY p USING (c1, c2, c3))",
+                    "CREATE TABLE t (id INT MASKING POLICY p USING (c1, c2, c3))",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}PROJECTION POLICY p.q.r)",
+                    "CREATE TABLE t (id INT PROJECTION POLICY p.q.r)",
+                )
+                self.validate_identity(
+                    f"CREATE TABLE t (id INT {constraint_prefix}TAG (key1='value_1', key2='value_2'))",
+                    "CREATE TABLE t (id INT TAG (key1='value_1', key2='value_2'))",
+                )
+    
+        self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
+        self.validate_identity("USE SECONDARY ROLES ALL")
+        self.validate_identity("USE SECONDARY ROLES NONE")
+        self.validate_identity("USE SECONDARY ROLES a, b, c")
+        self.validate_identity("CREATE SECURE VIEW table1 AS (SELECT a FROM table2)")
+        self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
+        self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
+        self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
+>       self.validate_identity(
+            "CREATE TABLE t CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1 (id INT)",
+            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1",
+        )
+
+tests/dialects/test_snowflake.py:4268: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1129: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2050: in parse
+    return self._parse(
+sqlglot/parser.py:2170: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2137: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2289: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1089: in <lambda>
+    TokenType.CREATE: lambda self: self._parse_create(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parsers/snowflake.py:1031: in _parse_create
+    expression = super()._parse_create()
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2587: in _parse_create
+    expression = self._parse_ddl_select()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8649: in _parse_ddl_select
+    self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3837: in _parse_select
+    query = self._parse_select_query(
+sqlglot/parser.py:3977: in _parse_select_query
+    self._match_r_paren()
+sqlglot/parser.py:9424: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.snowflake.SnowflakeParser object at 0x107653290>
+message = 'Expecting )'
+token = <Token token_type: TokenType.VAR, text: id, line: 1, col: 69, start: 67, end: 68, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 69.
+E             CREATE TABLE t CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1 ([4mid[0m INT)
+
+sqlglot/parser.py:2007: ParseError
+----------------------------- Captured stdout call -----------------------------
+uu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_snowflake.py::TestSnowflake::test_create_view_change_tracking
+FAILED tests/dialects/test_snowflake.py::TestSnowflake::test_ddl - sqlglot.er...
+2 failed, 95 passed, 1547 subtests passed in 1.44s

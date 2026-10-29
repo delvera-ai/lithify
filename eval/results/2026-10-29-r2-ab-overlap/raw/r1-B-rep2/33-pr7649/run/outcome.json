@@ -1,0 +1,28 @@
+{
+  "task": "T-SQL dialect: support the `FOR JSON` query modifier (like the existing `FOR XML` support):\n\n```\nFOR JSON { AUTO | PATH } [, ROOT [('name')]] [, INCLUDE_NULL_VALUES] [, WITHOUT_ARRAY_WRAPPER]\n```\n\nIt should parse and round-trip in T-SQL. Other dialects should emit an unsupported-option warning and drop the clause, as they do for `FOR XML`.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 63229,
+    "cached": 1362283,
+    "out": 23548,
+    "cost": 0.038037829999999995,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

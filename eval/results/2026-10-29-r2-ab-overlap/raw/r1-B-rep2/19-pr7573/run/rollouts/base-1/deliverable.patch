@@ -1,0 +1,43 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index fe49054eb..1ef26dcfe 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3203,7 +3203,8 @@ class Generator:
+ 
+         if self.UNNEST_WITH_ORDINALITY:
+             if alias and isinstance(offset, exp.Expr):
+-                alias.append("columns", offset)
++                alias = alias.copy()
++                alias.append("columns", offset.copy())
+ 
+         if alias and self.dialect.UNNEST_COLUMN_ONLY:
+             columns = alias.columns
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f15c1be5c..affc1de53 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,4 @@
+-from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot import Dialect, ParseError, UnsupportedError, exp, transpile
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -1408,6 +1408,18 @@ FROM json_data, field_ids""",
+             },
+         )
+ 
++    def test_unnest_ordinality_is_not_mutated_on_render(self):
++        unnest = exp.Unnest(
++            expressions=[exp.array(exp.Literal.number(1))],
++            alias=exp.TableAlias(this=exp.to_identifier("t"), columns=[exp.to_identifier("col")]),
++            offset=exp.to_identifier("ord"),
++        )
++        generator = Dialect.get_or_raise("postgres").generator()
++        expected = "UNNEST(ARRAY[1]) WITH ORDINALITY AS t(col, ord)"
++        self.assertEqual(generator.unnest_sql(unnest), expected)
++        self.assertEqual(generator.unnest_sql(unnest), expected)
++        self.assertEqual([c.name for c in unnest.args["alias"].columns], ["col"])
++
+     def test_array_offset(self):
+         with self.assertLogs(helper_logger) as cm:
+             self.validate_all(

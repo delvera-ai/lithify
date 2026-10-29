@@ -1,0 +1,207 @@
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index 28de2be45..654845bf2 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -8,14 +8,14 @@ from sqlglot.dialects.dialect import Dialect, DialectType
+ from sqlglot.errors import OptimizeError, highlight_sql
+ from sqlglot.helper import seq_get
+ from sqlglot.optimizer.annotate_types import TypeAnnotator
+-from sqlglot.optimizer.resolver import Resolver
++from sqlglot.optimizer.resolver import Resolver, pivot_output_columns
+ from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
+ from sqlglot.optimizer.simplify import simplify_parens
+ from sqlglot.schema import Schema, ensure_schema
+ 
+ if t.TYPE_CHECKING:
+     from sqlglot._typing import E
+-    from collections.abc import Iterator, Iterable
++    from collections.abc import Iterable
+ 
+ 
+ def qualify_columns(
+@@ -181,22 +181,6 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
+         scope.clear_cache()
+ 
+ 
+-def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
+-    name_columns = [
+-        field.this
+-        for field in unpivot.fields
+-        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
+-    ]
+-    value_columns = (
+-        ident
+-        for e in unpivot.expressions
+-        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
+-        if isinstance(ident, exp.Identifier)
+-    )
+-
+-    return itertools.chain(name_columns, value_columns)
+-
+-
+ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
+     """
+     Remove table column aliases.
+@@ -605,7 +589,12 @@ def _qualify_columns(
+         column_name = column.name
+ 
+         if column_table and column_table in scope.sources:
+-            source_columns = resolver.get_source_columns(column_table)
++            # Pivot operands refer to the pre-pivot columns, outer references to the pivot's output
++            source_columns = (
++                resolver.get_source_columns(column_table)
++                if column.find_ancestor(exp.Pivot)
++                else resolver.get_pivoted_source_columns(column_table)
++            )
+             if (
+                 not allow_partial_qualification
+                 and source_columns
+@@ -782,27 +771,7 @@ def _expand_stars(
+     coalesced_columns = set()
+     dialect = resolver.dialect
+ 
+-    pivot_output_columns = None
+-    pivot_exclude_columns: set[str] = set()
+-
+     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
+-    if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
+-        if pivot.unpivot:
+-            pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
+-
+-            for field in pivot.fields:
+-                if isinstance(field, exp.In):
+-                    pivot_exclude_columns.update(
+-                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+-                    )
+-
+-        else:
+-            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
+-
+-            pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
+-            if not pivot_output_columns:
+-                pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
+-
+     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+         isinstance(col, exp.Dot) for col in scope.stars
+     ):
+@@ -865,19 +834,13 @@ def _expand_stars(
+             replaced_columns = replace_columns.get(table_id, {})
+ 
+             if pivot:
+-                if pivot_output_columns and pivot_exclude_columns:
+-                    pivot_columns = [c for c in columns if c not in pivot_exclude_columns]
+-                    pivot_columns.extend(pivot_output_columns)
+-                else:
+-                    pivot_columns = pivot.alias_column_names
+-
+-                if pivot_columns:
+-                    new_selections.extend(
+-                        alias(exp.column(name, table=pivot.alias), name, copy=False)
+-                        for name in pivot_columns
+-                        if name not in columns_to_exclude
+-                    )
+-                    continue
++                pivot_columns = pivot.alias_column_names or pivot_output_columns(pivot, columns)
++                new_selections.extend(
++                    alias(exp.column(name, table=pivot.alias), name, copy=False)
++                    for name in pivot_columns
++                    if name not in columns_to_exclude
++                )
++                continue
+ 
+             for name in columns:
+                 if name in columns_to_exclude or name in coalesced_columns:
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index ca6f8d5ac..eec468f25 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -14,6 +14,42 @@ if t.TYPE_CHECKING:
+     from collections.abc import Sequence, Mapping
+ 
+ 
++def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Identifier]:
++    name_columns = [
++        field.this
++        for field in unpivot.fields
++        if isinstance(field, exp.In) and isinstance(field.this, exp.Identifier)
++    ]
++    value_columns = (
++        ident
++        for e in unpivot.expressions
++        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
++        if isinstance(ident, exp.Identifier)
++    )
++
++    return itertools.chain(name_columns, value_columns)
++
++
++def pivot_output_columns(pivot: exp.Pivot, columns: Sequence[str]) -> list[str]:
++    """Returns the columns of a pivoted source: the pre-pivot columns that survive, followed by the pivot's output."""
++    if pivot.unpivot:
++        exclude = {
++            c.output_name
++            for field in pivot.fields
++            if isinstance(field, exp.In)
++            for e in field.expressions
++            for c in e.find_all(exp.Column)
++        }
++        output = [c.output_name for c in _unpivot_columns(pivot)]
++    else:
++        exclude = {c.output_name for c in pivot.find_all(exp.Column)}
++        output = [c.output_name for c in pivot.args.get("columns", [])] or [
++            c.alias_or_name for c in pivot.expressions
++        ]
++
++    return [c for c in columns if c not in exclude] + output
++
++
+ class Resolver:
+     """
+     Helper for resolving columns.
+@@ -214,6 +250,15 @@ class Resolver:
+ 
+         return self._get_source_columns_cache[cache_key]
+ 
++    def get_pivoted_source_columns(self, name: str, only_visible: bool = False) -> Sequence[str]:
++        """Resolve the columns a source exposes to the outer query, i.e. after its PIVOT / UNPIVOT."""
++        columns = self.get_source_columns(name, only_visible)
++        pivot = next(
++            (p for p in self.scope.pivots if p.alias == name and not p.alias_column_names),
++            None,
++        )
++        return pivot_output_columns(pivot, columns) if pivot and columns else columns
++
+     def _get_all_source_columns(self) -> dict[str, Sequence[str]]:
+         if self._source_columns is None:
+             self._source_columns = {
+diff --git a/tests/fixtures/optimizer/qualify_columns.sql b/tests/fixtures/optimizer/qualify_columns.sql
+index 39c3470e1..527b59dee 100644
+--- a/tests/fixtures/optimizer/qualify_columns.sql
++++ b/tests/fixtures/optimizer/qualify_columns.sql
+@@ -595,6 +595,26 @@ SELECT _0.c1 AS c1 FROM VALUES ((1), (2), (3)) AS _0(c1);
+ WITH cities AS (SELECT * FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT * FROM cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle'));
+ WITH cities AS (SELECT t.country AS country, t.name AS name, t.year AS year, t.population AS population FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT _0.nl_2000_amsterdam_total AS nl_2000_amsterdam_total, _0.nl_2000_amsterdam_count AS nl_2000_amsterdam_count, _0.nl_2000_seattle_total AS nl_2000_seattle_total, _0.nl_2000_seattle_count AS nl_2000_seattle_count, _0.nl_2010_amsterdam_total AS nl_2010_amsterdam_total, _0.nl_2010_amsterdam_count AS nl_2010_amsterdam_count, _0.nl_2010_seattle_total AS nl_2010_seattle_total, _0.nl_2010_seattle_count AS nl_2010_seattle_count, _0.us_2000_amsterdam_total AS us_2000_amsterdam_total, _0.us_2000_amsterdam_count AS us_2000_amsterdam_count, _0.us_2000_seattle_total AS us_2000_seattle_total, _0.us_2000_seattle_count AS us_2000_seattle_count, _0.us_2010_amsterdam_total AS us_2010_amsterdam_total, _0.us_2010_amsterdam_count AS us_2010_amsterdam_count, _0.us_2010_seattle_total AS us_2010_seattle_total, _0.us_2010_seattle_count AS us_2010_seattle_count FROM cities AS cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle')) AS _0;
+ 
++# title: UNPIVOT over a CTE source, with and without an alias
++# dialect: bigquery
++# execute: false
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT c.id AS id, c.m AS m, c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS c;
++
++# dialect: bigquery
++# execute: false
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb)) AS u;
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT u.id AS id, u.m AS m, u.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS u;
++
++# dialect: bigquery
++# execute: false
++WITH c AS (SELECT id, jan, feb FROM t) SELECT u.v FROM c UNPIVOT(v FOR m IN (jan, feb)) AS u;
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT u.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS u;
++
++# dialect: bigquery
++# execute: false
++WITH c AS (SELECT id, jan, feb FROM t) SELECT v FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS c;
+ --------------------------------------
+ -- CTEs
+ --------------------------------------

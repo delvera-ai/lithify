@@ -1,0 +1,21 @@
+lithify ▸ 20261029-183743-lineage-extend-sqlglot-lineage-l  k=1 (anomaly: last task failed in cruise) mode=parallel executor=claude@claude-haiku-5-5
+  ▸ probe base-1: executing with claude@claude-haiku-5-5
+  ✓ probe base-1: test=pass
+  ✓ every base rollout passed its gates — nothing to contrast, skipping proposals
+  base rollout base-1: passed on first execution
+  ✓ applied deliverable from base-1: only one distinct deliverable passed the gates (no LLM judge needed)
+lithify ◂ delivered=True first_pass=True S=0.90 executions=1 role_sessions=0 tokens(in/cached/out)=49543/1106457/15804 cost=$0.03
+{
+  "task_id": "20261029-183743-lineage-extend-sqlglot-lineage-l",
+  "k": 1,
+  "delivered": true,
+  "applied": true,
+  "first_pass": true,
+  "selected": "base-1",
+  "promoted": [],
+  "proposal": null,
+  "stability": 0.9,
+  "executions": 1,
+  "role_sessions": 0
+}
+

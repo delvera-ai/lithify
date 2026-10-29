@@ -1,0 +1,131 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 14e6112fc..808610318 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -176,6 +176,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-113645-optimizer-spark-hive-optimizing",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 53576,
++      "tokens_cached": 1213693,
++      "tokens_out": 18172,
++      "cost_usd": 0.0319,
++      "wall_s": 229.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..377780055 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -82,6 +82,7 @@ def qualify_columns(
+             )
+ 
+         _convert_columns_to_dots(scope, resolver)
++        _convert_lateral_struct_columns(scope, resolver)
+         _qualify_columns(
+             scope,
+             resolver,
+@@ -596,6 +597,57 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+         scope.clear_cache()
+ 
+ 
++def _convert_lateral_struct_columns(scope: Scope, resolver: Resolver) -> None:
++    """
++    Converts `alias.field` into `Dot(alias.alias, field)` when `alias` is a LATERAL VIEW EXPLODE
++    table alias whose exploded column shares its name, e.g. `ci.name` in
++    `SELECT ci.name FROM t LATERAL VIEW EXPLODE(items) ci AS ci`, where `items` is an ARRAY<STRUCT>.
++    """
++    converted = False
++    for column in scope.columns:
++        source = scope.sources.get(column.table)
++        if not isinstance(source, Scope) or not isinstance(source.expression, exp.Lateral):
++            continue
++
++        lateral = source.expression
++        explode = lateral.this
++        if (
++            not isinstance(explode, exp.Explode)
++            or lateral.alias_column_names != [column.table]
++            or column.name in resolver.get_source_columns(column.table)
++        ):
++            continue
++
++        array = explode.this
++        if not isinstance(array, exp.Column):
++            continue
++
++        array_table = exp.to_identifier(array.table) if array.table else resolver.get_table(array)
++        array_source = scope.sources.get(array_table.name) if array_table else None
++        if array_source is None:
++            continue
++
++        array_type = resolver._get_column_type_from_scope(array_source, array)
++        if not array_type or not array_type.is_type(exp.DType.ARRAY) or not array_type.expressions:
++            continue
++
++        struct_type = array_type.expressions[0]
++        if not struct_type.is_type(exp.DType.STRUCT) or column.name not in {
++            field.name for field in struct_type.expressions
++        }:
++            continue
++
++        converted = True
++        column.replace(
++            exp.Dot.build(
++                [exp.column(column.table, table=column.table), column.this.copy()],
++            )
++        )
++
++    if converted:
++        scope.clear_cache()
++
++
+ def _qualify_columns(
+     scope: Scope,
+     resolver: Resolver,
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..647946378 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -632,6 +632,29 @@ class TestOptimizer(unittest.TestCase):
+             "SELECT t.end AS end FROM t AS t",
+         )
+ 
++    def test_qualify_columns_lateral_view_explode_struct(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++        self.assertEqual(
++            optimizer.optimize(
++                parse_one(
++                    "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
++                    read="spark",
++                ),
++                schema=schema,
++                dialect="spark",
++            ).sql(dialect="spark"),
++            "SELECT `ci`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++        )
++        with self.assertRaises(OptimizeError):
++            optimizer.optimize(
++                parse_one(
++                    "SELECT ci.missing FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
++                    read="spark",
++                ),
++                schema=schema,
++                dialect="spark",
++            )
++
+     def test_validate_columns(self):
+         with self.assertRaisesRegex(
+             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

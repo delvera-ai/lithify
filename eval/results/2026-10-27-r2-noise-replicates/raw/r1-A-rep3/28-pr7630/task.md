@@ -1,0 +1,1 @@
+Parser: `COLLATE` is not handled inside nested types and inside `CAST` target types (e.g. `CAST(x AS VARCHAR(10) COLLATE "C")`, or a collation on a field inside a struct/array type). Support `COLLATE` in these positions so they parse and round-trip, while `COLLATE` in ordinary expressions keeps working as before.

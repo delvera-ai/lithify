@@ -1,0 +1,83 @@
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 79e8ac348..29e8222ec 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -245,6 +245,10 @@ class AlterColumn(Expression):
+     }
+ 
+ 
++class AlterModifyColumn(Expression):
++    arg_types = {"this": True}
++
++
+ class AlterIndex(Expression):
+     arg_types = {"this": True, "visible": True}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26d481a50..97d3d1a46 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -5928,6 +5928,9 @@ class Generator:
+         props = self.expressions(expression, sep=" ")
+         return f"MODIFY {props}"
+ 
++    def altermodifycolumn_sql(self, expression: exp.AlterModifyColumn) -> str:
++        return f"MODIFY COLUMN {self.sql(expression, 'this')}"
++
+     def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
+         kind = expression.args.get("kind")
+         return f"USING {kind} {self.sql(expression, 'this')}"
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index d4bf7e3c0..ac63fb51e 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,7 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+-        "MODIFY": lambda self: self._parse_alter_table_alter(),
++        "MODIFY": lambda self: self._parse_alter_table_modify(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -315,6 +315,24 @@ class MySQLParser(parser.Parser):
+             return self.expression(exp.DropPrimaryKey())
+         return super()._parse_alter_drop_action()
+ 
++    def _parse_alter_table_modify(self) -> exp.Expr | None:
++        # MODIFY [COLUMN] redefines the whole column, unlike ALTER [COLUMN], so it takes a column definition
++        start = self._index
++        self._match(TokenType.COLUMN)
++        column_def = self._parse_field_def()
++        if not isinstance(column_def, exp.ColumnDef):
++            self._retreat(start)
++            return self._parse_alter_table_alter()
++
++        if self._match_texts(("FIRST", "AFTER")):
++            position = self._prev.text
++            column_position = self.expression(
++                exp.ColumnPosition(this=self._parse_column(), position=position)
++            )
++            column_def.set("position", column_position)
++
++        return self.expression(exp.AlterModifyColumn(this=column_def))
++
+     def _parse_generated_as_identity(
+         self,
+     ) -> (
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 5675aed05..6235775dc 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -38,6 +38,11 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
+         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
+         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL DEFAULT 5")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c VARCHAR(50) NOT NULL DEFAULT 'foo'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'hi'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT FIRST")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT AFTER d")
+         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

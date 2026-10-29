@@ -1,0 +1,13 @@
+{
+  "label": "base-1",
+  "ok": true,
+  "returncode": 0,
+  "error": "",
+  "tokens_in": 36026,
+  "tokens_cached": 447559,
+  "tokens_out": 6507,
+  "cost_usd": 0.014932090000000004,
+  "seconds": 98.5,
+  "gates_passed": true,
+  "patch_lines": 99
+}

@@ -1,0 +1,95 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..a98b1f7ac 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -471,20 +471,32 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
++        # UNPIVOT(val FOR name IN (a, b)): the name column is derived from all IN-list columns
++        # UNPIVOT((v1, v2) FOR name IN ((a1, a2), (b1, b2))): v1 is derived from a1 and b1,
++        # v2 from a2 and b2
++        value_names = [
++            identifier.name
++            for value in pivot.expressions
++            for identifier in value.find_all(exp.Identifier)
++        ]
+         unpivot_columns = [
+             col
+             for field in pivot.fields
+             for e in field.expressions
+             for col in e.find_all(exp.Column)
+         ]
+-        for value_column in pivot.expressions:
+-            for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
+         for field in pivot.fields:
+-            if isinstance(field, exp.In):
+-                mapping[field.this.name] = unpivot_columns
++            if not isinstance(field, exp.In):
++                continue
++
++            mapping[field.this.name] = unpivot_columns
++            for in_item in field.expressions:
++                if isinstance(in_item, exp.PivotAlias):
++                    in_item = in_item.this
++
++                sources = in_item.expressions if isinstance(in_item, exp.Tuple) else [in_item]
++                for value_name, source in zip(value_names, sources):
++                    mapping.setdefault(value_name, []).extend(source.find_all(exp.Column))
+ 
+         return mapping
+ 
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..83b3ace35 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,46 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT amount, quantity, metric_name
++        FROM sales UNPIVOT ((amount, quantity) FOR metric_name IN ((jan_amt, jan_qty), (feb_amt, feb_qty)))
++        """
++        schema = {
++            "sales": {
++                "id": "int",
++                "jan_amt": "int",
++                "jan_qty": "int",
++                "feb_amt": "int",
++                "feb_qty": "int",
++            }
++        }
++
++        node = lineage("amount", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN_AMT", "SALES.FEB_AMT"])
++
++        node = lineage("quantity", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN_QTY", "SALES.FEB_QTY"])
++
++        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            [d.name for d in node.downstream],
++            ["SALES.JAN_AMT", "SALES.JAN_QTY", "SALES.FEB_AMT", "SALES.FEB_QTY"],
++        )
++
++    def test_unpivot_aliased_passthrough(self) -> None:
++        sql = """
++        SELECT u.id, u.metric_name, u.score
++        FROM sales AS s UNPIVOT (score FOR metric_name IN (jan, feb)) AS u
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["S.ID"])
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["S.JAN", "S.FEB"])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

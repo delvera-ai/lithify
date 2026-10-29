@@ -1,0 +1,94 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index e968cb329..64f019e74 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 1,
++  "consecutive_failures": 0,
+   "history": [
+     {
+       "task_id": "20261029-090210-oracle-dialect-support-the-optio",
+@@ -560,6 +560,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-120454-duckdb-or-any-source-where-nulls",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 40614,
++      "tokens_cached": 573550,
++      "tokens_out": 11414,
++      "cost_usd": 0.0196,
++      "wall_s": 169.5,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c3be81ecc..c5835628e 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3026,9 +3026,27 @@ class Generator:
+                         )
+                     elif not isinstance(expression.this, exp.Rand):
+                         null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+-                        this = (
+-                            f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+-                        )
++                        null_check = this
++                        order = expression.parent
++                        if (
++                            isinstance(expression.this, exp.Column)
++                            and not expression.this.table
++                            and isinstance(order, exp.Order)
++                            and isinstance(order.parent, exp.Select)
++                        ):
++                            # A bare name in the CASE could be ambiguous across FROM tables, so
++                            # check the projection it aliases instead, if any
++                            projection = next(
++                                (
++                                    p
++                                    for p in order.parent.expressions
++                                    if p.alias_or_name == expression.this.name
++                                ),
++                                None,
++                            )
++                            if projection:
++                                null_check = self.sql(projection.unalias())
++                        this = f"CASE WHEN {null_check} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                     nulls_sort_change = ""
+ 
+         with_fill = self.sql(expression, "with_fill")
+diff --git a/tests/dialects/test_dialect.py b/tests/dialects/test_dialect.py
+index b4d63a477..169f080c3 100644
+--- a/tests/dialects/test_dialect.py
++++ b/tests/dialects/test_dialect.py
+@@ -3480,6 +3480,20 @@ FROM subquery2""",
+                 self.assertEqual(expression.sql(dialect="mysql"), expected_sql)
+                 self.assertEqual(expression.sql(dialect="tsql"), expected_sql)
+ 
++    def test_unsupported_null_ordering_ambiguous_columns(self):
++        self.assertEqual(
++            parse_one(
++                "SELECT a.x AS x, b.x AS y FROM a JOIN b ON a.id = b.id ORDER BY x", read="duckdb"
++            ).sql(dialect="mysql"),
++            "SELECT a.x AS x, b.x AS y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, x",
++        )
++        self.assertEqual(
++            parse_one(
++                "SELECT a.x AS v, b.y FROM a JOIN b ON a.id = b.id ORDER BY a.x", read="duckdb"
++            ).sql(dialect="mysql"),
++            "SELECT a.x AS v, b.y FROM a JOIN b ON a.id = b.id ORDER BY CASE WHEN a.x IS NULL THEN 1 ELSE 0 END, a.x",
++        )
++
+     def test_random(self):
+         self.validate_all(
+             "RAND()",

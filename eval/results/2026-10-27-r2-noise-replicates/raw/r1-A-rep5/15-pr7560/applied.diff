@@ -1,0 +1,118 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c76a4f97b..87f96578e 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -224,6 +224,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-095429-optimizer-un-pivot-over-cte-sour",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 69217,
++      "tokens_cached": 1378724,
++      "tokens_out": 26315,
++      "cost_usd": 0.0408,
++      "wall_s": 309.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index 28de2be45..442d0180a 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -15,7 +15,7 @@ from sqlglot.schema import Schema, ensure_schema
+ 
+ if t.TYPE_CHECKING:
+     from sqlglot._typing import E
+-    from collections.abc import Iterator, Iterable
++    from collections.abc import Iterator, Iterable, Sequence
+ 
+ 
+ def qualify_columns(
+@@ -197,6 +197,29 @@ def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
+     return itertools.chain(name_columns, value_columns)
+ 
+ 
++def _unpivoted_source_columns(source: exp.Expr | Scope, columns: Sequence[str]) -> Sequence[str]:
++    """Replace the UNPIVOT's IN-list columns of a source with the UNPIVOT's output columns"""
++    pivot = seq_get(source.args.get("pivots") or [], 0) if isinstance(source, exp.Table) else None
++    if (
++        not isinstance(pivot, exp.Pivot)
++        or not pivot.unpivot
++        or pivot.alias_column_names
++        or not columns
++    ):
++        return columns
++
++    exclude = {
++        c.output_name
++        for field in pivot.fields
++        if isinstance(field, exp.In)
++        for e in field.expressions
++        for c in e.find_all(exp.Column)
++    }
++    return [c for c in columns if c not in exclude] + [
++        c.output_name for c in _unpivot_columns(pivot)
++    ]
++
++
+ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
+     """
+     Remove table column aliases.
+@@ -605,7 +628,9 @@ def _qualify_columns(
+         column_name = column.name
+ 
+         if column_table and column_table in scope.sources:
+-            source_columns = resolver.get_source_columns(column_table)
++            source_columns = _unpivoted_source_columns(
++                scope.sources[column_table], resolver.get_source_columns(column_table)
++            )
+             if (
+                 not allow_partial_qualification
+                 and source_columns
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index ce908f20d..fe57a4b08 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -647,6 +647,32 @@ class TestOptimizer(unittest.TestCase):
+             "UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`)) AS `produce`",
+         )
+ 
++        self.assertEqual(
++            optimizer.qualify.qualify(
++                parse_one(
++                    "WITH c AS (SELECT id, jan, feb FROM t) "
++                    "SELECT u.v FROM c UNPIVOT(v FOR m IN (jan, feb)) AS u",
++                    dialect="bigquery",
++                ),
++                dialect="bigquery",
++            ).sql(dialect="bigquery"),
++            "WITH `c` AS (SELECT `t`.`id` AS `id`, `t`.`jan` AS `jan`, `t`.`feb` AS `feb` FROM `t` AS `t`) "
++            "SELECT `u`.`v` AS `v` FROM `c` AS `c` UNPIVOT(`v` FOR `m` IN (`c`.`jan`, `c`.`feb`)) AS `u`",
++        )
++
++        self.assertEqual(
++            optimizer.qualify.qualify(
++                parse_one(
++                    "WITH c AS (SELECT id, jan, feb FROM t) "
++                    "SELECT c.v FROM c UNPIVOT(v FOR m IN (jan, feb))",
++                    dialect="bigquery",
++                ),
++                dialect="bigquery",
++            ).sql(dialect="bigquery"),
++            "WITH `c` AS (SELECT `t`.`id` AS `id`, `t`.`jan` AS `jan`, `t`.`feb` AS `feb` FROM `t` AS `t`) "
++            "SELECT `c`.`v` AS `v` FROM `c` AS `c` UNPIVOT(`v` FOR `m` IN (`c`.`jan`, `c`.`feb`)) AS `c`",
++        )
++
+     def test_validate_columns(self):
+         with self.assertRaisesRegex(
+             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

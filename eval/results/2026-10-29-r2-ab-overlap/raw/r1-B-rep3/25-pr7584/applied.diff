@@ -1,0 +1,58 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8cabc2b12..fa2969e44 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -384,6 +384,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-185117-bigquery-duckdb-a-parameterised",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 37353,
++      "tokens_cached": 691443,
++      "tokens_out": 7115,
++      "cost_usd": 0.0179,
++      "wall_s": 154.3,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index f40beaca2..be4370d7e 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2181,6 +2181,13 @@ class DuckDBGenerator(generator.Generator):
+             exp.replace_placeholders(self.ARRAY_BAG_TEMPLATE, arr1=arr1, arr2=arr2, cond=cond)
+         )
+ 
++    def datatype_sql(self, expression: exp.DataType) -> str:
++        if expression.this == exp.DType.BIGDECIMAL and expression.expressions:
++            params = [param.copy() for param in expression.expressions]
++            return super().datatype_sql(exp.DataType(this=exp.DType.DECIMAL, expressions=params))
++
++        return super().datatype_sql(expression)
++
+     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+         """
+         Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index 798b3a5fa..aea75d15e 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -3831,3 +3831,8 @@ OPTIONS (
+                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                     },
+                 )
++
++                self.validate_all(
++                    f"SELECT CAST(1 AS {type_}(76, 38))",
++                    write={"duckdb": "SELECT CAST(1 AS DECIMAL(76, 38))"},
++                )

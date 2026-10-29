@@ -1,0 +1,142 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1ad3cb09e..c8a787afb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -880,6 +880,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-131913-starrocks-dialect-several-functi",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 78505,
++      "tokens_cached": 2146114,
++      "tokens_out": 23286,
++      "cost_usd": 0.0853,
++      "wall_s": 261.2,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index e71176c1f..17adced51 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
+     unit_to_str,
+     inline_array_sql,
+     property_sql,
++    var_map_sql,
+ )
+ from sqlglot.generators.mysql import MySQLGenerator
+ 
+@@ -86,13 +87,20 @@ class StarRocksGenerator(MySQLGenerator):
+     }
+ 
+     TRANSFORMS = {
+-        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k is not exp.DateTrunc},
++        **{
++            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
++        },
+         exp.Array: inline_array_sql,
++        exp.ArgMax: rename_func("MAX_BY"),
++        exp.ArgMin: rename_func("MIN_BY"),
+         exp.ArrayAgg: rename_func("ARRAY_AGG"),
++        exp.ArrayContainsAll: rename_func("ARRAY_CONTAINS_ALL"),
+         exp.ArrayFilter: rename_func("ARRAY_FILTER"),
+         exp.ArrayToString: rename_func("ARRAY_JOIN"),
+         exp.ApproxDistinct: approx_count_distinct_sql,
+         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
++        exp.Map: var_map_sql,
++        exp.VarMap: var_map_sql,
+         exp.DateDiff: lambda self, e: self.func("DATE_DIFF", unit_to_str(e), e.this, e.expression),
+         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
+         exp.Flatten: rename_func("ARRAY_FLATTEN"),
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index eb5387154..f06394f99 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ 
+ 
+-from sqlglot import exp
++from sqlglot import exp, parser
+ from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+@@ -27,6 +27,7 @@ class StarRocksParser(MySQLParser):
+             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
+         ),
+         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
++        "MAP": parser.build_var_map,
+         "REGEXP": exp.RegexpLike.from_arg_list,
+     }
+ 
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index b6b27b254..5e5b0d9fc 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -170,6 +170,55 @@ class TestStarrocks(Validator):
+         self.validate_identity("SELECT ADDDATE(x, 7)", "SELECT DATE_ADD(x, INTERVAL 7 DAY)")
+         self.validate_identity("SELECT SUBDATE(x, 7)", "SELECT DATE_SUB(x, INTERVAL 7 DAY)")
+ 
++    def test_min_max_by(self):
++        self.validate_identity("SELECT MIN_BY(a, b) FROM t")
++        self.validate_identity("SELECT MAX_BY(a, b) FROM t")
++        self.validate_identity("SELECT MAX_BY(a, b) OVER (PARTITION BY c) FROM t")
++        self.validate_all(
++            "SELECT MAX_BY(a, b) FROM t",
++            read={"duckdb": "SELECT ARG_MAX(a, b) FROM t"},
++            write={"duckdb": "SELECT ARG_MAX(a, b) FROM t"},
++        )
++        self.validate_all(
++            "SELECT MIN_BY(a, b) OVER (PARTITION BY c) FROM t",
++            read={"duckdb": "SELECT ARG_MIN(a, b) OVER (PARTITION BY c) FROM t"},
++        )
++
++    def test_map(self):
++        self.validate_identity("SELECT MAP(1, 'a', 2, 'b')")
++        self.validate_identity("SELECT MAP()")
++        self.validate_all(
++            "SELECT MAP(1, 3, 2, 4)",
++            read={
++                "duckdb": "SELECT MAP([1, 2], [3, 4])",
++                "presto": "SELECT MAP(ARRAY[1, 2], ARRAY[3, 4])",
++                "snowflake": "SELECT MAP(ARRAY[1, 2], ARRAY[3, 4])",
++            },
++        )
++
++    def test_array_contains_all(self):
++        self.validate_identity("SELECT ARRAY_CONTAINS_ALL(a, b)")
++        self.validate_all(
++            "SELECT ARRAY_CONTAINS_ALL(a, b)",
++            read={"postgres": "SELECT a @> b"},
++        )
++
++    def test_trim(self):
++        self.validate_identity("SELECT TRIM(a)")
++        self.validate_identity("SELECT TRIM(a, 'x')")
++        self.validate_all(
++            "SELECT TRIM(a, 'x')",
++            read={"mysql": "SELECT TRIM(BOTH 'x' FROM a)"},
++        )
++        self.validate_all(
++            "SELECT LTRIM(a, 'x')",
++            read={"mysql": "SELECT TRIM(LEADING 'x' FROM a)"},
++        )
++        self.validate_all(
++            "SELECT RTRIM(a, 'x')",
++            read={"mysql": "SELECT TRIM(TRAILING 'x' FROM a)"},
++        )
++
+     def test_regex(self):
+         self.validate_all(
+             "SELECT REGEXP(abc, '%foo%')",

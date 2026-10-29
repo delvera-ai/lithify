@@ -1,0 +1,120 @@
+exit 1
+........................ [ 54%]
+...................F     [100%]
+=================================== FAILURES ===================================
+_____________________________ TestDuckDB.test_udf ______________________________
+
+self = <tests.dialects.test_duckdb.TestDuckDB testMethod=test_udf>
+
+    def test_udf(self):
+        for keyword in ("FUNCTION", "MACRO"):
+            with self.subTest(f"Testing DuckDB's UDF for keyword: {keyword}"):
+                self.validate_identity(f"SELECT {keyword}")
+    
+                self.validate_identity(f"CREATE {keyword} add(a, b) AS a + b")
+                self.validate_identity(
+                    f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
+                )
+    
+            with self.subTest(f"Testing DuckDB's table functions with keyword: {keyword}"):
+                self.validate_identity(
+                    f"CREATE {keyword} my_table_function(a, b) AS TABLE SELECT x, y FROM (VALUES (a, b)) AS tbl(x, y)"
+                ).assert_is(exp.Create)
+    
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
+            write={
+                "databricks": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) RETURNS TABLE RETURN SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b REAL) AS TABLE SELECT a",
+            },
+        )
+    
+        overloaded = self.validate_identity(
+            "CREATE MACRO add_x (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        overloads = overloaded.expression
+        self.assertIsInstance(overloads, exp.MacroOverloads)
+        self.assertEqual(len(overloads.expressions), 2)
+        self.assertIsNone(overloaded.this.args.get("expressions"))
+    
+        self.validate_identity(
+            "CREATE OR REPLACE MACRO foo (a) AS a, (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+>       self.validate_identity("CREATE MACRO foo (a TINYINT) AS a + 1, (a INT) AS a + 2")
+
+tests/dialects/test_duckdb.py:2622: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1124: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2036: in parse
+    return self._parse(
+sqlglot/parser.py:2156: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2123: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2275: in _parse_statement
+    stmt = self.STATEMENT_PARSERS[self._prev.token_type](self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:1090: in <lambda>
+    TokenType.CREATE: lambda self: self._parse_create(),
+                                   ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2441: in _parse_create
+    this, expression = self._parse_macro_overloads(this, expression, properties)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:7094: in _parse_macro_overloads
+    parameters = self._parse_wrapped_csv(self._parse_id_var)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8579: in _parse_wrapped_csv
+    return self._parse_wrapped(
+sqlglot/parser.py:8589: in _parse_wrapped
+    self._match_r_paren()
+sqlglot/parser.py:9382: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.duckdb.DuckDBParser object at 0x109dd1b50>
+message = 'Expecting )'
+token = <Token token_type: TokenType.INT, text: INT, line: 1, col: 45, start: 42, end: 44, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 45.
+E             CREATE MACRO foo (a TINYINT) AS a + 1, (a [4mINT[0m) AS a + 2
+
+sqlglot/parser.py:1993: ParseError
+----------------------------- Captured stdout call -----------------------------
+uuuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_duckdb.py::TestDuckDB::test_udf - sqlglot.errors.P...
+1 failed, 43 passed, 600 subtests passed in 0.76s

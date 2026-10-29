@@ -1,0 +1,63 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 14a2a3702..e76328401 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -752,6 +752,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-201225-hive-spark-and-databricks-dialec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 39743,
++      "tokens_cached": 519572,
++      "tokens_out": 7422,
++      "cost_usd": 0.0169,
++      "wall_s": 237.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..1e2c93ff4 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -317,6 +317,18 @@ class TestHive(Validator):
+         )
+ 
+     def test_quotes(self):
++        self.validate_all(
++            "'Hello \\'World!'",
++            read={
++                "hive": "'Hello ''World!'",
++                "spark": "'Hello ''World!'",
++                "databricks": "'Hello ''World!'",
++                "duckdb": "'Hello ''World!'",
++            },
++            write={
++                "duckdb": "'Hello ''World!'",
++            },
++        )
+         self.validate_all(
+             "'\\''",
+             write={

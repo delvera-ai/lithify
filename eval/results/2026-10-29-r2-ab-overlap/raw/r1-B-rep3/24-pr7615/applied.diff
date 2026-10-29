@@ -1,0 +1,103 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 3670f33cd..8cabc2b12 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -368,6 +368,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-184648-schema-performance-mappingschema",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 50173,
++      "tokens_cached": 1152015,
++      "tokens_out": 14457,
++      "cost_usd": 0.0288,
++      "wall_s": 253.9,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/schema.py b/sqlglot/schema.py
+index 816971098..68a7d4817 100644
+--- a/sqlglot/schema.py
++++ b/sqlglot/schema.py
+@@ -317,6 +317,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+         self._type_mapping_cache: dict[str, exp.DataType] = {}
+         self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
+         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
++        self._find_cache: dict[tuple[tuple[str, ...], bool, bool], t.Any] = {}
+         self._depth: int = 0
+         schema = {} if schema is None else schema
+         udf_mapping = {} if udf_mapping is None else udf_mapping
+@@ -344,6 +345,10 @@ class MappingSchema(AbstractMappingSchema, Schema):
+     def find(
+         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+     ) -> t.Any | None:
++        cache_key = (tuple(self.table_parts(table)), raise_on_missing, ensure_data_types)
++        if cache_key in self._find_cache:
++            return self._find_cache[cache_key]
++
+         schema: dict[str, object] | None = super().find(
+             table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
+         )
+@@ -353,6 +358,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+                 for col, dtype in schema.items()
+             }
+ 
++        self._find_cache[cache_key] = schema
+         return schema
+ 
+     def copy(
+@@ -407,6 +413,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
+ 
+         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
+         new_trie([parts], self.mapping_trie)
++        self._find_cache.clear()
+ 
+     def column_names(
+         self,
+diff --git a/tests/test_schema.py b/tests/test_schema.py
+index 2963af231..32ad22334 100644
+--- a/tests/test_schema.py
++++ b/tests/test_schema.py
+@@ -340,3 +340,32 @@ class TestSchema(unittest.TestCase):
+         self.assertEqual(found, {"c": "int"})
+         found = schema.find(exp.to_table("x"), ensure_data_types=True)
+         self.assertEqual(found, {"c": exp.DataType.build("int")})
++
++    def test_find_cache(self):
++        schema = MappingSchema({"x": {"c": "int"}})
++        self.assertIsNone(schema.find(exp.to_table("y"), raise_on_missing=False))
++        self.assertEqual(
++            schema.find(exp.to_table("x"), ensure_data_types=True),
++            {"c": exp.DataType.build("int")},
++        )
++        self.assertEqual(
++            schema.find(exp.to_table("x"), ensure_data_types=True),
++            {"c": exp.DataType.build("int")},
++        )
++        self.assertEqual(schema.find(exp.to_table("x")), {"c": "int"})
++
++        schema.add_table("y", {"c": "text"})
++        self.assertEqual(schema.find(exp.to_table("y")), {"c": "text"})
++        self.assertEqual(schema.find(exp.to_table("x")), {"c": "int"})
++
++        schema.add_table("x", {"c": "bigint", "d": "text"})
++        self.assertEqual(
++            schema.find(exp.to_table("x"), ensure_data_types=True),
++            {"c": exp.DataType.build("bigint"), "d": exp.DataType.build("text")},
++        )
++
++    def test_find_cache_raise_on_missing(self):
++        schema = MappingSchema({"db1": {"x": {"c": "int"}}, "db2": {"x": {"c": "int"}}})
++        self.assertIsNone(schema.find(exp.to_table("x"), raise_on_missing=False))
++        with self.assertRaises(SchemaError):
++            schema.find(exp.to_table("x"))

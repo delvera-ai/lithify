@@ -1,0 +1,94 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 69c786458..dbf78ffe3 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -256,6 +256,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-173140-oracle-dialect-support-listagg-e",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 47930,
++      "tokens_cached": 823077,
++      "tokens_out": 12629,
++      "cost_usd": 0.0241,
++      "wall_s": 187.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/oracle.py b/sqlglot/generators/oracle.py
+index d3f2e99e2..1e6d334e2 100644
+--- a/sqlglot/generators/oracle.py
++++ b/sqlglot/generators/oracle.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ 
+ from sqlglot import exp, generator, transforms
+ from sqlglot.dialects.dialect import (
++    groupconcat_sql,
+     no_ilike_sql,
+     rename_func,
+     strposition_sql,
+@@ -69,6 +70,7 @@ class OracleGenerator(generator.Generator):
+         ),
+         exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
+         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
++        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=None, on_overflow=True),
+         exp.ILike: no_ilike_sql,
+         exp.LogicalOr: rename_func("MAX"),
+         exp.LogicalAnd: rename_func("MIN"),
+diff --git a/sqlglot/parsers/oracle.py b/sqlglot/parsers/oracle.py
+index 169b1bcd7..0aede77c3 100644
+--- a/sqlglot/parsers/oracle.py
++++ b/sqlglot/parsers/oracle.py
+@@ -56,6 +56,7 @@ class OracleParser(parser.Parser):
+         "JSON_ARRAY": lambda self: self._parse_oracle_json_array(),
+         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
+         "JSON_EXISTS": lambda self: self._parse_json_exists(),
++        "LISTAGG": lambda self: self._parse_string_agg(),
+     }
+ 
+     PROPERTY_PARSERS = {
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index b2a361ec3..ef7abf133 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -928,6 +928,30 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
+         self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
+         self.validate_identity("SELECT CHR(187)")
+ 
++    def test_listagg(self):
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ') WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name) WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE WITHOUT COUNT) WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY last_name) FROM employees"
++        )
++        self.validate_identity(
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...') WITHIN GROUP (ORDER BY last_name) FROM employees",
++            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY last_name) FROM employees",
++        )
++
+     def test_full_procedure(self):
+         sql = """
+         CREATE OR REPLACE PROCEDURE query_emp(

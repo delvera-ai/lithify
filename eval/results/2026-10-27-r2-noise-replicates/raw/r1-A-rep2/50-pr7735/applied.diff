@@ -1,0 +1,172 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index ed8afbffd..52b11e401 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -784,6 +784,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-102538-snowflake-dialect-snowflake-s-ti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 60735,
++      "tokens_cached": 1468525,
++      "tokens_out": 18653,
++      "cost_usd": 0.0362,
++      "wall_s": 223.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/snowflake.py b/sqlglot/dialects/snowflake.py
+index 83547aab7..291f067dd 100644
+--- a/sqlglot/dialects/snowflake.py
++++ b/sqlglot/dialects/snowflake.py
+@@ -166,6 +166,7 @@ class Snowflake(Dialect):
+             "TAG": TokenType.TAG,
+             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
+             "TOP": TokenType.TOP,
++            "UNDROP": TokenType.UNDROP,
+             "VOLUME": TokenType.VOLUME,
+             "WAREHOUSE": TokenType.WAREHOUSE,
+             # https://docs.snowflake.com/en/sql-reference/data-types-numeric#float
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index fddbc935a..e885a596c 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -366,6 +366,10 @@ class Drop(Expression):
+         return kind and kind.upper()
+ 
+ 
++class Undrop(Expression):
++    arg_types = {"this": True, "kind": True}
++
++
+ class DropPrimaryKey(Expression):
+     arg_types = {}
+ 
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index bee254c35..3ea2d0a14 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -866,6 +866,9 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return f"SHOW {terse}{iceberg}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}{privileges}"
+ 
++    def undrop_sql(self, expression: exp.Undrop) -> str:
++        return f"UNDROP {expression.text('kind')} {self.sql(expression, 'this')}"
++
+     def rowaccessproperty_sql(self, expression: exp.RowAccessProperty) -> str:
+         if not expression.this:
+             return "ROW ACCESS"
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 28db6bf6a..5f3557874 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -706,6 +706,7 @@ class Parser:
+         TokenType.GET,
+         TokenType.IDENTIFIER,
+         TokenType.INOUT,
++        TokenType.UNDROP,
+         TokenType.IS,
+         TokenType.ISNULL,
+         TokenType.INTERVAL,
+diff --git a/sqlglot/parsers/snowflake.py b/sqlglot/parsers/snowflake.py
+index 8c3fed5c3..72b37327c 100644
+--- a/sqlglot/parsers/snowflake.py
++++ b/sqlglot/parsers/snowflake.py
+@@ -760,8 +760,24 @@ class SnowflakeParser(parser.Parser):
+         TokenType.GET: lambda self: self._parse_get(),
+         TokenType.PUT: lambda self: self._parse_put(),
+         TokenType.SHOW: lambda self: self._parse_show(),
++        TokenType.UNDROP: lambda self: self._parse_undrop(),
+     }
+ 
++    UNDROP_KINDS = (
++        "ACCOUNT",
++        "DATABASE",
++        "DYNAMIC TABLE",
++        "EXTERNAL VOLUME",
++        "ICEBERG TABLE",
++        "NOTEBOOK",
++        "SCHEMA",
++        "SNAPSHOT",
++        "STREAMLIT",
++        "TABLE",
++        "TAG",
++        "TYPE",
++    )
++
+     PROPERTY_PARSERS = {
+         **parser.Parser.PROPERTY_PARSERS,
+         "CREDENTIALS": lambda self: self._parse_credentials_property(),
+@@ -1193,6 +1209,14 @@ class SnowflakeParser(parser.Parser):
+             )
+         )
+ 
++    def _parse_undrop(self) -> exp.Undrop | exp.Command:
++        start = self._prev
++        kind = next((k for k in self.UNDROP_KINDS if self._match_text_seq(*k.split())), None)
++        if not kind:
++            return self._parse_as_command(start)
++
++        return self.expression(exp.Undrop(this=self._parse_table_parts(), kind=kind))
++
+     def _parse_get(self) -> exp.Expr | None:
+         start = self._prev
+ 
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8616912c1..77fdcb33c 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -431,6 +431,7 @@ class TokenType(IntEnum):
+     TRIGGER = auto()
+     TYPE = auto()
+     UNCACHE = auto()
++    UNDROP = auto()
+     UNION = auto()
+     UNNEST = auto()
+     UNPIVOT = auto()
+diff --git a/tests/dialects/test_snowflake.py b/tests/dialects/test_snowflake.py
+index 8eccf066c..a78cd7d9f 100644
+--- a/tests/dialects/test_snowflake.py
++++ b/tests/dialects/test_snowflake.py
+@@ -5348,6 +5348,31 @@ MATCH_RECOGNIZE (
+             },
+         )
+ 
++    def test_undrop(self):
++        for kind in (
++            "TABLE",
++            "SCHEMA",
++            "DATABASE",
++            "ACCOUNT",
++            "NOTEBOOK",
++            "SNAPSHOT",
++            "STREAMLIT",
++            "TAG",
++            "TYPE",
++            "DYNAMIC TABLE",
++            "EXTERNAL VOLUME",
++            "ICEBERG TABLE",
++        ):
++            with self.subTest(kind):
++                ast = self.validate_identity(f"UNDROP {kind} t")
++                self.assertIsInstance(ast, exp.Undrop)
++                self.assertEqual(ast.text("kind"), kind)
++
++        self.validate_identity("UNDROP TABLE db.s.t")
++        self.validate_identity("UNDROP TABLE IDENTIFIER(123)")
++        self.validate_identity("UNDROP TABLE IDENTIFIER('\"abc\"')")
++        self.validate_identity("SELECT undrop FROM undrop")
++
+     def test_drop_iceberg_table(self):
+         ast = self.validate_identity("DROP ICEBERG TABLE t")
+         self.assertTrue(ast.args["iceberg"])

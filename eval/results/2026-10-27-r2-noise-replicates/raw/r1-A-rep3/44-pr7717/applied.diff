@@ -1,0 +1,53 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 0ad2acb1a..a9f3d358f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -688,6 +688,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-133807-clickhouse-dialect-the-file-tabl",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 31796,
++      "tokens_cached": 547459,
++      "tokens_out": 4653,
++      "cost_usd": 0.0142,
++      "wall_s": 141.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index bf5c50ec8..59171bde2 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -833,6 +833,7 @@ class Parser:
+         TokenType.CURRENT_TIME,
+         TokenType.CURRENT_USER,
+         TokenType.CURRENT_CATALOG,
++        TokenType.FILE,
+         TokenType.FILTER,
+         TokenType.FIRST,
+         TokenType.FORMAT,
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index 654d0545e..42bd29965 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1767,6 +1767,9 @@ LIFETIME(MIN 0 MAX 0)""",
+         self.validate_identity(
+             "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
+         )
++        self.validate_identity(
++            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
++        )
+ 
+     def test_array_offset(self):
+         with self.assertLogs(helper_logger) as cm:

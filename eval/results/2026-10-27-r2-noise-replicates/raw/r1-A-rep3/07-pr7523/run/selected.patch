@@ -1,0 +1,99 @@
+diff --git a/sqlglot/expressions/dml.py b/sqlglot/expressions/dml.py
+index ed5098322..8fa3ea3e8 100644
+--- a/sqlglot/expressions/dml.py
++++ b/sqlglot/expressions/dml.py
+@@ -70,6 +70,7 @@ class DML(Expr):
+ 
+ class Delete(Expression, DML):
+     arg_types = {
++        "hint": False,
+         "with_": False,
+         "this": False,
+         "using": False,
+@@ -292,6 +293,7 @@ class LoadData(Expression):
+ 
+ class Update(Expression, DML):
+     arg_types = {
++        "hint": False,
+         "with_": False,
+         "this": False,
+         "expressions": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index b928269b6..bbfe17996 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1685,6 +1685,7 @@ class Generator:
+         return f"{local}DIRECTORY {self.sql(expression, 'this')}{row_format}"
+ 
+     def delete_sql(self, expression: exp.Delete) -> str:
++        hint = self.sql(expression, "hint")
+         this = self.sql(expression, "this")
+         this = f" FROM {this}" if this else ""
+         using = self.expressions(expression, key="using")
+@@ -1701,7 +1702,7 @@ class Generator:
+             expression_sql = f"{this}{using}{cluster}{where}{returning}{order}{limit}"
+         else:
+             expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
+-        return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
++        return self.prepend_ctes(expression, f"DELETE{hint}{tables}{expression_sql}")
+ 
+     def drop_sql(self, expression: exp.Drop) -> str:
+         this = self.sql(expression, "this")
+@@ -2467,6 +2468,7 @@ class Generator:
+         return (join_sql, "")
+ 
+     def update_sql(self, expression: exp.Update) -> str:
++        hint = self.sql(expression, "hint")
+         this = self.sql(expression, "this")
+         join_sql, from_sql = self._update_from_joins_sql(expression)
+         set_sql = self.expressions(expression, flat=True)
+@@ -2480,7 +2482,7 @@ class Generator:
+             expression_sql = f"{returning}{from_sql}{where_sql}"
+         options = self.expressions(expression, key="options")
+         options = f" OPTION({options})" if options else ""
+-        sql = f"UPDATE {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
++        sql = f"UPDATE{hint} {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
+         return self.prepend_ctes(expression, sql)
+ 
+     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 30816a431..8b2958c35 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3582,6 +3582,7 @@ class Parser:
+     def _parse_delete(self) -> exp.Delete:
+         # This handles MySQL's "Multiple-Table Syntax"
+         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
++        hint = self._parse_hint()
+         tables = None
+         if not self._match(TokenType.FROM, advance=False):
+             tables = self._parse_csv(self._parse_table) or None
+@@ -3590,6 +3591,7 @@ class Parser:
+ 
+         return self.expression(
+             exp.Delete(
++                hint=hint,
+                 tables=tables,
+                 this=self._match(TokenType.FROM) and self._parse_table(joins=True),
+                 using=self._match(TokenType.USING)
+@@ -3604,6 +3606,7 @@ class Parser:
+ 
+     def _parse_update(self) -> exp.Update:
+         kwargs: dict[str, object] = {
++            "hint": self._parse_hint(),
+             "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+         }
+         while self._curr:
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index adce51119..72ef933f7 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -249,6 +249,8 @@ class TestMySQL(Validator):
+         self.validate_identity("SELECT /*+ BKA(t1) NO_BKA(t2) */ * FROM t1 INNER JOIN t2")
+         self.validate_identity("SELECT /*+ MERGE(dt) */ * FROM (SELECT * FROM t1) AS dt")
+         self.validate_identity("SELECT /*+ INDEX(t, i) */ c1 FROM t WHERE c2 = 'value'")
++        self.validate_identity("UPDATE /*+ NO_RANGE_OPTIMIZATION(t1) */ t1 SET c = 1 WHERE id = 2")
++        self.validate_identity("DELETE /*+ QB_NAME(del) */ FROM t1 WHERE id = 2")
+         self.validate_identity("SELECT @a MEMBER OF(@c), @b MEMBER OF(@c)")
+         self.validate_identity("SELECT JSON_ARRAY(4, 5) MEMBER OF('[[3,4],[4,5]]')")
+         self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")

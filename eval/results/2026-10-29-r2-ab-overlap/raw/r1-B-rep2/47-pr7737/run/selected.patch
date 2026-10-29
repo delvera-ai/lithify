@@ -1,0 +1,89 @@
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..09b6d6161 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        resolving: set[Scope] | None = None,
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -30,6 +36,8 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        # Lateral sources whose input column is being typed, shared with nested resolvers to break cycles
++        self._resolving: set[Scope] = set() if resolving is None else resolving
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -178,8 +186,16 @@ class Resolver:
+                 ):
+                     explode_col = source_expr.this.this
+ 
+-                    if isinstance(explode_col, exp.Column) and source.parent:
+-                        col_type = self._get_unnest_column_type(explode_col, source.parent)
++                    if (
++                        isinstance(explode_col, exp.Column)
++                        and source.parent
++                        and source not in self._resolving
++                    ):
++                        self._resolving.add(source)
++                        try:
++                            col_type = self._get_unnest_column_type(explode_col, source.parent)
++                        finally:
++                            self._resolving.discard(source)
+                         columns.extend(self._struct_field_names(col_type))
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+@@ -376,7 +392,7 @@ class Resolver:
+             table_name = column.table
+         else:
+             # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
++            parent_resolver = Resolver(scope, self.schema, self._infer_schema, self._resolving)
+             table_identifier = parent_resolver.get_table(column)
+             if not table_identifier:
+                 return None
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..bf47ee445 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -750,6 +750,28 @@ class TestOptimizer(unittest.TestCase):
+         )
+         self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
+ 
++    def test_qualify_unnest_unqualified_column_terminates(self):
++        # Typing the input of a lateral whose base table is missing used to recurse without bound
++        for sql, read, schema in (
++            ("SELECT x FROM t LATERAL VIEW EXPLODE(arr) v AS x", "spark", {"other": {"a": "INT"}}),
++            ("SELECT value FROM t, LATERAL FLATTEN(col)", "snowflake", {"other": {"a": "INT"}}),
++        ):
++            with self.subTest(sql):
++                with self.assertRaisesRegex(OptimizeError, "could not be resolved"):
++                    optimizer.qualify.qualify(
++                        parse_one(sql, read=read), schema=schema, dialect=read
++                    )
++
++        expression = optimizer.qualify.qualify(
++            parse_one("SELECT x FROM t LATERAL VIEW EXPLODE(arr) v AS x", read="spark"),
++            schema={"t": {"arr": "ARRAY<INT>"}},
++            dialect="spark",
++        )
++        self.assertEqual(
++            expression.sql(dialect="spark"),
++            "SELECT `v`.`x` AS `x` FROM `t` AS `t` LATERAL VIEW EXPLODE(`t`.`arr`) v AS `x`",
++        )
++
+     def test_qualify_columns__with_invisible(self):
+         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

@@ -1,0 +1,319 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 00b1c1fbd..259e194ef 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -12,7 +12,7 @@ from sqlglot.optimizer.scope import ScopeType
+ 
+ if t.TYPE_CHECKING:
+     from sqlglot.dialects.dialect import DialectType
+-    from collections.abc import Iterator, Mapping, Sequence
++    from collections.abc import Callable, Iterator, Mapping, Sequence
+     from sqlglot._typing import GraphHTMLArgs
+     from typing_extensions import Unpack
+ 
+@@ -27,6 +27,7 @@ class Node:
+     downstream: list[Node] = field(default_factory=list)
+     source_name: str = ""
+     reference_node_name: str = ""
++    payload: dict[str, t.Any] = field(default_factory=dict)
+ 
+     def walk(self) -> Iterator[Node]:
+         visited: set[int] = set()
+@@ -74,6 +75,7 @@ class Node:
+         return GraphHTML(nodes, edges, **opts)
+ 
+ 
++@t.overload
+ def lineage(
+     column: str | exp.Column,
+     sql: str | exp.Expr,
+@@ -83,12 +85,43 @@ def lineage(
+     scope: Scope | None = None,
+     trim_selects: bool = True,
+     copy: bool = True,
++    on_node: Callable[[Node], None] | None = None,
+     **kwargs,
+-) -> Node:
++) -> Node: ...
++
++
++@t.overload
++def lineage(
++    column: None,
++    sql: str | exp.Expr,
++    schema: dict | Schema | None = None,
++    sources: Mapping[str, str | exp.Query] | None = None,
++    dialect: DialectType = None,
++    scope: Scope | None = None,
++    trim_selects: bool = True,
++    copy: bool = True,
++    on_node: Callable[[Node], None] | None = None,
++    **kwargs,
++) -> dict[str, Node]: ...
++
++
++def lineage(
++    column: str | exp.Column | None,
++    sql: str | exp.Expr,
++    schema: dict | Schema | None = None,
++    sources: Mapping[str, str | exp.Query] | None = None,
++    dialect: DialectType = None,
++    scope: Scope | None = None,
++    trim_selects: bool = True,
++    copy: bool = True,
++    on_node: Callable[[Node], None] | None = None,
++    **kwargs,
++) -> Node | dict[str, Node]:
+     """Build the lineage graph for a column of a SQL query.
+ 
+     Args:
+-        column: The column to build the lineage for.
++        column: The column to build the lineage for. If None, the lineage of every top-level
++            output column is built and returned as a dict keyed by column name.
+         sql: The SQL string or expression.
+         schema: The schema of tables.
+         sources: A mapping of queries which will be used to continue building lineage.
+@@ -96,14 +129,18 @@ def lineage(
+         scope: A pre-created scope to use instead.
+         trim_selects: Whether to clean up selects by trimming to only relevant columns.
+         copy: Whether to copy the Expr arguments.
++        on_node: A callback invoked once for every node created while building the graph,
++            after the node's downstream nodes have been populated.
+         **kwargs: Qualification optimizer kwargs.
+ 
+     Returns:
+-        A lineage node.
++        A lineage node, or a dict mapping each output column name to its lineage node when
++        `column` is None.
+     """
+ 
+     expression = maybe_parse(sql, copy=copy, dialect=dialect)
+-    column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
++    if column is not None:
++        column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
+ 
+     if sources:
+         expression = exp.expand(
+@@ -130,12 +167,30 @@ def lineage(
+         raise SqlglotError("Cannot build lineage, sql must be SELECT")
+ 
+     selectable = scope.expression
++    if column is None:
++        if not isinstance(selectable, exp.Selectable):
++            raise SqlglotError("Cannot build lineage, sql must be SELECT")
++
++        # A shared cache keeps nodes common to several output columns identical.
++        cache: dict[tuple, Node] = {}
++        return {
++            name: to_node(
++                name,
++                scope,
++                dialect,
++                trim_selects=trim_selects,
++                on_node=on_node,
++                _cache=cache,
++            )
++            for name in dict.fromkeys(select.alias_or_name for select in selectable.selects)
++        }
++
+     if not isinstance(selectable, exp.Selectable) or not any(
+         select.alias_or_name == column for select in selectable.selects
+     ):
+         raise SqlglotError(f"Cannot find column '{column}' in query.")
+ 
+-    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
++    return to_node(column, scope, dialect, trim_selects=trim_selects, on_node=on_node, _cache={})
+ 
+ 
+ def to_node(
+@@ -147,6 +202,7 @@ def to_node(
+     source_name: str | None = None,
+     reference_node_name: str | None = None,
+     trim_selects: bool = True,
++    on_node: Callable[[Node], None] | None = None,
+     _cache: dict[tuple, Node] | None = None,
+ ) -> Node:
+     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
+@@ -182,6 +238,7 @@ def to_node(
+                 source_name=source_name,
+                 reference_node_name=reference_node_name,
+                 trim_selects=trim_selects,
++                on_node=on_node,
+                 _cache=_cache,
+             )
+             # Skip caching a passed-in upstream returned by an inner SetOp:
+@@ -220,11 +277,15 @@ def to_node(
+                 source_name=source_name,
+                 reference_node_name=reference_node_name,
+                 trim_selects=trim_selects,
++                on_node=on_node,
+                 _cache=_cache,
+             )
+ 
+-        if _cache is not None and created_setop:
+-            _cache[cache_key] = upstream
++        if created_setop:
++            if on_node:
++                on_node(upstream)
++            if _cache is not None:
++                _cache[cache_key] = upstream
+         return upstream
+ 
+     if trim_selects and isinstance(scope.expression, exp.Select):
+@@ -265,6 +326,7 @@ def to_node(
+                 dialect=dialect,
+                 upstream=node,
+                 trim_selects=trim_selects,
++                on_node=on_node,
+                 _cache=_cache,
+             )
+ 
+@@ -272,9 +334,10 @@ def to_node(
+     if isinstance(select, exp.Star):
+         for src in scope.sources.values():
+             src_expr = src.expression if isinstance(src, Scope) else src
+-            node.downstream.append(
+-                Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
+-            )
++            src_node = Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
++            node.downstream.append(src_node)
++            if on_node:
++                on_node(src_node)
+ 
+     # Find all columns that went into creating this one to list their lineage nodes.
+     source_columns = set(find_all_in_scope(select, exp.Column))
+@@ -339,6 +402,7 @@ def to_node(
+                 source_name=source_names.get(table) or source_name,
+                 reference_node_name=reference_node_name,
+                 trim_selects=trim_selects,
++                on_node=on_node,
+                 _cache=_cache,
+             )
+         elif pivot and pivot.alias_or_name == c.table:
+@@ -368,26 +432,32 @@ def to_node(
+                         source_name=source_names.get(table) or source_name,
+                         reference_node_name=reference_node_name,
+                         trim_selects=trim_selects,
++                        on_node=on_node,
+                         _cache=_cache,
+                     )
+                 else:
+                     col_expr = col_source or exp.Placeholder()
+-                    node.downstream.append(
+-                        Node(
+-                            name=downstream_column.sql(comments=False),
+-                            source=col_expr,
+-                            expression=col_expr,
+-                        )
++                    leaf = Node(
++                        name=downstream_column.sql(comments=False),
++                        source=col_expr,
++                        expression=col_expr,
+                     )
++                    node.downstream.append(leaf)
++                    if on_node:
++                        on_node(leaf)
+         else:
+             # The source is not a scope and the column is not in any pivot - we've reached the end
+             # of the line. At this point, if a source is not found it means this column's lineage
+             # is unknown. This can happen if the definition of a source used in a query is not
+             # passed into the `sources` map.
+             col_expr = col_source or exp.Placeholder()
+-            node.downstream.append(
+-                Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
+-            )
++            leaf = Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
++            node.downstream.append(leaf)
++            if on_node:
++                on_node(leaf)
++
++    if on_node:
++        on_node(node)
+ 
+     if _cache is not None:
+         _cache[cache_key] = node
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 13577bb2f..49301a413 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -3,7 +3,8 @@ from __future__ import annotations
+ import unittest
+ 
+ import sqlglot
+-from sqlglot.lineage import lineage
++from sqlglot import exp
++from sqlglot.lineage import Node, lineage
+ from sqlglot.schema import MappingSchema
+ 
+ 
+@@ -862,3 +863,70 @@ class TestLineage(unittest.TestCase):
+         )
+         downstream_names = sorted(d.name for d in node.downstream)
+         self.assertEqual(downstream_names, ["s1.a", "s2.a"])
++
++    def test_lineage_all_columns(self) -> None:
++        sql = "WITH shared AS (SELECT a, b FROM x) SELECT s.a AS a, s.a + 1 AS c FROM shared s"
++        schema = {"x": {"a": "int", "b": "int"}}
++
++        nodes = lineage(None, sql, schema=schema)
++        self.assertEqual(list(nodes), ["a", "c"])
++
++        for column, node in nodes.items():
++            expected = lineage(column, sql, schema=schema)
++            self.assertEqual(node.name, expected.name)
++            self.assertEqual(node.source.sql(), expected.source.sql())
++            self.assertEqual(
++                sorted(d.name for d in node.downstream),
++                sorted(d.name for d in expected.downstream),
++            )
++
++        # the CTE's nodes are shared between output columns
++        a_leaves = {id(n) for n in nodes["a"].walk() if not n.downstream}
++        c_leaves = {id(n) for n in nodes["c"].walk() if not n.downstream}
++        self.assertTrue(a_leaves & c_leaves)
++
++    def test_lineage_all_columns_star(self) -> None:
++        nodes = lineage(None, "SELECT * FROM x", schema={"x": {"a": "int"}})
++        self.assertEqual(list(nodes), ["a"])
++        self.assertEqual(nodes["a"].name, "a")
++
++    def test_lineage_on_node(self) -> None:
++        sql = (
++            "WITH shared AS (SELECT a, b FROM x) "
++            "SELECT s1.a AS a, s2.b + 1 AS c FROM shared s1 JOIN shared s2 ON s1.a = s2.a "
++            "UNION ALL SELECT a, b FROM y"
++        )
++        schema = {"x": {"a": "int", "b": "int"}, "y": {"a": "int", "b": "int"}}
++
++        for column in ("a", "c", None):
++            with self.subTest(column=column):
++                order: list[Node] = []
++                result = lineage(column, sql, schema=schema, on_node=order.append)
++                roots = list(result.values()) if column is None else [result]
++
++                all_nodes = {id(n): n for root in roots for n in root.walk()}
++                self.assertEqual(len(order), len(set(map(id, order))))
++                self.assertEqual({id(n) for n in order}, set(all_nodes))
++
++                # each node is reported only after all of its downstream nodes
++                position = {id(n): i for i, n in enumerate(order)}
++                for n in order:
++                    for d in n.downstream:
++                        self.assertLess(position[id(d)], position[id(n)])
++
++    def test_lineage_on_node_payload(self) -> None:
++        def tag(node: Node) -> None:
++            node.payload["depth"] = len(node.downstream)
++
++        node = lineage(
++            "a",
++            "SELECT a FROM z",
++            schema={"x": {"a": "int"}},
++            sources={"z": "SELECT a FROM x"},
++            on_node=tag,
++        )
++        self.assertEqual(node.payload, {"depth": 1})
++        self.assertEqual(node.downstream[0].payload, {"depth": 1})
++        self.assertEqual(node.downstream[0].downstream[0].payload, {"depth": 0})
++
++        self.assertEqual(Node(name="a", expression=exp.null(), source=exp.null()).payload, {})

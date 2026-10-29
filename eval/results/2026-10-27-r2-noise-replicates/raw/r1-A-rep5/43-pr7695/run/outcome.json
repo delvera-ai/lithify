@@ -1,0 +1,28 @@
+{
+  "task": "Exasol dialect: transpiling MySQL/MariaDB `SHOW DATABASES` (and its alias `SHOW SCHEMAS`) to Exasol currently emits an unsupported, empty statement. Exasol lists schemas through its `SYS.EXA_SCHEMAS` metadata table, so generate:\n\n```\nSHOW DATABASES  ->  SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS\nSHOW SCHEMAS    ->  SELECT SCHEMA_NAME FROM SYS.EXA_SCHEMAS\n```\n\n(`SHOW TABLES` is already transpiled to Exasol.)",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 36685,
+    "cached": 534386,
+    "out": 5447,
+    "cost": 0.01540176,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

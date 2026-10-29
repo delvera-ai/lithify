@@ -1,0 +1,99 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4450b2216..aa1fc8c93 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -400,6 +400,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 0.8305,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-151619-postgres-dialect-create-type-fal",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 72805,
++      "tokens_cached": 1982270,
++      "tokens_out": 24844,
++      "cost_usd": 0.0468,
++      "wall_s": 276.4,
++      "always_on_tokens": 394,
++      "stability_after": 0.8305,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/postgres.py b/sqlglot/generators/postgres.py
+index 15baf8b7e..e569b36bd 100644
+--- a/sqlglot/generators/postgres.py
++++ b/sqlglot/generators/postgres.py
+@@ -485,6 +485,9 @@ class PostgresGenerator(generator.Generator):
+             # Postgres doesn't support precision for REAL and DOUBLE PRECISION types
+             return f"FLOAT({self.expressions(expression, flat=True)})"
+ 
++        if expression.is_type(exp.DType.ENUM) and isinstance(expression.parent, exp.Create):
++            return f"ENUM ({self.expressions(expression, flat=True)})"
++
+         return super().datatype_sql(expression)
+ 
+     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 2fac62242..0038e863c 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -318,6 +318,32 @@ class PostgresParser(parser.Parser):
+             )
+         )
+ 
++    def _parse_create(self) -> exp.Create | exp.Command:
++        start = self._prev
++        if not self._match_text_seq("TYPE"):
++            return super()._parse_create()
++
++        this = self._parse_table_parts()
++        if not self._match(TokenType.ALIAS):
++            return self._parse_as_command(start)
++
++        if self._match_text_seq("ENUM"):
++            expression: exp.Expr = exp.DataType(
++                this=exp.DType.ENUM, expressions=self._parse_wrapped_csv(self._parse_string)
++            )
++        elif self._match(TokenType.L_PAREN, advance=False):
++            attributes = self._parse_wrapped_csv(self._parse_field_def)
++            if not attributes:
++                return self._parse_as_command(start)
++            expression = exp.Schema(expressions=attributes)
++        else:
++            return self._parse_as_command(start)
++
++        if self._curr:
++            return self._parse_as_command(start)
++
++        return self.expression(exp.Create(this=this, kind="TYPE", expression=expression))
++
+     def _parse_generated_as_identity(
+         self,
+     ) -> (
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 420db449b..f60e84327 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1112,6 +1112,16 @@ FROM json_data, field_ids""",
+         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
+         self.validate_identity("CREATE TABLE test (foo HSTORE)")
+         self.validate_identity("CREATE TABLE test (foo JSONB)")
++        self.validate_identity("CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')")
++        self.validate_identity("CREATE TYPE public.book_type AS ENUM ()")
++        self.validate_identity("CREATE TYPE complex AS (r DOUBLE PRECISION, i DOUBLE PRECISION)")
++        self.assertIsInstance(
++            self.parse_one("CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')"), exp.Create
++        )
++        self.assertIsInstance(
++            self.parse_one("CREATE TYPE complex AS (r DOUBLE PRECISION, i DOUBLE PRECISION)"),
++            exp.Create,
++        )
+         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
+         self.validate_identity("CREATE TABLE test (foo INT) PARTITION BY HASH(foo)")
+         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")

@@ -1,0 +1,70 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..9cff310ac 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -372,8 +372,13 @@ def to_node(
+     }
+ 
+     pivots = scope.pivots
+-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
+-    if pivot:
++    pivot = pivots[0] if len(pivots) == 1 else None
++    if pivot and pivot.unpivot:
++        # UNPIVOT (value FOR name IN (col_a, col_b)) turns the IN list columns into rows, so both the
++        # value and the name columns are derived from them.
++        unpivot_columns = list(pivot.args["fields"][0].find_all(exp.Column))
++        unpivot_names = {e.name for e in pivot.expressions} | {pivot.args["fields"][0].this.name}
++    elif pivot:
+         # For each aggregation function, the pivot creates a new column for each field in category
+         # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+         # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+@@ -422,7 +427,11 @@ def to_node(
+             downstream_columns = []
+ 
+             column_name = c.name
+-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
++            if pivot.unpivot and column_name in unpivot_names:
++                downstream_columns.extend(unpivot_columns)
++            elif not pivot.unpivot and any(
++                column_name == pivot_column.name for pivot_column in pivot_columns
++            ):
+                 downstream_columns.extend(pivot_column_mapping[column_name])
+             else:
+                 # The column is not in the pivot, so it must be an implicit column of the
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..9c213a4ae 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -685,6 +685,32 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].reference_node_name, "t")
+         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+ 
++    def test_unpivot_value_column(self) -> None:
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++        node = lineage("score", sql)
++
++        self.assertEqual(
++            [downstream.name for downstream in node.downstream], ["src.jan", "src.feb"]
++        )
++
++    def test_unpivot_name_column_and_implicit_column(self) -> None:
++        sql = """
++        SELECT id, metric_name
++        FROM sales UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++
++        node = lineage("metric_name", sql)
++        self.assertEqual(
++            [downstream.name for downstream in node.downstream], ["sales.jan", "sales.feb"]
++        )
++
++        node = lineage("id", sql)
++        self.assertEqual([downstream.name for downstream in node.downstream], ["sales.id"])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

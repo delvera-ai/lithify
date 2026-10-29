@@ -1,0 +1,1 @@
+Snowflake dialect: Snowflake's Time Travel `UNDROP` statement raises a `ParseError`. Support parsing and generating `UNDROP` for all Snowflake object types: `TABLE`, `SCHEMA`, `DATABASE`, `ACCOUNT`, `NOTEBOOK`, `SNAPSHOT`, `STREAMLIT`, `TAG`, `TYPE`, `DYNAMIC TABLE`, `EXTERNAL VOLUME` and `ICEBERG TABLE`, including the `IDENTIFIER(<id>)` form for restoring by system ID.

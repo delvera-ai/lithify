@@ -1,0 +1,28 @@
+{
+  "task": "BigQuery \u2192 DuckDB: a parameterised `BIGNUMERIC` / `BIGDECIMAL` type is generated with both the default mapping parameters and the explicit ones concatenated:\n\n```\nDECLARE x DECIMAL(38, 5)(76, 38)\n```\n\nWhen the user supplies parameters, generate them instead of the default ones (and use the default mapping only when none are given).",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 30235,
+    "cached": 406740,
+    "out": 5116,
+    "cost": 0.0126702,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

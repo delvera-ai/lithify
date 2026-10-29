@@ -1,0 +1,68 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index f6f513435..46b1456f5 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4078,6 +4078,9 @@ class Generator:
+             expression.args.get("zone"),
+         )
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
++
+     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
+         zone = self.sql(expression, "this")
+         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index c6ec1f9a9..b8982a44b 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2676,9 +2676,6 @@ class DuckDBGenerator(generator.Generator):
+         )
+         return self.function_fallback_sql(expression)
+ 
+-    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
+-        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+-
+     def strposition_sql(self, expression: exp.StrPosition) -> str:
+         this = expression.this
+         substr = expression.args.get("substr")
+diff --git a/sqlglot/generators/presto.py b/sqlglot/generators/presto.py
+index 2664451cb..ea7d2542c 100644
+--- a/sqlglot/generators/presto.py
++++ b/sqlglot/generators/presto.py
+@@ -304,6 +304,7 @@ class PrestoGenerator(generator.Generator):
+         exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
+         exp.FileFormatProperty: lambda self, e: f"format={self.sql(exp.Literal.string(e.name))}",
+         exp.First: _first_last_sql,
++        exp.FromISO8601Timestamp: rename_func("FROM_ISO8601_TIMESTAMP"),
+         exp.FromTimeZone: lambda self, e: (
+             f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
+         ),
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 401188f4e..869f91960 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -949,6 +949,9 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return f"SET{exprs}{file_format}{copy_options}{tag}"
+ 
++    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
++        return self.func("TO_TIMESTAMP_TZ", expression.this)
++
+     def strtotime_sql(self, expression: exp.StrToTime):
+         # target_type is stored as a DataType instance
+         target_type = expression.args.get("target_type")
+diff --git a/tests/dialects/test_presto.py b/tests/dialects/test_presto.py
+index 3aa75f2e8..701ff53c4 100644
+--- a/tests/dialects/test_presto.py
++++ b/tests/dialects/test_presto.py
+@@ -38,6 +38,9 @@ class TestPresto(Validator):
+             write={
+                 "duckdb": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
+                 "presto": "SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05')",
++                "snowflake": "SELECT TO_TIMESTAMP_TZ('2020-05-11T11:15:05')",
++                "postgres": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)",
++                "spark": "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMP)",
+             },
+         )
+         self.validate_all(

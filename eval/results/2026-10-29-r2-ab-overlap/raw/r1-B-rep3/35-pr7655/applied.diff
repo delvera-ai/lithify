@@ -1,0 +1,105 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 16f3b5ad9..5a2f35453 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -544,6 +544,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-192554-postgres-dialect-support-the-pos",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 40181,
++      "tokens_cached": 609707,
++      "tokens_out": 8797,
++      "cost_usd": 0.0185,
++      "wall_s": 155.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index eb9d6b8af..f5e9006b4 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -78,6 +78,7 @@ class Postgres(Dialect):
+             "?|": TokenType.QMARK_PIPE,
+             "#-": TokenType.HASH_DASH,
+             "|/": TokenType.PIPE_SLASH,
++            "<<->>": TokenType.LR_ARROW_3D,
+             "||/": TokenType.DPIPE_SLASH,
+             "BEGIN": TokenType.BEGIN,
+             "BIGSERIAL": TokenType.BIGSERIAL,
+diff --git a/sqlglot/expressions/core.py b/sqlglot/expressions/core.py
+index c94c17509..54a0607cf 100644
+--- a/sqlglot/expressions/core.py
++++ b/sqlglot/expressions/core.py
+@@ -2118,6 +2118,10 @@ class Distance(Expression, Binary):
+     pass
+ 
+ 
++class Distance3D(Expression, Binary):
++    pass
++
++
+ class Escape(Expression, Binary):
+     pass
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 06a00e069..a8de74e77 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4222,6 +4222,9 @@ class Generator:
+     def distance_sql(self, expression: exp.Distance) -> str:
+         return self.binary(expression, "<->")
+ 
++    def distance3d_sql(self, expression: exp.Distance3D) -> str:
++        return self.binary(expression, "<<->>")
++
+     def dot_sql(self, expression: exp.Dot) -> str:
+         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
+ 
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 345bf029a..e732b2bff 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -916,6 +916,7 @@ class Parser:
+     FACTOR: t.ClassVar = {
+         TokenType.DIV: exp.IntDiv,
+         TokenType.LR_ARROW: exp.Distance,
++        TokenType.LR_ARROW_3D: exp.Distance3D,
+         TokenType.SLASH: exp.Div,
+         TokenType.STAR: exp.Mul,
+     }
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8ca6ee801..b36dd5da4 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -62,6 +62,7 @@ class TokenType(IntEnum):
+     HASH_ARROW = auto()
+     DHASH_ARROW = auto()
+     LR_ARROW = auto()
++    LR_ARROW_3D = auto()
+     DAT = auto()
+     LT_AT = auto()
+     AT_GT = auto()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index e3fe19046..6fec12311 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -366,6 +366,8 @@ class TestPostgres(Validator):
+             "SELECT m.name FROM manufacturers AS m LEFT JOIN LATERAL GET_PRODUCT_NAMES(m.id) pname ON TRUE WHERE pname IS NULL",
+             "SELECT m.name FROM manufacturers AS m LEFT JOIN LATERAL GET_PRODUCT_NAMES(m.id) AS pname ON TRUE WHERE pname IS NULL",
+         )
++        self.validate_identity("SELECT a <<->> b FROM t")
++        self.validate_identity("SELECT * FROM t ORDER BY a <<->> b LIMIT 1")
+         self.validate_identity(
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) v1, LATERAL VERTICES(p2.poly) v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) AS v1, LATERAL VERTICES(p2.poly) AS v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",

@@ -1,0 +1,78 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index fc194bb4e..655f04b28 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -608,6 +608,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-131813-mysql-dialect-multi-table-update",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 47232,
++      "tokens_cached": 968955,
++      "tokens_out": 14773,
++      "cost_usd": 0.0265,
++      "wall_s": 254.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 009573d91..daefb83c1 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3639,12 +3639,23 @@ class Parser:
+             )
+         )
+ 
++    def _parse_update_join(self) -> exp.Join | None:
++        # A comma-separated table is a cross join. Its alias is parsed with UPDATE_ALIAS_TOKENS
++        # so that the SET keyword isn't consumed as an alias when the table is followed by SET
++        if self._match(TokenType.COMMA):
++            return self.expression(
++                exp.Join(this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS))
++            )
++
++        return self._parse_join()
++
+     def _parse_update(self) -> exp.Update:
+         hint = self._parse_hint()
+-        kwargs: dict[str, object] = {
+-            "hint": hint,
+-            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+-        }
++        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++        while this and (join := self._parse_update_join()):
++            this.append("joins", join)
++
++        kwargs: dict[str, object] = {"hint": hint, "this": this}
+         while self._curr:
+             if self._match(TokenType.SET):
+                 kwargs["expressions"] = self._parse_csv(self._parse_equality)
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..eced1c8bc 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -23,6 +23,14 @@ class TestMySQL(Validator):
+         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
+         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+         self.validate_identity("UPDATE /*+ MAX_EXECUTION_TIME(1) */ t SET a = 1")
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors, books SET authors.x = 1 WHERE authors.id = books.author_id"
++        )
++        self.validate_identity("UPDATE a AS x, b AS y SET x.v = 1, y.v = 2 ORDER BY x.v LIMIT 1")
++        self.validate_identity("UPDATE a, b JOIN c ON b.id = c.id SET a.x = 1")
+         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+         self.validate_identity("DELETE /*+ MAX_EXECUTION_TIME(1) */ FROM t WHERE a = 1")
+         self.validate_identity("DELETE FROM t FORCE INDEX (idx) WHERE a > 5 ORDER BY id")

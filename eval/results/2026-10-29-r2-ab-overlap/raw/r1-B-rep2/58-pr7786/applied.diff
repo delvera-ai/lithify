@@ -1,0 +1,66 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 188eb88ff..2bbde3b05 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -912,6 +912,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-170818-exasol-dialect-the-second-argume",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 38805,
++      "tokens_cached": 472365,
++      "tokens_out": 6395,
++      "cost_usd": 0.0157,
++      "wall_s": 134.2,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/exasol.py b/sqlglot/parsers/exasol.py
+index 0d2156035..4ccaa563a 100644
+--- a/sqlglot/parsers/exasol.py
++++ b/sqlglot/parsers/exasol.py
+@@ -119,8 +119,9 @@ class ExasolParser(parser.Parser):
+     FUNCTION_PARSERS = {
+         **parser.Parser.FUNCTION_PARSERS,
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/listagg.htm
++        "LISTAGG": lambda self: self._parse_string_agg(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/group_concat.htm
+-        **dict.fromkeys(("GROUP_CONCAT", "LISTAGG"), lambda self: self._parse_group_concat()),
++        "GROUP_CONCAT": lambda self: self._parse_group_concat(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_value.htm
+         "JSON_VALUE": lambda self: self._parse_json_value(),
+         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index 1404e1a3c..f0a37c2a2 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -325,6 +325,19 @@ class TestExasol(Validator):
+             "SELECT id, department, hire_date, GROUP_CONCAT(id ORDER BY hire_date SEPARATOR ',') OVER (PARTITION BY department rows between 1 preceding and 1 following) GROUP_CONCAT_RESULT from employee_table ORDER BY department, hire_date",
+             "SELECT id, department, hire_date, LISTAGG(id, ',') WITHIN GROUP (ORDER BY hire_date) OVER (PARTITION BY department rows BETWEEN 1 preceding AND 1 following) AS GROUP_CONCAT_RESULT FROM employee_table ORDER BY department, hire_date",
+         )
++        self.validate_identity("SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t")
++        self.validate_all(
++            "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            read={
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "snowflake": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            },
++            write={
++                "exasol": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "oracle": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++                "snowflake": "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y)",
++            },
++        )
+         self.validate_all(
+             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
+             write={

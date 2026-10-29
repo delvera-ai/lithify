@@ -1,0 +1,153 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a9f3d358f..bf4ebfad8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -704,6 +704,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-134030-lineage-sqlglot-lineage-lineage",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 56669,
++      "tokens_cached": 831894,
++      "tokens_out": 21203,
++      "cost_usd": 0.0303,
++      "wall_s": 212.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..1744790f5 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -188,6 +188,26 @@ def lineage(
+     return result
+ 
+ 
++def _unpivot_outputs(unpivot: exp.Pivot) -> tuple[str, dict[str, list[str]]]:
++    """
++    Returns the UNPIVOT's name column and a map of each value column to the source columns it is
++    produced from, e.g. UNPIVOT (val FOR name IN (a AS 'x', b)) -> ("name", {"val": ["a", "b"]}).
++    """
++    name_column = unpivot.fields[0].this.name
++    value_columns = [
++        value
++        for expr in unpivot.expressions
++        for value in (expr.expressions if isinstance(expr, exp.Tuple) else [expr])
++    ]
++    mapping: dict[str, list[str]] = {value.name: [] for value in value_columns}
++    for entry in unpivot.fields[0].expressions:
++        entry = entry.this if isinstance(entry, exp.PivotAlias) else entry
++        entry_columns = entry.expressions if isinstance(entry, exp.Tuple) else [entry]
++        for value, column in zip(value_columns, entry_columns):
++            mapping[value.name].append(column.name)
++    return name_column, mapping
++
++
+ def to_node(
+     column: str | int,
+     scope: Scope,
+@@ -392,6 +412,10 @@ def to_node(
+             for col_index in range(i, len(pivot_columns), pivot_aggs_count):
+                 pivot_column_mapping[pivot_columns[col_index].name] = agg_cols
+ 
++    unpivot = pivots[0] if len(pivots) == 1 and pivots[0].unpivot else None
++    if unpivot:
++        unpivot_name_column, unpivot_column_mapping = _unpivot_outputs(unpivot)
++
+     for c in source_columns:
+         table = c.table
+         col_source: exp.Table | Scope | None = scope.sources.get(table)
+@@ -418,6 +442,50 @@ def to_node(
+                 _scope_meta=_scope_meta,
+                 on_node=on_node,
+             )
++        elif unpivot and unpivot.alias_or_name == c.table:
++            unpivot_source = unpivot.parent
++            if c.name == unpivot_name_column:
++                # The name column is produced from the IN list's labels, not from any source column
++                leaf = Node(
++                    name=c.sql(comments=False),
++                    source=unpivot.fields[0],
++                    expression=unpivot.fields[0],
++                )
++                node.downstream.append(leaf)
++                if on_node:
++                    on_node(leaf)
++                continue
++
++            upstream = (
++                scope.cte_sources.get(unpivot_source.name)
++                if isinstance(unpivot_source, exp.Table)
++                else scope.sources.get(unpivot_source.alias_or_name)
++            )
++            for upstream_column in unpivot_column_mapping.get(c.name, [c.name]):
++                if isinstance(upstream, Scope):
++                    to_node(
++                        upstream_column,
++                        scope=upstream,
++                        scope_name=unpivot_source.alias_or_name,
++                        dialect=dialect,
++                        upstream=node,
++                        source_name=source_name,
++                        trim_selects=trim_selects,
++                        _cache=_cache,
++                        _scope_meta=_scope_meta,
++                        on_node=on_node,
++                    )
++                else:
++                    leaf = Node(
++                        name=exp.column(upstream_column, table=unpivot_source.alias_or_name).sql(
++                            comments=False
++                        ),
++                        source=unpivot_source,
++                        expression=unpivot_source,
++                    )
++                    node.downstream.append(leaf)
++                    if on_node:
++                        on_node(leaf)
+         elif pivot and pivot.alias_or_name == c.table:
+             downstream_columns = []
+ 
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..421c2ebb2 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -685,6 +685,28 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].reference_node_name, "t")
+         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+ 
++    def test_unpivot_with_cte(self) -> None:
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            sorted(
++                n.name
++                for n in node.walk()
++                if n.name.startswith("SRC.") or n.name.startswith("SALES.")
++            ),
++            ["SALES.FEB", "SALES.JAN", "SRC.FEB", "SRC.JAN"],
++        )
++
++        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(node.downstream[0].name, "SRC.METRIC_NAME")
++        self.assertFalse(node.downstream[0].downstream)
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

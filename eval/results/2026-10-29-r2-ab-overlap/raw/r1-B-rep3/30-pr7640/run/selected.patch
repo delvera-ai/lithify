@@ -1,0 +1,65 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..03c56be33 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -1740,7 +1740,7 @@ class Parser:
+ 
+     PARTITION_KEYWORDS: t.ClassVar = {"PARTITION", "SUBPARTITION"}
+ 
+-    AMBIGUOUS_ALIAS_TOKENS: t.ClassVar = (TokenType.LIMIT, TokenType.OFFSET)
++    AMBIGUOUS_ALIAS_TOKENS: t.ClassVar = (TokenType.LIMIT, TokenType.OFFSET, TokenType.WINDOW)
+ 
+     OPERATION_MODIFIERS: t.ClassVar[set[str]] = set()
+ 
+@@ -4029,7 +4029,7 @@ class Parser:
+         # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+         # so this section tries to parse the clause version and if it fails, it treats the token
+         # as an identifier (alias)
+-        if self._can_parse_limit_or_offset():
++        if self._can_parse_clause_instead_of_alias():
+             return None
+ 
+         any_token = self._match(TokenType.ALIAS)
+@@ -5542,7 +5542,7 @@ class Parser:
+             exp.Offset(this=this, expression=count, expressions=self._parse_limit_by())
+         )
+ 
+-    def _can_parse_limit_or_offset(self) -> bool:
++    def _can_parse_clause_instead_of_alias(self) -> bool:
+         if not self._match_set(self.AMBIGUOUS_ALIAS_TOKENS, advance=False):
+             return False
+ 
+@@ -5550,6 +5550,11 @@ class Parser:
+         result = bool(
+             self._try_parse(self._parse_limit, retreat=True)
+             or self._try_parse(self._parse_offset, retreat=True)
++            or (
++                self._match(TokenType.WINDOW)
++                and self._parse_id_var()
++                and self._match(TokenType.ALIAS, advance=False)
++            )
+         )
+         self._retreat(index)
+ 
+@@ -8309,7 +8314,7 @@ class Parser:
+         # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+         # so this section tries to parse the clause version and if it fails, it treats the token
+         # as an identifier (alias)
+-        if self._can_parse_limit_or_offset():
++        if self._can_parse_clause_instead_of_alias():
+             return this
+ 
+         any_token = self._match(TokenType.ALIAS)
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..19b2309e9 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -14,6 +14,8 @@ class TestSQLite(Validator):
+         self.validate_identity("SELECT * FROM t INDEXED BY i")
+         self.validate_identity("SELECT * FROM t NOT INDEXED")
+         self.validate_identity("SELECT match FROM t")
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY fake_column)")
++        self.validate_identity("SELECT 1 AS window FROM t")
+         self.validate_identity("SELECT rowid FROM t1 WHERE t1 MATCH 'lorem'")
+         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
+         self.validate_identity("UNHEX(a, b)")

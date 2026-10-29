@@ -1,0 +1,74 @@
+diff --git a/sqlglot/expressions/dml.py b/sqlglot/expressions/dml.py
+index 1305f77d5..856e28f23 100644
+--- a/sqlglot/expressions/dml.py
++++ b/sqlglot/expressions/dml.py
+@@ -283,6 +283,7 @@ class LoadData(Expression):
+         "this": True,
+         "local": False,
+         "overwrite": False,
++        "temporary": False,
+         "inpath": False,
+         "files": False,
+         "partition": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index c41672384..eacc4da7b 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -2896,17 +2896,19 @@ class Generator:
+         is_overwrite = expression.args.get("overwrite")
+         overwrite = " OVERWRITE" if is_overwrite else ""
+         this = self.sql(expression, "this")
++        temporary = self.sql(expression, "temporary")
++        temporary = f" {temporary}" if temporary else ""
+ 
+         files = expression.args.get("files")
+         if files:
+             files_sql = self.expressions(files, flat=True)
+             files_sql = f"FILES{self.wrap(files_sql)}"
+-            this = f" {this}" if is_overwrite else f" INTO TABLE {this}"
++            this = f" {this}" if is_overwrite else f" INTO{temporary} TABLE {this}"
+             return f"LOAD DATA{overwrite}{this} FROM {files_sql}"
+ 
+         local = " LOCAL" if expression.args.get("local") else ""
+         inpath = f" INPATH {self.sql(expression, 'inpath')}"
+-        this = f" INTO TABLE {this}"
++        this = f" INTO{temporary} TABLE {this}"
+         partition = self.sql(expression, "partition")
+         partition = f" {partition}" if partition else ""
+         input_format = self.sql(expression, "input_format")
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 84d84423a..aad1c4e0f 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3592,13 +3592,17 @@ class Parser:
+             self._match_text_seq("INPATH")
+             inpath = self._parse_string()
+             overwrite = self._match(TokenType.OVERWRITE)
+-            self._match_pair(TokenType.INTO, TokenType.TABLE)
++            temporary = None
++            if self._match(TokenType.INTO):
++                temporary = self._match(TokenType.TEMPORARY) and exp.var(self._prev.text)
++                self._match(TokenType.TABLE)
+ 
+             return self.expression(
+                 exp.LoadData(
+                     this=self._parse_table(schema=True),
+                     local=local,
+                     overwrite=overwrite,
++                    temporary=temporary,
+                     inpath=inpath,
+                     files=self._match_text_seq("FROM", "FILES")
+                     and exp.Properties(expressions=self._parse_wrapped_properties()),
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index fabf9a6cc..41c3cd708 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -217,6 +217,8 @@ class TestBigQuery(Validator):
+         for load_data_sql in (
+             "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+             "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
++            "LOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
++            "LOAD DATA INTO TEMPORARY TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+         ):
+             with self.subTest(load_data_sql=load_data_sql):
+                 self.validate_identity(load_data_sql).assert_is(exp.LoadData)

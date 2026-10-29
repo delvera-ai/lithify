@@ -1,0 +1,51 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 2564b2dcc..549563edb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -80,6 +80,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-091757-mysql-dialect-mysql-allows-setti",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 37700,
++      "tokens_cached": 548961,
++      "tokens_out": 6047,
++      "cost_usd": 0.0161,
++      "wall_s": 146.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..610b2e7ad 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,6 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
+     }
+ 
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..ca13f6e7c 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -197,6 +197,7 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
+         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
+         self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity(
+             "ALTER TABLE t RENAME KEY a TO b",
+             "ALTER TABLE t RENAME INDEX a TO b",

@@ -1,0 +1,109 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 54996b4f5..3f6d0f5e6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -544,6 +544,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-093224-postgres-dialect-support-the-pos",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 34890,
++      "tokens_cached": 477917,
++      "tokens_out": 7283,
++      "cost_usd": 0.0154,
++      "wall_s": 150.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index eb9d6b8af..7f3107e70 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -71,6 +71,7 @@ class Postgres(Dialect):
+         KEYWORDS = {
+             **tokens.Tokenizer.KEYWORDS,
+             "~": TokenType.RLIKE,
++            "<<->>": TokenType.LR_ARROW_3D,
+             "@@": TokenType.DAT,
+             "@>": TokenType.AT_GT,
+             "<@": TokenType.LT_AT,
+diff --git a/sqlglot/expressions/core.py b/sqlglot/expressions/core.py
+index c94c17509..54a0607cf 100644
+--- a/sqlglot/expressions/core.py
++++ b/sqlglot/expressions/core.py
+@@ -2118,6 +2118,10 @@ class Distance(Expression, Binary):
+     pass
+ 
+ 
++class Distance3D(Expression, Binary):
++    pass
++
++
+ class Escape(Expression, Binary):
+     pass
+ 
+diff --git a/sqlglot/generators/postgres.py b/sqlglot/generators/postgres.py
+index 6c1516cee..11bbfe021 100644
+--- a/sqlglot/generators/postgres.py
++++ b/sqlglot/generators/postgres.py
+@@ -261,6 +261,9 @@ class PostgresGenerator(generator.Generator):
+         exp.JSONPathSubscript,
+     }
+ 
++    def distance3d_sql(self, expression: exp.Distance3D) -> str:
++        return self.binary(expression, "<<->>")
++
+     def lateral_sql(self, expression: exp.Lateral) -> str:
+         sql = super().lateral_sql(expression)
+ 
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 81562be9c..a70deccf9 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -168,6 +168,11 @@ class PostgresParser(parser.Parser):
+         TokenType.CARET: exp.Pow,
+     }
+ 
++    FACTOR = {
++        **parser.Parser.FACTOR,
++        TokenType.LR_ARROW_3D: exp.Distance3D,
++    }
++
+     RANGE_PARSERS = {
+         **parser.Parser.RANGE_PARSERS,
+         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8ca6ee801..b36dd5da4 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -62,6 +62,7 @@ class TokenType(IntEnum):
+     HASH_ARROW = auto()
+     DHASH_ARROW = auto()
+     LR_ARROW = auto()
++    LR_ARROW_3D = auto()
+     DAT = auto()
+     LT_AT = auto()
+     AT_GT = auto()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index e3fe19046..24424f55e 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -370,6 +370,8 @@ class TestPostgres(Validator):
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) v1, LATERAL VERTICES(p2.poly) v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",
+             "SELECT p1.id, p2.id, v1, v2 FROM polygons AS p1, polygons AS p2, LATERAL VERTICES(p1.poly) AS v1, LATERAL VERTICES(p2.poly) AS v2 WHERE (v1 <-> v2) < 10 AND p1.id <> p2.id",
+         )
++        self.validate_identity("SELECT a <<->> b FROM t")
++        self.validate_identity("SELECT id FROM t ORDER BY geom <<->> other_geom LIMIT 1")
+         self.validate_identity(
+             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL",
+             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",

@@ -1,0 +1,72 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..deacb5add 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -471,20 +471,30 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
++        # UNPIVOT(val FOR name IN (a, b)): the name column is derived from all of the IN-list
++        # source columns, while each value column is derived from the IN-list column(s) at its
++        # position, e.g. UNPIVOT((v1, v2) FOR name IN ((a1, a2) AS 'a', (b1, b2) AS 'b')) maps
++        # v1 to a1 and b1, and v2 to a2 and b2
++        value_expr = pivot.expressions[0]
++        value_columns = (
++            value_expr.expressions if isinstance(value_expr, exp.Tuple) else [value_expr]
++        )
+         unpivot_columns = [
+             col
+             for field in pivot.fields
+             for e in field.expressions
+             for col in e.find_all(exp.Column)
+         ]
+-        for value_column in pivot.expressions:
+-            for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
++
+         for field in pivot.fields:
+-            if isinstance(field, exp.In):
+-                mapping[field.this.name] = unpivot_columns
++            mapping[field.this.name] = unpivot_columns
++            for e in field.expressions:
++                in_expr = e.this if isinstance(e, exp.PivotAlias) else e
++                in_columns = in_expr.expressions if isinstance(in_expr, exp.Tuple) else [in_expr]
++                for value_column, in_column in zip(value_columns, in_columns):
++                    mapping.setdefault(value_column.output_name, []).extend(
++                        in_column.find_all(exp.Column)
++                    )
+ 
+         return mapping
+ 
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..04560e333 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,25 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT metric, q1, q2
++        FROM sales UNPIVOT ((q1, q2) FOR metric IN ((jan_1, jan_2) AS 'jan', (feb_1, feb_2) AS 'feb'))
++        """
++        schema = {"sales": {"jan_1": "int", "jan_2": "int", "feb_1": "int", "feb_2": "int"}}
++
++        node = lineage("q1", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN_1", "SALES.FEB_1"])
++
++        node = lineage("q2", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN_2", "SALES.FEB_2"])
++
++        node = lineage("metric", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            [d.name for d in node.downstream],
++            ["SALES.JAN_1", "SALES.JAN_2", "SALES.FEB_1", "SALES.FEB_2"],
++        )
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

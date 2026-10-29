@@ -1,0 +1,58 @@
+exit 1
+............................F............F.                              [100%]
+=================================== FAILURES ===================================
+__________________ TestLineage.test_pivot_with_alias_columns ___________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_pivot_with_alias_columns>
+
+    def test_pivot_with_alias_columns(self) -> None:
+        sql = """
+        SELECT x FROM (SELECT value, category FROM sample_data) AS sd
+        PIVOT (SUM(value) FOR category IN ('a', 'b')) AS p(x, y)
+        """
+        node = lineage("x", sql)
+    
+>       self.assertEqual(node.downstream[0].name, "sd.value")
+E       AssertionError: 'sd.x' != 'sd.value'
+E       - sd.x
+E       + sd.value
+
+tests/test_lineage.py:801: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  sqlglot:lineage.py:330 Unknown subquery scope: SELECT sample_data.value AS value, sample_data.category AS category FROM sample_data AS sample_data
+_________________ TestLineage.test_unpivot_with_alias_columns __________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_unpivot_with_alias_columns>
+
+    def test_unpivot_with_alias_columns(self) -> None:
+        sql = """
+        WITH src AS (
+          SELECT empid, dept, jan, feb FROM monthly_sales
+        )
+        SELECT m, s, e FROM src UNPIVOT(sales FOR month IN (jan, feb)) AS t(e, d, m, s)
+        """
+        schema = {"monthly_sales": {"empid": "int", "dept": "text", "jan": "int", "feb": "int"}}
+    
+        for renamed in ("s", "m"):
+            node = lineage(renamed, sql, schema=schema, dialect="snowflake")
+>           self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+E           AssertionError: Lists differ: ['SRC.S'] != ['SRC.JAN', 'SRC.FEB']
+E           
+E           First differing element 0:
+E           'SRC.S'
+E           'SRC.JAN'
+E           
+E           Second list contains 1 additional elements.
+E           First extra element 1:
+E           'SRC.FEB'
+E           
+E           - ['SRC.S']
+E           + ['SRC.JAN', 'SRC.FEB']
+
+tests/test_lineage.py:765: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  sqlglot:lineage.py:330 Unknown subquery scope: SELECT MONTHLY_SALES.EMPID AS EMPID, MONTHLY_SALES.DEPT AS DEPT, MONTHLY_SALES.JAN AS JAN, MONTHLY_SALES.FEB AS FEB FROM MONTHLY_SALES AS MONTHLY_SALES
+=========================== short test summary info ============================
+FAILED tests/test_lineage.py::TestLineage::test_pivot_with_alias_columns - As...
+FAILED tests/test_lineage.py::TestLineage::test_unpivot_with_alias_columns - ...
+2 failed, 41 passed in 0.34s

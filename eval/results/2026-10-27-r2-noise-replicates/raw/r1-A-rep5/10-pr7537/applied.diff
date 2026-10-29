@@ -1,0 +1,75 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b9620de6f..b4826695a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -144,6 +144,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-092914-mysql-mariadb-show-tables-in-sch",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 41786,
++      "tokens_cached": 869381,
++      "tokens_out": 10219,
++      "cost_usd": 0.0222,
++      "wall_s": 183.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index d8abbea52..bc2a54985 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -408,16 +408,16 @@ class MySQLParser(parser.Parser):
+         else:
+             target_id = None
+ 
+-        log = self._parse_string() if self._match_text_seq("IN") else None
+-
+         if this in ("BINLOG EVENTS", "RELAYLOG EVENTS"):
++            log = self._parse_string() if self._match_text_seq("IN") else None
+             position = self._parse_number() if self._match_text_seq("FROM") else None
+             db = None
+         else:
++            log = None
+             position = None
+             db = None
+ 
+-            if self._match(TokenType.FROM):
++            if self._match(TokenType.FROM) or self._match_text_seq("IN"):
+                 db = self._parse_id_var()
+             elif self._match(TokenType.DOT):
+                 db = target_id
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 4a6ff0eda..26e1d54e8 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -1411,6 +1411,19 @@ COMMENT='客户账户表'"""
+         self.assertIsInstance(show.args["like"], exp.Literal)
+         self.assertEqual(show.text("like"), "%foo%")
+ 
++        show = self.validate_identity(
++            "SHOW TABLES IN db_name",
++            "SHOW TABLES FROM db_name",
++        )
++        self.assertEqual(show.text("db"), "db_name")
++
++        show = self.validate_identity(
++            "SHOW FULL TABLES IN db_name LIKE '%foo%'",
++            "SHOW FULL TABLES FROM db_name LIKE '%foo%'",
++        )
++        self.assertTrue(show.args["full"])
++        self.assertEqual(show.text("db"), "db_name")
++
+     def test_set_variable(self):
+         cmd = self.parse_one("SET SESSION x = 1")
+         item = cmd.expressions[0]

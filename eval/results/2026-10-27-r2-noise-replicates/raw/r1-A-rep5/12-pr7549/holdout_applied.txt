@@ -1,0 +1,54 @@
+exit 1
+...... [  7%]
+.................................................................... [ 96%]
+..F                                   [100%]
+=================================== FAILURES ===================================
+_____________________ TestOptimizer.test_validate_columns ______________________
+
+self = <tests.test_optimizer.TestOptimizer testMethod=test_validate_columns>
+
+    def test_validate_columns(self):
+        with self.assertRaisesRegex(
+            OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"
+        ):
+            optimizer.qualify.qualify(
+                parse_one("select foo from x"),
+                schema={"foo": {"y": "int"}},
+            )
+    
+        # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
+        with self.assertRaisesRegex(OptimizeError, "Ambiguous column 'a'"):
+            expression = parse_one(
+                "SELECT * FROM (SELECT a, b, c FROM x) PIVOT (SUM(b) FOR c IN ('x', 'y'))"
+            )
+            qualified = optimizer.qualify_columns.qualify_columns(
+                expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
+            )
+            optimizer.qualify_columns.validate_qualify_columns(qualified)
+    
+        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT ci.name, ci.age FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+>       self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+        )
+E       AssertionError: 'SELECT `ci`.`ci`.`name` AS `name`, `ci`.`ci`.`age` AS [83 chars]`ci`' != 'SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM[73 chars]`ci`'
+E       - SELECT `ci`.`ci`.`name` AS `name`, `ci`.`ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`
+E       ?        -----                       -----
+E       + SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`
+
+tests/test_optimizer.py:667: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_optimizer.py::TestOptimizer::test_validate_columns - Assert...
+1 failed, 76 passed, 3705 subtests passed in 17.20s

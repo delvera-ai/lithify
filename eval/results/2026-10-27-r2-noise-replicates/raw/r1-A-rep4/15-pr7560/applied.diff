@@ -1,0 +1,132 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 779001fcb..bb9def960 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -224,6 +224,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-172058-optimizer-un-pivot-over-cte-sour",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 90847,
++      "tokens_cached": 2081229,
++      "tokens_out": 38695,
++      "cost_usd": 0.0892,
++      "wall_s": 436.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index 28de2be45..8b3112efb 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -197,6 +197,23 @@ def _unpivot_columns(unpivot: exp.Pivot) -> Iterator[exp.Identifier]:
+     return itertools.chain(name_columns, value_columns)
+ 
+ 
++def _pivot_columns(pivot: exp.Pivot) -> tuple[set[str], list[str]]:
++    """Returns the source columns consumed by a pivot and the output columns it produces."""
++    if pivot.unpivot:
++        exclude = set()
++        for field in pivot.fields:
++            if isinstance(field, exp.In):
++                exclude.update(
++                    c.output_name for e in field.expressions for c in e.find_all(exp.Column)
++                )
++
++        return exclude, [c.output_name for c in _unpivot_columns(pivot)]
++
++    exclude = set(c.output_name for c in pivot.find_all(exp.Column))
++    outputs = [c.output_name for c in pivot.args.get("columns", [])]
++    return exclude, outputs or [c.alias_or_name for c in pivot.expressions]
++
++
+ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
+     """
+     Remove table column aliases.
+@@ -606,6 +623,18 @@ def _qualify_columns(
+ 
+         if column_table and column_table in scope.sources:
+             source_columns = resolver.get_source_columns(column_table)
++
++            # A pivoted source exposes the pivot's output columns, except inside the pivot clause itself
++            pivot = next((p for p in scope.pivots if p.alias == column_table), None)
++            if (
++                pivot
++                and source_columns
++                and not pivot.alias_column_names
++                and not column.find_ancestor(exp.Pivot)
++            ):
++                exclude, outputs = _pivot_columns(pivot)
++                source_columns = [c for c in source_columns if c not in exclude] + outputs
++
+             if (
+                 not allow_partial_qualification
+                 and source_columns
+@@ -787,21 +816,7 @@ def _expand_stars(
+ 
+     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
+     if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
+-        if pivot.unpivot:
+-            pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
+-
+-            for field in pivot.fields:
+-                if isinstance(field, exp.In):
+-                    pivot_exclude_columns.update(
+-                        c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+-                    )
+-
+-        else:
+-            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
+-
+-            pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
+-            if not pivot_output_columns:
+-                pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
++        pivot_exclude_columns, pivot_output_columns = _pivot_columns(pivot)
+ 
+     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+         isinstance(col, exp.Dot) for col in scope.stars
+diff --git a/tests/fixtures/optimizer/qualify_columns.sql b/tests/fixtures/optimizer/qualify_columns.sql
+index 39c3470e1..2f4df2542 100644
+--- a/tests/fixtures/optimizer/qualify_columns.sql
++++ b/tests/fixtures/optimizer/qualify_columns.sql
+@@ -595,6 +595,30 @@ SELECT _0.c1 AS c1 FROM VALUES ((1), (2), (3)) AS _0(c1);
+ WITH cities AS (SELECT * FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT * FROM cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle'));
+ WITH cities AS (SELECT t.country AS country, t.name AS name, t.year AS year, t.population AS population FROM (VALUES ('nl', 'amsterdam', 2000, 1005)) AS t(country, name, year, population)) SELECT _0.nl_2000_amsterdam_total AS nl_2000_amsterdam_total, _0.nl_2000_amsterdam_count AS nl_2000_amsterdam_count, _0.nl_2000_seattle_total AS nl_2000_seattle_total, _0.nl_2000_seattle_count AS nl_2000_seattle_count, _0.nl_2010_amsterdam_total AS nl_2010_amsterdam_total, _0.nl_2010_amsterdam_count AS nl_2010_amsterdam_count, _0.nl_2010_seattle_total AS nl_2010_seattle_total, _0.nl_2010_seattle_count AS nl_2010_seattle_count, _0.us_2000_amsterdam_total AS us_2000_amsterdam_total, _0.us_2000_amsterdam_count AS us_2000_amsterdam_count, _0.us_2000_seattle_total AS us_2000_seattle_total, _0.us_2000_seattle_count AS us_2000_seattle_count, _0.us_2010_amsterdam_total AS us_2010_amsterdam_total, _0.us_2010_amsterdam_count AS us_2010_amsterdam_count, _0.us_2010_seattle_total AS us_2010_seattle_total, _0.us_2010_seattle_count AS us_2010_seattle_count FROM cities AS cities PIVOT(SUM(population) AS total, COUNT(population) AS count FOR country IN ('nl', 'us') year IN (2000, 2010) name IN ('amsterdam', 'seattle')) AS _0;
+ 
++# title: Star expansion over an unaliased UNPIVOT of a CTE
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT c.id AS id, c.m AS m, c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS c;
++
++# title: Column reference through an aliased UNPIVOT of a CTE
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT u.v FROM c UNPIVOT(v FOR m IN (jan, feb)) AS u;
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT u.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS u;
++
++# title: Column reference through an unaliased UNPIVOT of a CTE
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT c.v FROM c UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.jan, c.feb)) AS c;
++
++# title: Star expansion over an aliased UNPIVOT of a CTE
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c AS u UNPIVOT(v FOR m IN (jan, feb));
++WITH c AS (SELECT t.id AS id, t.jan AS jan, t.feb AS feb FROM t AS t) SELECT u.id AS id, u.m AS m, u.v AS v FROM c AS u UNPIVOT(v FOR m IN (u.jan, u.feb)) AS u;
++
+ --------------------------------------
+ -- CTEs
+ --------------------------------------

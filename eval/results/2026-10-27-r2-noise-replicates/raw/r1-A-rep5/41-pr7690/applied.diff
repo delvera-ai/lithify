@@ -1,0 +1,191 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b56284b05..c7b74d534 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -640,6 +640,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-122034-duckdb-dialect-overloaded-macro",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 113316,
++      "tokens_cached": 3473130,
++      "tokens_out": 64683,
++      "cost_usd": 0.2283,
++      "wall_s": 435.5,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 829c917ac..a29f0aacb 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -226,6 +226,14 @@ class UserDefinedFunction(Expression):
+     arg_types = {"this": True, "expressions": False, "wrapped": False}
+ 
+ 
++class MacroOverload(Expression):
++    arg_types = {"expressions": False, "expression": True, "is_table": False}
++
++
++class MacroOverloads(Expression):
++    arg_types = {"expressions": True}
++
++
+ class CharacterSet(Expression):
+     arg_types = {"this": True, "default": False}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 54b50c77a..7b363b7d6 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1325,7 +1325,8 @@ class Generator:
+         begin = " BEGIN" if expression.args.get("begin") else ""
+ 
+         expression_sql = self.sql(expression, "expression")
+-        if expression_sql:
++        # Macro overloads carry their own parameter lists, so they attach directly to the name
++        if expression_sql and not isinstance(expression.expression, exp.MacroOverloads):
+             expression_sql = f"{begin}{self.sep()}{expression_sql}"
+ 
+             if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
+@@ -4590,6 +4591,14 @@ class Generator:
+         )
+         return f"{this}{expressions}" if expressions.strip() != "" else this
+ 
++    def macrooverload_sql(self, expression: exp.MacroOverload) -> str:
++        params = self.wrap(self.no_identify(self.expressions, expression))
++        table = "TABLE " if expression.args.get("is_table") else ""
++        return f"{params} AS {table}{self.sql(expression, 'expression')}"
++
++    def macrooverloads_sql(self, expression: exp.MacroOverloads) -> str:
++        return self.expressions(expression, flat=True)
++
+     def joinhint_sql(self, expression: exp.JoinHint) -> str:
+         this = self.sql(expression, "this")
+         expressions = self.expressions(expression, flat=True)
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 73e0520b5..a47e5fc70 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -2427,6 +2427,14 @@ class Parser:
+ 
+                     if return_:
+                         expression = self.expression(exp.Return(this=expression))
++
++            if (
++                create_token_type == TokenType.FUNCTION
++                and isinstance(this, exp.UserDefinedFunction)
++                and self._match_pair(TokenType.COMMA, TokenType.L_PAREN, advance=False)
++            ):
++                expression = self._parse_macro_overloads(this, expression, properties)
++                this = this.this
+         elif create_token_type == TokenType.INDEX:
+             # Postgres allows anonymous indexes, eg. CREATE INDEX IF NOT EXISTS ON t(c)
+             if not self._match(TokenType.ON):
+@@ -7040,6 +7048,46 @@ class Parser:
+             exp.UserDefinedFunction(this=this, expressions=expressions, wrapped=True)
+         )
+ 
++    def _parse_macro_overloads(
++        self,
++        this: exp.UserDefinedFunction,
++        expression: exp.Expr,
++        properties: exp.Properties | None,
++    ) -> exp.MacroOverloads:
++        # The first overload's `AS TABLE` is parsed into a ReturnsProperty, move it onto its entry
++        returns = (
++            next((p for p in properties.expressions if isinstance(p, exp.ReturnsProperty)), None)
++            if properties
++            else None
++        )
++        is_table = bool(returns and returns.args.get("is_table"))
++        if returns:
++            returns.pop()
++
++        first = self.expression(
++            exp.MacroOverload(
++                expressions=this.expressions, expression=expression, is_table=is_table
++            )
++        )
++        self._advance()
++        return self.expression(
++            exp.MacroOverloads(expressions=[first, *self._parse_csv(self._parse_macro_overload)])
++        )
++
++    def _parse_macro_overload(self) -> exp.MacroOverload | None:
++        params = self._parse_wrapped_csv(self._parse_function_parameter)
++        if not self._match(TokenType.ALIAS):
++            self.raise_error("Expected AS after macro parameters")
++
++        is_table = bool(self._match(TokenType.TABLE))
++        return self.expression(
++            exp.MacroOverload(
++                expressions=params,
++                expression=self._parse_user_defined_function_expression(),
++                is_table=is_table,
++            )
++        )
++
+     def _parse_introducer(self, token: Token) -> exp.Introducer | exp.Identifier:
+         literal = self._parse_primary()
+         if literal:
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index 40d144d26..6a4924c3c 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -246,6 +246,17 @@ class DuckDBParser(parser.Parser):
+             )
+         return super()._parse_function_properties()
+ 
++    def _parse_user_defined_function_expression(self) -> exp.Expr | None:
++        index = self._index
++        expression = super()._parse_user_defined_function_expression()
++
++        # A parenthesized body followed by `, (params) AS ...` is a macro overload, not a comma join
++        if isinstance(expression, exp.Subquery) and expression.args.get("joins"):
++            self._retreat(index)
++            expression = self._parse_expression()
++
++        return expression
++
+     def _parse_lambda(self, alias: bool = False) -> exp.Expr | None:
+         index = self._index
+         if not self._match_text_seq("LAMBDA"):
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 073262879..21f44e468 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -2608,6 +2608,23 @@ class TestDuckDB(Validator):
+             },
+         )
+ 
++    def test_macro_overloads(self):
++        self.validate_identity("CREATE MACRO z() AS 1, (a) AS a")
++        self.validate_identity(
++            "CREATE OR REPLACE MACRO add_x(a, b) AS a + b, (a, b, c) AS a + b + c"
++        )
++        self.validate_identity("CREATE MACRO m(a) AS (a + 1), (a, b) AS a * b")
++        self.validate_identity(
++            "CREATE MACRO t(a) AS TABLE (SELECT a), (a, b) AS TABLE (SELECT a + b)"
++        )
++        self.validate_identity("CREATE MACRO t(a) AS (SELECT a), (a, b) AS (SELECT a + b)")
++
++        ast = parse_one("CREATE MACRO add_x(a, b) AS a + b, (a, b, c) AS a + b + c", read="duckdb")
++        overloads = ast.expression
++        self.assertIsInstance(overloads, exp.MacroOverloads)
++        self.assertEqual(len(overloads.expressions), 2)
++        self.assertEqual(len(overloads.expressions[1].expressions), 3)
++
+     def test_bitwise_agg(self):
+         self.validate_all(
+             "SELECT BIT_OR(int_value) FROM t",

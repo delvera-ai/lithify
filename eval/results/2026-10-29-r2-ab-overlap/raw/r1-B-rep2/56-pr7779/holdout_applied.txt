@@ -1,0 +1,42 @@
+exit 1
+..............F.                                           [100%]
+=================================== FAILURES ===================================
+_ TestStarrocks.test_array_contains_all [duckdb -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT [1, 2] <@ [1, 2, 3]' != 'SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])'
+E   - SELECT [1, 2] <@ [1, 2, 3]
+E   + SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])
+_ TestStarrocks.test_array_contains_all [postgres -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] _
+tests/dialects/test_dialect.py:85: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT [1, 2] <@ [1, 2, 3]' != 'SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])'
+E   - SELECT [1, 2] <@ [1, 2, 3]
+E   + SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])
+___________________________ TestStarrocks.test_trim ____________________________
+
+self = <tests.dialects.test_starrocks.TestStarrocks testMethod=test_trim>
+
+    def test_trim(self):
+        # StarRocks uses the function form TRIM(str, chars)/LTRIM/RTRIM,
+        # not MySQL's TRIM(chars FROM str) syntax
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/string-functions/trim/
+        self.validate_identity("SELECT TRIM('  hi  ')")
+        self.validate_identity("SELECT TRIM('--hi--', '-')")
+>       self.validate_identity("SELECT LTRIM('xxhi', 'x')")
+
+tests/dialects/test_starrocks.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: "SELECT LTRIM('xxhi', 'x')" != "SELECT TRIM('xxhi', 'x')"
+E   - SELECT LTRIM('xxhi', 'x')
+E   ?        -
+E   + SELECT TRIM('xxhi', 'x')
+------------------------------ Captured log call -------------------------------
+WARNING  sqlglot:generator.py:953 StarRocks TRIM cannot remove LEADING characters only
+=========================== short test summary info ============================
+SUBFAILED[duckdb -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] tests/dialects/test_starrocks.py::TestStarrocks::test_array_contains_all
+SUBFAILED[postgres -> SELECT ARRAY_CONTAINS_ALL([1, 2, 3], [1, 2])] tests/dialects/test_starrocks.py::TestStarrocks::test_array_contains_all
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_trim - Assertion...
+3 failed, 15 passed, 84 subtests passed in 0.33s

@@ -1,0 +1,108 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 7cd2f86e9..4c10a8d32 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -176,6 +176,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-175503-optimizer-spark-hive-optimizing",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 73723,
++      "tokens_cached": 2016735,
++      "tokens_out": 28171,
++      "cost_usd": 0.049,
++      "wall_s": 334.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/annotate_types.py b/sqlglot/optimizer/annotate_types.py
+index 5d6b2b47a..e51063462 100644
+--- a/sqlglot/optimizer/annotate_types.py
++++ b/sqlglot/optimizer/annotate_types.py
+@@ -311,8 +311,19 @@ class TypeAnnotator:
+                             if isinstance(col_def, exp.ColumnDef) and col_def.kind
+                         }
+                     else:
++                        # EXPLODE emits the array's elements, so the alias takes the element type
++                        exploded = isinstance(expression, exp.Lateral) and isinstance(
++                            expression.this, exp.Explode
++                        )
+                         selects[name] = {
+-                            alias: column.type for alias, column in zip(alias_column_names, values)
++                            alias: (
++                                column.type.expressions[0]
++                                if exploded
++                                and column.is_type(exp.DType.ARRAY)
++                                and column.type.expressions
++                                else column.type
++                            )
++                            for alias, column in zip(alias_column_names, values)
+                         }
+                 elif isinstance(expression, exp.SetOperation) and len(
+                     expression.left.selects
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..d475dfcd1 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -560,6 +560,25 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+ 
+         column_table: str | exp.Identifier | None = column.table
+         dot_parts = column.meta.pop("dot_parts", [])
++
++        if (
++            column.table in scope.sources
++            and len(column.parts) == 2
++            and isinstance(column.this, exp.Identifier)
++        ):
++            # e.g. `ci.name` where `ci` is both a source and a STRUCT column of it (EXPLODE ... AS ci)
++            source_columns = resolver.get_source_columns(column.table)
++            if (
++                column.name not in source_columns
++                and column.table in source_columns
++                and "*" not in source_columns
++            ):
++                converted = True
++                column.replace(
++                    exp.Dot.build([exp.column(column.table, table=column.table), column.this])
++                )
++                continue
++
+         if (
+             column_table
+             and column_table not in scope.sources
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..97b702202 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1341,6 +1341,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_struct_field(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++        expression = optimizer.optimize(
++            parse_one(
++                "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci", read="spark"
++            ),
++            schema=schema,
++            dialect="spark",
++        )
++        self.assertEqual(
++            expression.sql("spark"),
++            "SELECT `ci`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++        )
++        self.assertEqual(expression.selects[0].type.this, exp.DataType.Type.TEXT)
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

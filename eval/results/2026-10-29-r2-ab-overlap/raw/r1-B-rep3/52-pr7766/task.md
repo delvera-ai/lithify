@@ -1,0 +1,1 @@
+Postgres dialect: support the JSONB jsonpath predicate operator `@?` (e.g. `SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'`), so it tokenizes, parses into a dedicated expression and generates back as `@?`.

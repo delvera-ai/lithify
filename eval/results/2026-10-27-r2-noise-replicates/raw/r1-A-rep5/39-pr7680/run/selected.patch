@@ -1,0 +1,30 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 009573d91..bbf9914ee 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -4403,7 +4403,9 @@ class Parser:
+         self, skip_join_token: bool = False, parse_bracket: bool = False
+     ) -> exp.Join | None:
+         if self._match(TokenType.COMMA):
+-            table = self._try_parse(self._parse_table)
++            table = self._try_parse(
++                lambda: self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++            )
+             cross_join = self.expression(exp.Join(this=table)) if table else None
+ 
+             if cross_join and self.JOINS_HAVE_EQUAL_PRECEDENCE:
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..bdde0df6b 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -244,6 +244,10 @@ class TestMySQL(Validator):
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity("UPDATE authors AS a, books AS b SET a.x = 1 WHERE a.id = b.id")
+ 
+         # PARTITION BY RANGE - simple column
+         self.validate_identity(

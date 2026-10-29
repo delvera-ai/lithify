@@ -1,0 +1,83 @@
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index eb9d6b8af..75cacf7b4 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -74,6 +74,7 @@ class Postgres(Dialect):
+             "@@": TokenType.DAT,
+             "@>": TokenType.AT_GT,
+             "<@": TokenType.LT_AT,
++            "<<->>": TokenType.LR_ARROW_3D,
+             "?&": TokenType.QMARK_AMP,
+             "?|": TokenType.QMARK_PIPE,
+             "#-": TokenType.HASH_DASH,
+diff --git a/sqlglot/expressions/core.py b/sqlglot/expressions/core.py
+index c94c17509..54a0607cf 100644
+--- a/sqlglot/expressions/core.py
++++ b/sqlglot/expressions/core.py
+@@ -2118,6 +2118,10 @@ class Distance(Expression, Binary):
+     pass
+ 
+ 
++class Distance3D(Expression, Binary):
++    pass
++
++
+ class Escape(Expression, Binary):
+     pass
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 06a00e069..a8de74e77 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -4222,6 +4222,9 @@ class Generator:
+     def distance_sql(self, expression: exp.Distance) -> str:
+         return self.binary(expression, "<->")
+ 
++    def distance3d_sql(self, expression: exp.Distance3D) -> str:
++        return self.binary(expression, "<<->>")
++
+     def dot_sql(self, expression: exp.Dot) -> str:
+         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
+ 
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 81562be9c..a70deccf9 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -168,6 +168,11 @@ class PostgresParser(parser.Parser):
+         TokenType.CARET: exp.Pow,
+     }
+ 
++    FACTOR = {
++        **parser.Parser.FACTOR,
++        TokenType.LR_ARROW_3D: exp.Distance3D,
++    }
++
+     RANGE_PARSERS = {
+         **parser.Parser.RANGE_PARSERS,
+         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 8ca6ee801..b36dd5da4 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -62,6 +62,7 @@ class TokenType(IntEnum):
+     HASH_ARROW = auto()
+     DHASH_ARROW = auto()
+     LR_ARROW = auto()
++    LR_ARROW_3D = auto()
+     DAT = auto()
+     LT_AT = auto()
+     AT_GT = auto()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index e3fe19046..d9d7cecd2 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -952,6 +952,9 @@ FROM json_data, field_ids""",
+         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1)")
+         self.validate_identity("SELECT OVERLAY(a PLACING b FROM 1 FOR 1)")
+         self.validate_identity("ARRAY[1, 2, 3] && ARRAY[1, 2]").assert_is(exp.ArrayOverlaps)
++        self.validate_identity("SELECT a <<->> b FROM t")
++        self.validate_identity("SELECT a <<->> b + 1 FROM t")
++        self.assertIsInstance(self.parse_one("SELECT a <<->> b FROM t").selects[0], exp.Distance3D)
+ 
+         self.validate_all(
+             """SELECT JSONB_EXISTS('{"a": [1,2,3]}', 'a')""",

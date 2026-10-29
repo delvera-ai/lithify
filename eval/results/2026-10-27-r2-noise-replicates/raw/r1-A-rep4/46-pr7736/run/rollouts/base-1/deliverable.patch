@@ -1,0 +1,99 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 6db18a09f..a571c0d6b 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -471,20 +471,27 @@ def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+     mapping: dict[str, list[exp.Column]] = {}
+ 
+     if pivot.unpivot:
+-        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+-        # are derived from the IN-list source columns
+-        unpivot_columns = [
+-            col
++        # UNPIVOT((v1, v2) FOR name IN ((a, b) AS 'x', ...)): the name column is derived from every
++        # IN-list entry, while each value column only from the entries at its position in the tuple
++        entries = [
++            e.this if isinstance(e, exp.PivotAlias) else e
+             for field in pivot.fields
+             for e in field.expressions
+-            for col in e.find_all(exp.Column)
+         ]
+-        for value_column in pivot.expressions:
+-            for identifier in value_column.find_all(exp.Identifier):
+-                mapping[identifier.name] = unpivot_columns
++        value = pivot.expressions[0]
++        value_names = value.expressions if isinstance(value, exp.Tuple) else [value]
++        for i, value_name in enumerate(value_names):
++            mapping[value_name.name] = [
++                col
++                for entry in entries
++                for col in (
++                    entry.expressions[i] if isinstance(entry, exp.Tuple) else entry
++                ).find_all(exp.Column)
++            ]
++        name_columns = [col for entry in entries for col in entry.find_all(exp.Column)]
+         for field in pivot.fields:
+             if isinstance(field, exp.In):
+-                mapping[field.this.name] = unpivot_columns
++                mapping[field.this.name] = name_columns
+ 
+         return mapping
+ 
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index 5ddb8fccd..8f1bcde66 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -720,6 +720,53 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].name, "SRC.ID")
+         self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+ 
++    def test_unpivot_multiple_value_columns(self) -> None:
++        sql = """
++        SELECT q, a, b
++        FROM sales UNPIVOT ((a, b) FOR q IN ((jan, feb) AS 'Q1', (mar, apr) AS 'Q2'))
++        """
++        schema = {"sales": {"jan": "int", "feb": "int", "mar": "int", "apr": "int"}}
++
++        node = lineage("a", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.MAR"])
++
++        node = lineage("b", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.FEB", "SALES.APR"])
++
++        node = lineage("q", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(
++            [d.name for d in node.downstream],
++            ["SALES.JAN", "SALES.FEB", "SALES.MAR", "SALES.APR"],
++        )
++
++    def test_unpivot_aliased_in_list(self) -> None:
++        sql = """
++        SELECT id, metric_name, score
++        FROM sales UNPIVOT (score FOR metric_name IN (jan AS j, feb AS f))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
++
++        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
++
++    def test_unpivot_passthrough_from_subquery(self) -> None:
++        sql = """
++        SELECT id, score
++        FROM (SELECT id, jan, feb FROM sales) AS s
++        UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["S.ID"])
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([d.name for d in node.downstream], ["S.JAN", "S.FEB"])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

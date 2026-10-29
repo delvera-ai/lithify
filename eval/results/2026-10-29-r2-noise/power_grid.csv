@@ -1,0 +1,217 @@
+variant,effect,window_total,warmup,primary_n,seeds,power,mcse,lambda,feasible,kind
+empirical,0.0,60,20,40,1,0.0052,0.001,0.0,True,null calibration
+empirical,0.05,60,20,40,1,0.0894,0.004,0.1271,True,power
+empirical,0.1,60,20,40,1,0.3028,0.0065,0.2542,True,power
+empirical,0.15,60,20,40,1,0.5868,0.007,0.3814,True,power
+empirical,0.0,60,20,40,2,0.0098,0.0014,0.0,True,null calibration
+empirical,0.05,60,20,40,2,0.2506,0.0061,0.1271,True,power
+empirical,0.1,60,20,40,2,0.6348,0.0068,0.2542,True,power
+empirical,0.15,60,20,40,2,0.8902,0.0044,0.3814,True,power
+empirical,0.0,60,20,40,3,0.0154,0.0017,0.0,True,null calibration
+empirical,0.05,60,20,40,3,0.3776,0.0069,0.1271,True,power
+empirical,0.1,60,20,40,3,0.804,0.0056,0.2542,True,power
+empirical,0.15,60,20,40,3,0.9692,0.0024,0.3814,True,power
+empirical,0.0,60,30,30,1,0.001,0.0004,0.0,True,null calibration
+empirical,0.05,60,30,30,1,0.0444,0.0029,0.1271,True,power
+empirical,0.1,60,30,30,1,0.1898,0.0055,0.2542,True,power
+empirical,0.15,60,30,30,1,0.3992,0.0069,0.3814,True,power
+empirical,0.0,60,30,30,2,0.006,0.0011,0.0,True,null calibration
+empirical,0.05,60,30,30,2,0.1568,0.0051,0.1271,True,power
+empirical,0.1,60,30,30,2,0.4826,0.0071,0.2542,True,power
+empirical,0.15,60,30,30,2,0.7614,0.006,0.3814,True,power
+empirical,0.0,60,30,30,3,0.008,0.0013,0.0,True,null calibration
+empirical,0.05,60,30,30,3,0.2686,0.0063,0.1271,True,power
+empirical,0.1,60,30,30,3,0.6672,0.0067,0.2542,True,power
+empirical,0.15,60,30,30,3,0.8912,0.0044,0.3814,True,power
+empirical,0.0,60,40,20,1,0.0004,0.0003,0.0,True,null calibration
+empirical,0.05,60,40,20,1,0.0128,0.0016,0.1271,True,power
+empirical,0.1,60,40,20,1,0.0644,0.0035,0.2542,True,power
+empirical,0.15,60,40,20,1,0.1776,0.0054,0.3814,True,power
+empirical,0.0,60,40,20,2,0.0018,0.0006,0.0,True,null calibration
+empirical,0.05,60,40,20,2,0.0584,0.0033,0.1271,True,power
+empirical,0.1,60,40,20,2,0.2494,0.0061,0.2542,True,power
+empirical,0.15,60,40,20,2,0.4944,0.0071,0.3814,True,power
+empirical,0.0,60,40,20,3,0.0024,0.0007,0.0,True,null calibration
+empirical,0.05,60,40,20,3,0.1274,0.0047,0.1271,True,power
+empirical,0.1,60,40,20,3,0.4258,0.007,0.2542,True,power
+empirical,0.15,60,40,20,3,0.696,0.0065,0.3814,True,power
+empirical,0.0,100,20,80,1,0.0186,0.0019,0.0,True,null calibration
+empirical,0.05,100,20,80,1,0.2434,0.0061,0.1271,True,power
+empirical,0.1,100,20,80,1,0.6856,0.0066,0.2542,True,power
+empirical,0.15,100,20,80,1,0.9204,0.0038,0.3814,True,power
+empirical,0.0,100,20,80,2,0.0228,0.0021,0.0,True,null calibration
+empirical,0.05,100,20,80,2,0.4994,0.0071,0.1271,True,power
+empirical,0.1,100,20,80,2,0.926,0.0037,0.2542,True,power
+empirical,0.15,100,20,80,2,0.9956,0.0009,0.3814,True,power
+empirical,0.0,100,20,80,3,0.0276,0.0023,0.0,True,null calibration
+empirical,0.05,100,20,80,3,0.6872,0.0066,0.1271,True,power
+empirical,0.1,100,20,80,3,0.9854,0.0017,0.2542,True,power
+empirical,0.15,100,20,80,3,0.9996,0.0003,0.3814,True,power
+empirical,0.0,100,30,70,1,0.0122,0.0016,0.0,True,null calibration
+empirical,0.05,100,30,70,1,0.2144,0.0058,0.1271,True,power
+empirical,0.1,100,30,70,1,0.591,0.007,0.2542,True,power
+empirical,0.15,100,30,70,1,0.8774,0.0046,0.3814,True,power
+empirical,0.0,100,30,70,2,0.024,0.0022,0.0,True,null calibration
+empirical,0.05,100,30,70,2,0.4302,0.007,0.1271,True,power
+empirical,0.1,100,30,70,2,0.8912,0.0044,0.2542,True,power
+empirical,0.15,100,30,70,2,0.9912,0.0013,0.3814,True,power
+empirical,0.0,100,30,70,3,0.0272,0.0023,0.0,True,null calibration
+empirical,0.05,100,30,70,3,0.6164,0.0069,0.1271,True,power
+empirical,0.1,100,30,70,3,0.9674,0.0025,0.2542,True,power
+empirical,0.15,100,30,70,3,0.9992,0.0004,0.3814,True,power
+empirical,0.0,100,40,60,1,0.0104,0.0014,0.0,True,null calibration
+empirical,0.05,100,40,60,1,0.1672,0.0053,0.1271,True,power
+empirical,0.1,100,40,60,1,0.5136,0.0071,0.2542,True,power
+empirical,0.15,100,40,60,1,0.8156,0.0055,0.3814,True,power
+empirical,0.0,100,40,60,2,0.0214,0.002,0.0,True,null calibration
+empirical,0.05,100,40,60,2,0.3936,0.0069,0.1271,True,power
+empirical,0.1,100,40,60,2,0.8368,0.0052,0.2542,True,power
+empirical,0.15,100,40,60,2,0.9838,0.0018,0.3814,True,power
+empirical,0.0,100,40,60,3,0.0234,0.0021,0.0,True,null calibration
+empirical,0.05,100,40,60,3,0.5454,0.007,0.1271,True,power
+empirical,0.1,100,40,60,3,0.9432,0.0033,0.2542,True,power
+empirical,0.15,100,40,60,3,0.9988,0.0005,0.3814,True,power
+empirical,0.0,150,20,130,1,0.0214,0.002,0.0,True,null calibration
+empirical,0.05,150,20,130,1,0.4164,0.007,0.1271,True,power
+empirical,0.1,150,20,130,1,0.8902,0.0044,0.2542,True,power
+empirical,0.15,150,20,130,1,0.9932,0.0012,0.3814,True,power
+empirical,0.0,150,20,130,2,0.0316,0.0025,0.0,True,null calibration
+empirical,0.05,150,20,130,2,0.715,0.0064,0.1271,True,power
+empirical,0.1,150,20,130,2,0.9928,0.0012,0.2542,True,power
+empirical,0.15,150,20,130,2,1.0,0.0,0.3814,True,power
+empirical,0.0,150,20,130,3,0.0326,0.0025,0.0,True,null calibration
+empirical,0.05,150,20,130,3,0.8704,0.0047,0.1271,True,power
+empirical,0.1,150,20,130,3,0.9998,0.0002,0.2542,True,power
+empirical,0.15,150,20,130,3,1.0,0.0,0.3814,True,power
+empirical,0.0,150,30,120,1,0.0274,0.0023,0.0,True,null calibration
+empirical,0.05,150,30,120,1,0.3888,0.0069,0.1271,True,power
+empirical,0.1,150,30,120,1,0.8614,0.0049,0.2542,True,power
+empirical,0.15,150,30,120,1,0.9902,0.0014,0.3814,True,power
+empirical,0.0,150,30,120,2,0.0342,0.0026,0.0,True,null calibration
+empirical,0.05,150,30,120,2,0.6852,0.0066,0.1271,True,power
+empirical,0.1,150,30,120,2,0.9886,0.0015,0.2542,True,power
+empirical,0.15,150,30,120,2,1.0,0.0,0.3814,True,power
+empirical,0.0,150,30,120,3,0.0334,0.0025,0.0,True,null calibration
+empirical,0.05,150,30,120,3,0.8364,0.0052,0.1271,True,power
+empirical,0.1,150,30,120,3,0.9996,0.0003,0.2542,True,power
+empirical,0.15,150,30,120,3,1.0,0.0,0.3814,True,power
+empirical,0.0,150,40,110,1,0.0218,0.0021,0.0,True,null calibration
+empirical,0.05,150,40,110,1,0.357,0.0068,0.1271,True,power
+empirical,0.1,150,40,110,1,0.826,0.0054,0.2542,True,power
+empirical,0.15,150,40,110,1,0.9814,0.0019,0.3814,True,power
+empirical,0.0,150,40,110,2,0.0302,0.0024,0.0,True,null calibration
+empirical,0.05,150,40,110,2,0.6442,0.0068,0.1271,True,power
+empirical,0.1,150,40,110,2,0.9806,0.002,0.2542,True,power
+empirical,0.15,150,40,110,2,1.0,0.0,0.3814,True,power
+empirical,0.0,150,40,110,3,0.0314,0.0025,0.0,True,null calibration
+empirical,0.05,150,40,110,3,0.8054,0.0056,0.1271,True,power
+empirical,0.1,150,40,110,3,0.9982,0.0006,0.2542,True,power
+empirical,0.15,150,40,110,3,1.0,0.0,0.3814,True,power
+jeffreys,0.0,60,20,40,1,0.0182,0.0019,0.0,True,null calibration
+jeffreys,0.05,60,20,40,1,0.085,0.0039,0.1216,True,power
+jeffreys,0.1,60,20,40,1,0.2402,0.006,0.2432,True,power
+jeffreys,0.15,60,20,40,1,0.4582,0.007,0.3649,True,power
+jeffreys,0.0,60,20,40,2,0.027,0.0023,0.0,True,null calibration
+jeffreys,0.05,60,20,40,2,0.1588,0.0052,0.1216,True,power
+jeffreys,0.1,60,20,40,2,0.4586,0.007,0.2432,True,power
+jeffreys,0.15,60,20,40,2,0.7542,0.0061,0.3649,True,power
+jeffreys,0.0,60,20,40,3,0.032,0.0025,0.0,True,null calibration
+jeffreys,0.05,60,20,40,3,0.238,0.006,0.1216,True,power
+jeffreys,0.1,60,20,40,3,0.6218,0.0069,0.2432,True,power
+jeffreys,0.15,60,20,40,3,0.8906,0.0044,0.3649,True,power
+jeffreys,0.0,60,30,30,1,0.019,0.0019,0.0,True,null calibration
+jeffreys,0.05,60,30,30,1,0.0658,0.0035,0.1216,True,power
+jeffreys,0.1,60,30,30,1,0.1554,0.0051,0.2432,True,power
+jeffreys,0.15,60,30,30,1,0.3182,0.0066,0.3649,True,power
+jeffreys,0.0,60,30,30,2,0.0236,0.0021,0.0,True,null calibration
+jeffreys,0.05,60,30,30,2,0.1328,0.0048,0.1216,True,power
+jeffreys,0.1,60,30,30,2,0.3434,0.0067,0.2432,True,power
+jeffreys,0.15,60,30,30,2,0.6076,0.0069,0.3649,True,power
+jeffreys,0.0,60,30,30,3,0.0278,0.0023,0.0,True,null calibration
+jeffreys,0.05,60,30,30,3,0.1822,0.0055,0.1216,True,power
+jeffreys,0.1,60,30,30,3,0.4798,0.0071,0.2432,True,power
+jeffreys,0.15,60,30,30,3,0.7726,0.0059,0.3649,True,power
+jeffreys,0.0,60,40,20,1,0.0078,0.0012,0.0,True,null calibration
+jeffreys,0.05,60,40,20,1,0.0316,0.0025,0.1216,True,power
+jeffreys,0.1,60,40,20,1,0.0958,0.0042,0.2432,True,power
+jeffreys,0.15,60,40,20,1,0.1758,0.0054,0.3649,True,power
+jeffreys,0.0,60,40,20,2,0.0216,0.0021,0.0,True,null calibration
+jeffreys,0.05,60,40,20,2,0.0736,0.0037,0.1216,True,power
+jeffreys,0.1,60,40,20,2,0.215,0.0058,0.2432,True,power
+jeffreys,0.15,60,40,20,2,0.4064,0.0069,0.3649,True,power
+jeffreys,0.0,60,40,20,3,0.0262,0.0023,0.0,True,null calibration
+jeffreys,0.05,60,40,20,3,0.1276,0.0047,0.1216,True,power
+jeffreys,0.1,60,40,20,3,0.3292,0.0066,0.2432,True,power
+jeffreys,0.15,60,40,20,3,0.5798,0.007,0.3649,True,power
+jeffreys,0.0,100,20,80,1,0.0294,0.0024,0.0,True,null calibration
+jeffreys,0.05,100,20,80,1,0.1656,0.0053,0.1216,True,power
+jeffreys,0.1,100,20,80,1,0.4726,0.0071,0.2432,True,power
+jeffreys,0.15,100,20,80,1,0.7826,0.0058,0.3649,True,power
+jeffreys,0.0,100,20,80,2,0.0308,0.0024,0.0,True,null calibration
+jeffreys,0.05,100,20,80,2,0.3012,0.0065,0.1216,True,power
+jeffreys,0.1,100,20,80,2,0.757,0.0061,0.2432,True,power
+jeffreys,0.15,100,20,80,2,0.9688,0.0025,0.3649,True,power
+jeffreys,0.0,100,20,80,3,0.035,0.0026,0.0,True,null calibration
+jeffreys,0.05,100,20,80,3,0.4344,0.007,0.1216,True,power
+jeffreys,0.1,100,20,80,3,0.8972,0.0043,0.2432,True,power
+jeffreys,0.15,100,20,80,3,0.9978,0.0007,0.3649,True,power
+jeffreys,0.0,100,30,70,1,0.0342,0.0026,0.0,True,null calibration
+jeffreys,0.05,100,30,70,1,0.152,0.0051,0.1216,True,power
+jeffreys,0.1,100,30,70,1,0.423,0.007,0.2432,True,power
+jeffreys,0.15,100,30,70,1,0.7268,0.0063,0.3649,True,power
+jeffreys,0.0,100,30,70,2,0.032,0.0025,0.0,True,null calibration
+jeffreys,0.05,100,30,70,2,0.2796,0.0063,0.1216,True,power
+jeffreys,0.1,100,30,70,2,0.696,0.0065,0.2432,True,power
+jeffreys,0.15,100,30,70,2,0.9508,0.0031,0.3649,True,power
+jeffreys,0.0,100,30,70,3,0.0354,0.0026,0.0,True,null calibration
+jeffreys,0.05,100,30,70,3,0.3948,0.0069,0.1216,True,power
+jeffreys,0.1,100,30,70,3,0.8552,0.005,0.2432,True,power
+jeffreys,0.15,100,30,70,3,0.9896,0.0014,0.3649,True,power
+jeffreys,0.0,100,40,60,1,0.0256,0.0022,0.0,True,null calibration
+jeffreys,0.05,100,40,60,1,0.1378,0.0049,0.1216,True,power
+jeffreys,0.1,100,40,60,1,0.3692,0.0068,0.2432,True,power
+jeffreys,0.15,100,40,60,1,0.6472,0.0068,0.3649,True,power
+jeffreys,0.0,100,40,60,2,0.036,0.0026,0.0,True,null calibration
+jeffreys,0.05,100,40,60,2,0.2522,0.0061,0.1216,True,power
+jeffreys,0.1,100,40,60,2,0.6324,0.0068,0.2432,True,power
+jeffreys,0.15,100,40,60,2,0.9118,0.004,0.3649,True,power
+jeffreys,0.0,100,40,60,3,0.0344,0.0026,0.0,True,null calibration
+jeffreys,0.05,100,40,60,3,0.3468,0.0067,0.1216,True,power
+jeffreys,0.1,100,40,60,3,0.8012,0.0056,0.2432,True,power
+jeffreys,0.15,100,40,60,3,0.9756,0.0022,0.3649,True,power
+jeffreys,0.0,150,20,130,1,0.0364,0.0026,0.0,True,null calibration
+jeffreys,0.05,150,20,130,1,0.2722,0.0063,0.1216,True,power
+jeffreys,0.1,150,20,130,1,0.6694,0.0067,0.2432,True,power
+jeffreys,0.15,150,20,130,1,0.9384,0.0034,0.3649,True,power
+jeffreys,0.0,150,20,130,2,0.0364,0.0026,0.0,True,null calibration
+jeffreys,0.05,150,20,130,2,0.4592,0.007,0.1216,True,power
+jeffreys,0.1,150,20,130,2,0.9262,0.0037,0.2432,True,power
+jeffreys,0.15,150,20,130,2,0.9996,0.0003,0.3649,True,power
+jeffreys,0.0,150,20,130,3,0.0416,0.0028,0.0,True,null calibration
+jeffreys,0.05,150,20,130,3,0.6108,0.0069,0.1216,True,power
+jeffreys,0.1,150,20,130,3,0.9854,0.0017,0.2432,True,power
+jeffreys,0.15,150,20,130,3,1.0,0.0,0.3649,True,power
+jeffreys,0.0,150,30,120,1,0.0324,0.0025,0.0,True,null calibration
+jeffreys,0.05,150,30,120,1,0.246,0.0061,0.1216,True,power
+jeffreys,0.1,150,30,120,1,0.6502,0.0067,0.2432,True,power
+jeffreys,0.15,150,30,120,1,0.9228,0.0038,0.3649,True,power
+jeffreys,0.0,150,30,120,2,0.0418,0.0028,0.0,True,null calibration
+jeffreys,0.05,150,30,120,2,0.4436,0.007,0.1216,True,power
+jeffreys,0.1,150,30,120,2,0.9002,0.0042,0.2432,True,power
+jeffreys,0.15,150,30,120,2,0.997,0.0008,0.3649,True,power
+jeffreys,0.0,150,30,120,3,0.039,0.0027,0.0,True,null calibration
+jeffreys,0.05,150,30,120,3,0.5864,0.007,0.1216,True,power
+jeffreys,0.1,150,30,120,3,0.977,0.0021,0.2432,True,power
+jeffreys,0.15,150,30,120,3,0.9998,0.0002,0.3649,True,power
+jeffreys,0.0,150,40,110,1,0.0278,0.0023,0.0,True,null calibration
+jeffreys,0.05,150,40,110,1,0.2244,0.0059,0.1216,True,power
+jeffreys,0.1,150,40,110,1,0.612,0.0069,0.2432,True,power
+jeffreys,0.15,150,40,110,1,0.8926,0.0044,0.3649,True,power
+jeffreys,0.0,150,40,110,2,0.0348,0.0026,0.0,True,null calibration
+jeffreys,0.05,150,40,110,2,0.4076,0.0069,0.1216,True,power
+jeffreys,0.1,150,40,110,2,0.8852,0.0045,0.2432,True,power
+jeffreys,0.15,150,40,110,2,0.9942,0.0011,0.3649,True,power
+jeffreys,0.0,150,40,110,3,0.0382,0.0027,0.0,True,null calibration
+jeffreys,0.05,150,40,110,3,0.5496,0.007,0.1216,True,power
+jeffreys,0.1,150,40,110,3,0.9636,0.0026,0.2432,True,power
+jeffreys,0.15,150,40,110,3,0.9994,0.0003,0.3649,True,power

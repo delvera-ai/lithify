@@ -1,0 +1,132 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4a365415c..637b8af80 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -272,6 +272,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-100530-mysql-dialect-alter-table-modify",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 53535,
++      "tokens_cached": 1016387,
++      "tokens_out": 14767,
++      "cost_usd": 0.0283,
++      "wall_s": 202.2,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 79e8ac348..24d097bfe 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -245,6 +245,10 @@ class AlterColumn(Expression):
+     }
+ 
+ 
++class ModifyColumn(Expression):
++    arg_types = {"this": True}
++
++
+ class AlterIndex(Expression):
+     arg_types = {"this": True, "visible": True}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 26d481a50..387691c3d 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -5928,6 +5928,9 @@ class Generator:
+         props = self.expressions(expression, sep=" ")
+         return f"MODIFY {props}"
+ 
++    def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
++        return f"MODIFY COLUMN {self.sql(expression, 'this')}"
++
+     def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
+         kind = expression.args.get("kind")
+         return f"USING {kind} {self.sql(expression, 'this')}"
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index b6f80651b..0fd42f296 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -8509,15 +8509,15 @@ class Parser:
+         if not expression:
+             return None
+ 
+-        # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
++        expression.set("position", self._parse_column_position())
++        return expression
++
++    # https://docs.databricks.com/delta/update-schema.html#explicitly-update-schema-to-add-columns
++    def _parse_column_position(self) -> exp.ColumnPosition | None:
+         if self._match_texts(("FIRST", "AFTER")):
+             position = self._prev.text
+-            column_position = self.expression(
+-                exp.ColumnPosition(this=self._parse_column(), position=position)
+-            )
+-            expression.set("position", column_position)
+-
+-        return expression
++            return self.expression(exp.ColumnPosition(this=self._parse_column(), position=position))
++        return None
+ 
+     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
+         drop = self._parse_drop() if self._match(TokenType.DROP) else None
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index d4bf7e3c0..4e00997ef 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -252,7 +252,7 @@ class MySQLParser(parser.Parser):
+ 
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+-        "MODIFY": lambda self: self._parse_alter_table_alter(),
++        "MODIFY": lambda self: self._parse_alter_table_modify(),
+         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+@@ -315,6 +315,15 @@ class MySQLParser(parser.Parser):
+             return self.expression(exp.DropPrimaryKey())
+         return super()._parse_alter_drop_action()
+ 
++    def _parse_alter_table_modify(self) -> exp.ModifyColumn | None:
++        self._match(TokenType.COLUMN)
++        column_def = self._parse_field_def()
++        if not isinstance(column_def, exp.ColumnDef):
++            return None
++
++        column_def.set("position", self._parse_column_position())
++        return self.expression(exp.ModifyColumn(this=column_def))
++
+     def _parse_generated_as_identity(
+         self,
+     ) -> (
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 5675aed05..d05c9523a 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -38,6 +38,15 @@ class TestMySQL(Validator):
+         self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
+         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
+         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL DEFAULT 5")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c VARCHAR(50) NOT NULL DEFAULT 'foo'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'hi'")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT FIRST")
++        self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT AFTER d")
++        self.validate_identity(
++            "ALTER TABLE t MODIFY c INT NOT NULL AFTER d",
++            "ALTER TABLE t MODIFY COLUMN c INT NOT NULL AFTER d",
++        )
+         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
+         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")

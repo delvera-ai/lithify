@@ -1,0 +1,10 @@
+run,source,pass,delivered,non_delivered,timeouts,cost_usd,mean_cost_usd,median_wall_s
+A1,2026-10-26-horizon/results-sqlglot-baseline-claude_claude-haiku-5-5.csv,35,58,2,0,2.0599,0.03433,206.4
+A2,2026-10-27-r2-noise-replicates/results-r1-A-rep2.csv,37,59,1,0,1.9802,0.033,191.95
+A3,2026-10-27-r2-noise-replicates/results-r1-A-rep3.csv,35,59,1,0,2.0681,0.03447,183.1
+A4,2026-10-27-r2-noise-replicates/results-r1-A-rep4.csv,38,60,0,0,1.901,0.03168,210.55
+A5,2026-10-27-r2-noise-replicates/results-r1-A-rep5.csv,37,58,2,1,1.701,0.02835,183.2
+B1,2026-10-26-horizon/results-sqlglot-adaptive-claude_claude-haiku-5-5.csv,38,60,0,0,5.2119,0.08686,278.9
+B2,2026-10-29-r2-ab-overlap/results-r1-B-rep2.csv,38,60,0,0,2.8025,0.04671,193.75
+B3,2026-10-29-r2-ab-overlap/results-r1-B-rep3.csv,39,59,1,0,2.3232,0.03872,183.75
+C1,2026-10-26-horizon/results-sqlglot-adaptive-feedback-claude_claude-haiku-5-5.csv,40,60,0,0,50.9256,0.84876,257.5

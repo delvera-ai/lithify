@@ -1,0 +1,126 @@
+exit 1
+ def test_json_table(self):
+            self.validate_identity(
+                "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+            )
+            self.validate_identity(
+                "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+                "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",
+            )
+            self.validate_identity(
+                """SELECT
+      CASE WHEN DBMS_LOB.GETLENGTH(info) < 32000 THEN DBMS_LOB.SUBSTR(info) END AS info_txt,
+      info AS info_clob
+    FROM schemaname.tablename ar
+    INNER JOIN JSON_TABLE(:emps, '$[*]' COLUMNS(empno NUMBER PATH '$')) jt
+      ON ar.empno = jt.empno""",
+                pretty=True,
+            )
+            self.validate_identity(
+                """SELECT
+      *
+    FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
+      tempid NUMBER PATH '$.tempid',
+      NESTED PATH '$.calid[*]' COLUMNS(last_dt PATH '$.last_dt ')
+    )) src""",
+                pretty=True,
+            )
+>           self.validate_identity(
+                "SELECT * FROM JSON_TABLE(my_doc, '$.data[*]' COLUMNS(NAME VARCHAR2(200) PATH '$.name', DATA CLOB FORMAT JSON PATH '$.data')) j"
+            )
+
+tests/dialects/test_oracle.py:583: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2034: in parse
+    return self._parse(
+sqlglot/parser.py:2154: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2121: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2284: in _parse_statement
+    expression = self._parse_set_operations(expression) if expression else self._parse_select()
+                                                                           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3763: in _parse_select
+    query = self._parse_select_query(
+sqlglot/parser.py:3869: in _parse_select_query
+    from_ = self._parse_from()
+            ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:4179: in _parse_from
+    exp.From(this=self._parse_table(joins=joins, consume_pipe=consume_pipe)),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:4772: in _parse_table
+    self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+sqlglot/parser.py:4639: in _parse_table_parts
+    table: exp.Expr | str | None = self._parse_table_part(schema=schema)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:4558: in _parse_table_part
+    (not schema and self._parse_function(optional_parens=False))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6776: in _parse_function
+    func = self._parse_function_call(
+sqlglot/parser.py:6830: in _parse_function_call
+    result = parser(self)
+             ^^^^^^^^^^^^
+sqlglot/parser.py:1504: in <lambda>
+    "JSON_TABLE": lambda self: self._parse_json_table(),
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:7956: in _parse_json_table
+    schema = self._parse_json_schema()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:7947: in _parse_json_schema
+    expressions=self._parse_wrapped_csv(self._parse_json_column_def, optional=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8411: in _parse_wrapped_csv
+    return self._parse_wrapped(
+sqlglot/parser.py:8421: in _parse_wrapped
+    self._match_r_paren()
+sqlglot/parser.py:9212: in _match_r_paren
+    self.raise_error("Expecting )")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.oracle.OracleParser object at 0x10929fdd0>
+message = 'Expecting )'
+token = <Token token_type: TokenType.FORMAT, text: FORMAT, line: 1, col: 103, start: 97, end: 102, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Expecting ). Line 1, Col: 103.
+E             SELECT * FROM JSON_TABLE(my_doc, '$.data[*]' COLUMNS(NAME VARCHAR2(200) PATH '$.name', DATA CLOB [4mFORMAT[0m JSON PATH '$.data')) j
+
+sqlglot/parser.py:1991: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_oracle.py::TestOracle::test_json_table - sqlglot.e...
+1 failed, 24 passed, 213 subtests passed in 0.98s

@@ -1,0 +1,55 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 94df1837a..dd6be4595 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -528,6 +528,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-110355-bigquery-pipe-syntax-when-a-pipe",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 42399,
++      "tokens_cached": 903878,
++      "tokens_out": 10336,
++      "cost_usd": 0.0227,
++      "wall_s": 203.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 163baa77d..68111b585 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3812,6 +3812,8 @@ class Parser:
+ 
+             assert this is not None
+             if "with_" in this.arg_types:
++                if with_ := this.args.get("with_"):
++                    cte.set("expressions", [*cte.expressions, *with_.expressions])
+                 this.set("with_", cte)
+             else:
+                 self.raise_error(f"{this.key} does not support CTE")
+diff --git a/tests/dialects/test_pipe_syntax.py b/tests/dialects/test_pipe_syntax.py
+index 73e10e7d4..220526fe4 100644
+--- a/tests/dialects/test_pipe_syntax.py
++++ b/tests/dialects/test_pipe_syntax.py
+@@ -75,6 +75,10 @@ class TestPipeSyntax(Validator):
+             "(SELECT 1 AS col1) |> EXTEND col1 + 1 AS col2",
+             "WITH __tmp1 AS (SELECT *, col1 + 1 AS col2 FROM (SELECT 1 AS col1)) SELECT * FROM __tmp1",
+         )
++        self.validate_identity(
++            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1, 2 AS x2",
++            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
++        )
+ 
+     def test_order_by(self):
+         self.validate_identity("FROM x |> ORDER BY x1", "SELECT * FROM x ORDER BY x1")

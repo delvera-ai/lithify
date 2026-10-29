@@ -1,0 +1,52 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 009573d91..5763c5810 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3641,10 +3641,23 @@ class Parser:
+ 
+     def _parse_update(self) -> exp.Update:
+         hint = self._parse_hint()
+-        kwargs: dict[str, object] = {
+-            "hint": hint,
+-            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+-        }
++        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++        kwargs: dict[str, object] = {"hint": hint, "this": this}
++        while this and self._curr:
++            # Comma-separated tables and joins are parsed here so that the SET keyword
++            # isn't consumed as an alias of the last table
++            if self._match(TokenType.COMMA):
++                join = self.expression(
++                    exp.Join(this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS))
++                )
++            else:
++                join = self._parse_join()
++
++            if not join:
++                break
++
++            this.append("joins", join)
++
+         while self._curr:
+             if self._match(TokenType.SET):
+                 kwargs["expressions"] = self._parse_csv(self._parse_equality)
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..d2582e99f 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -244,6 +244,15 @@ class TestMySQL(Validator):
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a, books AS b SET a.x = 1 WHERE a.id = b.id",
++        )
++        self.validate_identity(
++            "UPDATE a, b JOIN c ON b.x = c.x, d SET a.x = 1, d.y = 2",
++        )
+ 
+         # PARTITION BY RANGE - simple column
+         self.validate_identity(

@@ -1,0 +1,37 @@
+{
+  "started_at": "2026-10-29T09:14:16.792665+00:00",
+  "max_concurrent_runs": 2,
+  "status": "stopped; owner review",
+  "pid": 25526,
+  "active_A_slots": 0,
+  "active": {},
+  "runs": [
+    {
+      "label": "r1-B-rep2",
+      "tasks": 3,
+      "passes": 2,
+      "timeouts": 0,
+      "cost_usd": 0.5358,
+      "mean_cost_usd": 0.17859999999999998,
+      "median_wall_s": 181.4,
+      "median_active_s": 224.118,
+      "median_api_s": 117.984,
+      "median_idle_s": -47.718
+    },
+    {
+      "label": "r1-B-rep3",
+      "tasks": 0,
+      "passes": 0,
+      "timeouts": 0,
+      "cost_usd": 0,
+      "mean_cost_usd": null,
+      "median_wall_s": null,
+      "median_active_s": null,
+      "median_api_s": null,
+      "median_idle_s": null
+    }
+  ],
+  "reason": "r1-B-rep2: stopped exit 78; owner review",
+  "exit_code": 78,
+  "finished_at": "2026-10-29T09:24:05.061813+00:00"
+}

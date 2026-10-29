@@ -1,0 +1,1 @@
+Pretty-printing: a multi-line comment attached to an `AND`/`OR` connector gains extra whitespace each time the SQL is formatted with `pretty=True`, so formatting is not idempotent. Formatting a query with such comments repeatedly must produce the same output each time.

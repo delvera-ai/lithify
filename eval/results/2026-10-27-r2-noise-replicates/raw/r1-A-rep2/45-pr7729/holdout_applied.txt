@@ -1,0 +1,56 @@
+exit 1
+......................................FF                                 [100%]
+=================================== FAILURES ===================================
+___________________________ TestLineage.test_unpivot ___________________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_unpivot>
+
+    def test_unpivot(self) -> None:
+        sql = """
+        SELECT id, metric_name, score
+        FROM sales UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+    
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+>       self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+E       AssertionError: Lists differ: ['SALES.FEB', 'SALES.JAN'] != ['SALES.JAN', 'SALES.FEB']
+E       
+E       First differing element 0:
+E       'SALES.FEB'
+E       'SALES.JAN'
+E       
+E       - ['SALES.FEB', 'SALES.JAN']
+E       + ['SALES.JAN', 'SALES.FEB']
+
+tests/test_lineage.py:696: AssertionError
+______________________ TestLineage.test_unpivot_with_cte _______________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_unpivot_with_cte>
+
+    def test_unpivot_with_cte(self) -> None:
+        sql = """
+        WITH src AS (
+          SELECT id, jan, feb FROM sales
+        )
+        SELECT id, metric_name, score
+        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+    
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+>       self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+E       AssertionError: Lists differ: ['SRC.FEB', 'SRC.JAN'] != ['SRC.JAN', 'SRC.FEB']
+E       
+E       First differing element 0:
+E       'SRC.FEB'
+E       'SRC.JAN'
+E       
+E       - ['SRC.FEB', 'SRC.JAN']
+E       + ['SRC.JAN', 'SRC.FEB']
+
+tests/test_lineage.py:715: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lineage.py::TestLineage::test_unpivot - AssertionError: Lis...
+FAILED tests/test_lineage.py::TestLineage::test_unpivot_with_cte - AssertionE...
+2 failed, 38 passed in 0.26s

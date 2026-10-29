@@ -1,0 +1,95 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..3e6fba25e 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -188,6 +188,33 @@ def lineage(
+     return result
+ 
+ 
++def _unpivot_upstream_columns(column: exp.Column, pivot: exp.Pivot) -> list[exp.Column]:
++    if column.table != pivot.alias_or_name:
++        return [column]
++
++    in_field = pivot.fields[0]
++    # The name column holds the labels of the IN list, so it has no upstream source columns
++    if column.name == in_field.this.name:
++        return []
++
++    value_names = [
++        ident.name
++        for e in pivot.expressions
++        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
++    ]
++    if column.name not in value_names:
++        return [column]
++
++    # Multi-value UNPIVOTs map each value column to the same position in every IN list tuple
++    index = value_names.index(column.name)
++    upstream = []
++    for entry in in_field.expressions:
++        entry = entry.this if isinstance(entry, exp.PivotAlias) else entry
++        source = entry.expressions[index] if isinstance(entry, exp.Tuple) else entry
++        upstream.append(exp.column(source.name, table=pivot.alias_or_name))
++    return upstream
++
++
+ def to_node(
+     column: str | int,
+     scope: Scope,
+@@ -372,6 +399,12 @@ def to_node(
+     }
+ 
+     pivots = scope.pivots
++    unpivot = pivots[0] if len(pivots) == 1 and pivots[0].unpivot else None
++    if unpivot:
++        source_columns = {
++            upstream for c in source_columns for upstream in _unpivot_upstream_columns(c, unpivot)
++        }
++
+     pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
+     if pivot:
+         # For each aggregation function, the pivot creates a new column for each field in category
+@@ -395,6 +428,9 @@ def to_node(
+     for c in source_columns:
+         table = c.table
+         col_source: exp.Table | Scope | None = scope.sources.get(table)
++        if unpivot and isinstance(col_source, exp.Table) and col_source.args.get("pivots"):
++            # A pivoted CTE reference is registered as its pivoted table, so resolve the CTE itself
++            col_source = scope.cte_sources.get(col_source.name, col_source)
+ 
+         if isinstance(col_source, Scope):
+             reference_node_name = None
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..679c80bd4 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -685,6 +685,29 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].reference_node_name, "t")
+         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+ 
++    def test_unpivot_with_cte(self) -> None:
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("score", sql, schema=schema)
++        self.assertEqual(
++            sorted(leaf.name for leaf in node.walk() if not leaf.downstream),
++            ["sales.feb", "sales.jan"],
++        )
++
++        node = lineage("metric_name", sql, schema=schema)
++        self.assertFalse(node.downstream)
++
++        node = lineage("id", sql, schema=schema)
++        self.assertEqual(
++            sorted(leaf.name for leaf in node.walk() if not leaf.downstream),
++            ["sales.id"],
++        )
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

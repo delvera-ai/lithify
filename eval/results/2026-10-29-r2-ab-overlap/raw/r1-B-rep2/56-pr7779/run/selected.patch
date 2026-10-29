@@ -1,0 +1,158 @@
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index e71176c1f..e2615c72c 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ from sqlglot import exp, transforms
+ from sqlglot.dialects.dialect import (
+     approx_count_distinct_sql,
++    arg_max_or_min_no_count,
+     arrow_json_extract_sql,
+     rename_func,
+     unit_to_str,
+@@ -86,9 +87,14 @@ class StarRocksGenerator(MySQLGenerator):
+     }
+ 
+     TRANSFORMS = {
+-        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k is not exp.DateTrunc},
++        **{
++            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
++        },
+         exp.Array: inline_array_sql,
++        exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
++        exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+         exp.ArrayAgg: rename_func("ARRAY_AGG"),
++        exp.ArrayContainsAll: rename_func("ARRAY_CONTAINS_ALL"),
+         exp.ArrayFilter: rename_func("ARRAY_FILTER"),
+         exp.ArrayToString: rename_func("ARRAY_JOIN"),
+         exp.ApproxDistinct: approx_count_distinct_sql,
+@@ -116,6 +122,7 @@ class StarRocksGenerator(MySQLGenerator):
+         exp.TimeStrToDate: rename_func("TO_DATE"),
+         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
+         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
++        exp.VarMap: lambda self, e: self.map_sql(e),
+     }
+ 
+     # https://docs.starrocks.io/docs/sql-reference/sql-statements/keywords/#reserved-keywords
+@@ -273,6 +280,36 @@ class StarRocksGenerator(MySQLGenerator):
+         "with",
+     }
+ 
++    def map_sql(self, expression: exp.Map | exp.VarMap) -> str:
++        keys = expression.args.get("keys")
++        values = expression.args.get("values")
++
++        if keys is None and values is None:
++            return self.func("MAP")
++
++        # MAP(k1, v1, k2, v2, ...) takes alternating keys and values, so literal arrays are interleaved.
++        # Column arrays can't be interleaved statically, so use MAP_FROM_ARRAYS instead.
++        if isinstance(keys, exp.Array) and isinstance(values, exp.Array):
++            args = [arg for pair in zip(keys.expressions, values.expressions) for arg in pair]
++            return self.func("MAP", *args)
++
++        return self.func("MAP_FROM_ARRAYS", keys, values)
++
++    def trim_sql(self, expression: exp.Trim) -> str:
++        position = expression.args.get("position")
++        chars = expression.expression
++
++        if expression.args.get("collation"):
++            self.unsupported("StarRocks TRIM does not support COLLATE")
++
++        # TRIM(str[, chars]) trims both ends, so one-sided trimming is only possible without chars
++        if position in ("LEADING", "TRAILING"):
++            if not chars:
++                return self.func("LTRIM" if position == "LEADING" else "RTRIM", expression.this)
++            self.unsupported(f"StarRocks TRIM cannot remove {position} characters only")
++
++        return self.func("TRIM", expression.this, chars)
++
+     def create_sql(self, expression: exp.Create) -> str:
+         # Starrocks' primary key is defined outside of the schema, so we need to move it there
+         schema = expression.this
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index eb5387154..f06394f99 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ 
+ 
+-from sqlglot import exp
++from sqlglot import exp, parser
+ from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+@@ -27,6 +27,7 @@ class StarRocksParser(MySQLParser):
+             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
+         ),
+         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
++        "MAP": parser.build_var_map,
+         "REGEXP": exp.RegexpLike.from_arg_list,
+     }
+ 
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index b6b27b254..fb7520526 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -1,5 +1,5 @@
+-from sqlglot import exp
+-from sqlglot.errors import UnsupportedError
++from sqlglot import exp, parse_one
++from sqlglot.errors import ErrorLevel, UnsupportedError
+ from tests.dialects.test_dialect import Validator
+ 
+ 
+@@ -333,3 +333,51 @@ class TestStarrocks(Validator):
+         self.validate_identity(
+             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
+         )
++
++    def test_native_function_syntax(self):
++        self.validate_identity("SELECT MIN_BY(a, b) FROM t")
++        self.validate_identity("SELECT MAX_BY(a, b) OVER (PARTITION BY c ORDER BY d) FROM t")
++        self.validate_all(
++            "SELECT MIN_BY(a, b) FROM t",
++            read={"duckdb": "SELECT ARG_MIN(a, b) FROM t"},
++        )
++        self.validate_all(
++            "SELECT MAX_BY(a, b) FROM t",
++            read={"duckdb": "SELECT ARG_MAX(a, b) FROM t"},
++        )
++
++        self.validate_identity("SELECT MAP(1, 'a', 2, 'b')")
++        self.validate_identity("SELECT MAP()")
++        self.validate_identity("SELECT MAP(k, v) FROM t")
++        self.validate_all(
++            "SELECT MAP('a', 1, 'b', 2)",
++            read={"duckdb": "SELECT MAP(['a', 'b'], [1, 2])"},
++        )
++        self.validate_all(
++            "SELECT MAP_FROM_ARRAYS(k, v) FROM t",
++            read={"duckdb": "SELECT MAP(k, v) FROM t"},
++        )
++
++        self.validate_identity("SELECT ARRAY_CONTAINS_ALL(a, b) FROM t")
++        self.validate_all(
++            "SELECT ARRAY_CONTAINS_ALL(a, b)",
++            read={"postgres": "SELECT a @> b"},
++        )
++
++        self.validate_identity("SELECT TRIM(a, 'x') FROM t")
++        self.validate_all(
++            "SELECT TRIM(a, 'x')",
++            read={"": "SELECT TRIM(BOTH 'x' FROM a)"},
++        )
++        self.validate_all(
++            "SELECT LTRIM(a)",
++            read={"": "SELECT TRIM(LEADING FROM a)"},
++        )
++        self.validate_all(
++            "SELECT RTRIM(a)",
++            read={"": "SELECT TRIM(TRAILING FROM a)"},
++        )
++        with self.assertRaises(UnsupportedError):
++            parse_one("SELECT TRIM(LEADING 'x' FROM a)").sql(
++                "starrocks", unsupported_level=ErrorLevel.RAISE
++            )

@@ -1,0 +1,74 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 2829ca7b8..f96f77c68 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -752,6 +752,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-081439-hive-spark-and-databricks-dialec",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 40385,
++      "tokens_cached": 550439,
++      "tokens_out": 9409,
++      "cost_usd": 0.0183,
++      "wall_s": 206.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..4ac2b05b4 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -326,6 +326,14 @@ class TestHive(Validator):
+                 "spark": "'\\''",
+             },
+         )
++        self.validate_all(
++            "'Hello ''World!'",
++            write={
++                "hive": "'Hello \\'World!'",
++                "spark": "'Hello \\'World!'",
++                "databricks": "'Hello \\'World!'",
++            },
++        )
+         self.validate_all(
+             "'\"x\"'",
+             write={
+diff --git a/tests/dialects/test_spark.py b/tests/dialects/test_spark.py
+index 8d0b89021..250980fae 100644
+--- a/tests/dialects/test_spark.py
++++ b/tests/dialects/test_spark.py
+@@ -17,6 +17,10 @@ class TestSpark(Validator):
+         self.validate_identity("SELECT MODE(category)")
+         self.validate_identity("SELECT MODE(price, TRUE) AS deterministic_mode FROM products")
+         self.validate_identity("SELECT MODE() WITHIN GROUP (ORDER BY status) FROM orders")
++        self.validate_all(
++            "CREATE TABLE t (a STRING COMMENT 'Hello ''World!')",
++            write={"spark": "CREATE TABLE t (a STRING COMMENT 'Hello \\'World!')"},
++        )
+         self.validate_identity("DROP NAMESPACE my_catalog.my_namespace")
+         self.validate_identity("CREATE NAMESPACE my_catalog.my_namespace")
+         self.validate_identity("INSERT OVERWRITE TABLE db1.tb1 TABLE db2.tb2")

@@ -1,0 +1,55 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index a32d886cf..f19887009 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -16,6 +16,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.2,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-090453-clickhouse-dialect-the-parametri",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 45891,
++      "tokens_cached": 736335,
++      "tokens_out": 11839,
++      "cost_usd": 0.0225,
++      "wall_s": 154.9,
++      "always_on_tokens": 165,
++      "stability_after": 0.4,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..d8d14cc0c 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -152,6 +152,7 @@ AGG_FUNCTIONS = {
+     "uniqCombined64",
+     "uniqHLL12",
+     "uniqTheta",
++    "groupConcat",
+     "quantile",
+     "quantiles",
+     "quantileExact",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..e6d3c1dff 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -104,6 +104,11 @@ class TestClickhouse(Validator):
+         self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")
+         self.validate_identity("SELECT histogram(5)(a)")
+         self.validate_identity("SELECT groupUniqArray(2)(a)")
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        )
++        self.validate_identity("SELECT groupConcatIf(', ')(a, a > 1)")
++        self.validate_identity("SELECT groupConcat(a)")
+         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")
+         self.validate_identity("levenshteinDistance(col1, col2)", "editDistance(col1, col2)")
+         self.validate_identity("jaroWinklerSimilarity('hello', 'world')")

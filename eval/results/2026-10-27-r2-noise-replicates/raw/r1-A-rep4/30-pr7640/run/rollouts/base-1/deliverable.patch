@@ -1,0 +1,28 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..a640d7b69 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -781,7 +781,7 @@ class Parser:
+         TokenType.WINDOW,
+     }
+ 
+-    ALIAS_TOKENS: t.ClassVar = ID_VAR_TOKENS
++    ALIAS_TOKENS: t.ClassVar = ID_VAR_TOKENS - {TokenType.WINDOW}
+ 
+     COLON_PLACEHOLDER_TOKENS: t.ClassVar = ID_VAR_TOKENS
+ 
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..d60e3d9ef 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -253,6 +253,10 @@ class TestSQLite(Validator):
+             },
+         )
+ 
++    def test_window_clause_without_from(self):
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY fake_column)")
++        self.validate_identity("SELECT 1 FROM t WINDOW a AS (PARTITION BY fake_column)")
++
+     def test_longvarchar_dtype(self):
+         self.validate_all(
+             "CREATE TABLE foo (bar LONGVARCHAR)",

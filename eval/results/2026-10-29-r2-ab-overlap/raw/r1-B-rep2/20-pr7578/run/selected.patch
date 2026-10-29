@@ -1,0 +1,70 @@
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 63e0f6588..32c240080 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -202,6 +202,7 @@ class StripNullValue(Expression, Func):
+ class JSONTable(Expression, Func):
+     arg_types = {
+         "this": True,
++        "encoding": False,
+         "schema": True,
+         "path": False,
+         "error_handling": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 5b12e0227..906b376b5 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3618,6 +3618,8 @@ class Generator:
+ 
+     def jsontable_sql(self, expression: exp.JSONTable) -> str:
+         this = self.sql(expression, "this")
++        encoding = self.sql(expression, "encoding")
++        encoding = f" ENCODING {encoding}" if encoding else ""
+         path = self.sql(expression, "path")
+         path = f", {path}" if path else ""
+         error_handling = expression.args.get("error_handling")
+@@ -3626,7 +3628,9 @@ class Generator:
+         empty_handling = f" {empty_handling}" if empty_handling else ""
+         schema = self.sql(expression, "schema")
+         return self.func(
+-            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling} {schema})"
++            "JSON_TABLE",
++            f"{this}{encoding}",
++            suffix=f"{path}{error_handling}{empty_handling} {schema})",
+         )
+ 
+     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..013bc41f0 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7950,6 +7950,7 @@ class Parser:
+ 
+     def _parse_json_table(self) -> exp.JSONTable:
+         this = self._parse_format_json(self._parse_bitwise())
++        encoding = self._match_text_seq("ENCODING") and self._parse_var()
+         path = self._match(TokenType.COMMA) and self._parse_string()
+         error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
+         empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
+@@ -7957,6 +7958,7 @@ class Parser:
+ 
+         return exp.JSONTable(
+             this=this,
++            encoding=encoding,
+             schema=schema,
+             path=path,
+             error_handling=error_handling,
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..06532c5ff 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -558,6 +558,9 @@ MATCH_RECOGNIZE (
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON ENCODING UTF8, '$.items[*]' COLUMNS(id NUMBER PATH '$.id'))"
++        )
+         self.validate_identity(
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
+             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",

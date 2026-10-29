@@ -1,0 +1,103 @@
+diff --git a/sqlglot/_typing.py b/sqlglot/_typing.py
+index fe7e80ee3..578d6c262 100644
+--- a/sqlglot/_typing.py
++++ b/sqlglot/_typing.py
+@@ -29,6 +29,7 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
+     error_level: ErrorLevel | None
+     error_message_context: int
+     max_errors: int
++    max_nodes: int | None
+ 
+ 
+ class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 107ad1ec0..b1b5bb18b 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -291,12 +291,15 @@ class Parser:
+         max_errors: Maximum number of error messages to include in a raised ParseError.
+             This is only relevant if error_level is ErrorLevel.RAISE.
+             Default: 3
++        max_nodes: Maximum number of AST nodes that may be built while parsing. Exceeding it
++            raises a ParseError regardless of error_level. Default: None (no limit)
+     """
+ 
+     __slots__ = (
+         "error_level",
+         "error_message_context",
+         "max_errors",
++        "max_nodes",
+         "dialect",
+         "sql",
+         "errors",
+@@ -310,6 +313,7 @@ class Parser:
+         "_chunks",
+         "_chunk_index",
+         "_tokens_size",
++        "_node_count",
+     )
+ 
+     FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
+@@ -1826,10 +1830,12 @@ class Parser:
+         error_message_context: int = 100,
+         max_errors: int = 3,
+         dialect: DialectType = None,
++        max_nodes: int | None = None,
+     ):
+         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
+         self.error_message_context: int = error_message_context
+         self.max_errors: int = max_errors
++        self.max_nodes: int | None = max_nodes
+         self.dialect: t.Any = _resolve_dialect(dialect)
+         self.sql: str = ""
+         self.errors: list[ParseError] = []
+@@ -1843,6 +1849,7 @@ class Parser:
+         self._pipe_cte_counter: int = 0
+         self._chunks: list[list[Token]] = []
+         self._chunk_index: i64 = 0
++        self._node_count: int = 0
+ 
+     def reset(self) -> None:
+         self.sql = ""
+@@ -1857,6 +1864,7 @@ class Parser:
+         self._pipe_cte_counter = 0
+         self._chunks = []
+         self._chunk_index = 0
++        self._node_count = 0
+ 
+     def _advance(self, times: i64 = 1) -> None:
+         index = self._index + times
+@@ -2062,6 +2070,11 @@ class Parser:
+         token: Token | None = None,
+         comments: list[str] | None = None,
+     ) -> E:
++        if self.max_nodes is not None:
++            self._node_count += 1
++            if self._node_count > self.max_nodes:
++                raise ParseError(f"Maximum number of AST nodes ({self.max_nodes}) exceeded")
++
+         if token:
+             instance.update_positions(token)
+         instance.add_comments(comments) if comments else self._add_comments(instance)
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index 321703828..b6992fe04 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -300,6 +300,17 @@ class TestParser(unittest.TestCase):
+ 
+         self.assertEqual(parse_one("as as", error_level=ErrorLevel.IGNORE).sql(), "AS as")
+ 
++    def test_max_nodes(self):
++        wide = "SELECT " + ", ".join(f"c{i} + 1 AS x{i}" for i in range(500)) + " FROM t"
++        self.assertEqual(parse_one(wide, max_nodes=10_000).sql(), parse_one(wide).sql())
++
++        big = "SELECT " + " + ".join(["1"] * 5000)
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one(big, max_nodes=1_000)
++
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one(big, max_nodes=1_000, error_level=ErrorLevel.IGNORE)
++
+     def test_space(self):
+         self.assertEqual(
+             parse_one("SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y").sql(),

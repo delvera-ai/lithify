@@ -1,0 +1,38 @@
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 9dd9b0c90..49a4d486b 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2651,6 +2651,15 @@ class DuckDBGenerator(generator.Generator):
+             )
+         )
+ 
++    def parsetime_sql(self, expression: exp.ParseTime) -> str:
++        formatted_time = self.format_time(expression)
++        return self.sql(
++            exp.cast(
++                self.func("STRPTIME", expression.this, formatted_time),
++                exp.DataType(this=exp.DType.TIME),
++            )
++        )
++
+     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+         this = expression.this
+         time_format = self.format_time(expression)
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index fabf9a6cc..c810e80a0 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -1912,6 +1912,13 @@ WHERE
+         )
+         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
+         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
++        self.validate_all(
++            "SELECT PARSE_TIME('%H:%M', '14:30')",
++            write={
++                "bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')",
++                "duckdb": "SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)",
++            },
++        )
+         self.validate_identity("BYTE_LENGTH('foo')")
+         self.validate_identity("BYTE_LENGTH(b'foo')")
+         self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")

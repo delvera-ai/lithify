@@ -1,0 +1,95 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 40cf2cd06..77dbf5d9a 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -736,6 +736,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-135253-optimizer-sqlglot-optimizer-qual",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 52558,
++      "tokens_cached": 1122315,
++      "tokens_out": 17903,
++      "cost_usd": 0.0307,
++      "wall_s": 260.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..d7c98e9c1 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -30,6 +30,7 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        self._resolving_laterals: set[int] = set()
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -178,8 +179,18 @@ class Resolver:
+                 ):
+                     explode_col = source_expr.this.this
+ 
+-                    if isinstance(explode_col, exp.Column) and source.parent:
+-                        col_type = self._get_unnest_column_type(explode_col, source.parent)
++                    # Resolving an unqualified `explode_col` searches the parent's sources, which include
++                    # this lateral itself, so skip it when we re-enter here to avoid unbounded recursion
++                    if (
++                        isinstance(explode_col, exp.Column)
++                        and source.parent
++                        and id(source) not in self._resolving_laterals
++                    ):
++                        self._resolving_laterals.add(id(source))
++                        try:
++                            col_type = self._get_unnest_column_type(explode_col, source.parent)
++                        finally:
++                            self._resolving_laterals.discard(id(source))
+                         columns.extend(self._struct_field_names(col_type))
+             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
+                 columns = self.get_source_columns_from_set_op(source.expression)
+@@ -377,6 +388,7 @@ class Resolver:
+         else:
+             # use the parent scope's resolver to disambiguate the column
+             parent_resolver = Resolver(scope, self.schema, self._infer_schema)
++            parent_resolver._resolving_laterals = self._resolving_laterals
+             table_identifier = parent_resolver.get_table(column)
+             if not table_identifier:
+                 return None
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..eae387258 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1694,6 +1694,22 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_explode_unqualified_column_missing_table(self):
++        schema = {"t": {"arr": "ARRAY<STRUCT<a INT>>"}}
++        sql = "SELECT x FROM missing LATERAL VIEW EXPLODE(arr) t AS x"
++
++        with self.assertRaisesRegex(OptimizeError, "Column 'arr' could not be resolved"):
++            optimizer.qualify.qualify(parse_one(sql, read="spark"), schema=schema, dialect="spark")
++
++        self.assertEqual(
++            optimizer.qualify.qualify(
++                parse_one("SELECT x FROM t LATERAL VIEW EXPLODE(arr) t2 AS x", read="spark"),
++                schema=schema,
++                dialect="spark",
++            ).sql("spark"),
++            "SELECT `t2`.`x` AS `x` FROM `t` AS `t` LATERAL VIEW EXPLODE(`t`.`arr`) t2 AS `x`",
++        )
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

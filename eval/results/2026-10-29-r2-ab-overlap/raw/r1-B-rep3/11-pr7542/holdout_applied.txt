@@ -1,0 +1,28 @@
+exit 1
+...... [  7%]
+............................................F....................... [ 96%]
+...                                   [100%]
+=================================== FAILURES ===================================
+_________ TestOptimizer.test_qualify_tables_copies_typed_alias_columns _________
+
+self = <tests.test_optimizer.TestOptimizer testMethod=test_qualify_tables_copies_typed_alias_columns>
+
+    def test_qualify_tables_copies_typed_alias_columns(self):
+        expression = parse_one('SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)')
+    
+        original = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(original, exp.ColumnDef)
+    
+        optimizer.qualify_tables.qualify_tables(expression, canonicalize_table_aliases=True)
+    
+        new = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(new, exp.ColumnDef)
+>       self.assertIsNot(original, new)
+E       AssertionError: unexpectedly identical: ColumnDef(
+E         this=Identifier(this='rank', quoted=True),
+E         kind=DataType(this=DType.INT, nested=False))
+
+tests/test_optimizer.py:319: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_optimizer.py::TestOptimizer::test_qualify_tables_copies_typed_alias_columns
+1 failed, 76 passed, 3705 subtests passed in 12.67s

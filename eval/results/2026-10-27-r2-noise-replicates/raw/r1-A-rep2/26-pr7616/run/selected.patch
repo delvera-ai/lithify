@@ -1,0 +1,64 @@
+diff --git a/sqlglot/generators/postgres.py b/sqlglot/generators/postgres.py
+index 15baf8b7e..0cd43d5ba 100644
+--- a/sqlglot/generators/postgres.py
++++ b/sqlglot/generators/postgres.py
+@@ -485,6 +485,9 @@ class PostgresGenerator(generator.Generator):
+             # Postgres doesn't support precision for REAL and DOUBLE PRECISION types
+             return f"FLOAT({self.expressions(expression, flat=True)})"
+ 
++        if expression.is_type(exp.DType.ENUM) and expression.expressions:
++            return f"ENUM ({self.expressions(expression, flat=True)})"
++
+         return super().datatype_sql(expression)
+ 
+     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 2fac62242..f3b8e354a 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -341,3 +341,24 @@ class PostgresParser(parser.Parser):
+                 udt_type = exp.Dot(this=udt_type, expression=part)
+ 
+         return exp.DataType.build(udt_type, udt=True)
++
++    def _parse_create(self) -> exp.Create | exp.Command:
++        start = self._prev
++        if not self._match_text_seq("TYPE"):
++            return super()._parse_create()
++
++        this = self._parse_table_parts()
++        expression: exp.Expr | None = None
++
++        if self._match(TokenType.ALIAS):
++            if self._match_text_seq("ENUM"):
++                expression = exp.DataType(
++                    this=exp.DType.ENUM, expressions=self._parse_wrapped_csv(self._parse_string)
++                )
++            else:
++                expression = self._parse_schema()
++
++        if not this or not expression or self._curr:
++            return self._parse_as_command(start)
++
++        return self.expression(exp.Create(this=this, kind="TYPE", expression=expression))
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 420db449b..dc25deb04 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1683,6 +1683,16 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+         _validate_udt('CAST(5 AS MySchema."MyType")')
+         _validate_udt('CAST(5 AS "MyCatalog"."MySchema"."MyType")')
+ 
++    def test_create_type(self):
++        self.validate_identity("CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')").assert_is(
++            exp.Create
++        )
++        self.validate_identity("CREATE TYPE public.book_type AS ENUM ('FICTION')")
++        self.validate_identity(
++            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
++        ).assert_is(exp.Create)
++        self.validate_identity("CREATE TYPE shell").assert_is(exp.Command)
++
+     def test_round(self):
+         self.validate_identity("ROUND(x)")
+         self.validate_identity("ROUND(x, y)")

@@ -1,0 +1,75 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 953a11a3a..b7f75a92d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -128,6 +128,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-112633-mysql-dialect-quoted-index-or-co",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 34038,
++      "tokens_cached": 476949,
++      "tokens_out": 8203,
++      "cost_usd": 0.0157,
++      "wall_s": 207.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 0a86c335a..1445942ff 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7262,12 +7262,17 @@ class Parser:
+         return result
+ 
+     def _parse_unique_key(self) -> exp.Expr | None:
+-        if self._curr and self._curr.text.upper() in self.CONSTRAINT_PARSERS:
++        if (
++            self._curr
++            and self._curr.token_type != TokenType.IDENTIFIER
++            and self._curr.text.upper() in self.CONSTRAINT_PARSERS
++        ):
+             return None
+         return self._parse_id_var(any_token=False)
+ 
+     def _parse_unique(self) -> exp.UniqueColumnConstraint:
+-        self._match_texts(("KEY", "INDEX"))
++        if self._curr.token_type != TokenType.IDENTIFIER:
++            self._match_texts(("KEY", "INDEX"))
+         return self.expression(
+             exp.UniqueColumnConstraint(
+                 nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 8460b63cb..e5748f18f 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -164,6 +164,19 @@ class TestMySQL(Validator):
+             "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE INDEX idx_a (a))",
+             "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE idx_a (a))",
+         )
++        self.validate_identity(
++            "CREATE TABLE t (a INT, UNIQUE KEY `Unique` (a))",
++            "CREATE TABLE t (a INT, UNIQUE `Unique` (a))",
++        )
++        self.validate_identity(
++            "CREATE TABLE t (a INT, KEY `Index` (a))",
++            "CREATE TABLE t (a INT, INDEX `Index` (a))",
++        )
++        self.validate_identity(
++            "CREATE TABLE t (a INT, UNIQUE INDEX `Key` (a))",
++            "CREATE TABLE t (a INT, UNIQUE `Key` (a))",
++        )
++        self.validate_identity("CREATE TABLE t (a INT, UNIQUE `Key` (a))")
+ 
+         self.validate_all(
+             "insert into t(i) values (default)",

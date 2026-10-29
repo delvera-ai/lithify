@@ -1,0 +1,30 @@
+diff --git a/sqlglot/parsers/clickhouse.py b/sqlglot/parsers/clickhouse.py
+index 592ecc70c..033382ee0 100644
+--- a/sqlglot/parsers/clickhouse.py
++++ b/sqlglot/parsers/clickhouse.py
+@@ -94,6 +94,7 @@ AGG_FUNCTIONS = {
+     "sum",
+     "avg",
+     "any",
++    "groupConcat",
+     "stddevPop",
+     "stddevSamp",
+     "varPop",
+diff --git a/tests/dialects/test_clickhouse.py b/tests/dialects/test_clickhouse.py
+index ea42a140b..26b89da4e 100644
+--- a/tests/dialects/test_clickhouse.py
++++ b/tests/dialects/test_clickhouse.py
+@@ -1462,6 +1462,13 @@ LIFETIME(MIN 0 MAX 0)""",
+             0
+         ].assert_is(exp.ParameterizedAgg)
+ 
++        self.validate_identity(
++            "SELECT groupConcat(', ')(part_name) AS concatenated FROM system.parts"
++        ).selects[0].assert_is(exp.Alias)
++        self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts").selects[
++            0
++        ].assert_is(exp.ParameterizedAgg)
++
+     def test_agg_functions_multiple_suffixes(self):
+         # Regression test: single-suffix
+         self.validate_identity("SELECT uniqExactIf(x, y) FROM t").selects[0].assert_is(

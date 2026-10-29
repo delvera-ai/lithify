@@ -1,0 +1,130 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c8c4bf31f..3da0bc410 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -704,6 +704,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-034552-lineage-sqlglot-lineage-lineage",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 64220,
++      "tokens_cached": 2446144,
++      "tokens_out": 28912,
++      "cost_usd": 0.0518,
++      "wall_s": 8156.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..50b76e9a4 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -188,6 +188,30 @@ def lineage(
+     return result
+ 
+ 
++def _unpivot_downstream_columns(pivot: exp.Pivot, column_name: str) -> list[exp.Column]:
++    """Returns the pre-unpivot columns that the given output column of an UNPIVOT is derived from."""
++    source = pivot.parent.alias_or_name
++    in_fields = [field for field in pivot.fields if isinstance(field, exp.In)]
++
++    # The value columns and the name column are generated from the columns listed in the IN clause,
++    # every other column of the unpivoted source is passed through unchanged
++    value_names = {
++        ident.name
++        for e in pivot.expressions
++        for ident in (e.expressions if isinstance(e, exp.Tuple) else [e])
++    }
++    name_names = {field.this.name for field in in_fields if isinstance(field.this, exp.Identifier)}
++    if column_name in value_names | name_names:
++        return [
++            exp.column(column.name, table=source)
++            for field in in_fields
++            for e in field.expressions
++            for column in e.find_all(exp.Column)
++        ]
++
++    return [exp.column(column_name, table=source)]
++
++
+ def to_node(
+     column: str | int,
+     scope: Scope,
+@@ -372,8 +396,8 @@ def to_node(
+     }
+ 
+     pivots = scope.pivots
+-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
+-    if pivot:
++    pivot = pivots[0] if len(pivots) == 1 else None
++    if pivot and not pivot.unpivot:
+         # For each aggregation function, the pivot creates a new column for each field in category
+         # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+         # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+@@ -422,7 +446,9 @@ def to_node(
+             downstream_columns = []
+ 
+             column_name = c.name
+-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
++            if pivot.unpivot:
++                downstream_columns.extend(_unpivot_downstream_columns(pivot, column_name))
++            elif any(column_name == pivot_column.name for pivot_column in pivot_columns):
+                 downstream_columns.extend(pivot_column_mapping[column_name])
+             else:
+                 # The column is not in the pivot, so it must be an implicit column of the
+@@ -435,6 +461,13 @@ def to_node(
+             for downstream_column in downstream_columns:
+                 table = downstream_column.table
+                 col_source = scope.sources.get(table)
++                if (
++                    isinstance(col_source, exp.Table)
++                    and not col_source.db
++                    and col_source.name in scope.cte_sources
++                ):
++                    # A pivoted CTE reference is registered as the pivoted table, so resolve it back to the CTE
++                    col_source = scope.cte_sources[col_source.name]
+                 if isinstance(col_source, Scope):
+                     to_node(
+                         downstream_column.name,
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..1c49e2cdd 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -767,6 +767,27 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].downstream[0].name, "_0.loan_id")
+         self.assertEqual(node.downstream[0].downstream[0].downstream[0].name, "loan_ledger.loan_id")
+ 
++    def test_unpivot_with_cte(self) -> None:
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++
++        node = lineage("score", sql, dialect="snowflake", schema=schema)
++        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
++        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
++
++        node = lineage("metric_name", sql, dialect="snowflake", schema=schema)
++        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
++
++        node = lineage("id", sql, dialect="snowflake", schema=schema)
++        self.assertEqual(node.downstream[0].name, "SRC.ID")
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
++
+     def test_copy_flag(self) -> None:
+         schema = {
+             "x": {

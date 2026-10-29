@@ -1,0 +1,34 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 5b2b18068..c91d1a197 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -1,5 +1,5 @@
+ {
+-  "consecutive_failures": 0,
++  "consecutive_failures": 1,
+   "history": [
+     {
+       "task_id": "20261029-090210-oracle-dialect-support-the-optio",
+@@ -304,6 +304,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-101150-oracle-dialect-json-table-fails",
++      "k": 0,
++      "first_pass": false,
++      "delivered": false,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33277,
++      "tokens_cached": 254155,
++      "tokens_out": 7074,
++      "cost_usd": 0.0127,
++      "wall_s": 93.0,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }

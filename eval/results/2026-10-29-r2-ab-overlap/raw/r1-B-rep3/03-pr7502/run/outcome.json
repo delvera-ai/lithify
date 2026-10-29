@@ -1,0 +1,28 @@
+{
+  "task": "Parser: add a safeguard against pathologically large inputs: an option that limits how many AST nodes parsing may build, raising a `ParseError` when the limit is exceeded, while normal queries (including wide ones, such as 500 columns) parse as before. (Stated requirement: the option is the parser/`parse_one` keyword `max_nodes`, and the error message contains \"Maximum number of AST nodes\".)",
+  "k": 1,
+  "reason": "build (S=0.40)",
+  "selected": "base-1",
+  "why": "only one distinct deliverable passed the gates (no LLM judge needed)",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 48799,
+    "cached": 652957,
+    "out": 12868,
+    "cost": 0.022720769999999998,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.6,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

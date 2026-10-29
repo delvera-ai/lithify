@@ -1,0 +1,45 @@
+exit 1
+.F............F.......         [100%]
+=================================== FAILURES ===================================
+_________________________ TestDoris.test_date_add_sub __________________________
+
+self = <tests.dialects.test_doris.TestDoris testMethod=test_date_add_sub>
+
+    def test_date_add_sub(self):
+        # Standard INTERVAL form
+        self.validate_identity("SELECT DATE_ADD(x, INTERVAL '3' DAY)")
+        self.validate_identity("SELECT DATE_SUB(x, INTERVAL '3' MONTH)")
+    
+        # Two-argument shorthand - default unit DAY
+>       self.validate_identity("SELECT DATE_SUB(x, 3)", "SELECT DATE_SUB(x, INTERVAL 3 DAY)")
+
+tests/dialects/test_doris.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'SELECT DATE_SUB(x, INTERVAL 3 DAY)' != 'SELECT DATE_ADD(x, -3)'
+E   - SELECT DATE_SUB(x, INTERVAL 3 DAY)
+E   + SELECT DATE_ADD(x, -3)
+_______________________ TestStarrocks.test_date_add_sub ________________________
+
+self = <tests.dialects.test_starrocks.TestStarrocks testMethod=test_date_add_sub>
+
+    def test_date_add_sub(self):
+        # Standard INTERVAL form
+        self.validate_identity("SELECT DATE_ADD(x, INTERVAL '3' DAY)")
+        self.validate_identity("SELECT DATE_SUB(x, INTERVAL '3' MONTH)")
+    
+        # Two-argument shorthand - default unit DAY
+>       self.validate_identity("SELECT DATE_SUB(x, 3)", "SELECT DATE_SUB(x, INTERVAL 3 DAY)")
+
+tests/dialects/test_starrocks.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'SELECT DATE_SUB(x, INTERVAL 3 DAY)' != 'SELECT DATE_ADD(x, -3)'
+E   - SELECT DATE_SUB(x, INTERVAL 3 DAY)
+E   + SELECT DATE_ADD(x, -3)
+=========================== short test summary info ============================
+FAILED tests/dialects/test_doris.py::TestDoris::test_date_add_sub - Assertion...
+FAILED tests/dialects/test_starrocks.py::TestStarrocks::test_date_add_sub - A...
+2 failed, 20 passed, 114 subtests passed in 0.36s

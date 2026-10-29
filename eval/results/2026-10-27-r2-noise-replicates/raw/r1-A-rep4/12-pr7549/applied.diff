@@ -1,0 +1,99 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 1927715bf..d3d88debb 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -176,6 +176,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-165946-optimizer-spark-hive-optimizing",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 97659,
++      "tokens_cached": 4193639,
++      "tokens_out": 47337,
++      "cost_usd": 0.1528,
++      "wall_s": 498.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/annotate_types.py b/sqlglot/optimizer/annotate_types.py
+index 5d6b2b47a..261e153e4 100644
+--- a/sqlglot/optimizer/annotate_types.py
++++ b/sqlglot/optimizer/annotate_types.py
+@@ -312,7 +312,13 @@ class TypeAnnotator:
+                         }
+                     else:
+                         selects[name] = {
+-                            alias: column.type for alias, column in zip(alias_column_names, values)
++                            alias: (
++                                t.cast(exp.DataType, seq_get(column.type.expressions, 0))
++                                if isinstance(expression, exp.Lateral)
++                                and column.is_type(exp.DType.ARRAY)
++                                else column.type
++                            )
++                            for alias, column in zip(alias_column_names, values)
+                         }
+                 elif isinstance(expression, exp.SetOperation) and len(
+                     expression.left.selects
+diff --git a/sqlglot/optimizer/qualify_columns.py b/sqlglot/optimizer/qualify_columns.py
+index ea09866bc..b2f61e928 100644
+--- a/sqlglot/optimizer/qualify_columns.py
++++ b/sqlglot/optimizer/qualify_columns.py
+@@ -560,6 +560,22 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+ 
+         column_table: str | exp.Identifier | None = column.table
+         dot_parts = column.meta.pop("dot_parts", [])
++
++        # e.g. LATERAL VIEW EXPLODE(arr) t AS t: `t.field` is a field lookup on the struct column `t`
++        if (
++            column.table
++            and column.table in scope.sources
++            and len(column.parts) == 2
++            and isinstance(column.this, exp.Identifier)
++            and column.name not in resolver.get_source_columns(column.table)
++            and column.table in resolver.get_source_columns(column.table)
++        ):
++            column.replace(
++                exp.Dot.build([exp.column(column.table, table=column.table), column.this])
++            )
++            converted = True
++            continue
++
+         if (
+             column_table
+             and column_table not in scope.sources
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 07c73332d..93f794e93 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1341,6 +1341,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         ).expressions[0]
+         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+ 
++    def test_lateral_view_struct_field(self):
++        schema = {"my_table": {"items": "ARRAY<STRUCT<name:STRING>>"}}
++        expression = optimizer.optimize(
++            parse_one(
++                "SELECT ci.name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci", read="spark"
++            ),
++            schema=schema,
++            dialect="spark",
++        )
++        self.assertEqual(
++            expression.sql("spark"),
++            "SELECT `ci`.`ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
++        )
++        self.assertEqual(expression.selects[0].type.this, exp.DataType.Type.TEXT)
++
+     def test_derived_tables_column_annotation(self):
+         schema = {"x": {"cola": "INT"}, "y": {"cola": "FLOAT"}}
+         sql = """

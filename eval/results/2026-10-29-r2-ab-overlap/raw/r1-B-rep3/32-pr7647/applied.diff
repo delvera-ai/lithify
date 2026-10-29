@@ -1,0 +1,57 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 33d22c551..a3b9a13ed 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -496,6 +496,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-191702-optimizer-canonicalize-crashes-w",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 36401,
++      "tokens_cached": 462069,
++      "tokens_out": 5149,
++      "cost_usd": 0.0145,
++      "wall_s": 135.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/canonicalize.py b/sqlglot/optimizer/canonicalize.py
+index afb58085c..da220fd65 100644
+--- a/sqlglot/optimizer/canonicalize.py
++++ b/sqlglot/optimizer/canonicalize.py
+@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+ 
+ def _coerce_datediff_args(node: exp.DateDiff) -> None:
+     for e in (node.this, node.expression):
+-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
++        if e.type and e.type.this not in exp.DataType.TEMPORAL_TYPES:
+             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
+ 
+ 
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 21d981dbd..e76467cd3 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -1290,6 +1290,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+             'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
+         )
+ 
++        # DATEDIFF arguments without an inferred type must be left untouched
++        self.assertEqual(
++            optimizer.canonicalize.canonicalize(parse_one("SELECT DATEDIFF(a, b) FROM t")).sql(),
++            "SELECT DATEDIFF(a, b) FROM t",
++        )
++
+     def test_tpch(self):
+         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
+ 

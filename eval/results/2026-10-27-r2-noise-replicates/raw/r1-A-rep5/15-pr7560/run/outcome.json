@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer: `(UN)PIVOT` over CTE sources must qualify correctly. Both of these fail or silently skip star expansion today, in BigQuery and other dialects:\n\n```sql\nWITH c AS (SELECT id, jan, feb FROM t) SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb))\nWITH c AS (SELECT id, jan, feb FROM t) SELECT u.v FROM c UNPIVOT(v FOR m IN (jan, feb)) AS u\n```\n\nColumn resolution for a pivoted CTE source must use the CTE's columns, for both aliased and unaliased pivots.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 69217,
+    "cached": 1378724,
+    "out": 26315,
+    "cost": 0.04078353999999999,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

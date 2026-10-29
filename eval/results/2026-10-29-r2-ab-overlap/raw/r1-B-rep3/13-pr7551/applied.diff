@@ -1,0 +1,105 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 4c10a8d32..1c4f1286f 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -192,6 +192,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-180052-duckdb-snowflake-duckdb-s-list-c",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 78781,
++      "tokens_cached": 1572485,
++      "tokens_out": 36129,
++      "cost_usd": 0.0495,
++      "wall_s": 282.3,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/array.py b/sqlglot/expressions/array.py
+index 86ba52733..6a2419166 100644
+--- a/sqlglot/expressions/array.py
++++ b/sqlglot/expressions/array.py
+@@ -136,7 +136,7 @@ class ArrayPosition(Expression, Binary, Func):
+ 
+ 
+ class ArrayDistinct(Expression, Func):
+-    arg_types = {"this": True, "check_null": False}
++    arg_types = {"this": True, "check_null": False, "nulls_excluded": False}
+ 
+ 
+ class ArrayFirst(Expression, Func):
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..2ba9fed22 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1032,6 +1032,22 @@ class SnowflakeGenerator(generator.Generator):
+ 
+         return super().createable_sql(expression, locations)
+ 
++    def list_sql(self, expression: exp.List) -> str:
++        return self.sql(exp.ArrayAgg(this=expression.expressions[0]))
++
++    def filter_sql(self, expression: exp.Filter) -> str:
++        if isinstance(expression.this, exp.List):
++            self.unsupported("LIST ... FILTER is not exact: filtered-out rows contribute NULLs")
++            agg = exp.ArrayAgg(this=expression.this.expressions[0])
++            return super().filter_sql(exp.Filter(this=agg, expression=expression.expression))
++        return super().filter_sql(expression)
++
++    def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
++        arr = expression.this
++        if expression.args.get("nulls_excluded"):
++            arr = exp.ArrayCompact(this=arr)
++        return self.func("ARRAY_DISTINCT", arr)
++
+     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+         this = expression.this
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..d92f4d1fa 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -138,6 +138,7 @@ class DuckDBParser(parser.Parser):
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(this=seq_get(args, 0), nulls_excluded=True),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..d36492569 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,21 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(col)",
++            write={"snowflake": "SELECT ARRAY_AGG(col)"},
++        )
++        self.validate_all(
++            "SELECT LIST(col ORDER BY sort_col)",
++            write={"snowflake": "SELECT ARRAY_AGG(col) WITHIN GROUP (ORDER BY sort_col)"},
++        )
++        self.validate_all(
++            "SELECT LIST_DISTINCT(x)",
++            write={
++                "duckdb": "SELECT LIST_DISTINCT(x)",
++                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(x))",
++            },
++        )
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

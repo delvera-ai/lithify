@@ -1,0 +1,1 @@
+Postgres dialect: when an `UNNEST ... WITH ORDINALITY AS t(col, ord)` node is rendered more than once in a single `.sql()` call (for example when the same unnest appears in several places of the output), the table alias gains a duplicate `ord` column each time. Generating SQL must not mutate the AST: repeated rendering must produce the same alias.

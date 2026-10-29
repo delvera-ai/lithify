@@ -1,0 +1,125 @@
+diff --git a/sqlglot/expressions/datatypes.py b/sqlglot/expressions/datatypes.py
+index afe468e44..aeb5ec61b 100644
+--- a/sqlglot/expressions/datatypes.py
++++ b/sqlglot/expressions/datatypes.py
+@@ -178,6 +178,7 @@ class DataType(Expression):
+         "values": False,
+         "kind": False,
+         "nullable": False,
++        "collate": False,
+     }
+ 
+     Type: t.ClassVar[Type[DType]] = DType
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd0ec288b..e47b24bf8 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1738,6 +1738,10 @@ class Generator:
+         ):
+             type_sql = f"{type_sql} WITH TIME ZONE"
+ 
++        collate = self.sql(expression, "collate")
++        if collate:
++            type_sql = f"{type_sql} COLLATE {collate}"
++
+         return type_sql
+ 
+     def directory_sql(self, expression: exp.Directory) -> str:
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 1e96f9216..fffb5aeee 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6133,6 +6133,11 @@ class Parser:
+ 
+         return exp.DataType.from_str(type_name, dialect=self.dialect, udt=True)
+ 
++    def _parse_type_collate(self, this: exp.Expr | None) -> exp.Expr | None:
++        if isinstance(this, exp.DataType) and self._match(TokenType.COLLATE):
++            this.set("collate", self._parse_identifier() or self._parse_column())
++        return this
++
+     def _parse_types(
+         self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+     ) -> exp.Expr | None:
+@@ -6171,15 +6176,19 @@ class Parser:
+ 
+         # https://materialize.com/docs/sql/types/map/
+         if type_token == TokenType.MAP and self._match(TokenType.L_BRACKET):
+-            key_type = self._parse_types(
+-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++            key_type = self._parse_type_collate(
++                self._parse_types(
++                    check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                )
+             )
+             if not self._match(TokenType.FARROW):
+                 self._retreat(index)
+                 return None
+ 
+-            value_type = self._parse_types(
+-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++            value_type = self._parse_type_collate(
++                self._parse_types(
++                    check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                )
+             )
+             if not self._match(TokenType.R_BRACKET):
+                 self._retreat(index)
+@@ -6202,8 +6211,12 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             elif nested:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
+-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                    lambda: self._parse_type_collate(
++                        self._parse_types(
++                            check_func=check_func,
++                            schema=schema,
++                            allow_identifiers=allow_identifiers,
++                        )
+                     )
+                 )
+                 if type_token == TokenType.NULLABLE and len(expressions) == 1:
+@@ -6254,8 +6267,12 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             else:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
+-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                    lambda: self._parse_type_collate(
++                        self._parse_types(
++                            check_func=check_func,
++                            schema=schema,
++                            allow_identifiers=allow_identifiers,
++                        )
+                     )
+                 )
+ 
+@@ -7696,7 +7713,7 @@ class Parser:
+             self.raise_error("Expected AS after CAST")
+ 
+         fmt = None
+-        to = self._parse_types()
++        to = self._parse_type_collate(self._parse_types())
+ 
+         default = None
+         if self._match(TokenType.DEFAULT):
+diff --git a/tests/dialects/test_dialect.py b/tests/dialects/test_dialect.py
+index b4d63a477..1c3ca2a09 100644
+--- a/tests/dialects/test_dialect.py
++++ b/tests/dialects/test_dialect.py
+@@ -3266,6 +3266,14 @@ SELECT
+         with self.assertRaises(ParseError):
+             parse_one("CAST(x AS some_udt)", read="bigquery")
+ 
++    def test_collate_in_types(self):
++        self.validate_identity('CAST(x AS VARCHAR(10) COLLATE "C")')
++        self.validate_identity('CAST(x AS ARRAY<TEXT COLLATE "C">)')
++        self.validate_identity('CREATE TABLE t (x ARRAY<TEXT COLLATE "C">)')
++        self.validate_identity('CREATE TABLE t (x MAP<TEXT COLLATE "C", TEXT COLLATE "en">)')
++        self.validate_identity('SELECT x COLLATE "C" FROM t')
++        self.validate_identity('SELECT CAST(x AS TEXT) COLLATE "C" FROM t')
++
+     def test_qualify(self):
+         self.validate_all(
+             "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",

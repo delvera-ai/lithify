@@ -1,0 +1,3 @@
+- Probe batches of SQL with `.lithify/harness/scripts/probe_parse.py` (statements on stdin, one per line), not with nested `python -c` strings; shell quoting of `$`, quotes and backslashes made the ad hoc probes error-prone.
+- Iterate with the dialect's test file (`tests/dialects/test_oracle.py` runs in under a second); run the full suite (about 70 seconds) once as the final gate.
+- `sqlglot/expressions.py` does not exist in this checkout. Locate expression classes with `grep -rn` across `sqlglot/` instead of assuming that path.

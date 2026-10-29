@@ -1,0 +1,28 @@
+{
+  "task": "DuckDB \u2192 Snowflake: DuckDB's `list(col)` aggregate and `list_distinct(col)` are not transpiled to Snowflake. Generate Snowflake's `ARRAY_AGG` for `list`, and its distinct-array function for `list_distinct`, preserving semantics: DuckDB's `list_distinct` drops NULLs, while Snowflake's array-distinct keeps them.",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 78781,
+    "cached": 1572485,
+    "out": 36129,
+    "cost": 0.04954075,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

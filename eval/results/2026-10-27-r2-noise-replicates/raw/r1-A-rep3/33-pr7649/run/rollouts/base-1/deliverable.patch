@@ -1,0 +1,161 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 73979846e..c34cdfe0a 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3100,6 +3100,7 @@ class Generator:
+             *self.after_limit_modifiers(expression),
+             self.options_modifier(expression),
+             self.for_modifiers(expression),
++            self.for_json_modifiers(expression),
+             sep="",
+         )
+ 
+@@ -3111,6 +3112,11 @@ class Generator:
+         for_modifiers = self.expressions(expression, key="for_")
+         return f"{self.sep()}FOR XML{self.seg(for_modifiers)}" if for_modifiers else ""
+ 
++    def for_json_modifiers(self, expression: exp.Expr) -> str:
++        if expression.args.get("for_json"):
++            self.unsupported("FOR JSON is not supported.")
++        return ""
++
+     def queryoption_sql(self, expression: exp.QueryOption) -> str:
+         self.unsupported("Unsupported query option.")
+         return ""
+diff --git a/sqlglot/generators/tsql.py b/sqlglot/generators/tsql.py
+index 375ff6488..b6450ad7a 100644
+--- a/sqlglot/generators/tsql.py
++++ b/sqlglot/generators/tsql.py
+@@ -285,6 +285,10 @@ class TSQLGenerator(generator.Generator):
+         name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
+         return self.func(name, expression.this, expression.expression, expression.args.get("style"))
+ 
++    def for_json_modifiers(self, expression: exp.Expr) -> str:
++        for_json = self.expressions(expression, key="for_json")
++        return f"{self.sep()}FOR JSON{self.seg(for_json)}" if for_json else ""
++
+     def queryoption_sql(self, expression: exp.QueryOption) -> str:
+         option = self.sql(expression, "this")
+         value = self.sql(expression, "expression")
+diff --git a/sqlglot/parsers/tsql.py b/sqlglot/parsers/tsql.py
+index 1fb6146a1..5d97adf20 100644
+--- a/sqlglot/parsers/tsql.py
++++ b/sqlglot/parsers/tsql.py
+@@ -106,6 +106,18 @@ XML_OPTIONS: parser.OPTIONS_TYPE = {
+     "BINARY": ("BASE64",),
+ }
+ 
++JSON_OPTIONS: parser.OPTIONS_TYPE = {
++    **dict.fromkeys(
++        (
++            "AUTO",
++            "PATH",
++            "INCLUDE_NULL_VALUES",
++            "WITHOUT_ARRAY_WRAPPER",
++        ),
++        tuple(),
++    ),
++}
++
+ 
+ OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
+ 
+@@ -318,7 +330,7 @@ class TSQLParser(parser.Parser):
+     QUERY_MODIFIER_PARSERS = {
+         **parser.Parser.QUERY_MODIFIER_PARSERS,
+         TokenType.OPTION: lambda self: ("options", self._parse_options()),
+-        TokenType.FOR: lambda self: ("for_", self._parse_for()),
++        TokenType.FOR: lambda self: self._parse_for(),
+     }
+ 
+     # T-SQL does not allow BEGIN to be used as an identifier
+@@ -501,19 +513,22 @@ class TSQLParser(parser.Parser):
+ 
+         return exp.XMLKeyValueOption(this=this, expression=expression)
+ 
+-    def _parse_for(self) -> list[exp.Expr] | None:
+-        if not self._match_pair(TokenType.FOR, TokenType.XML):
+-            return None
++    def _parse_for(self) -> tuple[str, list[exp.Expr] | None]:
++        if self._match_pair(TokenType.FOR, TokenType.JSON):
++            return "for_json", self._parse_csv(lambda: self._parse_for_option(JSON_OPTIONS))
+ 
+-        def _parse_for_xml() -> exp.Expr | None:
+-            return self.expression(
+-                exp.QueryOption(
+-                    this=self._parse_var_from_options(XML_OPTIONS, raise_unmatched=False)
+-                    or self._parse_xml_key_value_option()
+-                )
+-            )
++        if self._match_pair(TokenType.FOR, TokenType.XML):
++            return "for_", self._parse_csv(lambda: self._parse_for_option(XML_OPTIONS))
+ 
+-        return self._parse_csv(_parse_for_xml)
++        return "for_", None
++
++    def _parse_for_option(self, options: parser.OPTIONS_TYPE) -> exp.QueryOption:
++        return self.expression(
++            exp.QueryOption(
++                this=self._parse_var_from_options(options, raise_unmatched=False)
++                or self._parse_xml_key_value_option()
++            )
++        )
+ 
+     def _parse_projections(
+         self,
+diff --git a/tests/dialects/test_tsql.py b/tests/dialects/test_tsql.py
+index b275d0e63..e0c02ac48 100644
+--- a/tests/dialects/test_tsql.py
++++ b/tests/dialects/test_tsql.py
+@@ -710,6 +710,51 @@ FOR XML
+             pretty=True,
+         )
+ 
++    def test_for_json(self):
++        json_possible_options = [
++            "AUTO",
++            "AUTO, ROOT",
++            "AUTO, ROOT('RootName')",
++            "AUTO, INCLUDE_NULL_VALUES",
++            "AUTO, WITHOUT_ARRAY_WRAPPER",
++            "AUTO, ROOT('RootName'), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
++            "PATH",
++            "PATH, ROOT",
++            "PATH, ROOT('RootName')",
++            "PATH, INCLUDE_NULL_VALUES",
++            "PATH, WITHOUT_ARRAY_WRAPPER",
++            "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
++        ]
++
++        for json_option in json_possible_options:
++            with self.subTest(f"Testing FOR JSON option: {json_option}"):
++                self.validate_identity(f"SELECT * FROM t FOR JSON {json_option}")
++
++        self.validate_identity(
++            "SELECT * FROM t FOR JSON PATH, ROOT('RootName'), INCLUDE_NULL_VALUES",
++            """SELECT
++  *
++FROM t
++FOR JSON
++  PATH,
++  ROOT('RootName'),
++  INCLUDE_NULL_VALUES""",
++            pretty=True,
++        )
++
++        self.validate_all(
++            "SELECT * FROM t FOR JSON AUTO",
++            write={
++                "duckdb": UnsupportedError,
++                "mysql": UnsupportedError,
++                "oracle": UnsupportedError,
++            },
++        )
++        self.assertEqual(
++            parse_one("SELECT * FROM t FOR JSON AUTO", read="tsql").sql("duckdb"),
++            "SELECT * FROM t",
++        )
++
+     def test_types(self):
+         self.validate_identity("CAST(x AS XML)")
+         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")

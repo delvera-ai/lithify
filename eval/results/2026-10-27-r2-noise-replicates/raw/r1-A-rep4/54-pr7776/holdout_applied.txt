@@ -1,0 +1,12 @@
+exit 1
+....................                                            [100%]
+=================================== FAILURES ===================================
+_ TestPresto.test_cast [SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05') -> snowflake] _
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: "SELECT TO_TIMESTAMP_TZ('2020-05-11T11:15:05')" != "SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)"
+E   - SELECT TO_TIMESTAMP_TZ('2020-05-11T11:15:05')
+E   + SELECT CAST('2020-05-11T11:15:05' AS TIMESTAMPTZ)
+=========================== short test summary info ============================
+SUBFAILED[SELECT FROM_ISO8601_TIMESTAMP('2020-05-11T11:15:05') -> snowflake] tests/dialects/test_presto.py::TestPresto::test_cast
+1 failed, 20 passed, 512 subtests passed in 0.40s

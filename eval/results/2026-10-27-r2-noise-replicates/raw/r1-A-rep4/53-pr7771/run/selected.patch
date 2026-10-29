@@ -1,0 +1,28 @@
+diff --git a/sqlglot/parsers/druid.py b/sqlglot/parsers/druid.py
+index 20f2cef3a..ecdb528a1 100644
+--- a/sqlglot/parsers/druid.py
++++ b/sqlglot/parsers/druid.py
+@@ -4,4 +4,7 @@ from sqlglot.parser import Parser
+ 
+ 
+ class DruidParser(Parser):
+-    pass
++    FUNCTION_PARSERS = {
++        **Parser.FUNCTION_PARSERS,
++        "JSON_VALUE": lambda self: self._parse_json_value(),
++    }
+diff --git a/tests/dialects/test_druid.py b/tests/dialects/test_druid.py
+index fb5e4e756..67b8748be 100644
+--- a/tests/dialects/test_druid.py
++++ b/tests/dialects/test_druid.py
+@@ -15,6 +15,10 @@ class TestDruid(Validator):
+         self.validate_identity("SELECT FLOOR(price, 2) AS rounded_price FROM t")
+         self.validate_identity("SELECT CURRENT_TIMESTAMP")
+         self.validate_identity("SELECT ARRAY[1, 2, 3]")
++        self.validate_identity("SELECT JSON_VALUE(x, '$.a' RETURNING BIGINT) FROM t")
++        self.validate_identity(
++            "SELECT JSON_VALUE(x, '$.a' RETURNING BIGINT NULL ON EMPTY NULL ON ERROR) FROM t"
++        )
+ 
+         # validate across all dialects
+         write = {dialect.value: "FLOOR(__time TO WEEK)" for dialect in Dialects}

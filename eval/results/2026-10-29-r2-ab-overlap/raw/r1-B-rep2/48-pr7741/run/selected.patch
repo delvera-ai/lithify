@@ -1,0 +1,63 @@
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_databricks.py b/tests/dialects/test_databricks.py
+index 3d4a6bb54..5981d851e 100644
+--- a/tests/dialects/test_databricks.py
++++ b/tests/dialects/test_databricks.py
+@@ -33,6 +33,11 @@ class TestDatabricks(Validator):
+         self.validate_identity("DESCRIBE history.tbl")
+         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
+         self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
++        self.validate_identity(
++            "CREATE TABLE t (c STRING COMMENT 'Hello ''World!')",
++            "CREATE TABLE t (c STRING COMMENT 'Hello \\'World!')",
++        )
++        self.validate_identity("SELECT 'it''s'", "SELECT 'it\\'s'")
+         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES (a.b=15)")
+         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES ('a.b'=15)")
+         self.validate_identity("CREATE TABLE table1 CLUSTER BY AUTO")
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..1bdb9d706 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -1028,6 +1028,11 @@ class TestHive(Validator):
+         self.validate_identity("'\n'", "'\\n'")
+         self.validate_identity("'\\n'")
+         self.validate_identity("'\\\n'", "'\\\\\\n'")
++        self.validate_identity("SELECT 'it''s'", "SELECT 'it\\'s'")
++        self.validate_identity(
++            "CREATE TABLE t (c STRING COMMENT 'Hello ''World!')",
++            "CREATE TABLE t (c STRING COMMENT 'Hello \\'World!')",
++        )
+         self.validate_identity("'\\\\n'")
+         self.validate_identity("''")
+         self.validate_identity("'\\\\'")
+diff --git a/tests/dialects/test_spark.py b/tests/dialects/test_spark.py
+index 8d0b89021..e8fa8b866 100644
+--- a/tests/dialects/test_spark.py
++++ b/tests/dialects/test_spark.py
+@@ -1081,6 +1081,13 @@ TBLPROPERTIES (
+             },
+         )
+ 
++    def test_string_escapes(self):
++        self.validate_identity(
++            "CREATE TABLE t (c STRING COMMENT 'Hello ''World!')",
++            "CREATE TABLE t (c STRING COMMENT 'Hello \\'World!')",
++        )
++        self.validate_identity("SELECT 'it''s'", "SELECT 'it\\'s'")
++
+     def test_named_struct(self):
+         self.validate_all(
+             "SELECT named_struct('a', 1, 'b', 'x')",

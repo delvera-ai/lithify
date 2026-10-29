@@ -1,0 +1,15 @@
+exit 1
+.......................................................................................................................................... [ 99%]
+.                                                                        [100%]
+=================================== FAILURES ===================================
+__________ TestDuckDB.test_duckdb [SELECT LIST(col) FROM t -> duckdb] __________
+tests/dialects/test_dialect.py:101: in validate_all
+    self.assertEqual(
+E   AssertionError: 'SELECT ARRAY_AGG(col) FROM t' != 'SELECT LIST(col) FROM t'
+E   - SELECT ARRAY_AGG(col) FROM t
+E   ?        ^^^^^^^^^
+E   + SELECT LIST(col) FROM t
+E   ?        ^^^^
+=========================== short test summary info ============================
+SUBFAILED[SELECT LIST(col) FROM t -> duckdb] tests/dialects/test_duckdb.py::TestDuckDB::test_duckdb
+1 failed, 139 passed, 2165 subtests passed in 0.97s

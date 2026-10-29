@@ -1,0 +1,56 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index fd7071fb7..8f5e2215b 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -496,6 +496,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-125522-optimizer-canonicalize-crashes-w",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 33919,
++      "tokens_cached": 395080,
++      "tokens_out": 6114,
++      "cost_usd": 0.0138,
++      "wall_s": 160.2,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/canonicalize.py b/sqlglot/optimizer/canonicalize.py
+index afb58085c..da220fd65 100644
+--- a/sqlglot/optimizer/canonicalize.py
++++ b/sqlglot/optimizer/canonicalize.py
+@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+ 
+ def _coerce_datediff_args(node: exp.DateDiff) -> None:
+     for e in (node.this, node.expression):
+-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
++        if e.type and e.type.this not in exp.DataType.TEMPORAL_TYPES:
+             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
+ 
+ 
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index 21d981dbd..6503365d0 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -2882,3 +2882,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
+         schema_ext = {"t": {"_col": "INT"}}
+         query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
+         optimizer.annotate_types.annotate_types(query, schema=schema_ext)
++
++    def test_canonicalize_datediff_untyped_args(self):
++        from sqlglot.optimizer.canonicalize import canonicalize
++
++        self.assertEqual(
++            canonicalize(parse_one("SELECT DATEDIFF(a, b) FROM t")).sql(),
++            "SELECT DATEDIFF(a, b) FROM t",
++        )

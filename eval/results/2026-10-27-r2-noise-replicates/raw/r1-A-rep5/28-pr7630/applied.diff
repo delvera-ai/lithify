@@ -1,0 +1,115 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 941d03e16..4cf0bea79 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -432,6 +432,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-104142-parser-collate-is-not-handled-in",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 69464,
++      "tokens_cached": 2008884,
++      "tokens_out": 26853,
++      "cost_usd": 0.0474,
++      "wall_s": 374.7,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 1e96f9216..475d12b90 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6202,7 +6202,7 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             elif nested:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
++                    lambda: self._parse_collated_type(
+                         check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                     )
+                 )
+@@ -6254,7 +6254,7 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             else:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
++                    lambda: self._parse_collated_type(
+                         check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                     )
+                 )
+@@ -6378,6 +6378,13 @@ class Parser:
+ 
+         return this
+ 
++    def _parse_collated_type(self, **kwargs) -> exp.Expr | None:
++        this = self._parse_types(**kwargs)
++        if this and self._match(TokenType.COLLATE):
++            collation = self._parse_identifier() or self._parse_column()
++            return self.expression(exp.Collate(this=this, expression=collation))
++        return this
++
+     def _parse_json_type_arg(self) -> exp.Expr | None:
+         """Parse a single argument to ClickHouse's JSON type."""
+ 
+@@ -7696,7 +7703,7 @@ class Parser:
+             self.raise_error("Expected AS after CAST")
+ 
+         fmt = None
+-        to = self._parse_types()
++        to = self._parse_collated_type()
+ 
+         default = None
+         if self._match(TokenType.DEFAULT):
+diff --git a/sqlglot/typing/__init__.py b/sqlglot/typing/__init__.py
+index ca1a370dc..296491ce7 100644
+--- a/sqlglot/typing/__init__.py
++++ b/sqlglot/typing/__init__.py
+@@ -289,7 +289,11 @@ EXPRESSION_METADATA: ExprMetadataType = {
+         }
+     },
+     **{
+-        expr_type: {"annotator": lambda self, e: self._set_type(e, e.args["to"])}
++        expr_type: {
++            "annotator": lambda self, e: self._set_type(
++                e, e.args["to"].this if isinstance(e.args["to"], exp.Collate) else e.args["to"]
++            )
++        }
+         for expr_type in {
+             exp.Cast,
+             exp.TryCast,
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index d6ec63cc1..8202d22a9 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -981,6 +981,21 @@ class TestParser(unittest.TestCase):
+             self.assertIsInstance(collate_node, exp.Collate)
+             self.assertIsInstance(collate_node.expression, collate_pair[1])
+ 
++    def test_collate_in_types(self):
++        for sql in (
++            'CAST(x AS VARCHAR(10) COLLATE "C")',
++            'CAST(x AS ARRAY<VARCHAR COLLATE "C">)',
++            'CAST(x AS STRUCT<a VARCHAR COLLATE "C">)',
++            'CREATE TABLE t (a ARRAY<VARCHAR COLLATE "C">)',
++        ):
++            with self.subTest(sql=sql):
++                self.assertEqual(parse_one(sql).sql(), sql)
++
++        self.assertEqual(
++            parse_one('SELECT x::VARCHAR COLLATE "C"').sql(),
++            'SELECT CAST(x AS VARCHAR) COLLATE "C"',
++        )
++
+     def test_drop_column(self):
+         ast = parse_one("ALTER TABLE tbl DROP COLUMN col")
+         self.assertEqual(len(list(ast.find_all(exp.Table))), 1)

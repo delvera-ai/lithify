@@ -1,0 +1,77 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index e3f934ea4..52a42651d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -608,6 +608,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-155936-mysql-dialect-multi-table-update",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 52197,
++      "tokens_cached": 919110,
++      "tokens_out": 16866,
++      "cost_usd": 0.0281,
++      "wall_s": 265.6,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 009573d91..871a4e709 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3641,10 +3641,21 @@ class Parser:
+ 
+     def _parse_update(self) -> exp.Update:
+         hint = self._parse_hint()
+-        kwargs: dict[str, object] = {
+-            "hint": hint,
+-            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+-        }
++        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++        while True:
++            if self._match(TokenType.COMMA):
++                join = self.expression(
++                    exp.Join(this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS))
++                )
++            else:
++                join = self._parse_join()
++
++            if not join:
++                break
++
++            this.append("joins", join)
++
++        kwargs: dict[str, object] = {"hint": hint, "this": this}
+         while self._curr:
+             if self._match(TokenType.SET):
+                 kwargs["expressions"] = self._parse_csv(self._parse_equality)
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..f29f2c284 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -244,6 +244,15 @@ class TestMySQL(Validator):
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a, books AS b SET a.x = 1 WHERE a.id = b.author_id"
++        )
++        self.validate_identity(
++            "UPDATE authors, books LEFT JOIN x ON books.id = x.id SET authors.x = 1"
++        )
+ 
+         # PARTITION BY RANGE - simple column
+         self.validate_identity(

@@ -1,0 +1,1 @@
+`JSON_ARRAY` accepts at most four arguments when built through sqlglot's expression machinery; calls with more elements (e.g. `JSON_ARRAY(1, 2, 3, 4, 5, 6)`) fail argument validation. `JSON_ARRAY` takes any number of values. Remove the artificial limit without changing how existing dialects parse it.

@@ -1,0 +1,38 @@
+exit 1
+.......F.................                                             [100%]
+=================================== FAILURES ===================================
+____________________________ TestPostgres.test_ddl _____________________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_ddl>
+
+    def test_ddl(self):
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
+            exp.DataType
+        )
+    
+        create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+>       self.assertTrue(create_type.expression.assert_is(exp.DataType).is_type(exp.DType.ENUM))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/dialects/test_postgres.py:1096: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = EnumType(
+  expressions=[
+    Literal(this='sad', is_string=True),
+    Literal(this='ok', is_string=True),
+    Literal(this='happy', is_string=True)])
+type_ = <class 'sqlglot.expressions.datatypes.DataType'>
+
+    def assert_is(self, type_: Type[E]) -> E:
+        if not isinstance(self, type_):
+>           raise AssertionError(f"{self} is not {type_}.")
+E           AssertionError: ENUM ('sad', 'ok', 'happy') is not <class 'sqlglot.expressions.datatypes.DataType'>.
+
+sqlglot/expressions/core.py:1277: AssertionError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_ddl - AssertionErr...
+1 failed, 24 passed, 363 subtests passed in 0.46s

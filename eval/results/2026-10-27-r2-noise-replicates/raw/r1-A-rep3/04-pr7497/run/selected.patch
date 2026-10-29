@@ -1,0 +1,45 @@
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..6a5dd038f 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -1048,6 +1048,10 @@ class SnowflakeGenerator(generator.Generator):
+     def arraytostring_sql(self, expression: exp.ArrayToString) -> str:
+         return self.func("ARRAY_TO_STRING", expression.this, expression.expression)
+ 
++    @unsupported_args("null_handling", "return_type", "strict")
++    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
++        return self.func("ARRAY_CONSTRUCT", *expression.expressions)
++
+     def array_sql(self, expression: exp.Array) -> str:
+         expressions = expression.expressions
+ 
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..a2910a2da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
+         ),
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..c789c55ac 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -330,6 +330,13 @@ class TestDuckDB(Validator):
+                 "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"fruit": {"foo": "banana"}}'), 'fruit'), 'foo')""",
+             },
+         )
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++            },
++        )
+         self.validate_all(
+             "CASE WHEN JSON_TYPE(x) = 'NULL' THEN NULL ELSE x END",
+             read={

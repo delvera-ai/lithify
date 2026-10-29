@@ -1,0 +1,71 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 244b564c8..d31ee4f45 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -416,6 +416,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.9,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-123501-parser-names-that-are-also-no-pa",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 34852,
++      "tokens_cached": 615052,
++      "tokens_out": 6071,
++      "cost_usd": 0.0162,
++      "wall_s": 257.6,
++      "always_on_tokens": 165,
++      "stability_after": 0.9,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 42f98dec9..7dfefbf3f 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6679,7 +6679,11 @@ class Parser:
+                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
+                     field = self._parse_column_ops(field)
+             else:
+-                field = self._parse_field(any_token=True, anonymous_func=True)
++                field = (
++                    self._parse_function(anonymous=True, optional_parens=False, any_token=True)
++                    or self._parse_primary()
++                    or self._parse_id_var(any_token=True)
++                )
+ 
+             # Function calls can be qualified, e.g., x.y.FOO()
+             # This converts the final AST to a series of Dots leading to the function call
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index c13ad3f84..114e2d4fe 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -1045,6 +1045,22 @@ class TestParser(unittest.TestCase):
+         assert not any(isinstance(n, exp.Column) for n in ast.walk())
+         assert len(list(ast.find_all(exp.Dot))) == 7
+ 
++    def test_no_paren_function_names_as_column_parts(self):
++        for sql in (
++            "SELECT mytable.current_user FROM mytable",
++            "SELECT mytable.current_date FROM mytable",
++            "SELECT a.b.sysdate FROM t",
++        ):
++            with self.subTest(sql=sql):
++                ast = parse_one(sql)
++                assert not list(ast.find_all(exp.Func))
++                self.assertEqual(ast.sql(), sql)
++
++        self.assertEqual(
++            parse_one("SELECT mytable.current_user() FROM mytable").sql(),
++            "SELECT mytable.current_user() FROM mytable",
++        )
++
+     def test_pivot_missing_agg_func(self):
+         with self.assertRaises(ParseError) as ctx:
+             parse_one("select * from tbl pivot(col1 for col2 in (val1, val1))")

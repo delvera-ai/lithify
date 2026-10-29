@@ -1,0 +1,71 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 5d6e7a54f..9f095e822 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -800,6 +800,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-141136-sqlite-and-other-dialects-with-u",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32921,
++      "tokens_cached": 548514,
++      "tokens_out": 6001,
++      "cost_usd": 0.0151,
++      "wall_s": 199.4,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 9fa6b9261..2010ff893 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3544,7 +3544,7 @@ class Parser:
+             if self._match_text_seq("ON", "CONSTRAINT"):
+                 constraint = self._parse_id_var()
+             elif self._match(TokenType.L_PAREN):
+-                conflict_keys = self._parse_csv(self._parse_id_var)
++                conflict_keys = self._parse_csv(self._parse_assignment)
+                 self._match_r_paren()
+ 
+         index_predicate = self._parse_where()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 9c368c008..81b7d9faa 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1201,6 +1201,9 @@ FROM json_data, field_ids""",
+         self.validate_identity(
+             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
+         )
++        self.validate_identity(
++            "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT(a, LOWER(b)) WHERE b > 0 DO NOTHING"
++        )
+         self.validate_identity(
+             "ALTER TABLE tested_table ADD CONSTRAINT unique_example UNIQUE (column_name) NOT VALID"
+         )
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 2509021e1..ef44d82f7 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -295,6 +295,12 @@ class TestSQLite(Validator):
+         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
+         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
+         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) VALUES (1, 2, 3) ON CONFLICT(col_x, LOWER(col_y)) DO UPDATE SET col_z = excluded.col_z"
++        )
++        self.validate_identity(
++            "INSERT INTO t (a) VALUES (1) ON CONFLICT(a, LOWER(b)) WHERE a > 0 DO NOTHING"
++        )
+         self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
+         self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
+         self.validate_identity("CREATE VIRTUAL TABLE docs USING fts5(title, content)")

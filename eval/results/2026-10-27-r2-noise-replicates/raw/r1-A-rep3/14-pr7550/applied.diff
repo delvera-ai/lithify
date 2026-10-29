@@ -1,0 +1,98 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index d0d948b5b..90715bb82 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -208,6 +208,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-114454-optimizer-select-from-cte-unpivo",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 109868,
++      "tokens_cached": 4484903,
++      "tokens_out": 49397,
++      "cost_usd": 0.2297,
++      "wall_s": 446.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index 1868c662f..2969d19e5 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -139,6 +139,10 @@ class Resolver:
+ 
+             source = self.scope.sources[name]
+ 
++            if isinstance(source, exp.Table) and source.args.get("pivots"):
++                # A pivoted CTE is registered as a Table, but its columns are the CTE's
++                source = self.scope.cte_sources.get(source.name, source)
++
+             if isinstance(source, exp.Table):
+                 columns = self.schema.column_names(source, only_visible)
+             elif isinstance(source, Scope) and isinstance(
+diff --git a/sqlglot/optimizer/scope.py b/sqlglot/optimizer/scope.py
+index 47e4ef798..6cff99ff8 100644
+--- a/sqlglot/optimizer/scope.py
++++ b/sqlglot/optimizer/scope.py
+@@ -586,6 +586,11 @@ class Scope:
+ 
+         for scope in self.traverse():
+             for _, source in scope.selected_sources.values():
++                if isinstance(source, exp.Table) and source.args.get("pivots"):
++                    # A pivoted CTE is selected as a Table, but it still references the CTE
++                    if cte := scope.cte_sources.get(source.name):
++                        source = cte
++
+                 scope_ref_count[id(source)] += 1
+ 
+             for name in scope._semi_anti_join_tables:
+diff --git a/tests/fixtures/optimizer/optimizer.sql b/tests/fixtures/optimizer/optimizer.sql
+index 60ae89d49..91e51a773 100644
+--- a/tests/fixtures/optimizer/optimizer.sql
++++ b/tests/fixtures/optimizer/optimizer.sql
+@@ -775,6 +775,22 @@ UNPIVOT((`first_half_sales`, `second_half_sales`) FOR
+   )
+ ) AS `produce`;
+ 
++# title: unpivoted CTE source keeps the CTE and qualifies its columns
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT a, b FROM x) SELECT * FROM c UNPIVOT(v FOR m IN (a, b));
++WITH `c` AS (
++  SELECT
++    `x`.`a` AS `a`,
++    `x`.`b` AS `b`
++  FROM `x` AS `x`
++)
++SELECT
++  `c`.`m` AS `m`,
++  `c`.`v` AS `v`
++FROM `c` AS `c`
++UNPIVOT(`v` FOR `m` IN (`c`.`a`, `c`.`b`)) AS `c`;
++
+ # title: quoting is preserved
+ # dialect: snowflake
+ with cte1("id", foo) as (select 1, 2) select "id" from cte1;
+diff --git a/tests/fixtures/optimizer/qualify_columns.sql b/tests/fixtures/optimizer/qualify_columns.sql
+index 39c3470e1..4facd973d 100644
+--- a/tests/fixtures/optimizer/qualify_columns.sql
++++ b/tests/fixtures/optimizer/qualify_columns.sql
+@@ -1051,3 +1051,8 @@ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y A
+ # title: ANTI + normal joins reinclude the table on scope
+ SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
+ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
++
++# execute: false
++# dialect: bigquery
++WITH c AS (SELECT a, b FROM x) SELECT * FROM c UNPIVOT(v FOR m IN (a, b));
++WITH c AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT c.m AS m, c.v AS v FROM c AS c UNPIVOT(v FOR m IN (c.a, c.b)) AS c;

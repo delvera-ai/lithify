@@ -1,0 +1,85 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index ff0623839..646128782 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -192,6 +192,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-140940-duckdb-snowflake-duckdb-s-list-c",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 66359,
++      "tokens_cached": 1163627,
++      "tokens_out": 22071,
++      "cost_usd": 0.0359,
++      "wall_s": 262.5,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 2c8f9dfef..92295dedc 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -3310,6 +3310,9 @@ class DuckDBGenerator(generator.Generator):
+ 
+     def arraydistinct_sql(self, expression: exp.ArrayDistinct) -> str:
+         arr = expression.this
++        # LIST_DISTINCT already drops NULLs, so ARRAY_COMPACT(x) is redundant here
++        if isinstance(arr, exp.ArrayCompact) and not expression.args.get("check_null"):
++            arr = arr.this
+         func = self.func("LIST_DISTINCT", arr)
+ 
+         if expression.args.get("check_null"):
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index dab7211cc..9952651ee 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -608,6 +608,7 @@ class SnowflakeGenerator(generator.Generator):
+         exp.Xor: rename_func("BOOLXOR"),
+         exp.ByteLength: rename_func("OCTET_LENGTH"),
+         exp.Flatten: rename_func("ARRAY_FLATTEN"),
++        exp.List: rename_func("ARRAY_AGG"),
+         exp.ArrayConcatAgg: lambda self, e: self.func("ARRAY_FLATTEN", exp.ArrayAgg(this=e.this)),
+         exp.SHA2Digest: lambda self, e: self.func(
+             "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index a2910a2da..9da4817dd 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -138,6 +138,9 @@ class DuckDBParser(parser.Parser):
+         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
+         "LIST_COSINE_DISTANCE": exp.CosineDistance.from_arg_list,
+         "LIST_DISTANCE": exp.EuclideanDistance.from_arg_list,
++        "LIST_DISTINCT": lambda args: exp.ArrayDistinct(
++            this=exp.ArrayCompact(this=seq_get(args, 0)),
++        ),
+         "LIST_FILTER": exp.ArrayFilter.from_arg_list,
+         "LIST_HAS": exp.ArrayContains.from_arg_list,
+         "LIST_HAS_ANY": exp.ArrayOverlaps.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 0e3d12289..7f032323c 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -690,6 +690,13 @@ class TestDuckDB(Validator):
+             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
+             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
+         )
++        self.validate_all(
++            "SELECT LIST(c), LIST_DISTINCT(c) FROM t",
++            write={
++                "duckdb": "SELECT LIST(c), LIST_DISTINCT(c) FROM t",
++                "snowflake": "SELECT ARRAY_AGG(c), ARRAY_DISTINCT(ARRAY_COMPACT(c)) FROM t",
++            },
++        )
+         self.validate_all(
+             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+             write={

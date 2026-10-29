@@ -1,0 +1,24 @@
+diff --git a/sqlglot/dialects/exasol.py b/sqlglot/dialects/exasol.py
+index e17236dae..59971d2a3 100644
+--- a/sqlglot/dialects/exasol.py
++++ b/sqlglot/dialects/exasol.py
+@@ -58,6 +58,7 @@ class Exasol(Dialect):
+             # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/if.htm
+             "ENDIF": TokenType.END,
+             "LONG VARCHAR": TokenType.TEXT,
++            "MINUS": TokenType.EXCEPT,
+             "REGEXP_LIKE": TokenType.RLIKE,
+             "SEPARATOR": TokenType.SEPARATOR,
+             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+diff --git a/tests/dialects/test_exasol.py b/tests/dialects/test_exasol.py
+index b81b5820a..3680095ec 100644
+--- a/tests/dialects/test_exasol.py
++++ b/tests/dialects/test_exasol.py
+@@ -21,6 +21,7 @@ class TestExasol(Validator):
+         self.validate_identity("CURRENT_SCHEMA").assert_is(exp.CurrentSchema)
+         self.validate_identity("SELECT NOW()", "SELECT CURRENT_TIMESTAMP()")
+         self.validate_identity("SELECT FROM_POSIX_TIME(1234567890)")
++        self.validate_identity("SELECT 1 MINUS SELECT 2", "SELECT 1 EXCEPT SELECT 2")
+         self.validate_all(
+             "SELECT FROM_POSIX_TIME(col)",
+             read={

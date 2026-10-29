@@ -1,0 +1,27 @@
+exit 1
+.......................................F                                 [100%]
+=================================== FAILURES ===================================
+______________________ TestLineage.test_unpivot_with_cte _______________________
+
+self = <tests.test_lineage.TestLineage testMethod=test_unpivot_with_cte>
+
+    def test_unpivot_with_cte(self) -> None:
+        sql = """
+        WITH src AS (
+          SELECT id, jan, feb FROM sales
+        )
+        SELECT id, metric_name, score
+        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+    
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+>       self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_lineage.py:716: IndexError
+=========================== short test summary info ============================
+FAILED tests/test_lineage.py::TestLineage::test_unpivot_with_cte - IndexError...
+1 failed, 39 passed in 0.25s

@@ -1,0 +1,93 @@
+diff --git a/sqlglot/expressions/datatypes.py b/sqlglot/expressions/datatypes.py
+index afe468e44..aeb5ec61b 100644
+--- a/sqlglot/expressions/datatypes.py
++++ b/sqlglot/expressions/datatypes.py
+@@ -178,6 +178,7 @@ class DataType(Expression):
+         "values": False,
+         "kind": False,
+         "nullable": False,
++        "collate": False,
+     }
+ 
+     Type: t.ClassVar[Type[DType]] = DType
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd0ec288b..44009c7b7 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1732,6 +1732,8 @@ class Generator:
+                 nested = f"({interior})"
+ 
+         type_sql = f"{type_sql}{nested}{values}"
++        if collate := self.sql(expression, "collate"):
++            type_sql = f"{type_sql} COLLATE {collate}"
+         if self.TZ_TO_WITH_TIME_ZONE and type_value in (
+             exp.DType.TIMETZ,
+             exp.DType.TIMESTAMPTZ,
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 1e96f9216..5e75edbd0 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6254,8 +6254,12 @@ class Parser:
+                 expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
+             else:
+                 expressions = self._parse_csv(
+-                    lambda: self._parse_types(
+-                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
++                    lambda: self._parse_type_collate(
++                        self._parse_types(
++                            check_func=check_func,
++                            schema=schema,
++                            allow_identifiers=allow_identifiers,
++                        )
+                     )
+                 )
+ 
+@@ -6407,6 +6411,13 @@ class Parser:
+     def _parse_vector_expressions(self, expressions: list[exp.Expr]) -> list[exp.Expr]:
+         return [exp.DataType.from_str(expressions[0].name, dialect=self.dialect), *expressions[1:]]
+ 
++    def _parse_type_collate(self, this: exp.Expr | None) -> exp.Expr | None:
++        # Only called where a type is not followed by a column constraint, e.g. CAST targets and
++        # nested type arguments, so a COLLATE here can't be confused with a column COLLATE
++        if isinstance(this, exp.DataType) and self._match(TokenType.COLLATE):
++            this.set("collate", self._parse_identifier() or self._parse_column())
++        return this
++
+     def _parse_struct_types(self, type_required: bool = False) -> exp.Expr | None:
+         index = self._index
+ 
+@@ -7696,7 +7707,7 @@ class Parser:
+             self.raise_error("Expected AS after CAST")
+ 
+         fmt = None
+-        to = self._parse_types()
++        to = self._parse_type_collate(self._parse_types())
+ 
+         default = None
+         if self._match(TokenType.DEFAULT):
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index d6ec63cc1..4b154a524 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -981,6 +981,21 @@ class TestParser(unittest.TestCase):
+             self.assertIsInstance(collate_node, exp.Collate)
+             self.assertIsInstance(collate_node.expression, collate_pair[1])
+ 
++    def test_collate_in_types(self):
++        for sql in (
++            'SELECT CAST(x AS VARCHAR(10) COLLATE "C")',
++            'SELECT CAST(x AS ARRAY<TEXT COLLATE "C">)',
++            'SELECT CAST(x AS STRUCT<a TEXT COLLATE "C">)',
++            'CREATE TABLE t (a ARRAY<TEXT COLLATE "C">)',
++        ):
++            with self.subTest(sql):
++                self.assertEqual(parse_one(sql).sql(), sql)
++
++        cast = parse_one('SELECT CAST(x AS VARCHAR(10) COLLATE "C")').find(exp.Cast)
++        self.assertIsInstance(cast.to.args["collate"], exp.Identifier)
++        self.assertIsNone(parse_one("SELECT x::TEXT").find(exp.DataType).args.get("collate"))
++        self.assertIsInstance(parse_one('SELECT x COLLATE "C"').find(exp.Collate), exp.Collate)
++
+     def test_drop_column(self):
+         ast = parse_one("ALTER TABLE tbl DROP COLUMN col")
+         self.assertEqual(len(list(ast.find_all(exp.Table))), 1)

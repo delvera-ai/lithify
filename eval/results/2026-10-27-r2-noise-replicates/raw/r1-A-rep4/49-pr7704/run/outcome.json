@@ -1,0 +1,28 @@
+{
+  "task": "BigQuery \u2192 DuckDB: BigQuery's `PARSE_DATETIME` is emitted verbatim for DuckDB, which rejects it:\n\n```python\nsqlglot.transpile(\"SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2023-01-15 14:30:00')\", read=\"bigquery\", write=\"duckdb\")\n# today: [\"SELECT PARSE_DATETIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')\"]\n# expected: [\"SELECT STRPTIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')\"]\n```\n\nTranspile it to DuckDB correctly.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 40372,
+    "cached": 604796,
+    "out": 7653,
+    "cost": 0.01794606,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

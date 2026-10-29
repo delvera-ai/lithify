@@ -1,0 +1,60 @@
+exit 1
+........................ [ 54%]
+...................F     [100%]
+=================================== FAILURES ===================================
+_____________________________ TestDuckDB.test_udf ______________________________
+
+self = <tests.dialects.test_duckdb.TestDuckDB testMethod=test_udf>
+
+    def test_udf(self):
+        for keyword in ("FUNCTION", "MACRO"):
+            with self.subTest(f"Testing DuckDB's UDF for keyword: {keyword}"):
+                self.validate_identity(f"SELECT {keyword}")
+    
+                self.validate_identity(f"CREATE {keyword} add(a, b) AS a + b")
+                self.validate_identity(
+                    f"CREATE {keyword} ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END"
+                )
+    
+            with self.subTest(f"Testing DuckDB's table functions with keyword: {keyword}"):
+                self.validate_identity(
+                    f"CREATE {keyword} my_table_function(a, b) AS TABLE SELECT x, y FROM (VALUES (a, b)) AS tbl(x, y)"
+                ).assert_is(exp.Create)
+    
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) AS TABLE SELECT a",
+            write={
+                "databricks": "CREATE OR REPLACE FUNCTION func(a INT, b FLOAT) RETURNS TABLE RETURN SELECT a",
+                "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b REAL) AS TABLE SELECT a",
+            },
+        )
+    
+        overloaded = self.validate_identity(
+            "CREATE MACRO add_x (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        overloads = overloaded.expression
+        self.assertIsInstance(overloads, exp.MacroOverloads)
+        self.assertEqual(len(overloads.expressions), 2)
+        self.assertIsNone(overloaded.this.args.get("expressions"))
+    
+        self.validate_identity(
+            "CREATE OR REPLACE MACRO foo (a) AS a, (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        self.validate_identity("CREATE MACRO foo (a TINYINT) AS a + 1, (a INT) AS a + 2")
+>       self.validate_identity("CREATE MACRO foo(a TINYINT) AS a = 127")
+
+tests/dialects/test_duckdb.py:2623: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:63: in validate_identity
+    self.assertEqual(
+E   AssertionError: 'CREATE MACRO foo(a TINYINT) AS a = 127' != 'CREATE MACRO foo(a TINYINT)'
+E   - CREATE MACRO foo(a TINYINT) AS a = 127
+E   ?                            -----------
+E   + CREATE MACRO foo(a TINYINT)
+----------------------------- Captured stdout call -----------------------------
+uuuuuu
+------------------------------ Captured log call -------------------------------
+WARNING  sqlglot:generator.py:943 Unsupported property property
+=========================== short test summary info ============================
+FAILED tests/dialects/test_duckdb.py::TestDuckDB::test_udf - AssertionError: ...
+1 failed, 43 passed, 600 subtests passed in 0.47s

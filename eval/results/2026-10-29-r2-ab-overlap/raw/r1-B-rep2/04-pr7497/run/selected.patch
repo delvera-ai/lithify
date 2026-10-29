@@ -1,0 +1,44 @@
+diff --git a/sqlglot/generators/snowflake.py b/sqlglot/generators/snowflake.py
+index 44fc1f68c..a4bed6092 100644
+--- a/sqlglot/generators/snowflake.py
++++ b/sqlglot/generators/snowflake.py
+@@ -497,6 +497,9 @@ class SnowflakeGenerator(generator.Generator):
+         exp.GetExtract: rename_func("GET"),
+         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
+         exp.If: if_sql(name="IFF", false_value="NULL"),
++        exp.JSONArray: unsupported_args("null_handling", "return_type", "strict")(
++            lambda self, e: self.func("ARRAY_CONSTRUCT", *e.expressions)
++        ),
+         exp.JSONExtractArray: _json_extract_value_array_sql,
+         exp.JSONExtractScalar: lambda self, e: self.func(
+             "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
+diff --git a/sqlglot/parsers/duckdb.py b/sqlglot/parsers/duckdb.py
+index db132a958..a2910a2da 100644
+--- a/sqlglot/parsers/duckdb.py
++++ b/sqlglot/parsers/duckdb.py
+@@ -130,6 +130,7 @@ class DuckDBParser(parser.Parser):
+         ),
+         "JARO_WINKLER_SIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
+         "JSON": exp.ParseJSON.from_arg_list,
++        "JSON_ARRAY": lambda args: exp.JSONArray(expressions=args),
+         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
+         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index b0b0ee73c..055865ba2 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -605,6 +605,13 @@ class TestDuckDB(Validator):
+             "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
+             "x ->> '$.family'",
+         )
++        self.validate_all(
++            "SELECT JSON_ARRAY('a', 'b', 'c')",
++            write={
++                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
++                "snowflake": "SELECT ARRAY_CONSTRUCT('a', 'b', 'c')",
++            },
++        )
+         self.validate_all(
+             "SELECT NOT (data -> '$.value')",
+             read={

@@ -1,0 +1,169 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index b5d4354bb..2564b2dcc 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -64,6 +64,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 0.8,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-091426-doris-and-starrocks-dialects-bot",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 61884,
++      "tokens_cached": 1418743,
++      "tokens_out": 19245,
++      "cost_usd": 0.0362,
++      "wall_s": 210.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/dialect.py b/sqlglot/dialects/dialect.py
+index bbb4515c5..f9c2e10b3 100644
+--- a/sqlglot/dialects/dialect.py
++++ b/sqlglot/dialects/dialect.py
+@@ -1613,6 +1613,22 @@ def build_date_delta_with_interval(
+     return _builder
+ 
+ 
++def build_date_delta_with_interval_or_days(
++    expression_class: Type[E],
++    negate: bool = False,
++) -> t.Callable[[BuilderArgs], E | exp.TsOrDsAdd | None]:
++    interval_builder = build_date_delta_with_interval(expression_class)
++
++    def _builder(args: BuilderArgs) -> E | exp.TsOrDsAdd | None:
++        if len(args) == 2 and not isinstance(args[1], exp.Interval):
++            days = exp.Neg(this=args[1]) if negate else args[1]
++            return exp.TsOrDsAdd(this=args[0], expression=days, unit=exp.Literal.string("DAY"))
++
++        return interval_builder(args)
++
++    return _builder
++
++
+ def date_trunc_to_time(args: BuilderArgs) -> exp.DateTrunc | exp.TimestampTrunc:
+     unit = seq_get(args, 0)
+     this = seq_get(args, 1)
+diff --git a/sqlglot/generators/starrocks.py b/sqlglot/generators/starrocks.py
+index ef35b920d..bb70d0cec 100644
+--- a/sqlglot/generators/starrocks.py
++++ b/sqlglot/generators/starrocks.py
+@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
+     inline_array_sql,
+     property_sql,
+ )
+-from sqlglot.generators.mysql import MySQLGenerator
++from sqlglot.generators.mysql import MySQLGenerator, date_add_sql
+ 
+ 
+ def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
+@@ -106,6 +106,11 @@ class StarRocksGenerator(MySQLGenerator):
+         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
+         exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+         exp.TimeStrToDate: rename_func("TO_DATE"),
++        exp.TsOrDsAdd: lambda self, e: (
++            self.func("DATE_ADD", e.this, e.expression)
++            if e.text("unit").upper() == "DAY"
++            else date_add_sql("ADD")(self, e)
++        ),
+         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
+         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+     }
+diff --git a/sqlglot/parsers/doris.py b/sqlglot/parsers/doris.py
+index 215731e13..b1ed32389 100644
+--- a/sqlglot/parsers/doris.py
++++ b/sqlglot/parsers/doris.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ from sqlglot.tokens import TokenType
+@@ -27,6 +28,8 @@ class DorisParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
+         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate=True),
+         "DATE_TRUNC": _build_date_trunc,
+         "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
+         "MONTHS_ADD": exp.AddMonths.from_arg_list,
+diff --git a/sqlglot/parsers/starrocks.py b/sqlglot/parsers/starrocks.py
+index 004264297..bc15daf47 100644
+--- a/sqlglot/parsers/starrocks.py
++++ b/sqlglot/parsers/starrocks.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ 
+ 
+ from sqlglot import exp
+-from sqlglot.dialects.dialect import build_timestamp_trunc
++from sqlglot.dialects.dialect import build_date_delta_with_interval_or_days, build_timestamp_trunc
+ from sqlglot.helper import seq_get
+ from sqlglot.parsers.mysql import MySQLParser
+ 
+@@ -10,6 +10,8 @@ from sqlglot.parsers.mysql import MySQLParser
+ class StarRocksParser(MySQLParser):
+     FUNCTIONS = {
+         **MySQLParser.FUNCTIONS,
++        "DATE_ADD": build_date_delta_with_interval_or_days(exp.DateAdd),
++        "DATE_SUB": build_date_delta_with_interval_or_days(exp.DateSub, negate=True),
+         "DATE_TRUNC": build_timestamp_trunc,
+         "DATEDIFF": lambda args: exp.DateDiff(
+             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+diff --git a/tests/dialects/test_doris.py b/tests/dialects/test_doris.py
+index a33fed3aa..f3496e25c 100644
+--- a/tests/dialects/test_doris.py
++++ b/tests/dialects/test_doris.py
+@@ -5,6 +5,18 @@ class TestDoris(Validator):
+     dialect = "doris"
+ 
+     def test_doris(self):
++        self.validate_identity("SELECT DATE_ADD('2025-01-01', 1)")
++        self.validate_all(
++            "SELECT DATE_SUB('2025-01-01', 1)",
++            write={
++                "doris": "SELECT DATE_ADD('2025-01-01', -1)",
++                "duckdb": "SELECT CAST('2025-01-01' AS DATE) + INTERVAL (-1) DAY",
++            },
++        )
++        self.validate_all(
++            "SELECT DATE_ADD('2025-01-01', INTERVAL 1 DAY)",
++            write={"doris": "SELECT DATE_ADD('2025-01-01', INTERVAL '1' DAY)"},
++        )
+         self.validate_all(
+             "SELECT TO_DATE('2020-02-02 00:00:00')",
+             write={
+diff --git a/tests/dialects/test_starrocks.py b/tests/dialects/test_starrocks.py
+index a98801725..c5276fd07 100644
+--- a/tests/dialects/test_starrocks.py
++++ b/tests/dialects/test_starrocks.py
+@@ -27,6 +27,19 @@ class TestStarrocks(Validator):
+ 
+         self.validate_identity("CURRENT_VERSION()")
+ 
++        self.validate_identity("SELECT DATE_ADD('2025-01-01', 1)")
++        self.validate_all(
++            "SELECT DATE_SUB('2025-01-01', 1)",
++            write={
++                "starrocks": "SELECT DATE_ADD('2025-01-01', -1)",
++                "duckdb": "SELECT CAST('2025-01-01' AS DATE) + INTERVAL (-1) DAY",
++            },
++        )
++        self.validate_all(
++            "SELECT DATE_ADD(x, INTERVAL 1 MONTH)",
++            write={"starrocks": "SELECT DATE_ADD(x, INTERVAL '1' MONTH)"},
++        )
++
+     def test_ddl(self):
+         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
+         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

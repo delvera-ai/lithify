@@ -1,0 +1,43 @@
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index f40beaca2..38b3891fe 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -1742,7 +1742,6 @@ class DuckDBGenerator(generator.Generator):
+         exp.DType.TIMESTAMP_S: "TIMESTAMP_S",
+         exp.DType.TIMESTAMP_MS: "TIMESTAMP_MS",
+         exp.DType.TIMESTAMP_NS: "TIMESTAMP_NS",
+-        exp.DType.BIGDECIMAL: "DECIMAL(38, 5)",
+     }
+ 
+     # https://github.com/duckdb/duckdb/blob/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords/reserved_keywords.list#L1-L77
+@@ -2175,6 +2174,15 @@ class DuckDBGenerator(generator.Generator):
+         """
+     )
+ 
++    def datatype_sql(self, expression: exp.DataType) -> str:
++        if expression.is_type(exp.DType.BIGDECIMAL):
++            expression = expression.copy()
++            expression.set("this", exp.DType.DECIMAL)
++            if not expression.expressions:
++                expression.set("expressions", exp.DataType.from_str("DECIMAL(38, 5)").expressions)
++
++        return super().datatype_sql(expression)
++
+     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
+         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))
+         return self.sql(
+diff --git a/tests/dialects/test_bigquery.py b/tests/dialects/test_bigquery.py
+index 798b3a5fa..264af8e96 100644
+--- a/tests/dialects/test_bigquery.py
++++ b/tests/dialects/test_bigquery.py
+@@ -3831,3 +3831,10 @@ OPTIONS (
+                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
+                     },
+                 )
++
++                self.validate_all(
++                    f"SELECT CAST(1 AS {type_}(76, 38))",
++                    write={
++                        "duckdb": "SELECT CAST(1 AS DECIMAL(76, 38))",
++                    },
++                )

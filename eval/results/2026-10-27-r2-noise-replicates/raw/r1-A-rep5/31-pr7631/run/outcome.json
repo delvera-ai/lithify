@@ -1,0 +1,28 @@
+{
+  "task": "MySQL \u2192 Exasol: when alias references in `WHERE`, `GROUP BY` or `HAVING` are rewritten to Exasol's `LOCAL.<alias>` form, the match is case-sensitive. Exasol folds unquoted identifiers to upper case, so an alias `idField` and a reference `idfield` are the same identifier, but the rewrite misses it and produces invalid SQL:\n\n```python\nsqlglot.transpile(\"SELECT 1 AS idField FROM t GROUP BY idfield\", read=\"mysql\", write=\"exasol\")\n```\n\nMatch unquoted aliases case-insensitively, following Exasol's identifier rules.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 36935,
+    "cached": 485140,
+    "out": 9264,
+    "cost": 0.016868,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

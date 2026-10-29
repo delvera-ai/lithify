@@ -1,0 +1,30 @@
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 7c9bd3c02..baaf6fb08 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3912,7 +3912,7 @@ class Generator:
+                 if expression.comments and self.comments:
+                     for comment in expression.comments:
+                         if comment:
+-                            op += f" /*{self.sanitize_comment(comment)}*/"
++                            op += f" {self._replace_line_breaks(f'/*{self.sanitize_comment(comment)}*/')}"
+                 stack.extend((op, expression.left))
+             return op
+ 
+diff --git a/tests/test_transpile.py b/tests/test_transpile.py
+index 9965cfc0c..e63925ff9 100644
+--- a/tests/test_transpile.py
++++ b/tests/test_transpile.py
+@@ -245,6 +245,12 @@ WHERE
+   1 = 1 /* comment at the end */""",
+             pretty=True,
+         )
++        for connector in ("AND", "OR"):
++            sql = f"SELECT * FROM t WHERE x = 1 {connector} /* multi\nline */ y = 2"
++            expected = f"SELECT\n  *\nFROM t\nWHERE\n  x = 1 {connector} /* multi\nline */ y = 2"
++            self.validate(sql, expected, pretty=True)
++            # Formatting must be idempotent
++            self.validate(expected, expected, pretty=True)
+         self.validate(
+             """
+             /* multi

@@ -1,0 +1,65 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index aa1fc8c93..807ec49c8 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -416,6 +416,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 0.8305,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-152057-parser-names-that-are-also-no-pa",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 46298,
++      "tokens_cached": 1071933,
++      "tokens_out": 13669,
++      "cost_usd": 0.0268,
++      "wall_s": 219.5,
++      "always_on_tokens": 394,
++      "stability_after": 0.8305,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 42f98dec9..2c1b0f468 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -6678,6 +6678,14 @@ class Parser:
+                 field = self._parse_column_reference() or self._parse_bitwise()
+                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
+                     field = self._parse_column_ops(field)
++            elif (
++                op_token == TokenType.DOT
++                and self._curr
++                and self._curr.token_type in self.NO_PAREN_FUNCTIONS
++                and (not self._next or self._next.token_type != TokenType.L_PAREN)
++            ):
++                # After a dot, a no-parenthesis function name such as CURRENT_USER is a column identifier
++                field = self._parse_id_var()
+             else:
+                 field = self._parse_field(any_token=True, anonymous_func=True)
+ 
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index c13ad3f84..c9ce3cefd 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -1110,3 +1110,14 @@ class TestParser(unittest.TestCase):
+         with self.assertRaises(ParseError):
+             parse_one("SELECT " + ",".join(f"x={i}" for i in range(100)), max_nodes=5)
+         self.assertIsInstance(parse_one("SELECT 1, 2, 3"), exp.Select)
++
++    def test_no_paren_function_names_after_dot(self):
++        for sql in (
++            "SELECT mytable.current_user FROM mytable",
++            "SELECT mytable.current_date FROM mytable",
++            "SELECT a.current_user.b FROM t",
++        ):
++            with self.subTest(sql=sql):
++                self.assertEqual(parse_one(sql).sql(), sql)
++
++        self.assertEqual(parse_one("SELECT current_user").sql(), "SELECT CURRENT_USER()")

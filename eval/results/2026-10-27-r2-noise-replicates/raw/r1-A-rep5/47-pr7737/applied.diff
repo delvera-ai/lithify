@@ -1,0 +1,110 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 8390bacb3..52beb81f6 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -736,6 +736,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-124909-optimizer-sqlglot-optimizer-qual",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 51305,
++      "tokens_cached": 911403,
++      "tokens_out": 15635,
++      "cost_usd": 0.0272,
++      "wall_s": 281.2,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/resolver.py b/sqlglot/optimizer/resolver.py
+index e840af2a1..1eec59879 100644
+--- a/sqlglot/optimizer/resolver.py
++++ b/sqlglot/optimizer/resolver.py
+@@ -21,7 +21,13 @@ class Resolver:
+     This is a class so we can lazily load some things and easily share them across functions.
+     """
+ 
+-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
++    def __init__(
++        self,
++        scope: Scope,
++        schema: Schema,
++        infer_schema: bool = True,
++        _unnest_columns_in_progress: set[int] | None = None,
++    ) -> None:
+         self.scope: Scope = scope
+         self.schema: Schema = schema
+         self.dialect: Dialect = schema.dialect or Dialect()
+@@ -30,6 +36,11 @@ class Resolver:
+         self._all_columns: set[str] | None = None
+         self._infer_schema: bool = infer_schema
+         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
++        # Shared with the parent resolvers created in `_get_unnest_column_type`, so that a
++        # lateral source whose unnested column is itself unqualified can't recurse forever
++        self._unnest_columns_in_progress: set[int] = (
++            set() if _unnest_columns_in_progress is None else _unnest_columns_in_progress
++        )
+ 
+     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+         """
+@@ -375,9 +386,21 @@ class Resolver:
+         if column.table:
+             table_name = column.table
+         else:
++            # the column is already being resolved further up, so the lateral that it feeds
++            # can't be used to disambiguate it again
++            if id(column) in self._unnest_columns_in_progress:
++                return None
++
+             # use the parent scope's resolver to disambiguate the column
+-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+-            table_identifier = parent_resolver.get_table(column)
++            self._unnest_columns_in_progress.add(id(column))
++            try:
++                parent_resolver = Resolver(
++                    scope, self.schema, self._infer_schema, self._unnest_columns_in_progress
++                )
++                table_identifier = parent_resolver.get_table(column)
++            finally:
++                self._unnest_columns_in_progress.discard(id(column))
++
+             if not table_identifier:
+                 return None
+             table_name = table_identifier.name
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index aaf703d71..d75628027 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -750,6 +750,23 @@ class TestOptimizer(unittest.TestCase):
+         )
+         self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
+ 
++        # unqualified lateral columns must not recurse forever, whether or not the table is in the schema
++        sql = "SELECT x FROM missing_table LATERAL VIEW EXPLODE(items) t AS x"
++        with self.assertRaises(OptimizeError):
++            optimizer.qualify.qualify(
++                parse_one(sql, read="spark"), schema={"other": {"x": "INT"}}, dialect="spark"
++            )
++
++        expression = optimizer.qualify.qualify(
++            parse_one(sql, read="spark"),
++            schema={"missing_table": {"items": "ARRAY<INT>"}, "other": {"x": "INT"}},
++            dialect="spark",
++        )
++        self.assertEqual(
++            expression.sql(dialect="spark"),
++            "SELECT `t`.`x` AS `x` FROM `missing_table` AS `missing_table` LATERAL VIEW EXPLODE(`missing_table`.`items`) t AS `x`",
++        )
++
+     def test_qualify_columns__with_invisible(self):
+         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
+         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

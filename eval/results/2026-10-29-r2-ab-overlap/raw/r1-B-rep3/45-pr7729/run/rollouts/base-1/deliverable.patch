@@ -1,0 +1,148 @@
+diff --git a/sqlglot/lineage.py b/sqlglot/lineage.py
+index 4b84f7ba7..c0eec8634 100644
+--- a/sqlglot/lineage.py
++++ b/sqlglot/lineage.py
+@@ -188,6 +188,17 @@ def lineage(
+     return result
+ 
+ 
++def _reference_node_name(
++    scope: Scope, col_source: Scope, table: str, source_names: dict[str, str]
++) -> str | None:
++    if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
++        return table
++    if col_source.scope_type == ScopeType.CTE:
++        selected_node, _ = scope.selected_sources.get(table, (None, None))
++        return selected_node.name if selected_node else None
++    return None
++
++
+ def to_node(
+     column: str | int,
+     scope: Scope,
+@@ -372,8 +383,17 @@ def to_node(
+     }
+ 
+     pivots = scope.pivots
+-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
+-    if pivot:
++    pivot = pivots[0] if len(pivots) == 1 else None
++    pivot_column_mapping: dict[str, list[exp.Column]] = {}
++    if pivot and pivot.unpivot:
++        # Each value column is built from the IN-list columns. The name column is built from the
++        # IN-list labels, which are literals, so it has no source columns.
++        in_cols = list(pivot.find_all(exp.Column))
++        for value in pivot.expressions:
++            for ident in value.expressions if isinstance(value, exp.Tuple) else [value]:
++                pivot_column_mapping[ident.name] = in_cols
++        pivot_column_mapping[pivot.fields[0].name] = []
++    elif pivot:
+         # For each aggregation function, the pivot creates a new column for each field in category
+         # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+         # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+@@ -386,7 +406,6 @@ def to_node(
+         pivot_columns = pivot.args["columns"]
+         pivot_aggs_count = len(pivot.expressions)
+ 
+-        pivot_column_mapping = {}
+         for i, agg in enumerate(pivot.expressions):
+             agg_cols = list(agg.find_all(exp.Column))
+             for col_index in range(i, len(pivot_columns), pivot_aggs_count):
+@@ -397,13 +416,6 @@ def to_node(
+         col_source: exp.Table | Scope | None = scope.sources.get(table)
+ 
+         if isinstance(col_source, Scope):
+-            reference_node_name = None
+-            if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
+-                reference_node_name = table
+-            elif col_source.scope_type == ScopeType.CTE:
+-                selected_node, _ = scope.selected_sources.get(table, (None, None))
+-                reference_node_name = selected_node.name if selected_node else None
+-
+             # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
+             to_node(
+                 c.name,
+@@ -412,29 +424,33 @@ def to_node(
+                 scope_name=table,
+                 upstream=node,
+                 source_name=source_names.get(table) or source_name,
+-                reference_node_name=reference_node_name,
++                reference_node_name=_reference_node_name(scope, col_source, table, source_names),
+                 trim_selects=trim_selects,
+                 _cache=_cache,
+                 _scope_meta=_scope_meta,
+                 on_node=on_node,
+             )
+         elif pivot and pivot.alias_or_name == c.table:
+-            downstream_columns = []
+-
+             column_name = c.name
+-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
+-                downstream_columns.extend(pivot_column_mapping[column_name])
++            if column_name in pivot_column_mapping:
++                downstream_columns = list(pivot_column_mapping[column_name])
+             else:
+                 # The column is not in the pivot, so it must be an implicit column of the
+                 # pivoted source -- adapt column to be from the implicit pivoted source.
+                 pivot_parent = pivot.parent
+-                downstream_columns.append(
++                downstream_columns = [
+                     exp.column(c.this, table=pivot_parent.alias_or_name if pivot_parent else "")
+-                )
++                ]
++
++            # A pivoted CTE reference replaces its CTE in scope.sources under the pivot alias, so
++            # the CTE's scope is only reachable through cte_sources
++            pivot_input = scope.cte_sources.get(pivot.parent.name) if pivot.parent else None
+ 
+             for downstream_column in downstream_columns:
+                 table = downstream_column.table
+                 col_source = scope.sources.get(table)
++                if pivot_input and table == pivot.alias_or_name:
++                    col_source = pivot_input
+                 if isinstance(col_source, Scope):
+                     to_node(
+                         downstream_column.name,
+@@ -443,7 +459,9 @@ def to_node(
+                         dialect=dialect,
+                         upstream=node,
+                         source_name=source_names.get(table) or source_name,
+-                        reference_node_name=reference_node_name,
++                        reference_node_name=_reference_node_name(
++                            scope, col_source, table, source_names
++                        ),
+                         trim_selects=trim_selects,
+                         _cache=_cache,
+                         _scope_meta=_scope_meta,
+diff --git a/tests/test_lineage.py b/tests/test_lineage.py
+index a8ad75c27..4b5a683a5 100644
+--- a/tests/test_lineage.py
++++ b/tests/test_lineage.py
+@@ -685,6 +685,27 @@ class TestLineage(unittest.TestCase):
+         self.assertEqual(node.downstream[0].reference_node_name, "t")
+         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
+ 
++    def test_unpivot_with_cte(self) -> None:
++        sql = """
++        WITH src AS (SELECT id, jan, feb FROM sales)
++        SELECT id, metric_name, score
++        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
++        """
++        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
++
++        node = lineage("score", sql, schema=schema, dialect="snowflake")
++        self.assertEqual([n.name for n in node.downstream], ["SRC.JAN", "SRC.FEB"])
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
++        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
++
++        node = lineage("id", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(node.downstream[0].name, "SRC.ID")
++        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
++
++        # The name column holds the IN-list labels, so it has no source columns
++        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
++        self.assertEqual(node.downstream, [])
++
+     def test_table_udtf_snowflake(self) -> None:
+         lateral_flatten = """
+         SELECT f.value:external_id::string AS external_id

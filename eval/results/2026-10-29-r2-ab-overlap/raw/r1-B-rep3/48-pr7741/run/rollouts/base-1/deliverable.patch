@@ -1,0 +1,36 @@
+diff --git a/sqlglot/dialects/hive.py b/sqlglot/dialects/hive.py
+index 718e1c0b9..a4cfc59e7 100644
+--- a/sqlglot/dialects/hive.py
++++ b/sqlglot/dialects/hive.py
+@@ -89,7 +89,7 @@ class Hive(Dialect):
+     class Tokenizer(tokens.Tokenizer):
+         QUOTES = ["'", '"']
+         IDENTIFIERS = ["`"]
+-        STRING_ESCAPES = ["\\"]
++        STRING_ESCAPES = ["\\", "'"]
+ 
+         SINGLE_TOKENS = {
+             **tokens.Tokenizer.SINGLE_TOKENS,
+diff --git a/tests/dialects/test_hive.py b/tests/dialects/test_hive.py
+index fddb3a8c7..1e2c93ff4 100644
+--- a/tests/dialects/test_hive.py
++++ b/tests/dialects/test_hive.py
+@@ -317,6 +317,18 @@ class TestHive(Validator):
+         )
+ 
+     def test_quotes(self):
++        self.validate_all(
++            "'Hello \\'World!'",
++            read={
++                "hive": "'Hello ''World!'",
++                "spark": "'Hello ''World!'",
++                "databricks": "'Hello ''World!'",
++                "duckdb": "'Hello ''World!'",
++            },
++            write={
++                "duckdb": "'Hello ''World!'",
++            },
++        )
+         self.validate_all(
+             "'\\''",
+             write={

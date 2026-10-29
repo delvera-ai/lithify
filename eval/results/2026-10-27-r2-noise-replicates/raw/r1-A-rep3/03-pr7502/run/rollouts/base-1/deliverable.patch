@@ -1,0 +1,128 @@
+diff --git a/sqlglot/_typing.py b/sqlglot/_typing.py
+index fe7e80ee3..578d6c262 100644
+--- a/sqlglot/_typing.py
++++ b/sqlglot/_typing.py
+@@ -29,6 +29,7 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
+     error_level: ErrorLevel | None
+     error_message_context: int
+     max_errors: int
++    max_nodes: int | None
+ 
+ 
+ class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 107ad1ec0..3c34bd553 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -291,12 +291,16 @@ class Parser:
+         max_errors: Maximum number of error messages to include in a raised ParseError.
+             This is only relevant if error_level is ErrorLevel.RAISE.
+             Default: 3
++        max_nodes: Maximum number of AST nodes in the parsed trees. Exceeding it raises a ParseError,
++            regardless of error_level.
++            Default: None (no limit)
+     """
+ 
+     __slots__ = (
+         "error_level",
+         "error_message_context",
+         "max_errors",
++        "max_nodes",
+         "dialect",
+         "sql",
+         "errors",
+@@ -1826,10 +1830,12 @@ class Parser:
+         error_message_context: int = 100,
+         max_errors: int = 3,
+         dialect: DialectType = None,
++        max_nodes: int | None = None,
+     ):
+         self.error_level: ErrorLevel = error_level or ErrorLevel.IMMEDIATE
+         self.error_message_context: int = error_message_context
+         self.max_errors: int = max_errors
++        self.max_nodes: int | None = max_nodes
+         self.dialect: t.Any = _resolve_dialect(dialect)
+         self.sql: str = ""
+         self.errors: list[ParseError] = []
+@@ -2125,7 +2131,16 @@ class Parser:
+ 
+         self._chunks = chunks
+ 
+-        return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
++        expressions = self._parse_batch_statements(
++            parse_method=parse_method, sep_first_statement=False
++        )
++
++        if self.max_nodes is not None:
++            node_count = sum(sum(1 for _ in e.walk()) for e in expressions if e)
++            if node_count > self.max_nodes:
++                raise ParseError(f"Maximum number of AST nodes ({self.max_nodes}) exceeded")
++
++        return expressions
+ 
+     def _warn_unsupported(self) -> None:
+         if self._tokens_size <= 1:
+diff --git a/sqlglot/parsers/athena.py b/sqlglot/parsers/athena.py
+index ebeac22bf..48d3ca246 100644
+--- a/sqlglot/parsers/athena.py
++++ b/sqlglot/parsers/athena.py
+@@ -30,6 +30,7 @@ class AthenaParser(Parser):
+         dialect: DialectType = None,
+         hive: Hive | None = None,
+         trino: Trino | None = None,
++        max_nodes: int | None = None,
+     ) -> None:
+         from sqlglot.dialects.hive import Hive
+         from sqlglot.dialects.trino import Trino
+@@ -42,18 +43,21 @@ class AthenaParser(Parser):
+             error_message_context=error_message_context,
+             max_errors=max_errors,
+             dialect=dialect,
++            max_nodes=max_nodes,
+         )
+ 
+         self._hive_parser = hive.parser(
+             error_level=error_level,
+             error_message_context=error_message_context,
+             max_errors=max_errors,
++            max_nodes=max_nodes,
+         )
+         self._trino_parser = AthenaTrinoParser(
+             error_level=error_level,
+             error_message_context=error_message_context,
+             max_errors=max_errors,
+             dialect=trino,
++            max_nodes=max_nodes,
+         )
+ 
+     def parse(self, raw_tokens: list[Token], sql: str) -> list[exp.Expr | None]:
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index 321703828..a2f2c3fd3 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -91,6 +91,25 @@ class TestParser(unittest.TestCase):
+         self.assertEqual(str(ctx.exception), expected_message)
+         self.assertEqual(ctx.exception.errors, expected_errors)
+ 
++    def test_max_nodes(self):
++        wide = "SELECT " + ", ".join(f"c{i}" for i in range(500)) + " FROM t"
++        self.assertEqual(len(parse_one(wide, max_nodes=10_000).expressions), 500)
++        self.assertEqual(len(parse_one(wide, max_nodes=None).expressions), 500)
++
++        expected_nodes = sum(1 for _ in parse_one("SELECT 1 + 2 FROM t").walk())
++        self.assertIsNotNone(parse_one("SELECT 1 + 2 FROM t", max_nodes=expected_nodes))
++
++        for error_level in (ErrorLevel.IGNORE, ErrorLevel.WARN, ErrorLevel.RAISE):
++            with self.subTest(error_level=error_level):
++                with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++                    parse_one(wide, max_nodes=100, error_level=error_level)
++
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one("SELECT 1 + 2 FROM t", max_nodes=expected_nodes - 1)
++
++        with self.assertRaisesRegex(ParseError, "Maximum number of AST nodes"):
++            parse_one("SELECT a FROM b", read="athena", max_nodes=1)
++
+     def test_column(self):
+         columns = parse_one("select a, ARRAY[1] b, case when 1 then 1 end").find_all(exp.Column)
+         assert len(list(columns)) == 1

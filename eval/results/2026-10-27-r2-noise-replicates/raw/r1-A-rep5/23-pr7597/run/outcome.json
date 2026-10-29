@@ -1,0 +1,28 @@
+{
+  "task": "DuckDB dialect: \"FROM-first\" queries fail when the joined sources are subqueries:\n\n```python\nsqlglot.parse_one('''\nfrom (FROM tbl_1) t1\npositional join (FROM tbl_2) t2\nselect t1.x as x1, t2.x as x2\n''', read=\"duckdb\")\n# ParseError: Invalid expression / Unexpected token\n```\n\nThe same query works with plain tables instead of subqueries, or with `SELECT` first. FROM-first queries with joined subqueries must parse.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 43672,
+    "cached": 889896,
+    "out": 10568,
+    "cost": 0.022913359999999997,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 0.9,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

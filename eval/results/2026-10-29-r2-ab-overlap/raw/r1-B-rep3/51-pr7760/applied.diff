@@ -1,0 +1,59 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 957b4d40b..2e215bb9e 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -800,6 +800,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-202237-sqlite-and-other-dialects-with-u",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 45524,
++      "tokens_cached": 899194,
++      "tokens_out": 9609,
++      "cost_usd": 0.0229,
++      "wall_s": 159.7,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 9fa6b9261..c1e850e41 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3544,7 +3544,7 @@ class Parser:
+             if self._match_text_seq("ON", "CONSTRAINT"):
+                 constraint = self._parse_id_var()
+             elif self._match(TokenType.L_PAREN):
+-                conflict_keys = self._parse_csv(self._parse_id_var)
++                conflict_keys = self._parse_csv(self._parse_disjunction)
+                 self._match_r_paren()
+ 
+         index_predicate = self._parse_where()
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 2509021e1..569a1d4ba 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -284,6 +284,14 @@ class TestSQLite(Validator):
+             self.validate_identity("TRUNC(3.14, 2)", "TRUNC(3.14)").assert_is(exp.Trunc)
+             self.assertIn("'decimals' is not supported", cm.output[0])
+ 
++    def test_upsert(self):
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) SELECT x, y, z FROM src WHERE TRUE ON CONFLICT(col_x, LOWER(col_y)) DO UPDATE SET col_z = excluded.col_z"
++        )
++        self.validate_identity(
++            "INSERT INTO t (a) VALUES (1) ON CONFLICT(a, LOWER(b)) WHERE c > 0 DO NOTHING"
++        )
++
+     def test_ddl(self):
+         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
+             with self.subTest(f"ON CONFLICT {conflict_action}"):

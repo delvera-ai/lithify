@@ -1,0 +1,58 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 823f966df..dc9e64115 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -768,6 +768,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-140148-bigquery-duckdb-bigquery-s-parse",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 35926,
++      "tokens_cached": 480182,
++      "tokens_out": 6741,
++      "cost_usd": 0.0154,
++      "wall_s": 148.0,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/generators/duckdb.py b/sqlglot/generators/duckdb.py
+index 9b46b731f..56bd6284f 100644
+--- a/sqlglot/generators/duckdb.py
++++ b/sqlglot/generators/duckdb.py
+@@ -2668,6 +2668,9 @@ class DuckDBGenerator(generator.Generator):
+             )
+         )
+ 
++    def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
++        return self.func("STRPTIME", expression.this, self.format_time(expression))
++
+     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+         this = expression.this
+         time_format = self.format_time(expression)
+diff --git a/tests/dialects/test_duckdb.py b/tests/dialects/test_duckdb.py
+index 08b62577e..ea9b28709 100644
+--- a/tests/dialects/test_duckdb.py
++++ b/tests/dialects/test_duckdb.py
+@@ -1913,6 +1913,12 @@ class TestDuckDB(Validator):
+                 "spark": "TO_TIMESTAMP(x, 'yy-M')",
+             },
+         )
++        self.validate_all(
++            "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
++            read={
++                "bigquery": "PARSE_DATETIME('%Y-%m-%d %H:%M:%S', x)",
++            },
++        )
+         self.validate_all(
+             "TO_TIMESTAMP(x)",
+             write={

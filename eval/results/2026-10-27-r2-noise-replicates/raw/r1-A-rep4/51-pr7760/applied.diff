@@ -1,0 +1,73 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index f967d316e..b79daef38 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -800,6 +800,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-082508-sqlite-and-other-dialects-with-u",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 32625,
++      "tokens_cached": 626330,
++      "tokens_out": 6330,
++      "cost_usd": 0.016,
++      "wall_s": 164.6,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 9fa6b9261..c1e850e41 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3544,7 +3544,7 @@ class Parser:
+             if self._match_text_seq("ON", "CONSTRAINT"):
+                 constraint = self._parse_id_var()
+             elif self._match(TokenType.L_PAREN):
+-                conflict_keys = self._parse_csv(self._parse_id_var)
++                conflict_keys = self._parse_csv(self._parse_disjunction)
+                 self._match_r_paren()
+ 
+         index_predicate = self._parse_where()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 9c368c008..892d82fe8 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1201,6 +1201,9 @@ FROM json_data, field_ids""",
+         self.validate_identity(
+             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
+         )
++        self.validate_identity(
++            "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT(a, LOWER(b)) DO UPDATE SET b = EXCLUDED.b"
++        )
+         self.validate_identity(
+             "ALTER TABLE tested_table ADD CONSTRAINT unique_example UNIQUE (column_name) NOT VALID"
+         )
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 2509021e1..7aac3fe48 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -252,6 +252,14 @@ class TestSQLite(Validator):
+             },
+         )
+ 
++    def test_on_conflict_expression_target(self):
++        self.validate_identity(
++            "INSERT INTO tbl_a (col_x, col_y, col_z) SELECT x, y, z FROM src WHERE TRUE ON CONFLICT(col_x, LOWER(col_y)) DO UPDATE SET col_z = excluded.col_z"
++        )
++        self.validate_identity(
++            "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT(a, LOWER(b)) WHERE b > 0 DO UPDATE SET b = excluded.b"
++        )
++
+     def test_window_null_treatment(self):
+         self.validate_all(
+             "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",

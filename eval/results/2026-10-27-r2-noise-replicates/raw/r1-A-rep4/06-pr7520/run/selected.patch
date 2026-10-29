@@ -1,0 +1,25 @@
+diff --git a/sqlglot/parsers/mysql.py b/sqlglot/parsers/mysql.py
+index c059ca66f..4889df6a4 100644
+--- a/sqlglot/parsers/mysql.py
++++ b/sqlglot/parsers/mysql.py
+@@ -253,6 +253,7 @@ class MySQLParser(parser.Parser):
+     ALTER_PARSERS = {
+         **parser.Parser.ALTER_PARSERS,
+         "MODIFY": lambda self: self._parse_alter_table_alter(),
++        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+     }
+ 
+     ALTER_ALTER_PARSERS = {
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3a5367ab6..8379655f3 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -201,6 +201,8 @@ class TestMySQL(Validator):
+             "ALTER TABLE t RENAME KEY a TO b",
+             "ALTER TABLE t RENAME INDEX a TO b",
+         )
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
++        self.validate_identity("ALTER TABLE t AUTO_INCREMENT 5", "ALTER TABLE t AUTO_INCREMENT=5")
+         self.validate_identity(
+             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+         )

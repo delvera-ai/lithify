@@ -1,0 +1,101 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index beb752fdd..7bbbee45d 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -304,6 +304,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-174109-oracle-dialect-json-table-fails",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 44975,
++      "tokens_cached": 580836,
++      "tokens_out": 13486,
++      "cost_usd": 0.0215,
++      "wall_s": 167.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/expressions/query.py b/sqlglot/expressions/query.py
+index e82bd67c1..1d7321bc3 100644
+--- a/sqlglot/expressions/query.py
++++ b/sqlglot/expressions/query.py
+@@ -1956,6 +1956,7 @@ class JSONColumnDef(Expression):
+         "path": False,
+         "nested_schema": False,
+         "ordinality": False,
++        "format_json": False,
+     }
+ 
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 5b12e0227..635bdfd7c 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -3609,9 +3609,10 @@ class Generator:
+         this = self.sql(expression, "this")
+         kind = self.sql(expression, "kind")
+         kind = f" {kind}" if kind else ""
++        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
+ 
+         ordinality = " FOR ORDINALITY" if expression.args.get("ordinality") else ""
+-        return f"{this}{kind}{path}{ordinality}"
++        return f"{this}{kind}{format_json}{path}{ordinality}"
+ 
+     def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
+         return self.func("COLUMNS", *expression.expressions)
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 000086150..3bfde152b 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -7924,11 +7924,13 @@ class Parser:
+             this = self._parse_id_var()
+             ordinality = self._match_pair(TokenType.FOR, TokenType.ORDINALITY)
+             kind = self._parse_types(allow_identifiers=False)
++            format_json = self._match_text_seq("FORMAT", "JSON")
+             nested = None
+         else:
+             this = None
+             ordinality = None
+             kind = None
++            format_json = None
+             nested = True
+ 
+         path = self._match_text_seq("PATH") and self._parse_string()
+@@ -7936,7 +7938,12 @@ class Parser:
+ 
+         return self.expression(
+             exp.JSONColumnDef(
+-                this=this, kind=kind, path=path, nested_schema=nested_schema, ordinality=ordinality
++                this=this,
++                kind=kind,
++                path=path,
++                nested_schema=nested_schema,
++                ordinality=ordinality,
++                format_json=format_json,
+             )
+         )
+ 
+diff --git a/tests/dialects/test_oracle.py b/tests/dialects/test_oracle.py
+index 789fde0f3..8faeb5560 100644
+--- a/tests/dialects/test_oracle.py
++++ b/tests/dialects/test_oracle.py
+@@ -580,6 +580,9 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
+ )) src""",
+             pretty=True,
+         )
++        self.validate_identity(
++            "SELECT * FROM JSON_TABLE(doc FORMAT JSON, '$.items[*]' COLUMNS(id NUMBER PATH '$.id', data CLOB FORMAT JSON PATH '$.data'))"
++        )
+         self.validate_identity("CONVERT('foo', 'dst')")
+         self.validate_identity("CONVERT('foo', 'dst', 'src')")
+ 

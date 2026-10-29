@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-10-29T07:37:03.000929+00:00",
+  "supervisor_pid": 60150,
+  "caffeinate_pid": 97645,
+  "command": "caffeinate -i -w <supervisor-pid>",
+  "scope": "prevent idle system sleep until current supervisor exits; no global power settings changed",
+  "finding": "repeated macOS sleep/wake during evaluation, including low-power sleep; supports host sleep as contributor to large wall-minus-active gaps; does not quantify every gap",
+  "a4_task_wall_s": 58545.2,
+  "a4_active_s": 9285.2,
+  "a3_task_wall_s": 13044.1,
+  "a3_active_s": 9580.0
+}

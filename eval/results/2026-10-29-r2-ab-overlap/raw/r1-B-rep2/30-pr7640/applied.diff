@@ -1,0 +1,67 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 77e917711..75aa46993 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -464,6 +464,22 @@
+       "always_on_tokens": 394,
+       "stability_after": 0.8305,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261029-153235-sqlite-and-other-dialects-a-wind",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 39048,
++      "tokens_cached": 709762,
++      "tokens_out": 7275,
++      "cost_usd": 0.0185,
++      "wall_s": 138.0,
++      "always_on_tokens": 394,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index ec98ea564..0130523ee 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -5559,6 +5559,11 @@ class Parser:
+ 
+         return result
+ 
++    def _can_parse_window_clause(self) -> bool:
++        return self._curr.token_type == TokenType.WINDOW and bool(
++            self._try_parse(self._parse_window_clause, retreat=True)
++        )
++
+     def _parse_limit_by(self) -> list[exp.Expr] | None:
+         return self._parse_csv(self._parse_bitwise) if self._match_text_seq("BY") else None
+ 
+@@ -8309,7 +8314,7 @@ class Parser:
+         # In some dialects, LIMIT and OFFSET can act as both identifiers and keywords (clauses)
+         # so this section tries to parse the clause version and if it fails, it treats the token
+         # as an identifier (alias)
+-        if self._can_parse_limit_or_offset():
++        if self._can_parse_limit_or_offset() or self._can_parse_window_clause():
+             return this
+ 
+         any_token = self._match(TokenType.ALIAS)
+diff --git a/tests/dialects/test_sqlite.py b/tests/dialects/test_sqlite.py
+index 3c090247c..bed4f911a 100644
+--- a/tests/dialects/test_sqlite.py
++++ b/tests/dialects/test_sqlite.py
+@@ -253,6 +253,10 @@ class TestSQLite(Validator):
+             },
+         )
+ 
++    def test_window_clause_without_from(self):
++        self.validate_identity("SELECT 1 WINDOW a AS (PARTITION BY fake_column)")
++        self.validate_identity("SELECT 1 AS window")
++
+     def test_longvarchar_dtype(self):
+         self.validate_all(
+             "CREATE TABLE foo (bar LONGVARCHAR)",

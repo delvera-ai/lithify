@@ -1,0 +1,53 @@
+{
+  "consecutive_failures": 0,
+  "history": [
+    {
+      "task_id": "20261029-090210-oracle-dialect-support-the-optio",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 54570,
+      "tokens_cached": 904751,
+      "tokens_out": 14231,
+      "cost_usd": 0.0271,
+      "wall_s": 162.5,
+      "always_on_tokens": 165,
+      "stability_after": 0.2,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261029-090453-clickhouse-dialect-the-parametri",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 45891,
+      "tokens_cached": 736335,
+      "tokens_out": 11839,
+      "cost_usd": 0.0225,
+      "wall_s": 154.9,
+      "always_on_tokens": 165,
+      "stability_after": 0.4,
+      "feedback_failed": false
+    },
+    {
+      "task_id": "20261029-090729-parser-add-a-safeguard-against-p",
+      "k": 0,
+      "first_pass": true,
+      "delivered": true,
+      "churn_lines": 0,
+      "executions": 1,
+      "tokens_in": 63170,
+      "tokens_cached": 1290228,
+      "tokens_out": 26235,
+      "cost_usd": 0.0386,
+      "wall_s": 260.8,
+      "always_on_tokens": 165,
+      "stability_after": 0.6,
+      "feedback_failed": false
+    }
+  ]
+}

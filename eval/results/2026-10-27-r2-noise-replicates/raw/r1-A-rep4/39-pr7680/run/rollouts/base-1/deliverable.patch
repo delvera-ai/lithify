@@ -1,0 +1,62 @@
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 009573d91..2ad226160 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -3641,10 +3641,12 @@ class Parser:
+ 
+     def _parse_update(self) -> exp.Update:
+         hint = self._parse_hint()
+-        kwargs: dict[str, object] = {
+-            "hint": hint,
+-            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
+-        }
++        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++        if this:
++            for join in self._parse_update_joins():
++                this.append("joins", join)
++
++        kwargs: dict[str, object] = {"hint": hint, "this": this}
+         while self._curr:
+             if self._match(TokenType.SET):
+                 kwargs["expressions"] = self._parse_csv(self._parse_equality)
+@@ -3668,6 +3670,17 @@ class Parser:
+ 
+         return self.expression(exp.Update(**kwargs))
+ 
++    def _parse_update_joins(self) -> t.Iterator[exp.Join]:
++        # A comma-joined table is followed by SET, so it must not take SET as its alias
++        while True:
++            if self._match(TokenType.COMMA):
++                table = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
++                yield self.expression(exp.Join(this=table))
++            elif join := self._parse_join():
++                yield join
++            else:
++                break
++
+     def _parse_use(self) -> exp.Use:
+         return self.expression(
+             exp.Use(
+diff --git a/tests/dialects/test_mysql.py b/tests/dialects/test_mysql.py
+index 3c9ac41ce..424a97f2f 100644
+--- a/tests/dialects/test_mysql.py
++++ b/tests/dialects/test_mysql.py
+@@ -23,6 +23,18 @@ class TestMySQL(Validator):
+         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
+         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+         self.validate_identity("UPDATE /*+ MAX_EXECUTION_TIME(1) */ t SET a = 1")
++        self.validate_identity(
++            "UPDATE authors, books SET authors.deleted_at = NOW(), books.deleted_at = NOW()"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a, books AS b SET a.x = 1, b.y = 2 WHERE a.id = b.author_id"
++        )
++        self.validate_identity(
++            "UPDATE authors INNER JOIN books ON authors.id = books.author_id SET authors.x = 1"
++        )
++        self.validate_identity(
++            "UPDATE authors AS a JOIN books AS b ON a.id = b.author_id, pubs AS p SET a.x = 1, p.y = 2"
++        )
+         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+         self.validate_identity("DELETE /*+ MAX_EXECUTION_TIME(1) */ FROM t WHERE a = 1")
+         self.validate_identity("DELETE FROM t FORCE INDEX (idx) WHERE a > 5 ORDER BY id")

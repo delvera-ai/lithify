@@ -1,0 +1,128 @@
+exit 1
+ UNIQUE `Key` (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
+            "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
+        )
+        self.validate_identity(
+            "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
+            "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
+            "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
+        )
+        self.validate_identity(
+            "CREATE TABLE `foo` (a VARCHAR(10), KEY idx_a (a DESC))",
+            "CREATE TABLE `foo` (a VARCHAR(10), INDEX idx_a (a DESC))",
+        )
+        self.validate_identity(
+            "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE INDEX idx_a (a))",
+            "CREATE TABLE `foo` (a VARCHAR(10), UNIQUE idx_a (a))",
+        )
+    
+        self.validate_all(
+            "insert into t(i) values (default)",
+            write={
+                "duckdb": "INSERT INTO t (i) VALUES (DEFAULT)",
+                "mysql": "INSERT INTO t (i) VALUES (DEFAULT)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (id INT UNSIGNED)",
+            write={
+                "duckdb": "CREATE TABLE t (id UINTEGER)",
+                "mysql": "CREATE TABLE t (id INT UNSIGNED)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
+            write={
+                "duckdb": "CREATE TABLE z (a INT)",
+                "mysql": "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
+                "spark": "CREATE TABLE z (a INT) COMMENT 'x'",
+                "sqlite": "CREATE TABLE z (a INTEGER)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE x (id int not null auto_increment, primary key (id))",
+            write={
+                "mysql": "CREATE TABLE x (id INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (id))",
+                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)",
+            },
+        )
+        self.validate_identity("ALTER TABLE t ALTER INDEX i INVISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER INDEX i VISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
+        self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
+        self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+        self.validate_identity(
+            "ALTER TABLE t RENAME KEY a TO b",
+            "ALTER TABLE t RENAME INDEX a TO b",
+        )
+        self.validate_identity(
+            "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
+        )
+        self.validate_identity(
+            "UPDATE items, month SET items.price = month.price WHERE items.id = month.id"
+        )
+>       self.validate_identity("UPDATE a CROSS JOIN b SET a.x = 1")
+
+tests/dialects/test_mysql.py:250: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2036: in parse
+    return self._parse(
+sqlglot/parser.py:2156: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2126: in _parse_batch_statements
+    self.raise_error("Invalid expression / Unexpected token")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.mysql.MySQLParser object at 0x1077a3950>
+message = 'Invalid expression / Unexpected token'
+token = <Token token_type: TokenType.VAR, text: a, line: 1, col: 27, start: 26, end: 26, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Invalid expression / Unexpected token. Line 1, Col: 27.
+E             UPDATE a CROSS JOIN b SET [4ma[0m.x = 1
+
+sqlglot/parser.py:1993: ParseError
+----------------------------- Captured stdout call -----------------------------
+uuuuuuuuuu
+=========================== short test summary info ============================
+FAILED tests/dialects/test_mysql.py::TestMySQL::test_ddl - sqlglot.errors.Par...
+1 failed, 50 passed, 486 subtests passed in 0.56s

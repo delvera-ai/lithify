@@ -1,0 +1,28 @@
+{
+  "task": "Optimizer: `sqlglot.optimizer.qualify` (and so `optimize`) recurses without bound in the column resolver when typing a `LATERAL FLATTEN` / `UNNEST` of an **unqualified** column whose base table is missing from the provided schema, while a schema is otherwise present. On the pure-Python build this is a `RecursionError`; on the compiled `sqlglot[c]` build it crashes the process. Qualifying such queries must terminate (and not crash), whether or not the table is in the schema.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 52558,
+    "cached": 1122315,
+    "out": 17903,
+    "cost": 0.030681650000000005,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

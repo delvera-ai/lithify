@@ -1,0 +1,28 @@
+{
+  "task": "Snowflake dialect: Snowflake can invoke a function under a dynamically resolved name, but sqlglot raises a `ParseError` on the argument list after `IDENTIFIER(...)`:\n\n```sql\nSET fn = 'add_one';\nSELECT IDENTIFIER($fn)(41);\nSELECT IDENTIFIER('my_func')(1, 2);\nSELECT IDENTIFIER($fn)();\n```\n\n```\nParseError: Required keyword: 'expressions' missing for Aliases\n```\n\nSupport dynamic function invocation through `IDENTIFIER()` (with zero or more arguments), so these parse and round-trip in Snowflake.",
+  "k": 0,
+  "reason": "override k=0",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 47071,
+    "cached": 802120,
+    "out": 15547,
+    "cost": 0.025205499999999995,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,106 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index 96b3e1172..58249a6d2 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -816,6 +816,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-103151-postgres-dialect-support-the-jso",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 43152,
++      "tokens_cached": 668866,
++      "tokens_out": 11382,
++      "cost_usd": 0.021,
++      "wall_s": 177.1,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index c79d25697..aa053b765 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -76,6 +76,7 @@ class Postgres(Dialect):
+             "~": TokenType.RLIKE,
+             "@@": TokenType.DAT,
+             "@>": TokenType.AT_GT,
++            "@?": TokenType.AT_QMARK,
+             "<@": TokenType.LT_AT,
+             "?&": TokenType.QMARK_AMP,
+             "?|": TokenType.QMARK_PIPE,
+diff --git a/sqlglot/expressions/json.py b/sqlglot/expressions/json.py
+index 63e0f6588..0dd47f8ee 100644
+--- a/sqlglot/expressions/json.py
++++ b/sqlglot/expressions/json.py
+@@ -76,6 +76,10 @@ class JSONBExtractScalar(Expression, Binary, Func):
+     _sql_names = ["JSONB_EXTRACT_SCALAR"]
+ 
+ 
++class JSONBPathExists(Expression, Binary, Func):
++    pass
++
++
+ class JSONBObjectAgg(Expression, AggFunc):
+     arg_types = {"this": True, "expression": True}
+ 
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index 3dc6ea069..43264fa33 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -204,6 +204,7 @@ class Generator:
+         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
+         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
+         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
++        exp.JSONBPathExists: lambda self, e: self.binary(e, "@?"),
+         exp.JSONObject: lambda self, e: self._jsonobject_sql(e),
+         exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e),
+         exp.LanguageProperty: lambda self, e: self.naked_property(e),
+diff --git a/sqlglot/parser.py b/sqlglot/parser.py
+index 84fa38f6d..85ac3d540 100644
+--- a/sqlglot/parser.py
++++ b/sqlglot/parser.py
+@@ -1200,6 +1200,7 @@ class Parser:
+         TokenType.QMARK_AMP: binary_range_parser(exp.JSONBContainsAllTopKeys),
+         TokenType.QMARK_PIPE: binary_range_parser(exp.JSONBContainsAnyTopKeys),
+         TokenType.HASH_DASH: binary_range_parser(exp.JSONBDeleteAtPath),
++        TokenType.AT_QMARK: binary_range_parser(exp.JSONBPathExists),
+         TokenType.ADJACENT: binary_range_parser(exp.Adjacent),
+         TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
+         TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
+diff --git a/sqlglot/tokenizer_core.py b/sqlglot/tokenizer_core.py
+index 77fdcb33c..71919b431 100644
+--- a/sqlglot/tokenizer_core.py
++++ b/sqlglot/tokenizer_core.py
+@@ -66,6 +66,7 @@ class TokenType(IntEnum):
+     DAT = auto()
+     LT_AT = auto()
+     AT_GT = auto()
++    AT_QMARK = auto()
+     DOLLAR = auto()
+     PARAMETER = auto()
+     SESSION = auto()
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 556c3f6b1..d4e3c90ea 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1054,6 +1054,11 @@ FROM json_data, field_ids""",
+             """SELECT CAST('["a", {"b":1}]' AS JSONB) #- '{1,b}'""",
+         )
+ 
++        self.validate_identity("a @? b").assert_is(exp.JSONBPathExists)
++        self.validate_identity(
++            "SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'",
++        )
++
+         self.validate_identity("SELECT JSON_AGG(DISTINCT name) FROM users")
+         self.validate_identity(
+             "SELECT JSON_AGG(c1 ORDER BY c1) FROM (VALUES ('c'), ('b'), ('a')) AS t(c1)"

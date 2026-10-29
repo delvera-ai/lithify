@@ -1,0 +1,32 @@
+{
+  "task": "Oracle dialect: support the optional `WHERE` clause on the `UPDATE` and `INSERT` branches of a `MERGE` statement (`WHEN MATCHED THEN UPDATE SET ... WHERE ...`, `WHEN NOT MATCHED THEN INSERT ... VALUES ... WHERE ...`), so it parses and round-trips in Oracle. When transpiling to dialects that do not support it, emit an unsupported warning and drop the clause.",
+  "k": 2,
+  "reason": "genesis (S=0.00)",
+  "selected": "base-1",
+  "why": "Decided on scope and maintainability. Both candidates pass the tests, make the same parser change, and handle the unsupported-dialect warning and WHERE drop correctly. c1 is the smaller generator change: it emits the WHERE through one generic `self.sql(then_expression, \"where\")` path, with a single flag check. Runner-up is c2, which is equally correct and tests the RAISE path too, but it needs a nested `isinstance`/`args.get` guard split across lines plus an extra `ErrorLevel` import in the test file.",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 139254,
+    "cached": 1942473,
+    "out": 34529,
+    "cost": 0.06453183,
+    "exec": 2,
+    "roles": 1
+  },
+  "stability_after": 0.2,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    },
+    "base-2": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

@@ -1,0 +1,28 @@
+{
+  "task": "Exasol dialect: Exasol allows both `MINUS` and `EXCEPT` as set operators. Support `MINUS` in Exasol (parse it as the except set operation).",
+  "k": 0,
+  "reason": "cruise (S=1.00)",
+  "selected": "base-1",
+  "why": "cruise: gates passed on first execution",
+  "applied": true,
+  "first_pass": true,
+  "promoted": [],
+  "needs_review": null,
+  "proposal": null,
+  "usage": {
+    "in": 30198,
+    "cached": 295694,
+    "out": 3702,
+    "cost": 0.01084594,
+    "exec": 1,
+    "roles": 0
+  },
+  "stability_after": 1.0,
+  "probes": {
+    "base-1": {
+      "passed": true,
+      "gates": "test=pass"
+    }
+  },
+  "candidates": {}
+}

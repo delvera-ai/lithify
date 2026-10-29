@@ -1,0 +1,83 @@
+diff --git a/sqlglot/expressions/ddl.py b/sqlglot/expressions/ddl.py
+index 9576a1aa0..2a7009e16 100644
+--- a/sqlglot/expressions/ddl.py
++++ b/sqlglot/expressions/ddl.py
+@@ -61,6 +61,10 @@ class Create(Expression, DDL):
+         return kind and kind.upper()
+ 
+ 
++class EnumType(Expression):
++    arg_types = {"expressions": True}
++
++
+ class SequenceProperties(Expression):
+     arg_types = {
+         "increment": False,
+diff --git a/sqlglot/generator.py b/sqlglot/generator.py
+index bd0ec288b..e8b06f453 100644
+--- a/sqlglot/generator.py
++++ b/sqlglot/generator.py
+@@ -1278,6 +1278,9 @@ class Generator:
+ 
+         return ""
+ 
++    def enumtype_sql(self, expression: exp.EnumType) -> str:
++        return f"ENUM ({self.expressions(expression, flat=True)})"
++
+     def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
+         return self.sql(expression, "this")
+ 
+diff --git a/sqlglot/parsers/postgres.py b/sqlglot/parsers/postgres.py
+index 2fac62242..b8fb30ec9 100644
+--- a/sqlglot/parsers/postgres.py
++++ b/sqlglot/parsers/postgres.py
+@@ -341,3 +341,24 @@ class PostgresParser(parser.Parser):
+                 udt_type = exp.Dot(this=udt_type, expression=part)
+ 
+         return exp.DataType.build(udt_type, udt=True)
++
++    def _parse_create(self) -> exp.Create | exp.Command:
++        start = self._prev
++        if not self._match_text_seq("TYPE"):
++            return super()._parse_create()
++
++        this = self._parse_table_parts()
++        if not self._match_text_seq("AS"):
++            return self._parse_as_command(start)
++
++        if self._match_text_seq("ENUM"):
++            expression: exp.Expr | None = self.expression(
++                exp.EnumType(expressions=self._parse_wrapped_csv(self._parse_string))
++            )
++        else:
++            expression = self._parse_schema()
++
++        if not expression or self._curr:
++            return self._parse_as_command(start)
++
++        return self.expression(exp.Create(this=this, kind="TYPE", expression=expression))
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index 420db449b..77c1cda8b 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1,4 +1,4 @@
+-from sqlglot import ParseError, UnsupportedError, exp, transpile
++from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
+ from sqlglot.helper import logger as helper_logger
+ from tests.dialects.test_dialect import Validator
+ 
+@@ -1883,3 +1883,14 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
+         self.validate_identity(
+             'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION MYFUNCTION()'
+         )
++
++    def test_create_type(self):
++        self.validate_identity("CREATE TYPE book_type AS ENUM ('FICTION', 'NONFICTION')")
++        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok', 'happy')")
++        self.validate_identity("CREATE TYPE complex AS (r DOUBLE PRECISION, i DOUBLE PRECISION)")
++
++        self.assertIsInstance(parse_one("CREATE TYPE t AS ENUM ('a')", read="postgres"), exp.Create)
++        self.assertIsInstance(parse_one("CREATE TYPE t AS (a INT)", read="postgres"), exp.Create)
++        self.assertIsInstance(
++            parse_one("CREATE TYPE t AS RANGE (subtype = int4)", read="postgres"), exp.Command
++        )

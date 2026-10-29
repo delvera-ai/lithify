@@ -1,0 +1,40 @@
+diff --git a/.lithify/state.json b/.lithify/state.json
+index c617ca75f..e55537221 100644
+--- a/.lithify/state.json
++++ b/.lithify/state.json
+@@ -496,6 +496,22 @@
+       "always_on_tokens": 165,
+       "stability_after": 1.0,
+       "feedback_failed": false
++    },
++    {
++      "task_id": "20261028-182456-optimizer-canonicalize-crashes-w",
++      "k": 0,
++      "first_pass": true,
++      "delivered": true,
++      "churn_lines": 0,
++      "executions": 1,
++      "tokens_in": 26583,
++      "tokens_cached": 164739,
++      "tokens_out": 2021,
++      "cost_usd": 0.008,
++      "wall_s": 131.9,
++      "always_on_tokens": 165,
++      "stability_after": 1.0,
++      "feedback_failed": false
+     }
+   ]
+ }
+diff --git a/sqlglot/optimizer/canonicalize.py b/sqlglot/optimizer/canonicalize.py
+index afb58085c..da220fd65 100644
+--- a/sqlglot/optimizer/canonicalize.py
++++ b/sqlglot/optimizer/canonicalize.py
+@@ -238,7 +238,7 @@ def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+ 
+ def _coerce_datediff_args(node: exp.DateDiff) -> None:
+     for e in (node.this, node.expression):
+-        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
++        if e.type and e.type.this not in exp.DataType.TEMPORAL_TYPES:
+             e.replace(exp.cast(e.copy(), to=exp.DType.DATETIME))
+ 
+ 
