@@ -49,13 +49,13 @@ def update_ledger(states: list[dict], status: str) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
-def budget_fits(total: float) -> bool:
+def budget_fits(total: float, remaining_a: float = 0) -> bool:
     # Reserve both entire $7 caps plus $2 between-task overshoot headroom.
-    return 30 - total >= 16
+    return 30 - total >= 16 + remaining_a
 
 
-def timing_passes(rows: list[dict]) -> bool:
-    return len(rows) == 16 and all(row["returncode"] == 0 and row["wall_s"] <= 160 for row in rows)
+def timing_passes(rows: list[dict], suites: int = 8) -> bool:
+    return len(rows) == 2 * suites and all(row["returncode"] == 0 and row["wall_s"] <= 160 for row in rows)
 
 
 def load_preflight(work: Path, out: Path, env: dict, base: str) -> None:
@@ -118,7 +118,40 @@ def load_preflight(work: Path, out: Path, env: dict, base: str) -> None:
         raise RuntimeError("incomplete timing evidence")
 
 
-def verify_inputs(work: Path, a_out: Path) -> dict:
+def running_a_slots(a_out: Path) -> int:
+    state = json.loads((a_out / "SUPERVISOR.json").read_text())
+    if state["status"] == "completed" and state.get("exit_code") == 0:
+        return 0
+    if state["status"] != "running":
+        raise RuntimeError("A stopped without success; stop the phase")
+    os.kill(int(state["supervisor_pid"]), 0)
+    os.kill(int(state["child_pid"]), 0)
+    return 1
+
+
+def stop_active_a(a_out: Path, out: Path) -> None:
+    state = json.loads((a_out / "SUPERVISOR.json").read_text())
+    if state["status"] != "running":
+        return
+    pid = int(state["child_pid"])
+    try:
+        group = os.getpgid(pid)
+    except ProcessLookupError:
+        return
+    if group != pid:
+        raise RuntimeError("A launcher is not in its recorded isolated group; refuse broad process signal")
+    write_json(
+        out / "CROSS_STOP.json",
+        {
+            "a_launcher_pid": pid,
+            "signal": "SIGTERM",
+            "reason": "phase stop during A/B overlap; interrupted A usage needs reconciliation before resume",
+        },
+    )
+    os.killpg(pid, signal.SIGTERM)
+
+
+def verify_inputs(work: Path, a_out: Path, overlap: bool = False) -> dict:
     import lithify
 
     manifest = json.loads((ROOT / "eval/round2/INPUT_MANIFEST.json").read_text())
@@ -136,11 +169,16 @@ def verify_inputs(work: Path, a_out: Path) -> dict:
     totals = []
     for number in range(2, 6):
         rows = list(csv.DictReader((a_out / f"results-r1-A-rep{number}.csv").open()))
-        assert [int(row["position"]) for row in rows] == list(range(1, 61))
-        totals.append(sum(float(row["cost_usd"]) for row in rows))
+        expected = range(1, len(rows) + 1) if overlap and number == 5 else range(1, 61)
+        assert rows and [int(row["position"]) for row in rows] == list(expected)
+        assert len(rows) <= 60
+        if len(rows) == 60:
+            totals.append(sum(float(row["cost_usd"]) for row in rows))
         state = summarize(a_out, f"r1-A-rep{number}")
         assert state["mean_cost_usd"] <= 0.068 and state["median_wall_s"] <= 620
         assert not any(row.get("cost_lower_bound", "").lower() == "true" for row in rows)
+    a5 = summarize(a_out, "r1-A-rep5")
+    remaining_a = max(0, 3 - a5["cost_usd"]) if overlap and a5["tasks"] < 60 else 0
     ratio = statistics.mean(totals) / sum(float(row["cost_usd"]) for row in old)
     estimate = max(1, ratio) * sum(float(row["cost_usd"]) for row in old_b)
     assert source["product_commit"] == "89020d7516ca4dd288909281747f053453a8a216"
@@ -150,7 +188,8 @@ def verify_inputs(work: Path, a_out: Path) -> dict:
         "reserved_b_caps_usd": 14,
         "overshoot_headroom_usd": 2,
         "phase_used_reserved_usd": phase_spend(),
-        "both_fit": budget_fits(phase_spend()),
+        "remaining_A5_cap_reserved_usd": remaining_a,
+        "both_fit": budget_fits(phase_spend(), remaining_a),
         "product_commit": source["product_commit"],
     }
 
@@ -170,11 +209,16 @@ def run(args: argparse.Namespace, status: dict) -> int:
             write_json(stop, {"timestamp": datetime.now(UTC).isoformat(), "reason": reason})
         status.update(status="stopping after current tasks; owner review", reason=reason)
         save()
+        if args.overlap_a5 and not (out / "CROSS_STOP.json").exists():
+            stop_active_a(a_out, out)
 
-    status.update(status="waiting for all four A replicates", pid=os.getpid())
+    status.update(status="preparing A5/B overlap" if args.overlap_a5 else "waiting for all four A replicates", pid=os.getpid())
     save()
     subprocess.Popen(["/usr/bin/caffeinate", "-i", "-w", str(os.getpid())], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     while True:
+        if args.overlap_a5:
+            running_a_slots(a_out)
+            break
         a_state = json.loads((a_out / "SUPERVISOR.json").read_text())
         if a_state["status"] == "completed" and a_state.get("exit_code") == 0:
             break
@@ -182,7 +226,7 @@ def run(args: argparse.Namespace, status: dict) -> int:
             raise RuntimeError("A supervisor stopped without success; B remains unstarted")
         os.kill(int(a_state["supervisor_pid"]), 0)
         time.sleep(30)
-    affordability = verify_inputs(work, a_out)
+    affordability = verify_inputs(work, a_out, args.overlap_a5)
     write_json(out / "AFFORDABILITY.json", affordability)
     if not affordability["both_fit"]:
         raise RuntimeError("both B runs do not fit with full-cap headroom; ask owner about $35 cap or one B")
@@ -202,11 +246,33 @@ def run(args: argparse.Namespace, status: dict) -> int:
     assert subprocess.run(["claude", "--version"], env=env, capture_output=True, text=True, check=True).stdout.startswith(
         "2.1.310 "
     )
-    status["status"] = "zero-token eight-suite preflight"
+    status["status"] = "validating zero-token load preflight"
     save()
     base = json.loads((ROOT / "eval/round2/INPUT_MANIFEST.json").read_text())["tasks"][0]["base"]
-    load_preflight(work, out, env, base)
-    if not budget_fits(phase_spend()):
+    if args.use_preflight:
+        evidence = args.preflight_dir.resolve() if args.preflight_dir else out
+        suites = 5 if args.max_b_runs == 1 else 8
+        preflight = json.loads((evidence / "PREFLIGHT.json").read_text())
+        preflight_state = json.loads((evidence / "PREFLIGHT_STATUS.json").read_text())
+        assert preflight_state["status"].startswith("passed") and preflight_state["paid_B_calls"] == 0
+        assert timing_passes(preflight, suites)
+        assert {(row["wave"], row["suite"]) for row in preflight} == {(w, i) for w in range(2) for i in range(suites)}
+        assert all(row["base"] == base for row in preflight)
+        require_redacted(evidence)
+        write_json(
+            out / "PREFLIGHT_REFERENCE.json",
+            {
+                "directory": str(evidence.relative_to(ROOT)),
+                "suite_concurrency": suites,
+                "sha256": hashlib.sha256((evidence / "PREFLIGHT.json").read_bytes()).hexdigest(),
+            },
+        )
+    else:
+        load_preflight(work, out, env, base)
+    if args.mean_cost_a_only:
+        decision = json.loads((out / "COST_TRIPWIRE_DECISION.json").read_text())
+        assert decision["owner_decision"] == "apply mean-cost tripwire only to A"
+    if not budget_fits(phase_spend(), affordability["remaining_A5_cap_reserved_usd"]):
         raise RuntimeError("budget changed during preflight; no paid launch")
     provenance = json.loads((a_out / "RUN_ENVIRONMENT.json").read_text())
     provenance.update(
@@ -214,7 +280,9 @@ def run(args: argparse.Namespace, status: dict) -> int:
         arm="B",
         max_k=2,
         run_cap_usd=7,
-        schedule_change="owner requested at most two concurrent runs on 2026-10-29",
+        schedule_change="owner approved A5/B overlap; at most two total runs on 2026-10-29",
+        B_mean_cost_tripwire=None if args.mean_cost_a_only else 0.068,
+        max_simultaneous_B_runs=args.max_b_runs,
     )
     write_json(out / "RUN_ENVIRONMENT.json", provenance)
     labels = ["r1-B-rep2", "r1-B-rep3"]
@@ -232,6 +300,11 @@ def run(args: argparse.Namespace, status: dict) -> int:
     signal.signal(signal.SIGINT, interrupt)
     try:
         while not all(entry["done"] for entry in entries.values()):
+            try:
+                a_slots = running_a_slots(a_out) if args.overlap_a5 else 0
+            except (RuntimeError, ProcessLookupError) as error:
+                halt(str(error))
+                a_slots = 0
             for label, entry in entries.items():
                 if label in children or entry["done"]:
                     continue
@@ -239,6 +312,8 @@ def run(args: argparse.Namespace, status: dict) -> int:
                     entry["done"] = True
                     continue
                 if time.time() < entry["ready_at"]:
+                    continue
+                if len(children) >= args.max_b_runs or len(children) + a_slots >= 2:
                     continue
                 command = [
                     sys.executable,
@@ -291,6 +366,9 @@ def run(args: argparse.Namespace, status: dict) -> int:
                     "--product-commit",
                     affordability["product_commit"],
                 ]
+                if args.mean_cost_a_only:
+                    index = command.index("--max-mean-cost")
+                    del command[index : index + 2]
                 if entry["resumes"]:
                     command.append("--resume")
                 stream = (work / f"{label}.console.log").open("a")
@@ -298,7 +376,7 @@ def run(args: argparse.Namespace, status: dict) -> int:
                     command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=stream, stderr=stream, start_new_session=True
                 )
                 children[label] = (child, stream)
-            assert len(children) <= 2
+            assert len(children) <= args.max_b_runs and len(children) + a_slots <= 2
             for label, (child, stream) in list(children.items()):
                 (out / f"{label}.log").write_text(redact((work / f"{label}.console.log").read_text()))
                 code = child.poll()
@@ -335,7 +413,10 @@ def run(args: argparse.Namespace, status: dict) -> int:
                         halt(f"{label}: stopped exit {code}; owner review")
             states = [summarize(out, label) for label in labels]
             status.update(
-                status="running two B replicates" if not stop.exists() else "stopping; owner review",
+                status="running B with A5"
+                if a_slots and not stop.exists()
+                else ("running B replicates" if not stop.exists() else "stopping; owner review"),
+                active_A_slots=a_slots,
                 active={label: child.pid for label, (child, _) in children.items()},
                 runs=states,
             )
@@ -362,7 +443,12 @@ def run(args: argparse.Namespace, status: dict) -> int:
     report = "Phase-0 parallel B summary: " + state + ".\n\n" + json.dumps(status.get("runs", []), indent=2) + "\n"
     report += (
         "\nTwo runs maximum; pipeline concurrency 4 each. Budgets $7/run and $30/phase unchanged. "
-        "Original mean/median tripwires retained.\n"
+        "Median-wall tripwire remains 620s.\n"
+        + (
+            "Mean-cost tripwire applies only to A per owner decision.\n"
+            if args.mean_cost_a_only
+            else "Mean-cost tripwire remains $0.068 for B.\n"
+        )
     )
     (out / "B_SUMMARY.md").write_text(report)
     require_redacted(out)
@@ -375,6 +461,11 @@ def main() -> int:
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--a-out", type=Path, required=True)
+    parser.add_argument("--max-b-runs", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--preflight-dir", type=Path, help="explicit preserved preflight evidence directory")
+    parser.add_argument("--use-preflight", action="store_true", help="use the recorded, validated zero-token preflight")
+    parser.add_argument("--mean-cost-a-only", action="store_true", help="requires explicit recorded owner decision")
+    parser.add_argument("--overlap-a5", action="store_true", help="owner-approved overlap; reserve A5 as one of two slots")
     args = parser.parse_args()
     status = {"started_at": datetime.now(UTC).isoformat(), "max_concurrent_runs": 2}
     with (args.work / "B_PARALLEL.lock").open("w") as lock:

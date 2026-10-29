@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-10-29T09:00:33.191020+00:00",
+  "reason": "Owner explicitly requested B to overlap A5 now; waiting-only schedule cancelled before any B calls",
+  "replacement": "2026-10-29-r2-overlap-b"
+}

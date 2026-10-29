@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-10-29T09:11:44.287877+00:00",
+  "owner_request": "Can we not start b in parallel right now?",
+  "max_total_runs": 2,
+  "max_B_runs": 1,
+  "overlap_A5": true,
+  "reason_for_one_B": "Eight-suite load failed; five-suite A/B load must pass both waves before B launch",
+  "preflight_evidence": "eval/results/2026-10-29-r2-ab-load",
+  "caps_unchanged": true
+}

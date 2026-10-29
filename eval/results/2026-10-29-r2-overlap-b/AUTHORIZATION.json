@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-10-29T09:00:33.191556+00:00",
+  "owner_instruction": "Can we not start b in parallel right now?",
+  "overlap_A5": true,
+  "max_total_evaluation_runs": 2,
+  "reserve_remaining_A5_cap": true,
+  "B_requires": [
+    "frozen input and product hash verification",
+    "both B caps plus remaining A5 cap plus $2 headroom inside $30",
+    "two eight-suite timing waves all pass within160s"
+  ],
+  "cancelled_waiting_scheduler": "2026-10-29-r2-parallel-b",
+  "deviation": "A/B overlap before all four A runs complete; transient load preflight overlaps A5; all timings retained"
+}

@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-29T07:49:15.983320+00:00",
+  "max_concurrent_runs": 2,
+  "status": "stopped; owner review",
+  "pid": 32245,
+  "error": "Traceback (most recent call last):\n  File \"~/.cache/lithify-dev/round2/eval/round2/run_b_parallel.py\", line 385, in main\n    code = run(args, status)\n  File \"~/.cache/lithify-dev/round2/eval/round2/run_b_parallel.py\", line 184, in run\n    time.sleep(30)\n    ~~~~~~~~~~^^^^\nKeyboardInterrupt\n",
+  "exit_code": 1,
+  "finished_at": "2026-10-29T08:58:23.732677+00:00"
+}

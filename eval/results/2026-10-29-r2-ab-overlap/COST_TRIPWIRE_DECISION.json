@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-10-29T09:11:44.287589+00:00",
+  "owner_decision": "apply mean-cost tripwire only to A",
+  "original_owner_reply": "Apply $0.068 mean-cost tripwire only to A; keep B\u2019s $7 cap",
+  "A_mean_tripwire": 0.068,
+  "B_mean_tripwire": null,
+  "B_per_run_cap": 7,
+  "phase_cap": 30,
+  "B_median_wall_tripwire_s": 620
+}

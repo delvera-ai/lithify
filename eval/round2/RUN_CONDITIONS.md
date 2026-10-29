@@ -73,3 +73,35 @@ either B from starting another task after a tripwire/budget stop; an active
 task may finish to preserve its outcome and cost. CLI-limit-only resumes
 remain limited to three/run/UTC day. Crashes and budget stops never auto-resume.
 After B, report Phase 0 and stop before Phase 1.
+
+
+### Later owner override: start B beside A5 now (2026-10-29)
+
+The owner explicitly requested B to start in parallel immediately. This
+supersedes four-A-before-B for the remaining A5 run. A2–A4 remain complete;
+B2 may overlap A5 after the unchanged load and budget guards. Count A5 as
+one of the maximum two total evaluation runners; B3 may use a free slot.
+Reserve the unspent portion of A5's $3 cap in addition to both $7 B caps and
+$2 between-task headroom. Estimate cost ratio using completed A2–A4 only
+while A5 is partial, and disclose that provisional estimate.
+
+Run the same two eight-suite load waves while A5 is live: its own possible
+suite makes the measured load conservatively higher than eight. Record the
+temporary preflight load in A5's timing deviation; retain all measured times.
+If a B stop occurs during overlap, stop A's isolated launcher process group;
+A's already-loaded runner predates shared-stop support. Any interrupted A
+usage is a lower bound pending reconciliation; never silently restart it.
+An A failure also blocks further B tasks. Models, tests, budgets, tripwires
+and three CLI-limit-only resumes/run/UTC-day remain unchanged.
+
+
+### Owner cost-tripwire decision and failed B/B load guard (2026-10-29)
+
+The owner selected: “Apply $0.068 mean-cost tripwire only to A; keep B’s $7 cap.”
+B keeps the $7 per-run cap, $30 phase cap, and median-wall >620s tripwire.
+This explicitly supersedes the earlier global mean-cost wording for B only.
+A settings remain unchanged. Eight-suite load failed: all eight suites timed
+out at 160s. Preserve that evidence; do not launch two B runs on that result.
+A separate five-suite guard tests A5 plus one B. If it passes, permit at most
+one B at a time, with at most two total A/B runs. B3 then follows B2, retaining
+this stricter load limit until fresh evidence/approval supports more load.
