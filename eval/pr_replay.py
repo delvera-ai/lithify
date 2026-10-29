@@ -163,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--arm", default="")
     ap.add_argument("--max-mean-cost", type=float, help="stop after a task if cumulative mean cost exceeds this")
     ap.add_argument("--max-median-wall", type=float, help="stop after a task if median wall_s exceeds this")
+    ap.add_argument("--phase-stop-file", type=Path, help="shared phase stop; finish current task, start no more")
     ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
 
@@ -185,6 +186,9 @@ def main(argv: list[str] | None = None) -> int:
     label = a.label or f"{a.repo}-{arm}-{a.executor.replace('@', '_')}"
     ev_root = out / "raw" / label
     ev_root.mkdir(parents=True, exist_ok=True)
+    if a.phase_stop_file is not None and a.phase_stop_file.exists():
+        print("PHASE STOP: no checkout or task started", flush=True)
+        return 78
     run_dir = work / f"replay-{a.experiment}-{label}"
     clone = run_dir / "repo"
     progress_file = run_dir / "progress.json"
@@ -215,14 +219,28 @@ def main(argv: list[str] | None = None) -> int:
     def save_progress(next_pos: int) -> None:
         progress_file.write_text(json.dumps({"next_pos": next_pos, "run_cost": run_cost, "audit": audit}), encoding="utf-8")
 
+    def signal_phase_stop(reasons: list[str]) -> None:
+        if a.phase_stop_file is not None:
+            try:
+                with a.phase_stop_file.open("x") as flag:
+                    json.dump({"label": label, "reasons": reasons}, flag)
+            except FileExistsError:
+                pass
+
     for pos, pr in enumerate(prs, 1):
         if pos < start:
             continue
+        if a.phase_stop_file is not None and a.phase_stop_file.exists():
+            stop_reason = ["shared phase stop; owner review"]
+            exit_code = 78
+            print("PHASE STOP: no further tasks scheduled", flush=True)
+            break
         # The experiment-wide cap counts only this experiment's result directories.
         total = sum(spent(d) for d in RESULTS.glob(a.budget_glob) if d.is_dir())
         if run_cost >= a.limit_usd or total >= a.total_cap:
             print(f"budget stop before #{pr['number']}: run ${run_cost:.2f}/{a.limit_usd:.2f}; all results ${total:.2f}")
             stop_reason = ["budget cap"]
+            signal_phase_stop(stop_reason)
             exit_code = 80
             break
         reset_to(a.repo, clone, pr["base"], keep if pos > 1 else None, save=not (a.resume and pos == start))
@@ -329,6 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         save_progress(pos + 1)
         stop_reason = tripwire_reasons(completed, run_cost, a.max_mean_cost, a.max_median_wall)
         if stop_reason:
+            signal_phase_stop(stop_reason)
             (ev_root / "tripwire.json").write_text(json.dumps({"reasons": stop_reason, "position": pos}, indent=2))
             print("TRIPWIRE STOP: " + "; ".join(stop_reason), flush=True)
             exit_code = 76

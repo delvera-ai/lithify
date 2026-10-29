@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-10-29T07:48:11.768980+00:00",
+  "owner_instruction": "I think let's do the parallel runs but limit it to two at a time",
+  "max_evaluation_runs": 2,
+  "four_A_before_B": true,
+  "A5_active_at_authorization": true,
+  "paid_B_requires": [
+    "all A complete and supervisor exit zero",
+    "affordability within original caps",
+    "two eight-suite preflight waves pass within 160s each"
+  ],
+  "budgets_unchanged": {
+    "phase": 30,
+    "B_each": 7
+  },
+  "mean_tripwire": 0.068,
+  "median_wall_tripwire_s": 620
+}

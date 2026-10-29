@@ -44,3 +44,32 @@ $3 per-run cap, in addition to the $30 phase cap and owner's mean/median
 tripwires. An executor/outer timeout with only a lower-bound cost stops
 further paid work for reconciliation; gate/holdout timeouts have their own
 recorded outcome without pretending their billed CLI cost is unknown.
+
+
+## Owner-approved schedule change (2026-10-29)
+
+The owner requested parallel evaluation runs, limited to two at a time.
+Only A5 remained when this was approved. Preserve the four-A-before-B rule;
+finish A5, then run B2 and B3 concurrently, with at most two replay runners.
+Each B retains internal concurrency 4, max_k 2, original adaptive settings,
+independent clone/state, unchanged task order/text, and the verified 89020d7
+product build. Do not overlap B with A or add a third run.
+
+Before either B starts, time two waves of eight simultaneous frozen task-1
+base suites (four possible probe suites per B). Every suite must pass and
+finish within 160 seconds. A failed/incomplete preflight blocks paid B work.
+This is a machine-load guard, not proof that wall times are interchangeable
+with the sequential round-1 observations. Disclose parallel scheduling in
+all B comparisons; retain original wall times and host-sleep evidence.
+
+Recheck affordability after all A runs finish using measured A/old-A cost
+ratio and original B cost. Reserve both full $7 B caps plus $2 between-task
+headroom inside the unchanged $30 cap. If both do not fit, stop and ask
+about $35 or one B. Phase accounting retains the unresolved $0.10 hold.
+
+The cumulative mean >$0.068/task and median wall >620 seconds stop rules
+remain unchanged, from the first completed task. A shared stop flag prevents
+either B from starting another task after a tripwire/budget stop; an active
+task may finish to preserve its outcome and cost. CLI-limit-only resumes
+remain limited to three/run/UTC day. Crashes and budget stops never auto-resume.
+After B, report Phase 0 and stop before Phase 1.
