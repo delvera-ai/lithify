@@ -105,3 +105,80 @@ Jeffreys sensitivity grid: `power_grid.csv`, variant `jeffreys`.
   differently.
 - E cost is unknown. Window selection must wait for Phase 2 with measured E cost, owner approval, and a
   fresh affordability check.
+
+## Addendum: between-seed variation and a concentrated effect
+
+Code: `eval/round2/power_addendum.py`. Grid: `power_addendum_grid.csv`. Same baseline (empirical A pass
+fractions), same sign-flip on primary positions, same 1,999 permutations, α = .05, 5,000 experiments per cell.
+Seeds 1–4. Warm-up 20/30/40 and window 60/100/150 as before. The earlier grid assumed one shared effect for
+all learning seeds. This addendum relaxes that.
+
+**Scenarios.**
+- *uniform, with seed spread:* each seed draws its own marginal effect δ_s ~ N(δ, τ), with τ = 0.05. τ is an
+  assumption, not an estimate. Round 2 has no learning-arm seed-to-seed data to estimate it from.
+- *concentrated:* each seed flips a random subset of K never-passing tasks (18 of 60 in the A runs) to pass
+  probability 0.9, with K = round(δ·60/0.9): 3 tasks for δ = 0.05, 7 for δ = 0.10, 10 for δ = 0.15. The
+  expected marginal effect is δ. Which tasks flip differs by seed.
+
+**Rules.**
+- *P (pooled):* the existing sign-flip on seed-averaged primary differences.
+- *AP (all seeds positive):* P rejects, and every seed's own primary mean difference is > 0.
+- *ES (every seed rejects):* each seed's own sign-flip rejects at α, unadjusted.
+
+**Power at warm-up 30 (P / AP / ES), by number of learning seeds.** The S = 1 column is the same for all rules.
+
+| scenario | effect | W | S=1 | S=2 | S=3 | S=4 |
+|---|---|---|---|---|---|---|
+| uniform + spread | 0.10 | 100 | 0.559 | 0.821 / 0.774 / 0.318 | 0.919 / 0.772 / 0.177 | 0.966 / 0.735 / 0.108 |
+| uniform + spread | 0.10 | 150 | 0.746 | 0.920 / 0.867 / 0.545 | 0.979 / 0.857 / 0.403 | 0.995 / 0.825 / 0.295 |
+| uniform + spread | 0.05 | 100 | 0.291 | 0.466 / 0.404 / 0.074 | 0.600 / 0.387 / 0.025 | 0.702 / 0.324 / 0.010 |
+| uniform + spread | 0.05 | 150 | 0.416 | 0.638 / 0.552 / 0.189 | 0.760 / 0.501 / 0.086 | 0.836 / 0.408 / 0.034 |
+| concentrated | 0.10 | 100 | 0.590 | 0.836 / 0.830 / 0.355 | 0.943 / 0.912 / 0.258 | 0.969 / 0.911 / 0.165 |
+| concentrated | 0.10 | 150 | 0.838 | 0.974 / 0.971 / 0.710 | 0.995 / 0.989 / 0.610 | 0.999 / 0.986 / 0.527 |
+| concentrated | 0.05 | 100 | 0.170 | 0.399 / 0.386 / 0.045 | 0.565 / 0.483 / 0.010 | 0.652 / 0.467 / 0.002 |
+| concentrated | 0.05 | 150 | 0.324 | 0.564 / 0.549 / 0.101 | 0.730 / 0.646 / 0.039 | 0.838 / 0.652 / 0.011 |
+| concentrated | 0.15 | 100 | 0.820 | 0.979 / 0.979 / 0.770 | 0.995 / 0.992 / 0.697 | 0.999 / 0.992 / 0.630 |
+
+Warm-up at δ = 0.10, W = 100, S = 2, pooled: 0.850 (w = 20), 0.821 (w = 30), 0.762 (w = 40) under uniform
+spread; 0.836 at w = 30 under the concentrated scenario. The warm-up trade-off at other windows is not
+recomputed here; `power_addendum_grid.csv` has the full grid.
+
+**Null calibration (δ = 0), warm-up 30.**
+- *concentrated:* P 0.026 / 0.025 / 0.025 for S = 2 / 3 / 4 at W = 100; AP 0.025 / 0.020 / 0.013; ES ≈ 0.
+  This matches the earlier nominal-level behaviour.
+- *uniform + spread:* P rises with S, to 0.153 / 0.181 / 0.222 at W = 100; AP is 0.119 / 0.091 / 0.069; ES
+  is ≈ 0. This is not a bug. With τ > 0 each seed's effect is shared across that seed's positions, so the
+  seed-average is a non-zero realised effect in many experiments. A sign-flip over tasks treats seeds as
+  fixed and does not account for this seed-to-seed variance. It does not test "population mean effect = 0".
+
+**Findings.**
+1. **Between-seed spread costs some pooled power, and it costs a lot under the per-seed rules.** Under uniform
+   spread at δ = 0.10, W = 100, S = 3, P falls from 0.967 (earlier, no spread) to 0.919. ES falls to 0.18.
+2. **A seed-level exact test cannot reach α = .05 with 4 or fewer seeds.** The smallest one-sided sign-flip
+   p-value across S seed means is 1/2^S, which is 0.0625 at S = 4. Reaching .05 needs S ≥ 5 (1/32 = 0.031). So
+   the choice is between a pooled test whose null is not calibrated under seed spread, and a seed rule with
+   low power.
+3. **AP is the most practical claim rule at 2–3 seeds.** At δ = 0.10, W = 150, S = 3, AP keeps 0.857 power
+   (uniform) and 0.989 (concentrated). Its uniform-spread null is 0.09 at S = 3 and W = 100, above the 0.05
+   the rule seems to promise, so it is not a fully valid α = .05 test under spread.
+4. **W = 60 is not adequate for a +10-point effect at 2+ seeds.** Under uniform spread, P is 0.47 at S = 2
+   and 0.66 at S = 3, both below the 70% Phase 2 target. At W = 100, AP reaches 0.77 at S = 2 and S = 3, so
+   it clears 70% under both scenarios.
+5. **Small concentrated effects are hard to detect.** At δ = 0.05 the concentrated scenario flips only 3
+   tasks. Power at W = 100 is 0.17 with one seed and 0.40 with two (P). This is far below the uniform
+   scenario at the same marginal effect (0.29 and 0.47).
+
+**Per-seed reporting plan (for the Phase 2 preregistration).**
+- Report each learning seed's own primary mean difference, its own sign-flip p-value, and its
+  per-task pass counts, alongside the pooled result.
+- Pre-register AP as the claim rule for H1 and H2 at 2–3 seeds: H1 holds only if P rejects and every seed's
+  primary mean difference is positive. Label the rule's null rate as above, not as nominal 0.05.
+- With 4 seeds, AP's power at δ = 0.10 under uniform spread is 0.74 at W = 100 and 0.83 at W = 150. Either fix
+  2–3 seeds, or pre-register 5 seeds with a seed-level sign test.
+- Pre-register the seed-level variance check as exploratory: the estimated between-seed SD in the primary
+  window, with a CI, is reported alongside the test.
+
+**Budget consequence.** The learning arm's cost is unmeasured. Assuming 1–2 USD per task (the phase-1 dev
+measurement will replace this), W = 150 with 3 seeds is 450 learning-arm tasks, about $450–900 before D and
+A. That exceeds `MAIN_BUDGET_USD = 350`. W = 100 with 2 seeds is 200 tasks, about $200–400 before D and A,
+so it also needs checking against the budget. Phase 2 must check both against the measured dev cost.

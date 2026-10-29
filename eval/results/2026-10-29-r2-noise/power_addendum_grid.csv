@@ -1,0 +1,865 @@
+scenario,effect,window_total,warmup,primary_n,seeds,rule,power,kind
+uniform,0.0,60,20,40,1,pooled,0.0446,null calibration
+uniform,0.0,60,20,40,1,pooled_all_seeds_positive,0.0446,null calibration
+uniform,0.0,60,20,40,1,every_seed_rejects,0.0446,null calibration
+uniform,0.05,60,20,40,1,pooled,0.147,power
+uniform,0.05,60,20,40,1,pooled_all_seeds_positive,0.147,power
+uniform,0.05,60,20,40,1,every_seed_rejects,0.147,power
+uniform,0.1,60,20,40,1,pooled,0.3396,power
+uniform,0.1,60,20,40,1,pooled_all_seeds_positive,0.3396,power
+uniform,0.1,60,20,40,1,every_seed_rejects,0.3396,power
+uniform,0.15,60,20,40,1,pooled,0.5716,power
+uniform,0.15,60,20,40,1,pooled_all_seeds_positive,0.5716,power
+uniform,0.15,60,20,40,1,every_seed_rejects,0.5716,power
+uniform,0.0,60,20,40,2,pooled,0.0824,null calibration
+uniform,0.0,60,20,40,2,pooled_all_seeds_positive,0.066,null calibration
+uniform,0.0,60,20,40,2,every_seed_rejects,0.002,null calibration
+uniform,0.05,60,20,40,2,pooled,0.2928,power
+uniform,0.05,60,20,40,2,pooled_all_seeds_positive,0.2562,power
+uniform,0.05,60,20,40,2,every_seed_rejects,0.0224,power
+uniform,0.1,60,20,40,2,pooled,0.626,power
+uniform,0.1,60,20,40,2,pooled_all_seeds_positive,0.5868,power
+uniform,0.1,60,20,40,2,every_seed_rejects,0.124,power
+uniform,0.15,60,20,40,2,pooled,0.8574,power
+uniform,0.15,60,20,40,2,pooled_all_seeds_positive,0.8326,power
+uniform,0.15,60,20,40,2,every_seed_rejects,0.3272,power
+uniform,0.0,60,20,40,3,pooled,0.1124,null calibration
+uniform,0.0,60,20,40,3,pooled_all_seeds_positive,0.058,null calibration
+uniform,0.0,60,20,40,3,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,20,40,3,pooled,0.424,power
+uniform,0.05,60,20,40,3,pooled_all_seeds_positive,0.2778,power
+uniform,0.05,60,20,40,3,every_seed_rejects,0.0044,power
+uniform,0.1,60,20,40,3,pooled,0.7794,power
+uniform,0.1,60,20,40,3,pooled_all_seeds_positive,0.625,power
+uniform,0.1,60,20,40,3,every_seed_rejects,0.047,power
+uniform,0.15,60,20,40,3,pooled,0.953,power
+uniform,0.15,60,20,40,3,pooled_all_seeds_positive,0.8824,power
+uniform,0.15,60,20,40,3,every_seed_rejects,0.2096,power
+uniform,0.0,60,20,40,4,pooled,0.1386,null calibration
+uniform,0.0,60,20,40,4,pooled_all_seeds_positive,0.0362,null calibration
+uniform,0.0,60,20,40,4,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,20,40,4,pooled,0.5164,power
+uniform,0.05,60,20,40,4,pooled_all_seeds_positive,0.2252,power
+uniform,0.05,60,20,40,4,every_seed_rejects,0.001,power
+uniform,0.1,60,20,40,4,pooled,0.8664,power
+uniform,0.1,60,20,40,4,pooled_all_seeds_positive,0.5806,power
+uniform,0.1,60,20,40,4,every_seed_rejects,0.0174,power
+uniform,0.15,60,20,40,4,pooled,0.9804,power
+uniform,0.15,60,20,40,4,pooled_all_seeds_positive,0.8538,power
+uniform,0.15,60,20,40,4,every_seed_rejects,0.1252,power
+uniform,0.0,60,30,30,1,pooled,0.0202,null calibration
+uniform,0.0,60,30,30,1,pooled_all_seeds_positive,0.0202,null calibration
+uniform,0.0,60,30,30,1,every_seed_rejects,0.0202,null calibration
+uniform,0.05,60,30,30,1,pooled,0.0914,power
+uniform,0.05,60,30,30,1,pooled_all_seeds_positive,0.0914,power
+uniform,0.05,60,30,30,1,every_seed_rejects,0.0914,power
+uniform,0.1,60,30,30,1,pooled,0.2146,power
+uniform,0.1,60,30,30,1,pooled_all_seeds_positive,0.2146,power
+uniform,0.1,60,30,30,1,every_seed_rejects,0.2146,power
+uniform,0.15,60,30,30,1,pooled,0.4054,power
+uniform,0.15,60,30,30,1,pooled_all_seeds_positive,0.4054,power
+uniform,0.15,60,30,30,1,every_seed_rejects,0.4054,power
+uniform,0.0,60,30,30,2,pooled,0.048,null calibration
+uniform,0.0,60,30,30,2,pooled_all_seeds_positive,0.0378,null calibration
+uniform,0.0,60,30,30,2,every_seed_rejects,0.0004,null calibration
+uniform,0.05,60,30,30,2,pooled,0.2052,power
+uniform,0.05,60,30,30,2,pooled_all_seeds_positive,0.1802,power
+uniform,0.05,60,30,30,2,every_seed_rejects,0.01,power
+uniform,0.1,60,30,30,2,pooled,0.4724,power
+uniform,0.1,60,30,30,2,pooled_all_seeds_positive,0.4458,power
+uniform,0.1,60,30,30,2,every_seed_rejects,0.0572,power
+uniform,0.15,60,30,30,2,pooled,0.7422,power
+uniform,0.15,60,30,30,2,pooled_all_seeds_positive,0.7224,power
+uniform,0.15,60,30,30,2,every_seed_rejects,0.1998,power
+uniform,0.0,60,30,30,3,pooled,0.0774,null calibration
+uniform,0.0,60,30,30,3,pooled_all_seeds_positive,0.037,null calibration
+uniform,0.0,60,30,30,3,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,30,30,3,pooled,0.333,power
+uniform,0.05,60,30,30,3,pooled_all_seeds_positive,0.2168,power
+uniform,0.05,60,30,30,3,every_seed_rejects,0.0014,power
+uniform,0.1,60,30,30,3,pooled,0.655,power
+uniform,0.1,60,30,30,3,pooled_all_seeds_positive,0.5112,power
+uniform,0.1,60,30,30,3,every_seed_rejects,0.0156,power
+uniform,0.15,60,30,30,3,pooled,0.8716,power
+uniform,0.15,60,30,30,3,pooled_all_seeds_positive,0.781,power
+uniform,0.15,60,30,30,3,every_seed_rejects,0.0832,power
+uniform,0.0,60,30,30,4,pooled,0.1052,null calibration
+uniform,0.0,60,30,30,4,pooled_all_seeds_positive,0.0296,null calibration
+uniform,0.0,60,30,30,4,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,30,30,4,pooled,0.3892,power
+uniform,0.05,60,30,30,4,pooled_all_seeds_positive,0.1598,power
+uniform,0.05,60,30,30,4,every_seed_rejects,0.0004,power
+uniform,0.1,60,30,30,4,pooled,0.7612,power
+uniform,0.1,60,30,30,4,pooled_all_seeds_positive,0.4634,power
+uniform,0.1,60,30,30,4,every_seed_rejects,0.0024,power
+uniform,0.15,60,30,30,4,pooled,0.935,power
+uniform,0.15,60,30,30,4,pooled_all_seeds_positive,0.7674,power
+uniform,0.15,60,30,30,4,every_seed_rejects,0.0468,power
+uniform,0.0,60,40,20,1,pooled,0.0094,null calibration
+uniform,0.0,60,40,20,1,pooled_all_seeds_positive,0.0094,null calibration
+uniform,0.0,60,40,20,1,every_seed_rejects,0.0094,null calibration
+uniform,0.05,60,40,20,1,pooled,0.0276,power
+uniform,0.05,60,40,20,1,pooled_all_seeds_positive,0.0276,power
+uniform,0.05,60,40,20,1,every_seed_rejects,0.0276,power
+uniform,0.1,60,40,20,1,pooled,0.0942,power
+uniform,0.1,60,40,20,1,pooled_all_seeds_positive,0.0942,power
+uniform,0.1,60,40,20,1,every_seed_rejects,0.0942,power
+uniform,0.15,60,40,20,1,pooled,0.2134,power
+uniform,0.15,60,40,20,1,pooled_all_seeds_positive,0.2134,power
+uniform,0.15,60,40,20,1,every_seed_rejects,0.2134,power
+uniform,0.0,60,40,20,2,pooled,0.0206,null calibration
+uniform,0.0,60,40,20,2,pooled_all_seeds_positive,0.0172,null calibration
+uniform,0.0,60,40,20,2,every_seed_rejects,0.0002,null calibration
+uniform,0.05,60,40,20,2,pooled,0.1096,power
+uniform,0.05,60,40,20,2,pooled_all_seeds_positive,0.0948,power
+uniform,0.05,60,40,20,2,every_seed_rejects,0.0032,power
+uniform,0.1,60,40,20,2,pooled,0.2726,power
+uniform,0.1,60,40,20,2,pooled_all_seeds_positive,0.2556,power
+uniform,0.1,60,40,20,2,every_seed_rejects,0.014,power
+uniform,0.15,60,40,20,2,pooled,0.4886,power
+uniform,0.15,60,40,20,2,pooled_all_seeds_positive,0.4726,power
+uniform,0.15,60,40,20,2,every_seed_rejects,0.054,power
+uniform,0.0,60,40,20,3,pooled,0.0356,null calibration
+uniform,0.0,60,40,20,3,pooled_all_seeds_positive,0.0182,null calibration
+uniform,0.0,60,40,20,3,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,40,20,3,pooled,0.1754,power
+uniform,0.05,60,40,20,3,pooled_all_seeds_positive,0.1074,power
+uniform,0.05,60,40,20,3,every_seed_rejects,0.0,power
+uniform,0.1,60,40,20,3,pooled,0.424,power
+uniform,0.1,60,40,20,3,pooled_all_seeds_positive,0.3278,power
+uniform,0.1,60,40,20,3,every_seed_rejects,0.0018,power
+uniform,0.15,60,40,20,3,pooled,0.6824,power
+uniform,0.15,60,40,20,3,pooled_all_seeds_positive,0.5888,power
+uniform,0.15,60,40,20,3,every_seed_rejects,0.0178,power
+uniform,0.0,60,40,20,4,pooled,0.0546,null calibration
+uniform,0.0,60,40,20,4,pooled_all_seeds_positive,0.0184,null calibration
+uniform,0.0,60,40,20,4,every_seed_rejects,0.0,null calibration
+uniform,0.05,60,40,20,4,pooled,0.247,power
+uniform,0.05,60,40,20,4,pooled_all_seeds_positive,0.098,power
+uniform,0.05,60,40,20,4,every_seed_rejects,0.0,power
+uniform,0.1,60,40,20,4,pooled,0.5596,power
+uniform,0.1,60,40,20,4,pooled_all_seeds_positive,0.3226,power
+uniform,0.1,60,40,20,4,every_seed_rejects,0.0004,power
+uniform,0.15,60,40,20,4,pooled,0.79,power
+uniform,0.15,60,40,20,4,pooled_all_seeds_positive,0.5948,power
+uniform,0.15,60,40,20,4,every_seed_rejects,0.0056,power
+uniform,0.0,100,20,80,1,pooled,0.1112,null calibration
+uniform,0.0,100,20,80,1,pooled_all_seeds_positive,0.1112,null calibration
+uniform,0.0,100,20,80,1,every_seed_rejects,0.1112,null calibration
+uniform,0.05,100,20,80,1,pooled,0.3122,power
+uniform,0.05,100,20,80,1,pooled_all_seeds_positive,0.3122,power
+uniform,0.05,100,20,80,1,every_seed_rejects,0.3122,power
+uniform,0.1,100,20,80,1,pooled,0.6038,power
+uniform,0.1,100,20,80,1,pooled_all_seeds_positive,0.6038,power
+uniform,0.1,100,20,80,1,every_seed_rejects,0.6038,power
+uniform,0.15,100,20,80,1,pooled,0.8484,power
+uniform,0.15,100,20,80,1,pooled_all_seeds_positive,0.8484,power
+uniform,0.15,100,20,80,1,every_seed_rejects,0.8484,power
+uniform,0.0,100,20,80,2,pooled,0.1656,null calibration
+uniform,0.0,100,20,80,2,pooled_all_seeds_positive,0.1302,null calibration
+uniform,0.0,100,20,80,2,every_seed_rejects,0.011,null calibration
+uniform,0.05,100,20,80,2,pooled,0.5198,power
+uniform,0.05,100,20,80,2,pooled_all_seeds_positive,0.4544,power
+uniform,0.05,100,20,80,2,every_seed_rejects,0.1088,power
+uniform,0.1,100,20,80,2,pooled,0.8504,power
+uniform,0.1,100,20,80,2,pooled_all_seeds_positive,0.8022,power
+uniform,0.1,100,20,80,2,every_seed_rejects,0.3764,power
+uniform,0.15,100,20,80,2,pooled,0.9816,power
+uniform,0.15,100,20,80,2,pooled_all_seeds_positive,0.969,power
+uniform,0.15,100,20,80,2,every_seed_rejects,0.7054,power
+uniform,0.0,100,20,80,3,pooled,0.2068,null calibration
+uniform,0.0,100,20,80,3,pooled_all_seeds_positive,0.1012,null calibration
+uniform,0.0,100,20,80,3,every_seed_rejects,0.002,null calibration
+uniform,0.05,100,20,80,3,pooled,0.6448,power
+uniform,0.05,100,20,80,3,pooled_all_seeds_positive,0.4294,power
+uniform,0.05,100,20,80,3,every_seed_rejects,0.034,power
+uniform,0.1,100,20,80,3,pooled,0.941,power
+uniform,0.1,100,20,80,3,pooled_all_seeds_positive,0.7986,power
+uniform,0.1,100,20,80,3,every_seed_rejects,0.234,power
+uniform,0.15,100,20,80,3,pooled,0.9978,power
+uniform,0.15,100,20,80,3,pooled_all_seeds_positive,0.9672,power
+uniform,0.15,100,20,80,3,every_seed_rejects,0.6072,power
+uniform,0.0,100,20,80,4,pooled,0.2436,null calibration
+uniform,0.0,100,20,80,4,pooled_all_seeds_positive,0.0608,null calibration
+uniform,0.0,100,20,80,4,every_seed_rejects,0.0004,null calibration
+uniform,0.05,100,20,80,4,pooled,0.7434,power
+uniform,0.05,100,20,80,4,pooled_all_seeds_positive,0.3562,power
+uniform,0.05,100,20,80,4,every_seed_rejects,0.0128,power
+uniform,0.1,100,20,80,4,pooled,0.9794,power
+uniform,0.1,100,20,80,4,pooled_all_seeds_positive,0.7654,power
+uniform,0.1,100,20,80,4,every_seed_rejects,0.1512,power
+uniform,0.15,100,20,80,4,pooled,0.9998,power
+uniform,0.15,100,20,80,4,pooled_all_seeds_positive,0.9542,power
+uniform,0.15,100,20,80,4,every_seed_rejects,0.5196,power
+uniform,0.0,100,30,70,1,pooled,0.0968,null calibration
+uniform,0.0,100,30,70,1,pooled_all_seeds_positive,0.0968,null calibration
+uniform,0.0,100,30,70,1,every_seed_rejects,0.0968,null calibration
+uniform,0.05,100,30,70,1,pooled,0.291,power
+uniform,0.05,100,30,70,1,pooled_all_seeds_positive,0.291,power
+uniform,0.05,100,30,70,1,every_seed_rejects,0.291,power
+uniform,0.1,100,30,70,1,pooled,0.5586,power
+uniform,0.1,100,30,70,1,pooled_all_seeds_positive,0.5586,power
+uniform,0.1,100,30,70,1,every_seed_rejects,0.5586,power
+uniform,0.15,100,30,70,1,pooled,0.796,power
+uniform,0.15,100,30,70,1,pooled_all_seeds_positive,0.796,power
+uniform,0.15,100,30,70,1,every_seed_rejects,0.796,power
+uniform,0.0,100,30,70,2,pooled,0.1528,null calibration
+uniform,0.0,100,30,70,2,pooled_all_seeds_positive,0.1188,null calibration
+uniform,0.0,100,30,70,2,every_seed_rejects,0.013,null calibration
+uniform,0.05,100,30,70,2,pooled,0.4656,power
+uniform,0.05,100,30,70,2,pooled_all_seeds_positive,0.4044,power
+uniform,0.05,100,30,70,2,every_seed_rejects,0.0744,power
+uniform,0.1,100,30,70,2,pooled,0.8214,power
+uniform,0.1,100,30,70,2,pooled_all_seeds_positive,0.774,power
+uniform,0.1,100,30,70,2,every_seed_rejects,0.3184,power
+uniform,0.15,100,30,70,2,pooled,0.9682,power
+uniform,0.15,100,30,70,2,pooled_all_seeds_positive,0.9514,power
+uniform,0.15,100,30,70,2,every_seed_rejects,0.637,power
+uniform,0.0,100,30,70,3,pooled,0.1806,null calibration
+uniform,0.0,100,30,70,3,pooled_all_seeds_positive,0.091,null calibration
+uniform,0.0,100,30,70,3,every_seed_rejects,0.001,null calibration
+uniform,0.05,100,30,70,3,pooled,0.6,power
+uniform,0.05,100,30,70,3,pooled_all_seeds_positive,0.3868,power
+uniform,0.05,100,30,70,3,every_seed_rejects,0.0254,power
+uniform,0.1,100,30,70,3,pooled,0.9188,power
+uniform,0.1,100,30,70,3,pooled_all_seeds_positive,0.7716,power
+uniform,0.1,100,30,70,3,every_seed_rejects,0.1766,power
+uniform,0.15,100,30,70,3,pooled,0.994,power
+uniform,0.15,100,30,70,3,pooled_all_seeds_positive,0.9552,power
+uniform,0.15,100,30,70,3,every_seed_rejects,0.5238,power
+uniform,0.0,100,30,70,4,pooled,0.2218,null calibration
+uniform,0.0,100,30,70,4,pooled_all_seeds_positive,0.0686,null calibration
+uniform,0.0,100,30,70,4,every_seed_rejects,0.0004,null calibration
+uniform,0.05,100,30,70,4,pooled,0.7024,power
+uniform,0.05,100,30,70,4,pooled_all_seeds_positive,0.3236,power
+uniform,0.05,100,30,70,4,every_seed_rejects,0.0096,power
+uniform,0.1,100,30,70,4,pooled,0.9662,power
+uniform,0.1,100,30,70,4,pooled_all_seeds_positive,0.7352,power
+uniform,0.1,100,30,70,4,every_seed_rejects,0.1078,power
+uniform,0.15,100,30,70,4,pooled,0.9982,power
+uniform,0.15,100,30,70,4,pooled_all_seeds_positive,0.94,power
+uniform,0.15,100,30,70,4,every_seed_rejects,0.4218,power
+uniform,0.0,100,40,60,1,pooled,0.0824,null calibration
+uniform,0.0,100,40,60,1,pooled_all_seeds_positive,0.0824,null calibration
+uniform,0.0,100,40,60,1,every_seed_rejects,0.0824,null calibration
+uniform,0.05,100,40,60,1,pooled,0.251,power
+uniform,0.05,100,40,60,1,pooled_all_seeds_positive,0.251,power
+uniform,0.05,100,40,60,1,every_seed_rejects,0.251,power
+uniform,0.1,100,40,60,1,pooled,0.5086,power
+uniform,0.1,100,40,60,1,pooled_all_seeds_positive,0.5086,power
+uniform,0.1,100,40,60,1,every_seed_rejects,0.5086,power
+uniform,0.15,100,40,60,1,pooled,0.7642,power
+uniform,0.15,100,40,60,1,pooled_all_seeds_positive,0.7642,power
+uniform,0.15,100,40,60,1,every_seed_rejects,0.7642,power
+uniform,0.0,100,40,60,2,pooled,0.1252,null calibration
+uniform,0.0,100,40,60,2,pooled_all_seeds_positive,0.1042,null calibration
+uniform,0.0,100,40,60,2,every_seed_rejects,0.006,null calibration
+uniform,0.05,100,40,60,2,pooled,0.4286,power
+uniform,0.05,100,40,60,2,pooled_all_seeds_positive,0.3652,power
+uniform,0.05,100,40,60,2,every_seed_rejects,0.0626,power
+uniform,0.1,100,40,60,2,pooled,0.7624,power
+uniform,0.1,100,40,60,2,pooled_all_seeds_positive,0.7186,power
+uniform,0.1,100,40,60,2,every_seed_rejects,0.2678,power
+uniform,0.15,100,40,60,2,pooled,0.9508,power
+uniform,0.15,100,40,60,2,pooled_all_seeds_positive,0.9306,power
+uniform,0.15,100,40,60,2,every_seed_rejects,0.5694,power
+uniform,0.0,100,40,60,3,pooled,0.1652,null calibration
+uniform,0.0,100,40,60,3,pooled_all_seeds_positive,0.0838,null calibration
+uniform,0.0,100,40,60,3,every_seed_rejects,0.0002,null calibration
+uniform,0.05,100,40,60,3,pooled,0.5568,power
+uniform,0.05,100,40,60,3,pooled_all_seeds_positive,0.3628,power
+uniform,0.05,100,40,60,3,every_seed_rejects,0.0184,power
+uniform,0.1,100,40,60,3,pooled,0.8942,power
+uniform,0.1,100,40,60,3,pooled_all_seeds_positive,0.74,power
+uniform,0.1,100,40,60,3,every_seed_rejects,0.1358,power
+uniform,0.15,100,40,60,3,pooled,0.989,power
+uniform,0.15,100,40,60,3,pooled_all_seeds_positive,0.9376,power
+uniform,0.15,100,40,60,3,every_seed_rejects,0.4368,power
+uniform,0.0,100,40,60,4,pooled,0.1978,null calibration
+uniform,0.0,100,40,60,4,pooled_all_seeds_positive,0.0518,null calibration
+uniform,0.0,100,40,60,4,every_seed_rejects,0.0,null calibration
+uniform,0.05,100,40,60,4,pooled,0.6538,power
+uniform,0.05,100,40,60,4,pooled_all_seeds_positive,0.3002,power
+uniform,0.05,100,40,60,4,every_seed_rejects,0.0032,power
+uniform,0.1,100,40,60,4,pooled,0.9436,power
+uniform,0.1,100,40,60,4,pooled_all_seeds_positive,0.6974,power
+uniform,0.1,100,40,60,4,every_seed_rejects,0.0704,power
+uniform,0.15,100,40,60,4,pooled,0.9966,power
+uniform,0.15,100,40,60,4,pooled_all_seeds_positive,0.9246,power
+uniform,0.15,100,40,60,4,every_seed_rejects,0.3318,power
+uniform,0.0,150,20,130,1,pooled,0.1706,null calibration
+uniform,0.0,150,20,130,1,pooled_all_seeds_positive,0.1706,null calibration
+uniform,0.0,150,20,130,1,every_seed_rejects,0.1706,null calibration
+uniform,0.05,150,20,130,1,pooled,0.4468,power
+uniform,0.05,150,20,130,1,pooled_all_seeds_positive,0.4468,power
+uniform,0.05,150,20,130,1,every_seed_rejects,0.4468,power
+uniform,0.1,150,20,130,1,pooled,0.7578,power
+uniform,0.1,150,20,130,1,pooled_all_seeds_positive,0.7578,power
+uniform,0.1,150,20,130,1,every_seed_rejects,0.7578,power
+uniform,0.15,150,20,130,1,pooled,0.9338,power
+uniform,0.15,150,20,130,1,pooled_all_seeds_positive,0.9338,power
+uniform,0.15,150,20,130,1,every_seed_rejects,0.9338,power
+uniform,0.0,150,20,130,2,pooled,0.2366,null calibration
+uniform,0.0,150,20,130,2,pooled_all_seeds_positive,0.18,null calibration
+uniform,0.0,150,20,130,2,every_seed_rejects,0.028,null calibration
+uniform,0.05,150,20,130,2,pooled,0.645,power
+uniform,0.05,150,20,130,2,pooled_all_seeds_positive,0.5498,power
+uniform,0.05,150,20,130,2,every_seed_rejects,0.1912,power
+uniform,0.1,150,20,130,2,pooled,0.9326,power
+uniform,0.1,150,20,130,2,pooled_all_seeds_positive,0.8842,power
+uniform,0.1,150,20,130,2,every_seed_rejects,0.5762,power
+uniform,0.15,150,20,130,2,pooled,0.9948,power
+uniform,0.15,150,20,130,2,pooled_all_seeds_positive,0.9834,power
+uniform,0.15,150,20,130,2,every_seed_rejects,0.8688,power
+uniform,0.0,150,20,130,3,pooled,0.2808,null calibration
+uniform,0.0,150,20,130,3,pooled_all_seeds_positive,0.1318,null calibration
+uniform,0.0,150,20,130,3,every_seed_rejects,0.0056,null calibration
+uniform,0.05,150,20,130,3,pooled,0.7734,power
+uniform,0.05,150,20,130,3,pooled_all_seeds_positive,0.5112,power
+uniform,0.05,150,20,130,3,every_seed_rejects,0.0912,power
+uniform,0.1,150,20,130,3,pooled,0.9808,power
+uniform,0.1,150,20,130,3,pooled_all_seeds_positive,0.8676,power
+uniform,0.1,150,20,130,3,every_seed_rejects,0.4298,power
+uniform,0.15,150,20,130,3,pooled,0.9994,power
+uniform,0.15,150,20,130,3,pooled_all_seeds_positive,0.98,power
+uniform,0.15,150,20,130,3,every_seed_rejects,0.8104,power
+uniform,0.0,150,20,130,4,pooled,0.3364,null calibration
+uniform,0.0,150,20,130,4,pooled_all_seeds_positive,0.0926,null calibration
+uniform,0.0,150,20,130,4,every_seed_rejects,0.0006,null calibration
+uniform,0.05,150,20,130,4,pooled,0.8576,power
+uniform,0.05,150,20,130,4,pooled_all_seeds_positive,0.4344,power
+uniform,0.05,150,20,130,4,every_seed_rejects,0.0452,power
+uniform,0.1,150,20,130,4,pooled,0.9936,power
+uniform,0.1,150,20,130,4,pooled_all_seeds_positive,0.8322,power
+uniform,0.1,150,20,130,4,every_seed_rejects,0.332,power
+uniform,0.15,150,20,130,4,pooled,1.0,power
+uniform,0.15,150,20,130,4,pooled_all_seeds_positive,0.9748,power
+uniform,0.15,150,20,130,4,every_seed_rejects,0.7564,power
+uniform,0.0,150,30,120,1,pooled,0.1618,null calibration
+uniform,0.0,150,30,120,1,pooled_all_seeds_positive,0.1618,null calibration
+uniform,0.0,150,30,120,1,every_seed_rejects,0.1618,null calibration
+uniform,0.05,150,30,120,1,pooled,0.416,power
+uniform,0.05,150,30,120,1,pooled_all_seeds_positive,0.416,power
+uniform,0.05,150,30,120,1,every_seed_rejects,0.416,power
+uniform,0.1,150,30,120,1,pooled,0.7464,power
+uniform,0.1,150,30,120,1,pooled_all_seeds_positive,0.7464,power
+uniform,0.1,150,30,120,1,every_seed_rejects,0.7464,power
+uniform,0.15,150,30,120,1,pooled,0.9232,power
+uniform,0.15,150,30,120,1,pooled_all_seeds_positive,0.9232,power
+uniform,0.15,150,30,120,1,every_seed_rejects,0.9232,power
+uniform,0.0,150,30,120,2,pooled,0.2278,null calibration
+uniform,0.0,150,30,120,2,pooled_all_seeds_positive,0.1788,null calibration
+uniform,0.0,150,30,120,2,every_seed_rejects,0.0282,null calibration
+uniform,0.05,150,30,120,2,pooled,0.6384,power
+uniform,0.05,150,30,120,2,pooled_all_seeds_positive,0.5522,power
+uniform,0.05,150,30,120,2,every_seed_rejects,0.1886,power
+uniform,0.1,150,30,120,2,pooled,0.9196,power
+uniform,0.1,150,30,120,2,pooled_all_seeds_positive,0.8672,power
+uniform,0.1,150,30,120,2,every_seed_rejects,0.5448,power
+uniform,0.15,150,30,120,2,pooled,0.9936,power
+uniform,0.15,150,30,120,2,pooled_all_seeds_positive,0.9828,power
+uniform,0.15,150,30,120,2,every_seed_rejects,0.8512,power
+uniform,0.0,150,30,120,3,pooled,0.2732,null calibration
+uniform,0.0,150,30,120,3,pooled_all_seeds_positive,0.1262,null calibration
+uniform,0.0,150,30,120,3,every_seed_rejects,0.0052,null calibration
+uniform,0.05,150,30,120,3,pooled,0.7596,power
+uniform,0.05,150,30,120,3,pooled_all_seeds_positive,0.5014,power
+uniform,0.05,150,30,120,3,every_seed_rejects,0.0858,power
+uniform,0.1,150,30,120,3,pooled,0.9792,power
+uniform,0.1,150,30,120,3,pooled_all_seeds_positive,0.8572,power
+uniform,0.1,150,30,120,3,every_seed_rejects,0.4026,power
+uniform,0.15,150,30,120,3,pooled,0.9992,power
+uniform,0.15,150,30,120,3,pooled_all_seeds_positive,0.9824,power
+uniform,0.15,150,30,120,3,every_seed_rejects,0.7888,power
+uniform,0.0,150,30,120,4,pooled,0.3156,null calibration
+uniform,0.0,150,30,120,4,pooled_all_seeds_positive,0.0826,null calibration
+uniform,0.0,150,30,120,4,every_seed_rejects,0.0006,null calibration
+uniform,0.05,150,30,120,4,pooled,0.8356,power
+uniform,0.05,150,30,120,4,pooled_all_seeds_positive,0.4082,power
+uniform,0.05,150,30,120,4,every_seed_rejects,0.0342,power
+uniform,0.1,150,30,120,4,pooled,0.9948,power
+uniform,0.1,150,30,120,4,pooled_all_seeds_positive,0.825,power
+uniform,0.1,150,30,120,4,every_seed_rejects,0.2952,power
+uniform,0.15,150,30,120,4,pooled,0.9998,power
+uniform,0.15,150,30,120,4,pooled_all_seeds_positive,0.9732,power
+uniform,0.15,150,30,120,4,every_seed_rejects,0.7374,power
+uniform,0.0,150,40,110,1,pooled,0.1444,null calibration
+uniform,0.0,150,40,110,1,pooled_all_seeds_positive,0.1444,null calibration
+uniform,0.0,150,40,110,1,every_seed_rejects,0.1444,null calibration
+uniform,0.05,150,40,110,1,pooled,0.4086,power
+uniform,0.05,150,40,110,1,pooled_all_seeds_positive,0.4086,power
+uniform,0.05,150,40,110,1,every_seed_rejects,0.4086,power
+uniform,0.1,150,40,110,1,pooled,0.7128,power
+uniform,0.1,150,40,110,1,pooled_all_seeds_positive,0.7128,power
+uniform,0.1,150,40,110,1,every_seed_rejects,0.7128,power
+uniform,0.15,150,40,110,1,pooled,0.906,power
+uniform,0.15,150,40,110,1,pooled_all_seeds_positive,0.906,power
+uniform,0.15,150,40,110,1,every_seed_rejects,0.906,power
+uniform,0.0,150,40,110,2,pooled,0.2116,null calibration
+uniform,0.0,150,40,110,2,pooled_all_seeds_positive,0.1616,null calibration
+uniform,0.0,150,40,110,2,every_seed_rejects,0.0262,null calibration
+uniform,0.05,150,40,110,2,pooled,0.611,power
+uniform,0.05,150,40,110,2,pooled_all_seeds_positive,0.5256,power
+uniform,0.05,150,40,110,2,every_seed_rejects,0.1628,power
+uniform,0.1,150,40,110,2,pooled,0.9116,power
+uniform,0.1,150,40,110,2,pooled_all_seeds_positive,0.8638,power
+uniform,0.1,150,40,110,2,every_seed_rejects,0.5144,power
+uniform,0.15,150,40,110,2,pooled,0.993,power
+uniform,0.15,150,40,110,2,pooled_all_seeds_positive,0.9828,power
+uniform,0.15,150,40,110,2,every_seed_rejects,0.8372,power
+uniform,0.0,150,40,110,3,pooled,0.2616,null calibration
+uniform,0.0,150,40,110,3,pooled_all_seeds_positive,0.1232,null calibration
+uniform,0.0,150,40,110,3,every_seed_rejects,0.0028,null calibration
+uniform,0.05,150,40,110,3,pooled,0.731,power
+uniform,0.05,150,40,110,3,pooled_all_seeds_positive,0.4742,power
+uniform,0.05,150,40,110,3,every_seed_rejects,0.0682,power
+uniform,0.1,150,40,110,3,pooled,0.971,power
+uniform,0.1,150,40,110,3,pooled_all_seeds_positive,0.8466,power
+uniform,0.1,150,40,110,3,every_seed_rejects,0.3628,power
+uniform,0.15,150,40,110,3,pooled,0.999,power
+uniform,0.15,150,40,110,3,pooled_all_seeds_positive,0.9766,power
+uniform,0.15,150,40,110,3,every_seed_rejects,0.7458,power
+uniform,0.0,150,40,110,4,pooled,0.2968,null calibration
+uniform,0.0,150,40,110,4,pooled_all_seeds_positive,0.0724,null calibration
+uniform,0.0,150,40,110,4,every_seed_rejects,0.0004,null calibration
+uniform,0.05,150,40,110,4,pooled,0.8186,power
+uniform,0.05,150,40,110,4,pooled_all_seeds_positive,0.404,power
+uniform,0.05,150,40,110,4,every_seed_rejects,0.0282,power
+uniform,0.1,150,40,110,4,pooled,0.9906,power
+uniform,0.1,150,40,110,4,pooled_all_seeds_positive,0.8132,power
+uniform,0.1,150,40,110,4,every_seed_rejects,0.2694,power
+uniform,0.15,150,40,110,4,pooled,1.0,power
+uniform,0.15,150,40,110,4,pooled_all_seeds_positive,0.9686,power
+uniform,0.15,150,40,110,4,every_seed_rejects,0.7028,power
+concentrated,0.0,60,20,40,1,pooled,0.0046,null calibration
+concentrated,0.0,60,20,40,1,pooled_all_seeds_positive,0.0046,null calibration
+concentrated,0.0,60,20,40,1,every_seed_rejects,0.0046,null calibration
+concentrated,0.05,60,20,40,1,pooled,0.071,power
+concentrated,0.05,60,20,40,1,pooled_all_seeds_positive,0.071,power
+concentrated,0.05,60,20,40,1,every_seed_rejects,0.071,power
+concentrated,0.1,60,20,40,1,pooled,0.3138,power
+concentrated,0.1,60,20,40,1,pooled_all_seeds_positive,0.3138,power
+concentrated,0.1,60,20,40,1,every_seed_rejects,0.3138,power
+concentrated,0.15,60,20,40,1,pooled,0.5324,power
+concentrated,0.15,60,20,40,1,pooled_all_seeds_positive,0.5324,power
+concentrated,0.15,60,20,40,1,every_seed_rejects,0.5324,power
+concentrated,0.0,60,20,40,2,pooled,0.0106,null calibration
+concentrated,0.0,60,20,40,2,pooled_all_seeds_positive,0.0104,null calibration
+concentrated,0.0,60,20,40,2,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,20,40,2,pooled,0.2048,power
+concentrated,0.05,60,20,40,2,pooled_all_seeds_positive,0.1944,power
+concentrated,0.05,60,20,40,2,every_seed_rejects,0.0052,power
+concentrated,0.1,60,20,40,2,pooled,0.6046,power
+concentrated,0.1,60,20,40,2,pooled_all_seeds_positive,0.593,power
+concentrated,0.1,60,20,40,2,every_seed_rejects,0.118,power
+concentrated,0.15,60,20,40,2,pooled,0.7948,power
+concentrated,0.15,60,20,40,2,pooled_all_seeds_positive,0.7904,power
+concentrated,0.15,60,20,40,2,every_seed_rejects,0.3186,power
+concentrated,0.0,60,20,40,3,pooled,0.0184,null calibration
+concentrated,0.0,60,20,40,3,pooled_all_seeds_positive,0.0122,null calibration
+concentrated,0.0,60,20,40,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,20,40,3,pooled,0.3156,power
+concentrated,0.05,60,20,40,3,pooled_all_seeds_positive,0.251,power
+concentrated,0.05,60,20,40,3,every_seed_rejects,0.0006,power
+concentrated,0.1,60,20,40,3,pooled,0.74,power
+concentrated,0.1,60,20,40,3,pooled_all_seeds_positive,0.6898,power
+concentrated,0.1,60,20,40,3,every_seed_rejects,0.0476,power
+concentrated,0.15,60,20,40,3,pooled,0.9026,power
+concentrated,0.15,60,20,40,3,pooled_all_seeds_positive,0.881,power
+concentrated,0.15,60,20,40,3,every_seed_rejects,0.214,power
+concentrated,0.0,60,20,40,4,pooled,0.0156,null calibration
+concentrated,0.0,60,20,40,4,pooled_all_seeds_positive,0.0076,null calibration
+concentrated,0.0,60,20,40,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,20,40,4,pooled,0.3974,power
+concentrated,0.05,60,20,40,4,pooled_all_seeds_positive,0.2352,power
+concentrated,0.05,60,20,40,4,every_seed_rejects,0.0002,power
+concentrated,0.1,60,20,40,4,pooled,0.8204,power
+concentrated,0.1,60,20,40,4,pooled_all_seeds_positive,0.7064,power
+concentrated,0.1,60,20,40,4,every_seed_rejects,0.0218,power
+concentrated,0.15,60,20,40,4,pooled,0.9312,power
+concentrated,0.15,60,20,40,4,pooled_all_seeds_positive,0.8868,power
+concentrated,0.15,60,20,40,4,every_seed_rejects,0.1414,power
+concentrated,0.0,60,30,30,1,pooled,0.0022,null calibration
+concentrated,0.0,60,30,30,1,pooled_all_seeds_positive,0.0022,null calibration
+concentrated,0.0,60,30,30,1,every_seed_rejects,0.0022,null calibration
+concentrated,0.05,60,30,30,1,pooled,0.036,power
+concentrated,0.05,60,30,30,1,pooled_all_seeds_positive,0.036,power
+concentrated,0.05,60,30,30,1,every_seed_rejects,0.036,power
+concentrated,0.1,60,30,30,1,pooled,0.1854,power
+concentrated,0.1,60,30,30,1,pooled_all_seeds_positive,0.1854,power
+concentrated,0.1,60,30,30,1,every_seed_rejects,0.1854,power
+concentrated,0.15,60,30,30,1,pooled,0.3736,power
+concentrated,0.15,60,30,30,1,pooled_all_seeds_positive,0.3736,power
+concentrated,0.15,60,30,30,1,every_seed_rejects,0.3736,power
+concentrated,0.0,60,30,30,2,pooled,0.0042,null calibration
+concentrated,0.0,60,30,30,2,pooled_all_seeds_positive,0.0042,null calibration
+concentrated,0.0,60,30,30,2,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,30,30,2,pooled,0.1342,power
+concentrated,0.05,60,30,30,2,pooled_all_seeds_positive,0.1282,power
+concentrated,0.05,60,30,30,2,every_seed_rejects,0.0012,power
+concentrated,0.1,60,30,30,2,pooled,0.4504,power
+concentrated,0.1,60,30,30,2,pooled_all_seeds_positive,0.4434,power
+concentrated,0.1,60,30,30,2,every_seed_rejects,0.0542,power
+concentrated,0.15,60,30,30,2,pooled,0.6474,power
+concentrated,0.15,60,30,30,2,pooled_all_seeds_positive,0.6436,power
+concentrated,0.15,60,30,30,2,every_seed_rejects,0.1814,power
+concentrated,0.0,60,30,30,3,pooled,0.0082,null calibration
+concentrated,0.0,60,30,30,3,pooled_all_seeds_positive,0.005,null calibration
+concentrated,0.0,60,30,30,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,30,30,3,pooled,0.2172,power
+concentrated,0.05,60,30,30,3,pooled_all_seeds_positive,0.171,power
+concentrated,0.05,60,30,30,3,every_seed_rejects,0.0,power
+concentrated,0.1,60,30,30,3,pooled,0.589,power
+concentrated,0.1,60,30,30,3,pooled_all_seeds_positive,0.5296,power
+concentrated,0.1,60,30,30,3,every_seed_rejects,0.013,power
+concentrated,0.15,60,30,30,3,pooled,0.78,power
+concentrated,0.15,60,30,30,3,pooled_all_seeds_positive,0.7504,power
+concentrated,0.15,60,30,30,3,every_seed_rejects,0.0892,power
+concentrated,0.0,60,30,30,4,pooled,0.0102,null calibration
+concentrated,0.0,60,30,30,4,pooled_all_seeds_positive,0.003,null calibration
+concentrated,0.0,60,30,30,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,30,30,4,pooled,0.3086,power
+concentrated,0.05,60,30,30,4,pooled_all_seeds_positive,0.1678,power
+concentrated,0.05,60,30,30,4,every_seed_rejects,0.0,power
+concentrated,0.1,60,30,30,4,pooled,0.6916,power
+concentrated,0.1,60,30,30,4,pooled_all_seeds_positive,0.5622,power
+concentrated,0.1,60,30,30,4,every_seed_rejects,0.0068,power
+concentrated,0.15,60,30,30,4,pooled,0.8362,power
+concentrated,0.15,60,30,30,4,pooled_all_seeds_positive,0.7662,power
+concentrated,0.15,60,30,30,4,every_seed_rejects,0.0548,power
+concentrated,0.0,60,40,20,1,pooled,0.0004,null calibration
+concentrated,0.0,60,40,20,1,pooled_all_seeds_positive,0.0004,null calibration
+concentrated,0.0,60,40,20,1,every_seed_rejects,0.0004,null calibration
+concentrated,0.05,60,40,20,1,pooled,0.0118,power
+concentrated,0.05,60,40,20,1,pooled_all_seeds_positive,0.0118,power
+concentrated,0.05,60,40,20,1,every_seed_rejects,0.0118,power
+concentrated,0.1,60,40,20,1,pooled,0.0828,power
+concentrated,0.1,60,40,20,1,pooled_all_seeds_positive,0.0828,power
+concentrated,0.1,60,40,20,1,every_seed_rejects,0.0828,power
+concentrated,0.15,60,40,20,1,pooled,0.1844,power
+concentrated,0.15,60,40,20,1,pooled_all_seeds_positive,0.1844,power
+concentrated,0.15,60,40,20,1,every_seed_rejects,0.1844,power
+concentrated,0.0,60,40,20,2,pooled,0.0018,null calibration
+concentrated,0.0,60,40,20,2,pooled_all_seeds_positive,0.0018,null calibration
+concentrated,0.0,60,40,20,2,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,40,20,2,pooled,0.0576,power
+concentrated,0.05,60,40,20,2,pooled_all_seeds_positive,0.0548,power
+concentrated,0.05,60,40,20,2,every_seed_rejects,0.0,power
+concentrated,0.1,60,40,20,2,pooled,0.2538,power
+concentrated,0.1,60,40,20,2,pooled_all_seeds_positive,0.2486,power
+concentrated,0.1,60,40,20,2,every_seed_rejects,0.0112,power
+concentrated,0.15,60,40,20,2,pooled,0.4344,power
+concentrated,0.15,60,40,20,2,pooled_all_seeds_positive,0.4296,power
+concentrated,0.15,60,40,20,2,every_seed_rejects,0.0464,power
+concentrated,0.0,60,40,20,3,pooled,0.0032,null calibration
+concentrated,0.0,60,40,20,3,pooled_all_seeds_positive,0.0022,null calibration
+concentrated,0.0,60,40,20,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,40,20,3,pooled,0.1116,power
+concentrated,0.05,60,40,20,3,pooled_all_seeds_positive,0.0814,power
+concentrated,0.05,60,40,20,3,every_seed_rejects,0.0,power
+concentrated,0.1,60,40,20,3,pooled,0.3976,power
+concentrated,0.1,60,40,20,3,pooled_all_seeds_positive,0.3494,power
+concentrated,0.1,60,40,20,3,every_seed_rejects,0.0012,power
+concentrated,0.15,60,40,20,3,pooled,0.5654,power
+concentrated,0.15,60,40,20,3,pooled_all_seeds_positive,0.5352,power
+concentrated,0.15,60,40,20,3,every_seed_rejects,0.0216,power
+concentrated,0.0,60,40,20,4,pooled,0.0028,null calibration
+concentrated,0.0,60,40,20,4,pooled_all_seeds_positive,0.0014,null calibration
+concentrated,0.0,60,40,20,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,60,40,20,4,pooled,0.164,power
+concentrated,0.05,60,40,20,4,pooled_all_seeds_positive,0.0788,power
+concentrated,0.05,60,40,20,4,every_seed_rejects,0.0,power
+concentrated,0.1,60,40,20,4,pooled,0.4726,power
+concentrated,0.1,60,40,20,4,pooled_all_seeds_positive,0.3528,power
+concentrated,0.1,60,40,20,4,every_seed_rejects,0.0006,power
+concentrated,0.15,60,40,20,4,pooled,0.6368,power
+concentrated,0.15,60,40,20,4,pooled_all_seeds_positive,0.5638,power
+concentrated,0.15,60,40,20,4,every_seed_rejects,0.0074,power
+concentrated,0.0,100,20,80,1,pooled,0.0158,null calibration
+concentrated,0.0,100,20,80,1,pooled_all_seeds_positive,0.0158,null calibration
+concentrated,0.0,100,20,80,1,every_seed_rejects,0.0158,null calibration
+concentrated,0.05,100,20,80,1,pooled,0.2062,power
+concentrated,0.05,100,20,80,1,pooled_all_seeds_positive,0.2062,power
+concentrated,0.05,100,20,80,1,every_seed_rejects,0.2062,power
+concentrated,0.1,100,20,80,1,pooled,0.6536,power
+concentrated,0.1,100,20,80,1,pooled_all_seeds_positive,0.6536,power
+concentrated,0.1,100,20,80,1,every_seed_rejects,0.6536,power
+concentrated,0.15,100,20,80,1,pooled,0.874,power
+concentrated,0.15,100,20,80,1,pooled_all_seeds_positive,0.874,power
+concentrated,0.15,100,20,80,1,every_seed_rejects,0.874,power
+concentrated,0.0,100,20,80,2,pooled,0.024,null calibration
+concentrated,0.0,100,20,80,2,pooled_all_seeds_positive,0.0226,null calibration
+concentrated,0.0,100,20,80,2,every_seed_rejects,0.0008,null calibration
+concentrated,0.05,100,20,80,2,pooled,0.3994,power
+concentrated,0.05,100,20,80,2,pooled_all_seeds_positive,0.3862,power
+concentrated,0.05,100,20,80,2,every_seed_rejects,0.0452,power
+concentrated,0.1,100,20,80,2,pooled,0.8916,power
+concentrated,0.1,100,20,80,2,pooled_all_seeds_positive,0.8866,power
+concentrated,0.1,100,20,80,2,every_seed_rejects,0.4652,power
+concentrated,0.15,100,20,80,2,pooled,0.9794,power
+concentrated,0.15,100,20,80,2,pooled_all_seeds_positive,0.9786,power
+concentrated,0.15,100,20,80,2,every_seed_rejects,0.7696,power
+concentrated,0.0,100,20,80,3,pooled,0.0278,null calibration
+concentrated,0.0,100,20,80,3,pooled_all_seeds_positive,0.0208,null calibration
+concentrated,0.0,100,20,80,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,20,80,3,pooled,0.5654,power
+concentrated,0.05,100,20,80,3,pooled_all_seeds_positive,0.483,power
+concentrated,0.05,100,20,80,3,every_seed_rejects,0.0102,power
+concentrated,0.1,100,20,80,3,pooled,0.9606,power
+concentrated,0.1,100,20,80,3,pooled_all_seeds_positive,0.938,power
+concentrated,0.1,100,20,80,3,every_seed_rejects,0.3196,power
+concentrated,0.15,100,20,80,3,pooled,0.995,power
+concentrated,0.15,100,20,80,3,pooled_all_seeds_positive,0.9924,power
+concentrated,0.15,100,20,80,3,every_seed_rejects,0.6968,power
+concentrated,0.0,100,20,80,4,pooled,0.0334,null calibration
+concentrated,0.0,100,20,80,4,pooled_all_seeds_positive,0.0148,null calibration
+concentrated,0.0,100,20,80,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,20,80,4,pooled,0.6516,power
+concentrated,0.05,100,20,80,4,pooled_all_seeds_positive,0.4674,power
+concentrated,0.05,100,20,80,4,every_seed_rejects,0.0024,power
+concentrated,0.1,100,20,80,4,pooled,0.986,power
+concentrated,0.1,100,20,80,4,pooled_all_seeds_positive,0.9438,power
+concentrated,0.1,100,20,80,4,every_seed_rejects,0.225,power
+concentrated,0.15,100,20,80,4,pooled,0.9986,power
+concentrated,0.15,100,20,80,4,pooled_all_seeds_positive,0.9922,power
+concentrated,0.15,100,20,80,4,every_seed_rejects,0.6298,power
+concentrated,0.0,100,30,70,1,pooled,0.0126,null calibration
+concentrated,0.0,100,30,70,1,pooled_all_seeds_positive,0.0126,null calibration
+concentrated,0.0,100,30,70,1,every_seed_rejects,0.0126,null calibration
+concentrated,0.05,100,30,70,1,pooled,0.1702,power
+concentrated,0.05,100,30,70,1,pooled_all_seeds_positive,0.1702,power
+concentrated,0.05,100,30,70,1,every_seed_rejects,0.1702,power
+concentrated,0.1,100,30,70,1,pooled,0.5898,power
+concentrated,0.1,100,30,70,1,pooled_all_seeds_positive,0.5898,power
+concentrated,0.1,100,30,70,1,every_seed_rejects,0.5898,power
+concentrated,0.15,100,30,70,1,pooled,0.8202,power
+concentrated,0.15,100,30,70,1,pooled_all_seeds_positive,0.8202,power
+concentrated,0.15,100,30,70,1,every_seed_rejects,0.8202,power
+concentrated,0.0,100,30,70,2,pooled,0.026,null calibration
+concentrated,0.0,100,30,70,2,pooled_all_seeds_positive,0.0246,null calibration
+concentrated,0.0,100,30,70,2,every_seed_rejects,0.0004,null calibration
+concentrated,0.05,100,30,70,2,pooled,0.369,power
+concentrated,0.05,100,30,70,2,pooled_all_seeds_positive,0.3554,power
+concentrated,0.05,100,30,70,2,every_seed_rejects,0.032,power
+concentrated,0.1,100,30,70,2,pooled,0.8356,power
+concentrated,0.1,100,30,70,2,pooled_all_seeds_positive,0.83,power
+concentrated,0.1,100,30,70,2,every_seed_rejects,0.3552,power
+concentrated,0.15,100,30,70,2,pooled,0.9644,power
+concentrated,0.15,100,30,70,2,pooled_all_seeds_positive,0.963,power
+concentrated,0.15,100,30,70,2,every_seed_rejects,0.7012,power
+concentrated,0.0,100,30,70,3,pooled,0.0248,null calibration
+concentrated,0.0,100,30,70,3,pooled_all_seeds_positive,0.0196,null calibration
+concentrated,0.0,100,30,70,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,30,70,3,pooled,0.5082,power
+concentrated,0.05,100,30,70,3,pooled_all_seeds_positive,0.4188,power
+concentrated,0.05,100,30,70,3,every_seed_rejects,0.0066,power
+concentrated,0.1,100,30,70,3,pooled,0.943,power
+concentrated,0.1,100,30,70,3,pooled_all_seeds_positive,0.9118,power
+concentrated,0.1,100,30,70,3,every_seed_rejects,0.2582,power
+concentrated,0.15,100,30,70,3,pooled,0.9908,power
+concentrated,0.15,100,30,70,3,pooled_all_seeds_positive,0.9844,power
+concentrated,0.15,100,30,70,3,every_seed_rejects,0.6022,power
+concentrated,0.0,100,30,70,4,pooled,0.025,null calibration
+concentrated,0.0,100,30,70,4,pooled_all_seeds_positive,0.0126,null calibration
+concentrated,0.0,100,30,70,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,30,70,4,pooled,0.62,power
+concentrated,0.05,100,30,70,4,pooled_all_seeds_positive,0.4204,power
+concentrated,0.05,100,30,70,4,every_seed_rejects,0.0018,power
+concentrated,0.1,100,30,70,4,pooled,0.9688,power
+concentrated,0.1,100,30,70,4,pooled_all_seeds_positive,0.9112,power
+concentrated,0.1,100,30,70,4,every_seed_rejects,0.165,power
+concentrated,0.15,100,30,70,4,pooled,0.997,power
+concentrated,0.15,100,30,70,4,pooled_all_seeds_positive,0.9866,power
+concentrated,0.15,100,30,70,4,every_seed_rejects,0.5128,power
+concentrated,0.0,100,40,60,1,pooled,0.0124,null calibration
+concentrated,0.0,100,40,60,1,pooled_all_seeds_positive,0.0124,null calibration
+concentrated,0.0,100,40,60,1,every_seed_rejects,0.0124,null calibration
+concentrated,0.05,100,40,60,1,pooled,0.139,power
+concentrated,0.05,100,40,60,1,pooled_all_seeds_positive,0.139,power
+concentrated,0.05,100,40,60,1,every_seed_rejects,0.139,power
+concentrated,0.1,100,40,60,1,pooled,0.5132,power
+concentrated,0.1,100,40,60,1,pooled_all_seeds_positive,0.5132,power
+concentrated,0.1,100,40,60,1,every_seed_rejects,0.5132,power
+concentrated,0.15,100,40,60,1,pooled,0.756,power
+concentrated,0.15,100,40,60,1,pooled_all_seeds_positive,0.756,power
+concentrated,0.15,100,40,60,1,every_seed_rejects,0.756,power
+concentrated,0.0,100,40,60,2,pooled,0.0208,null calibration
+concentrated,0.0,100,40,60,2,pooled_all_seeds_positive,0.02,null calibration
+concentrated,0.0,100,40,60,2,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,40,60,2,pooled,0.317,power
+concentrated,0.05,100,40,60,2,pooled_all_seeds_positive,0.304,power
+concentrated,0.05,100,40,60,2,every_seed_rejects,0.0236,power
+concentrated,0.1,100,40,60,2,pooled,0.8004,power
+concentrated,0.1,100,40,60,2,pooled_all_seeds_positive,0.7932,power
+concentrated,0.1,100,40,60,2,every_seed_rejects,0.2866,power
+concentrated,0.15,100,40,60,2,pooled,0.9364,power
+concentrated,0.15,100,40,60,2,pooled_all_seeds_positive,0.9342,power
+concentrated,0.15,100,40,60,2,every_seed_rejects,0.5962,power
+concentrated,0.0,100,40,60,3,pooled,0.0266,null calibration
+concentrated,0.0,100,40,60,3,pooled_all_seeds_positive,0.0172,null calibration
+concentrated,0.0,100,40,60,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,40,60,3,pooled,0.448,power
+concentrated,0.05,100,40,60,3,pooled_all_seeds_positive,0.3578,power
+concentrated,0.05,100,40,60,3,every_seed_rejects,0.0032,power
+concentrated,0.1,100,40,60,3,pooled,0.8986,power
+concentrated,0.1,100,40,60,3,pooled_all_seeds_positive,0.8574,power
+concentrated,0.1,100,40,60,3,every_seed_rejects,0.1644,power
+concentrated,0.15,100,40,60,3,pooled,0.979,power
+concentrated,0.15,100,40,60,3,pooled_all_seeds_positive,0.9668,power
+concentrated,0.15,100,40,60,3,every_seed_rejects,0.4654,power
+concentrated,0.0,100,40,60,4,pooled,0.0282,null calibration
+concentrated,0.0,100,40,60,4,pooled_all_seeds_positive,0.0122,null calibration
+concentrated,0.0,100,40,60,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,100,40,60,4,pooled,0.5422,power
+concentrated,0.05,100,40,60,4,pooled_all_seeds_positive,0.356,power
+concentrated,0.05,100,40,60,4,every_seed_rejects,0.0014,power
+concentrated,0.1,100,40,60,4,pooled,0.9432,power
+concentrated,0.1,100,40,60,4,pooled_all_seeds_positive,0.8706,power
+concentrated,0.1,100,40,60,4,every_seed_rejects,0.1024,power
+concentrated,0.15,100,40,60,4,pooled,0.9914,power
+concentrated,0.15,100,40,60,4,pooled_all_seeds_positive,0.9746,power
+concentrated,0.15,100,40,60,4,every_seed_rejects,0.3866,power
+concentrated,0.0,150,20,130,1,pooled,0.026,null calibration
+concentrated,0.0,150,20,130,1,pooled_all_seeds_positive,0.026,null calibration
+concentrated,0.0,150,20,130,1,every_seed_rejects,0.026,null calibration
+concentrated,0.05,150,20,130,1,pooled,0.3548,power
+concentrated,0.05,150,20,130,1,pooled_all_seeds_positive,0.3548,power
+concentrated,0.05,150,20,130,1,every_seed_rejects,0.3548,power
+concentrated,0.1,150,20,130,1,pooled,0.8644,power
+concentrated,0.1,150,20,130,1,pooled_all_seeds_positive,0.8644,power
+concentrated,0.1,150,20,130,1,every_seed_rejects,0.8644,power
+concentrated,0.15,150,20,130,1,pooled,0.981,power
+concentrated,0.15,150,20,130,1,pooled_all_seeds_positive,0.981,power
+concentrated,0.15,150,20,130,1,every_seed_rejects,0.981,power
+concentrated,0.0,150,20,130,2,pooled,0.0312,null calibration
+concentrated,0.0,150,20,130,2,pooled_all_seeds_positive,0.0296,null calibration
+concentrated,0.0,150,20,130,2,every_seed_rejects,0.0002,null calibration
+concentrated,0.05,150,20,130,2,pooled,0.6156,power
+concentrated,0.05,150,20,130,2,pooled_all_seeds_positive,0.6018,power
+concentrated,0.05,150,20,130,2,every_seed_rejects,0.1276,power
+concentrated,0.1,150,20,130,2,pooled,0.982,power
+concentrated,0.1,150,20,130,2,pooled_all_seeds_positive,0.9802,power
+concentrated,0.1,150,20,130,2,every_seed_rejects,0.7634,power
+concentrated,0.15,150,20,130,2,pooled,0.9998,power
+concentrated,0.15,150,20,130,2,pooled_all_seeds_positive,0.9996,power
+concentrated,0.15,150,20,130,2,every_seed_rejects,0.966,power
+concentrated,0.0,150,20,130,3,pooled,0.0344,null calibration
+concentrated,0.0,150,20,130,3,pooled_all_seeds_positive,0.0232,null calibration
+concentrated,0.0,150,20,130,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,20,130,3,pooled,0.77,power
+concentrated,0.05,150,20,130,3,pooled_all_seeds_positive,0.688,power
+concentrated,0.05,150,20,130,3,every_seed_rejects,0.045,power
+concentrated,0.1,150,20,130,3,pooled,0.998,power
+concentrated,0.1,150,20,130,3,pooled_all_seeds_positive,0.9942,power
+concentrated,0.1,150,20,130,3,every_seed_rejects,0.6664,power
+concentrated,0.15,150,20,130,3,pooled,1.0,power
+concentrated,0.15,150,20,130,3,pooled_all_seeds_positive,0.9998,power
+concentrated,0.15,150,20,130,3,every_seed_rejects,0.9466,power
+concentrated,0.0,150,20,130,4,pooled,0.0384,null calibration
+concentrated,0.0,150,20,130,4,pooled_all_seeds_positive,0.018,null calibration
+concentrated,0.0,150,20,130,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,20,130,4,pooled,0.8566,power
+concentrated,0.05,150,20,130,4,pooled_all_seeds_positive,0.6866,power
+concentrated,0.05,150,20,130,4,every_seed_rejects,0.0206,power
+concentrated,0.1,150,20,130,4,pooled,0.9994,power
+concentrated,0.1,150,20,130,4,pooled_all_seeds_positive,0.991,power
+concentrated,0.1,150,20,130,4,every_seed_rejects,0.5876,power
+concentrated,0.15,150,20,130,4,pooled,1.0,power
+concentrated,0.15,150,20,130,4,pooled_all_seeds_positive,0.9996,power
+concentrated,0.15,150,20,130,4,every_seed_rejects,0.9212,power
+concentrated,0.0,150,30,120,1,pooled,0.0212,null calibration
+concentrated,0.0,150,30,120,1,pooled_all_seeds_positive,0.0212,null calibration
+concentrated,0.0,150,30,120,1,every_seed_rejects,0.0212,null calibration
+concentrated,0.05,150,30,120,1,pooled,0.3238,power
+concentrated,0.05,150,30,120,1,pooled_all_seeds_positive,0.3238,power
+concentrated,0.05,150,30,120,1,every_seed_rejects,0.3238,power
+concentrated,0.1,150,30,120,1,pooled,0.8382,power
+concentrated,0.1,150,30,120,1,pooled_all_seeds_positive,0.8382,power
+concentrated,0.1,150,30,120,1,every_seed_rejects,0.8382,power
+concentrated,0.15,150,30,120,1,pooled,0.97,power
+concentrated,0.15,150,30,120,1,pooled_all_seeds_positive,0.97,power
+concentrated,0.15,150,30,120,1,every_seed_rejects,0.97,power
+concentrated,0.0,150,30,120,2,pooled,0.028,null calibration
+concentrated,0.0,150,30,120,2,pooled_all_seeds_positive,0.0258,null calibration
+concentrated,0.0,150,30,120,2,every_seed_rejects,0.0002,null calibration
+concentrated,0.05,150,30,120,2,pooled,0.5636,power
+concentrated,0.05,150,30,120,2,pooled_all_seeds_positive,0.5488,power
+concentrated,0.05,150,30,120,2,every_seed_rejects,0.1006,power
+concentrated,0.1,150,30,120,2,pooled,0.974,power
+concentrated,0.1,150,30,120,2,pooled_all_seeds_positive,0.9714,power
+concentrated,0.1,150,30,120,2,every_seed_rejects,0.709,power
+concentrated,0.15,150,30,120,2,pooled,0.9984,power
+concentrated,0.15,150,30,120,2,pooled_all_seeds_positive,0.9984,power
+concentrated,0.15,150,30,120,2,every_seed_rejects,0.9472,power
+concentrated,0.0,150,30,120,3,pooled,0.0358,null calibration
+concentrated,0.0,150,30,120,3,pooled_all_seeds_positive,0.026,null calibration
+concentrated,0.0,150,30,120,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,30,120,3,pooled,0.7302,power
+concentrated,0.05,150,30,120,3,pooled_all_seeds_positive,0.6464,power
+concentrated,0.05,150,30,120,3,every_seed_rejects,0.039,power
+concentrated,0.1,150,30,120,3,pooled,0.9948,power
+concentrated,0.1,150,30,120,3,pooled_all_seeds_positive,0.9888,power
+concentrated,0.1,150,30,120,3,every_seed_rejects,0.6102,power
+concentrated,0.15,150,30,120,3,pooled,1.0,power
+concentrated,0.15,150,30,120,3,pooled_all_seeds_positive,0.9994,power
+concentrated,0.15,150,30,120,3,every_seed_rejects,0.9182,power
+concentrated,0.0,150,30,120,4,pooled,0.0344,null calibration
+concentrated,0.0,150,30,120,4,pooled_all_seeds_positive,0.0144,null calibration
+concentrated,0.0,150,30,120,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,30,120,4,pooled,0.8376,power
+concentrated,0.05,150,30,120,4,pooled_all_seeds_positive,0.6522,power
+concentrated,0.05,150,30,120,4,every_seed_rejects,0.011,power
+concentrated,0.1,150,30,120,4,pooled,0.999,power
+concentrated,0.1,150,30,120,4,pooled_all_seeds_positive,0.9864,power
+concentrated,0.1,150,30,120,4,every_seed_rejects,0.5268,power
+concentrated,0.15,150,30,120,4,pooled,1.0,power
+concentrated,0.15,150,30,120,4,pooled_all_seeds_positive,0.9998,power
+concentrated,0.15,150,30,120,4,every_seed_rejects,0.8972,power
+concentrated,0.0,150,40,110,1,pooled,0.0158,null calibration
+concentrated,0.0,150,40,110,1,pooled_all_seeds_positive,0.0158,null calibration
+concentrated,0.0,150,40,110,1,every_seed_rejects,0.0158,null calibration
+concentrated,0.05,150,40,110,1,pooled,0.295,power
+concentrated,0.05,150,40,110,1,pooled_all_seeds_positive,0.295,power
+concentrated,0.05,150,40,110,1,every_seed_rejects,0.295,power
+concentrated,0.1,150,40,110,1,pooled,0.8088,power
+concentrated,0.1,150,40,110,1,pooled_all_seeds_positive,0.8088,power
+concentrated,0.1,150,40,110,1,every_seed_rejects,0.8088,power
+concentrated,0.15,150,40,110,1,pooled,0.9584,power
+concentrated,0.15,150,40,110,1,pooled_all_seeds_positive,0.9584,power
+concentrated,0.15,150,40,110,1,every_seed_rejects,0.9584,power
+concentrated,0.0,150,40,110,2,pooled,0.0282,null calibration
+concentrated,0.0,150,40,110,2,pooled_all_seeds_positive,0.0258,null calibration
+concentrated,0.0,150,40,110,2,every_seed_rejects,0.0004,null calibration
+concentrated,0.05,150,40,110,2,pooled,0.5442,power
+concentrated,0.05,150,40,110,2,pooled_all_seeds_positive,0.5286,power
+concentrated,0.05,150,40,110,2,every_seed_rejects,0.0898,power
+concentrated,0.1,150,40,110,2,pooled,0.9628,power
+concentrated,0.1,150,40,110,2,pooled_all_seeds_positive,0.9598,power
+concentrated,0.1,150,40,110,2,every_seed_rejects,0.6628,power
+concentrated,0.15,150,40,110,2,pooled,0.9972,power
+concentrated,0.15,150,40,110,2,pooled_all_seeds_positive,0.997,power
+concentrated,0.15,150,40,110,2,every_seed_rejects,0.913,power
+concentrated,0.0,150,40,110,3,pooled,0.036,null calibration
+concentrated,0.0,150,40,110,3,pooled_all_seeds_positive,0.0276,null calibration
+concentrated,0.0,150,40,110,3,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,40,110,3,pooled,0.703,power
+concentrated,0.05,150,40,110,3,pooled_all_seeds_positive,0.6124,power
+concentrated,0.05,150,40,110,3,every_seed_rejects,0.0278,power
+concentrated,0.1,150,40,110,3,pooled,0.9946,power
+concentrated,0.1,150,40,110,3,pooled_all_seeds_positive,0.9842,power
+concentrated,0.1,150,40,110,3,every_seed_rejects,0.544,power
+concentrated,0.15,150,40,110,3,pooled,0.9996,power
+concentrated,0.15,150,40,110,3,pooled_all_seeds_positive,0.999,power
+concentrated,0.15,150,40,110,3,every_seed_rejects,0.8858,power
+concentrated,0.0,150,40,110,4,pooled,0.0354,null calibration
+concentrated,0.0,150,40,110,4,pooled_all_seeds_positive,0.0154,null calibration
+concentrated,0.0,150,40,110,4,every_seed_rejects,0.0,null calibration
+concentrated,0.05,150,40,110,4,pooled,0.7986,power
+concentrated,0.05,150,40,110,4,pooled_all_seeds_positive,0.6146,power
+concentrated,0.05,150,40,110,4,every_seed_rejects,0.0086,power
+concentrated,0.1,150,40,110,4,pooled,0.9986,power
+concentrated,0.1,150,40,110,4,pooled_all_seeds_positive,0.9828,power
+concentrated,0.1,150,40,110,4,every_seed_rejects,0.469,power
+concentrated,0.15,150,40,110,4,pooled,1.0,power
+concentrated,0.15,150,40,110,4,pooled_all_seeds_positive,0.999,power
+concentrated,0.15,150,40,110,4,every_seed_rejects,0.8518,power

@@ -96,9 +96,13 @@ build only (B2–B3 vs A2–A5):
 |---|---|---|---|---|
 | B2–B3 − A2–A5 | all 60 | +0.029 | −0.013 to +0.075 | 0.146 |
 | B2–B3 − A2–A5 | primary 31–60 | +0.025 | −0.050 to +0.108 | 0.344 |
+| C1 − A2–A5 | all 60 | +0.054 | −0.013 to +0.121 | 0.075 |
+| C1 − A2–A5 | primary 31–60 | +0.092 | +0.025 to +0.175 | 0.016 |
 
 With one build, the all-60 B result is no longer significant. The earlier all-60 result depends on
-including round-1 A1.
+including round-1 A1. The build caveat applies to B. For C it matters less: on tasks 31–60, C1 against the
+new-build A2–A5 alone gives +0.092 (one-sided sign-flip p = 0.016), close to the pooled figure. On all 60
+tasks it gives +0.054 (p = 0.075). Both C rows are from a single C run, so they are not replicated.
 
 **Interpretation.**
 - The round-1 totals (A1 35, B1 38, C1 40 of 60) are within the A noise band (A2–A5 35–38), so they do
