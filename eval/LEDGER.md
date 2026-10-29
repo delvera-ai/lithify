@@ -37,6 +37,12 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 | 2026-10-27 | 0 recovery step 5 | A / calibration-A1 | 1/1 | 0.0414 | 3.6681 | holdout pass; exact CLI estimate $0.04137888 (1.41× round-1 recorded cost); one zero-cost limit rejection and one auto-resume; no replicates |
 | 2026-10-27 | 0 before A replicates | task-1 base suite timing | 2 suites, zero tokens | 0.0000 | 3.6681 | 43.003 s isolated / 42.442 s planned load (one sequential A); pipeline concurrency 4, executor timeout 900; below 160 s threshold |
 | 2026-10-27 | 0 before A replicates | PR #31 durations and gzip export guards | zero live tokens | 0.0000 | 3.6681 | merged 89020d7 after green CI; fixture, demo, strict sim-sweep and plugin passed |
-| 2026-10-27 | 0 A replicate | A / r1-A-rep2 | 21/60 | 0.7704 | 4.4385 | interrupted unexpectedly at task 22; 21 outcomes retained; no paid restart |
 | 2026-10-28 | 0 interruption audit | A / r1-A-rep2 task 22 | no outcome | >= 0.00394290 estimated | >= 4.44244290 | one deduplicated billed response; second request unresolved; paid work held |
 | 2026-10-28 | 0 owner-requested recovery | A2 unresolved request hold | no outcome | 0.1000 reservation | 4.54244290 encumbered | reservation only; caps unchanged; actual unknown usage unresolved |
+| 2026-10-28 | 0 A replicate | A / r1-A-rep2 | 60/60 | 2.0841 | 5.7522 | completed |
+| 2026-10-28 | 0 A replicate | A / r1-A-rep3 | 60/60 | 2.0681 | 7.8203 | completed |
+| 2026-10-29 | 0 A replicate | A / r1-A-rep4 | 60/60 | 1.9010 | 9.7213 | completed |
+| 2026-10-29 | 0 A replicate | A / r1-A-rep5 | 35/60 | 0.9257 | 11.1604 | stopped exit 76; owner review |
+| 2026-10-29 | 0 B replicate | B / r1-B-rep2 | 3/60 | 0.5358 | 11.1828 | stopped; owner review; max two runs |
+| 2026-10-29 | 0 B replicate | B / r1-B-rep3 | 0/60 | 0.0000 | 11.1828 | stopped; owner review; max two runs |
+| 2026-10-29 | 0 A5 reconciliation | A / task35 rounding only | no new task | 0.00003272 | 11.18287562 | 25/25 requests matched; cumulative CLI estimate reconciled; timeout failure retained; owner requested resume36 only |

@@ -1,0 +1,25 @@
+{
+  "tasks": {
+    "20261029-110719-postgres-dialect-support-the-pos": {
+      "reconciled": true,
+      "row_sha256": "75a840537035311f9aac0591c98cb8e899cc3ac473f1780d4581a3237a0d5e35",
+      "exact_cost_usd": 0.02313272000000001
+    }
+  },
+  "timestamp": "2026-10-29T09:59:15.900517+00:00",
+  "authorization": "Owner requested: Can we continue with A5",
+  "requests": 25,
+  "matched_responses": 25,
+  "unmatched_requests": 0,
+  "result_events": 5,
+  "billing_method": "maximum cumulative cost per session, not sum of five snapshots; independently matched per-message tokens",
+  "usage": {
+    "input_tokens": 58,
+    "cache_creation_input_tokens": 38359,
+    "cache_read_input_tokens": 1079662,
+    "output_tokens": 9317
+  },
+  "source_session_sha256": "ed4b8d5699a837d1b72cbb97ceab65390f9a307694ff4689647a588d8b53b82f",
+  "outcome_preserved": "task35 remains timeout failure and original CSV remains byte-identical",
+  "interpretation": "Recorded request/response, stream and cumulative model usage reconcile; no unmatched logged requests. This audits CLI list-cost estimate, not a provider invoice."
+}

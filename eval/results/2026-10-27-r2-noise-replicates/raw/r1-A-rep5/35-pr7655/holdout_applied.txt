@@ -1,0 +1,118 @@
+exit 1
+............F.............                       [100%]
+=================================== FAILURES ===================================
+____________________ TestPostgres.test_postgis_distance_3d _____________________
+
+self = <tests.dialects.test_postgres.TestPostgres testMethod=test_postgis_distance_3d>
+
+    def test_postgis_distance_3d(self):
+>       self.validate_identity("SELECT a <<->> b")
+
+tests/dialects/test_postgres.py:1932: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/dialects/test_dialect.py:61: in validate_identity
+    expression = self.parse_one(sql)
+                 ^^^^^^^^^^^^^^^^^^^
+tests/dialects/test_dialect.py:30: in parse_one
+    return parse_one(sql, read=self.dialect, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/__init__.py:160: in parse_one
+    result = dialect.parse(sql, **opts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/dialects/dialect.py:1119: in parse
+    return self.parser(**opts).parse(self.tokenize(sql), sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2035: in parse
+    return self._parse(
+sqlglot/parser.py:2155: in _parse
+    return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2122: in _parse_batch_statements
+    expressions.append(parse_method(self))
+                       ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2285: in _parse_statement
+    expression = self._parse_set_operations(expression) if expression else self._parse_select()
+                                                                           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3778: in _parse_select
+    query = self._parse_select_query(
+sqlglot/parser.py:3883: in _parse_select_query
+    projections, exclude = self._parse_projections()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:3734: in _parse_projections
+    return self._parse_expressions(), None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8512: in _parse_expressions
+    return self._parse_csv(self._parse_expression)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:8477: in _parse_csv
+    parse_result = parse_method()
+                   ^^^^^^^^^^^^^^
+sqlglot/parser.py:5706: in _parse_expression
+    return self._parse_alias(self._parse_assignment())
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5709: in _parse_assignment
+    this = self._parse_disjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5731: in _parse_disjunction
+    this = self._parse_conjunction()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5743: in _parse_conjunction
+    this = self._parse_equality()
+           ^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5755: in _parse_equality
+    this = self._parse_comparison()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5771: in _parse_comparison
+    self.COMPARISON[self._prev.token_type](this=this, expression=self._parse_range()),
+                                                                 ^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5777: in _parse_range
+    this = this or self._parse_bitwise()
+                   ^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:5983: in _parse_bitwise
+    this = self._parse_term()
+           ^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6016: in _parse_term
+    this = self._parse_factor()
+           ^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:6050: in _parse_factor
+    this = self.expression(klass(this=this, expression=expression), comments=comments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2096: in expression
+    instance = self.validate_expression(instance)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlglot/parser.py:2003: in validate_expression
+    self.raise_error(error_message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlglot.parsers.postgres.PostgresParser object at 0x1078e6090>
+message = "Required keyword: 'expression' missing for <class 'sqlglot.expressions.core.Distance'>"
+token = <Token token_type: TokenType.GT, text: >, line: 1, col: 14, start: 13, end: 13, comments: []>
+
+    def raise_error(self, message: str, token: Token = SENTINEL_NONE) -> None:
+        token = token or self._curr or self._prev or Token.string("")
+        formatted_sql, start_context, highlight, end_context = highlight_sql(
+            sql=self.sql,
+            positions=[(token.start, token.end)],
+            context_length=self.error_message_context,
+        )
+        formatted_message = f"{message}. Line {token.line}, Col: {token.col}.\n  {formatted_sql}"
+    
+        error = ParseError.new(
+            formatted_message,
+            description=message,
+            line=token.line,
+            col=token.col,
+            start_context=start_context,
+            highlight=highlight,
+            end_context=end_context,
+        )
+    
+        if self.error_level == ErrorLevel.IMMEDIATE:
+>           raise error
+E           sqlglot.errors.ParseError: Required keyword: 'expression' missing for <class 'sqlglot.expressions.core.Distance'>. Line 1, Col: 14.
+E             SELECT a <<->[4m>[0m b
+
+sqlglot/parser.py:1992: ParseError
+=========================== short test summary info ============================
+FAILED tests/dialects/test_postgres.py::TestPostgres::test_postgis_distance_3d
+1 failed, 25 passed, 384 subtests passed in 1.20s

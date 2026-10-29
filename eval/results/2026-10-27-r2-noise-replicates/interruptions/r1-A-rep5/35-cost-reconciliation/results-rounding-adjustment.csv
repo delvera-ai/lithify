@@ -1,0 +1,2 @@
+replicate,position,task,outcome,cost_usd,basis
+r1-A-rep5,35,sqlglot#7655,rounding-reconciliation,0.00003272,exact CLI estimate minus already-recorded 0.0231; not another model call

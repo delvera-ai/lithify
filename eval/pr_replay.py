@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import re
@@ -102,6 +103,30 @@ def tripwire_reasons(rows: list[dict], run_cost: float, max_mean_cost: float | N
     return reasons
 
 
+def reconciled_rows(rows: list[dict], records: dict[str, dict]) -> list[dict]:
+    """Resolve only explicitly audited historical rows; never mutate the CSV evidence."""
+    if not records:
+        return rows
+    available = {row.get("task_id") for row in rows}
+    if not set(records) <= available:
+        raise ValueError("reconciliation references a task absent from completed outcomes")
+    checked = []
+    for row in rows:
+        record = records.get(row.get("task_id", ""))
+        if record is None:
+            checked.append(row)
+            continue
+        digest = hashlib.sha256(json.dumps(row, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        if not record.get("reconciled") or record.get("row_sha256") != digest:
+            raise ValueError("reconciled outcome changed or lacks an explicit completed audit")
+        if row.get("outcome") != "timeout" or str(row.get("cost_lower_bound")).lower() != "true":
+            raise ValueError("reconciliation must refer to an original lower-bound timeout")
+        if abs(float(record["exact_cost_usd"]) - float(row["cost_usd"])) > 0.00005:
+            raise ValueError("reconciled usage does not match recorded cost to CSV precision")
+        checked.append({**row, "cost_lower_bound": False})
+    return checked
+
+
 def reset_to(repo_name: str, clone: Path, base: str, keep: Path | None, save: bool = True) -> None:
     """Check out `base`, restore the carried lithify state, render it and commit the setup.
 
@@ -163,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--arm", default="")
     ap.add_argument("--max-mean-cost", type=float, help="stop after a task if cumulative mean cost exceeds this")
     ap.add_argument("--max-median-wall", type=float, help="stop after a task if median wall_s exceeds this")
+    ap.add_argument("--reconciliation", type=Path, help="specific audited historical timeout usage; preserves original CSV")
     ap.add_argument("--phase-stop-file", type=Path, help="shared phase stop; finish current task, start no more")
     ap.add_argument("--resume", action="store_true", help="continue an interrupted run from its progress.json")
     a = ap.parse_args(argv)
@@ -213,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
     start = int(progress["next_pos"])
     csv_path = out / f"results-{label}.csv"
     completed = list(csv.DictReader(csv_path.open())) if a.resume and csv_path.exists() else []
+    reconciliations = json.loads(a.reconciliation.read_text())["tasks"] if a.reconciliation else {}
+    reconciled_rows(completed, reconciliations)  # Validate before any checkout reset or paid execution.
     stop_reason: list[str] = []
     exit_code = 0
 
@@ -345,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
         save_progress(pos + 1)
-        stop_reason = tripwire_reasons(completed, run_cost, a.max_mean_cost, a.max_median_wall)
+        stop_reason = tripwire_reasons(reconciled_rows(completed, reconciliations), run_cost, a.max_mean_cost, a.max_median_wall)
         if stop_reason:
             signal_phase_stop(stop_reason)
             (ev_root / "tripwire.json").write_text(json.dumps({"reasons": stop_reason, "position": pos}, indent=2))

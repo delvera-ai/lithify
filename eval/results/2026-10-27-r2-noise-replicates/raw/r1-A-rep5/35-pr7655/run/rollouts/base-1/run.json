@@ -1,0 +1,13 @@
+{
+  "label": "base-1",
+  "ok": false,
+  "returncode": 124,
+  "error": "timeout after 900s",
+  "tokens_in": 38417,
+  "tokens_cached": 1079662,
+  "tokens_out": 9317,
+  "cost_usd": 0.02313272000000001,
+  "seconds": 900.1,
+  "gates_passed": true,
+  "patch_lines": 78
+}

@@ -1,0 +1,13 @@
+{
+  "next_pos": 36,
+  "completed_outcomes_retained": 35,
+  "adjusted_checkpoint_sha256": "fab0ea456652573b49429872a85c9490bb210ff8f7568a12cd9edcabc42f35dd",
+  "csv_prefix_sha256": "14129e9b90edcff20410297afe27333276ee25476e0ac229b9e68beaf8305f69",
+  "carried_state_sha256": "d777a1ace8f24a7f1b92dbefa867f68c358f9be190d8f2283b88e6d221ed3e34",
+  "reconciliation_sha256": "41eb78008ef34609be7e0e05f8c5ded513ef6df4f1b7c7d696a95f2c5861c3fe",
+  "archive_name": "A5-before-owner-recovery-20261029.tar.gz",
+  "archive_sha256": "c8228f6200e31b4eac7642e446510461a49c6a3398044f7e5f2a7941e5678411",
+  "adjusted_run_cost_usd": 0.9257327200000002,
+  "rounding_adjustment_usd": 3.272e-05,
+  "B_remains_stopped": true
+}
