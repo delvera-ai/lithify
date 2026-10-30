@@ -40,6 +40,8 @@ class TaskRecord:
     wall_s: float = 0.0
     always_on_tokens: int = 0
     stability_after: float = 0.0
+    # Hash of the live harness after this task (its snapshot is runs/<task>/harness-after).
+    harness_after_sha256: str = ""
     # Set by `lithify feedback`: the delivered work later failed a check (CI, review, a hidden test).
     feedback_failed: bool = False
 

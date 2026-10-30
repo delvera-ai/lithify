@@ -43,6 +43,7 @@ lithify run "add rate limiting to the public API"
 lithify feedback <task-id> --log ci.txt   # a delivered task later failed CI/review: learn from it
 lithify status        # stability, phase, next k, pending proposals
 lithify report        # per-task cost and the stability curve
+lithify ablate <task-id> --without rule:<id>   # replay a past task from its frozen harness without one rule or skill
 ```
 
 ### Install as a plugin
