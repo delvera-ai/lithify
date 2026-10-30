@@ -1,73 +1,76 @@
-# Phase 0b: task-12 causal test (pre-registration, draft)
+# Phase 0b: task-12 causal test (pre-registration, revised)
 
-Status: **drafted, not run.** Runs need a runner change (harness injection) and the owner's confirmation of the
-approximation below. Budget cap for this test: **$5** (`--limit-usd 5`, `--total-cap` and `--budget-glob "*-r2-*"`
-on every run).
+Status: **revised per owner decision, not yet run.** Runs wait on the harness-injection PR (Phase 1 item 1 slice),
+which must be merged first. Budget cap: **$5** (`--limit-usd 5`, `--total-cap` and `--budget-glob "*-r2-*"` on every
+run).
 
 ## Question
 
-Does `sqlglot-optimizer-rewrites` (with the rest of the harness) make the held-out task 12 (sqlglot#7549,
-Spark `LATERAL VIEW EXPLODE` optimizer crash) pass under the same executor, build and conditions as A2–A5?
+Does the optimizer skill make the held-out task 12 (sqlglot#7549, Spark `LATERAL VIEW EXPLODE` optimizer crash)
+pass, under the same executor and conditions as A2–A5, and is any effect specific to the skill's content?
 
-Round-1 baseline: task 12 never passed in five A runs (A1–A5). The starter harness is 0/5 on it.
+Reference: task 12 never passed in five A runs (A1–A5), so the starter harness is 0/5 on it.
 
-## Reconstruction of harness@12: not recoverable exactly
+## Reconstruction of harness@12: not recoverable exactly (unchanged)
 
-The owner's plan asks for C's harness as it stood before task 12 (after adoptions at tasks 2, 3, 4, 5 and 11). I
-checked each route:
+The owner's plan asked for C's harness as it stood before task 12. The routes checked:
 
-1. **Round-1 C clone (git history).** Not on disk. `~/.cache/lithify-dev/horizon` holds only the round-1 results
-   and raw directories.
-2. **Saved proposal directories / per-task diffs.** `raw/sqlglot-adaptive-feedback-…/NN-pr…/applied.diff` records
-   code and `.lithify/state.json` only. It does not record harness files, so the adoptions at tasks 2–5 and 11
-   cannot be replayed from it.
-3. **Library.** `library/` holds one entry (`20261026-160938-doris-and-starrocks-dialects-bot`), which is not
-   enough to rebuild the harness.
-4. **Round-1 session directories.** No work directory under `/private/tmp/claude-501` contains the task-12
-   task text (`LATERAL VIEW EXPLODE(items) ci AS ci`).
-5. **Round-1 source.** `r2-noise-scratch/round1-source/.lithify/harness` is the starter harness, with an empty
-   `state.json` history.
+1. **Round-1 C clone (git history).** Not on disk.
+2. **Per-task `applied.diff`.** Records code and `.lithify/state.json` only, not harness files.
+3. **Library.** `library/` holds one entry, not enough to rebuild the harness.
+4. **Round-1 session directories.** No work directory under `/private/tmp/claude-501` contains the task-12 text.
+5. **Round-1 source.** `r2-noise-scratch/round1-source/.lithify/harness` is the starter harness, with empty history.
 
-**Fallback (the owner's rule, label "approximate").** Use the round-1 C **final** harness, copied from
-`raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/final-harness/`, as the stand-in for harness@12. The
-final harness includes adoptions made after task 12, so arm (a) is "final harness", not "harness@12". Every
-result from this test is labelled approximate.
+The approximate fallback is used. The stand-in for harness@12 is the round-1 C **final** harness
+(`raw/sqlglot-adaptive-feedback-claude_claude-haiku-5-5/final-harness/`).
 
-## Arms (5 runs each, 15 total)
+Contamination checks, as the owner asked:
+- No file in the final harness mentions EXPLODE, LATERAL or UNNEST (`grep -ril` finds nothing).
+- Tasks 19 (`20261026-202726-postgres-dialect-when-an-unnest`) and 47 (`20261027-105620-optimizer-sqlglot-optimizer-qual`)
+  record `promoted: []` and `proposal: null` in their per-task `state.json`. Neither produced a C adoption.
 
-| arm | harness | question |
+## Arms (5 runs each, 20 runs total)
+
+| arm | harness | role |
 |---|---|---|
-| (a) | final C harness (approximate harness@12) | does the harness pass task 12? |
-| (b) | final C harness minus `skills/sqlglot-optimizer-rewrites` | does the pass depend on that skill? |
-| (c) | starter harness + only `skills/sqlglot-optimizer-rewrites` | is the skill alone sufficient? |
+| (c) | starter harness + only `skills/sqlglot-optimizer-rewrites` (final version) | **primary**: is the skill alone sufficient? |
+| (d) | starter harness + only `skills/sqlglot-optimizer-placebo` | **control**: placebo skill with the same trigger and similar length |
+| (a) | full final C harness | secondary, approximate |
+| (b) | (a) minus `skills/sqlglot-optimizer-rewrites` | secondary, approximate |
 
-Starter harness: the round-1 starter harness (`round1-source/.lithify/harness`).
+- **Starter harness:** the round-1 starter (`round1-source/.lithify/harness`). The starter-harness reference is
+  A1–A5 at 0/5, not new runs.
+- **Placebo skill:** `eval/round2/placebo/sqlglot-optimizer-placebo/SKILL.md`, written by a separate agent session
+  that did not read the real skill body and had only the frontmatter trigger and a length target. It has generic
+  optimizer advice and no node-copying, alias-column or EXPLODE/LATERAL/UNNEST content. Frozen before any run.
+  SHA-256 `6c53d7165196dbd578e72334231804a5dc2b9337e5d5f8c926ef81843cc94f09`, 6,309 bytes. Any edit to it after
+  this point voids the test.
 
 ## Conditions
 
-- Executor `claude@claude-haiku-5-5`, editor roles on the CLI default (`claude`), build `89020d7`, as in A2–A5.
+- Executor `claude@claude-haiku-5-5`, editor roles on the CLI default (`claude`).
+- **Build:** the new build. The harness-injection PR is merged to `main` first, and the build is that commit. The
+  build is recorded per run. The owner's reference is A2–A5 at `89020d7`, so the build is not identical to A2–A5:
+  this will be stated as a deviation unless the new commit only adds test-visible injection code.
 - `--k 0 --no-escalate`, timeout 900 s, one task (task 12, holdout of PR #7549, extracted from its merge commit).
-- Each run in its own clone and state. Record: holdout pass, skills read (from the trajectory), files changed,
-  cost.
-- Harness injection is needed: `eval/pr_replay.py` and `eval/round2/run_a_replicates.py` start from the eval
-  setup and have no option to start from a supplied harness or skill subset. This change is required before any
-  run and goes into a separate PR for review.
+- Each run in its own clone and state, with the arm's harness injected by `--harness-dir`.
+- Record per run: holdout pass, skills read (from the trajectory), files changed, cost, and the harness content hash
+  written to `outcome.json`.
 
 ## Decision rule (fixed in advance)
 
-- **Causal support:** (a) passes in at least 3/5 runs and (b) passes in at most 1/5.
-- **Skill sufficient:** (c) passes in at least 3/5.
+- **Skill sufficient:** (c) passes in at least 3/5 runs and (d) passes in at most 1/5.
+- **Placebo effect:** (c) and (d) both pass in at least 3/5 runs.
 - **Anything else:** inconclusive.
 
-Because the arms use an approximate harness, a causal reading is labelled "approximate" in any report. It is not
-a confirmatory result for the round-1 harness@12.
+The secondary arms (a) and (b) are reported as approximate. They do not enter the decision rule.
 
 ## Cost
 
-A baseline runs cost $0.0324 per task on average (round 2, Phase 0). Fifteen single-task runs should cost well
-under $1, far below the $5 cap. Any cap stop is reported as a deviation.
+Baseline cost is $0.0324 per task on average (round 2, Phase 0). Twenty single-task runs should cost about $1 at
+most, under the $5 cap. Any cap stop is reported as a deviation.
 
 ## Recording
 
-Each run: arm, run index, holdout pass, skills read, files changed, cost, and the lithify build (`89020d7`). Results
-go in `eval/results/<date>-r2-task12/`. The ledger in `eval/LEDGER.md` gets one line per run.
+Results go in `eval/results/<date>-r2-task12/`. The ledger in `eval/LEDGER.md` gets one line per run. The report goes
+to tracking issue #29.

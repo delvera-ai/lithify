@@ -182,3 +182,71 @@ recomputed here; `power_addendum_grid.csv` has the full grid.
 measurement will replace this), W = 150 with 3 seeds is 450 learning-arm tasks, about $450–900 before D and
 A. That exceeds `MAIN_BUDGET_USD = 350`. W = 100 with 2 seeds is 200 tasks, about $200–400 before D and A,
 so it also needs checking against the budget. Phase 2 must check both against the measured dev cost.
+
+## Addendum 2: conjunction rule, 4–6 learning seeds on W = 60–80, internal pilot
+
+Code: `eval/round2/power_addendum2.py`. Grid: `power_addendum2_grid.csv`. Baseline seeds fixed at 3 (each
+learning seed is compared with the mean of the 3 baseline seeds at the same position). Warm-up 20 or 30,
+primary n = 40–60. Learning effect applies to warm-up positions too, because an internal pilot on warm-up
+tasks would otherwise see only noise. The first addendum assumed no warm-up effect; the figures here are not
+directly comparable with its grid. Five thousand experiments per cell, α = .05, 1,999 permutations.
+
+Rules: **P** pooled sign-flip p < .05. **AP** = P and every learning seed's primary mean difference > 0. This
+is the conjunction the owner asked for. Under uniform spread, τ = seed-level SD of the marginal effect.
+Concentrated = K never-passing tasks flipped per seed, as before.
+
+**(i) Null rate and power of AP.** Figures are AP / P at warm-up 30.
+
+| scenario | S | W=60 | W=70 | W=80 |
+|---|---|---|---|---|
+| null, uniform, τ = 0 | 4 | 0.023 / 0.027 | 0.027 / 0.034 | 0.030 / 0.035 |
+| null, uniform, τ = 0 | 6 | 0.013 / 0.018 | 0.017 / 0.024 | 0.018 / 0.025 |
+| null, uniform, τ = 0.05 | 4 | 0.081 / 0.130 | 0.100 / 0.164 | 0.112 / 0.193 |
+| null, uniform, τ = 0.05 | 6 | 0.058 / 0.130 | 0.070 / 0.163 | 0.073 / 0.185 |
+| null, concentrated | 4 | 0.017 / 0.020 | 0.027 / 0.032 | 0.029 / 0.034 |
+| power δ = 0.10, concentrated | 4 | 0.669 / 0.710 | 0.802 / 0.837 | 0.875 / 0.898 |
+| power δ = 0.10, concentrated | 6 | 0.664 / 0.743 | 0.791 / 0.856 | 0.875 / 0.925 |
+| power δ = 0.10, uniform, τ = 0 | 4 | 0.745 / 0.801 | 0.855 / 0.894 | 0.920 / 0.949 |
+| power δ = 0.10, uniform, τ = 0.03 | 4 | 0.707 / 0.784 | 0.802 / 0.882 | 0.873 / 0.938 |
+| power δ = 0.10, uniform, τ = 0.05 | 4 | 0.639 / 0.770 | 0.746 / 0.878 | 0.787 / 0.917 |
+| power δ = 0.10, uniform, τ = 0.05 | 6 | 0.584 / 0.819 | 0.692 / 0.912 | 0.720 / 0.950 |
+| power δ = 0.10, uniform, τ = 0.08 | 4 | 0.558 / 0.768 | 0.603 / 0.847 | 0.633 / 0.890 |
+
+Under uniform spread, AP's power falls as S rises. At τ = 0.05, W = 80, δ = 0.10: 0.787 at S = 4 and 0.720 at
+S = 6. More learning seeds make it harder for every seed to be positive, while P gains. The P column is the
+figure to read for the pooled test, and the AP column is the claim figure.
+
+**Null calibration.** Under uniform spread AP's null is 0.06–0.11 at τ = 0.05 and 0.01–0.03 at τ = 0. Under
+concentrated spread it is 0.02–0.03. The conjunction is therefore close to nominal only without seed spread.
+With spread it is still inflated, though less than P.
+
+**(ii) Designs with 4–6 learning seeds on W = 60–80.** Under uniform spread at τ = 0.05, δ = 0.10, warm-up 30:
+AP is 0.58–0.64 at W = 60, 0.69–0.75 at W = 70, and 0.72–0.79 at W = 80, for S = 4 to 6. W = 80 is the
+smallest window at which AP clears 0.70 for every S from 4 to 6 at τ = 0.05. At W = 70 it clears 0.70 only at
+S = 4 and 5. At τ = 0.08, AP is below 0.70 for every S and every window up to W = 80, so the design depends on
+the spread being small.
+
+**(iii) Internal pilot.** Rule (candidate for the preregistration): estimate τ̂ from the first 3 learning seeds on
+warm-up positions, by the method of moments (between-seed variance of the warm-up mean minus the
+sampling variance, Σq(1−q)/w² with a 3/2 correction for 3 seeds, clipped at 0). Then S = 4 if τ̂ ≤ 0.04, S = 5
+if τ̂ ≤ 0.07, else S = 6.
+
+- The estimator is nearly unbiased, but very noisy. Under the null, median τ̂ is 0 at true τ = 0, 0.03 and 0.05.
+  With the effect present it is 0.03 at τ = 0.05. At τ = 0.08 the median is 0.03–0.05. It rarely separates
+  τ = 0 from τ = 0.05.
+- The rule barely adapts. Mean chosen S is 4.1–4.3 at τ = 0, 4.2–4.4 at τ = 0.03, 4.3–4.6 at τ = 0.05 and
+  4.6–5.0 at τ = 0.08.
+- Adaptive S does not help power, and it inflates the null. At τ = 0.05, W = 80, warm-up 30: P null 0.19 and AP
+  null 0.10. Adaptive AP power at δ = 0.10 is 0.763, against 0.787 for fixed S = 4.
+
+**Recommendation for the preregistration.**
+1. Fix S = 4 learning seeds. Drop the pilot-based choice of S: it does not adapt and it does not improve power.
+2. Use W = 80 with warm-up 30 (primary n = 50) if the budget allows. W = 70 is the minimum that clears 0.70 AP
+   for τ ≤ 0.05.
+3. Pre-register AP as the claim rule, and report its null and its per-seed results. Report τ̂ with its CI as an
+   exploratory diagnostic, not a design input.
+4. Cost check. Baseline is fixed at 3 seeds, so the baseline cost is 3 × W tasks at $0.0324 per task, about $7.80
+   at W = 80. The learning arm is 4 × W tasks. At the assumed 1–2 USD per learning task, S = 4 and W = 80 is
+   320 tasks, about $320–640. That exceeds the $350 main budget on its own. S = 4 at W = 70 is 280 tasks,
+   about $280–560. The budget therefore binds before the power does. Phase 2 must price E from the measured dev
+   cost before picking W, or ask for a larger budget.
