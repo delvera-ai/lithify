@@ -1,0 +1,5 @@
+[task12-a_full-r1] 1/1 #7549 fix(optimizer): EXPLODE qualify and annotate …
+   k=0 delivered=True first_pass=True holdout=False exec=1 roles=0 $0.15 (507s) adopted=[] run total $0.15
+done: task12-a_full-r1 $0.15; scratch /Users/donovan/.cache/lithify-dev/r2-noise-scratch/replay-r2-task12-a_full-task12-a_full-r1
+
+--- stderr ---

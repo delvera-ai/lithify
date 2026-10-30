@@ -1,0 +1,5 @@
+[task12-d_placebo-r1] 1/1 #7549 fix(optimizer): EXPLODE qualify and annotate …
+   k=0 delivered=True first_pass=True holdout=False exec=1 roles=0 $0.03 (356s) adopted=[] run total $0.03
+done: task12-d_placebo-r1 $0.03; scratch /Users/donovan/.cache/lithify-dev/r2-noise-scratch/replay-r2-task12-d_placebo-task12-d_placebo-r1
+
+--- stderr ---

@@ -1,0 +1,102 @@
+[
+  {
+    "arm": "c_skill",
+    "replicate": 1,
+    "exit": 0
+  },
+  {
+    "arm": "d_placebo",
+    "replicate": 1,
+    "exit": 0
+  },
+  {
+    "arm": "a_full",
+    "replicate": 1,
+    "exit": 0
+  },
+  {
+    "arm": "b_minus",
+    "replicate": 1,
+    "exit": 0
+  },
+  {
+    "arm": "c_skill",
+    "replicate": 2,
+    "exit": 0
+  },
+  {
+    "arm": "d_placebo",
+    "replicate": 2,
+    "exit": 0
+  },
+  {
+    "arm": "a_full",
+    "replicate": 2,
+    "exit": 0
+  },
+  {
+    "arm": "b_minus",
+    "replicate": 2,
+    "exit": 0
+  },
+  {
+    "arm": "c_skill",
+    "replicate": 3,
+    "exit": 0
+  },
+  {
+    "arm": "d_placebo",
+    "replicate": 3,
+    "exit": 0
+  },
+  {
+    "arm": "a_full",
+    "replicate": 3,
+    "exit": 0
+  },
+  {
+    "arm": "b_minus",
+    "replicate": 3,
+    "exit": 0
+  },
+  {
+    "arm": "c_skill",
+    "replicate": 4,
+    "exit": 0
+  },
+  {
+    "arm": "d_placebo",
+    "replicate": 4,
+    "exit": 0
+  },
+  {
+    "arm": "a_full",
+    "replicate": 4,
+    "exit": 0
+  },
+  {
+    "arm": "b_minus",
+    "replicate": 4,
+    "exit": 0
+  },
+  {
+    "arm": "c_skill",
+    "replicate": 5,
+    "exit": 0
+  },
+  {
+    "arm": "d_placebo",
+    "replicate": 5,
+    "exit": 0
+  },
+  {
+    "arm": "a_full",
+    "replicate": 5,
+    "exit": 0
+  },
+  {
+    "arm": "b_minus",
+    "replicate": 5,
+    "exit": 0
+  }
+]
