@@ -18,6 +18,7 @@ Copies, not symlinks: Claude Code writes internal files into its skills director
 from __future__ import annotations
 
 import difflib
+import hashlib
 import re
 import shutil
 from dataclasses import dataclass
@@ -48,6 +49,18 @@ _FRONTMATTER = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.S)
 
 def harness_dir(root: Path) -> Path:
     return root / LITHIFY_DIR / HARNESS_DIR
+
+
+def harness_hash(hdir: Path) -> str:
+    """SHA-256 over the harness files: sorted relative paths, each followed by its bytes.
+
+    Stable across machines for the same content. __pycache__ is skipped, as validate() skips it.
+    """
+    digest = hashlib.sha256()
+    for f in sorted(p for p in hdir.rglob("*") if p.is_file() and "__pycache__" not in p.parts):
+        digest.update(f.relative_to(hdir).as_posix().encode("utf-8") + b"\0")
+        digest.update(f.read_bytes() + b"\0")
+    return digest.hexdigest()
 
 
 def parse_frontmatter(text: str) -> dict[str, str]:
