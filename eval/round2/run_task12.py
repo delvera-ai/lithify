@@ -14,7 +14,6 @@ has lithify installed non-editably from that commit.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import subprocess
