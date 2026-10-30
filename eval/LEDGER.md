@@ -49,3 +49,4 @@ round 2 only. Running costs are provisional and reconciled to raw CSVs.
 | 2026-10-29 | 0 B recovery | B / r1-B-rep2 | 60/60 | 2.2667 (2.8025 total) | 14.2249 | sequential recovery after A5; archived scratch; carry repaired 2→3 tasks; recovery posted on #29; completed 38 pass, 0 timeouts |
 | 2026-10-29 | 0 B replicate | B / r1-B-rep3 | 60/60 | 2.3232 | 16.5481 | fresh run, seed 3, after B2; completed 39 pass, 1 non-delivery, 0 timeouts |
 | 2026-10-29 | 0 analysis | reanalysis + power | zero tokens | 0.0000 | 16.5481 | `reanalysis.py` and `power.py` run; outputs in `eval/results/2026-10-29-r2-noise/`; REPORT.md and POWER.md written; Phase 1 not started |
+| 2026-10-30 | 0b task-12 causal test | 20 runs: c_skill 5, d_placebo 5, a_full 5, b_minus 5 (PR #7549, build e846812) | 2.6041 | 2.6041 (task-12 only; cumulative round-2 incl. Phase 0 about 19.15) | complete; holdout passes c 0/5, d 1/5, a 0/5, b 0/5; results in eval/results/2026-10-30-r2-task12 |
