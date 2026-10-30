@@ -35,7 +35,18 @@ from .adapters import get_adapter, split_spec
 from .adapters.base import LimitReached, RunResult, hit_limit
 from .config import CONFIG_FILE, LITHIFY_DIR, Config
 from .gates import GateResult, is_test_path, run_gates
-from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, harness_hash, promote, render
+from .harness import (
+    always_on_rules,
+    always_on_text,
+    classify_read,
+    copy_harness,
+    diff,
+    estimate_tokens,
+    harness_dir,
+    harness_hash,
+    promote,
+    render,
+)
 from .library import Reflection, ensure_library, library_dir, parse_reflection, write_entry
 from .state import TaskRecord, choose_k, load_state, record_task
 from .validate import errors, validate
@@ -52,6 +63,7 @@ class Probe:
     gates: GateResult
     evidence: Path
     verified: bool
+    reads: list[str] = field(default_factory=list)  # what the rollout opened: skill:, instructions:, file:, ...
 
     @property
     def passed(self) -> bool:
@@ -195,6 +207,7 @@ class Pipeline:
         res = self._adapter(self.cfg.executor).run(self.task, wt, self.cfg.timeout_s, role="execute")
         self._account(res, role=False)
         self._stop_on_limit(res, f"probe {label}")
+        reads = list(dict.fromkeys(classify_read(t, wt) for t in res.meta.get("reads", [])))
         patch = worktree.deliverable(wt)
         changed = worktree.changed_files(wt)
         cmds = self.cfg.gate_commands()
@@ -232,12 +245,13 @@ class Pipeline:
                     "seconds": round(res.seconds, 1),
                     "gates_passed": gates.passed,
                     "patch_lines": patch.count("\n"),
+                    "reads": reads,
                 },
                 indent=2,
             ),
             encoding="utf-8",
         )
-        p = Probe(label, hdir, res, patch, gates, ev, verified=bool(cmds))
+        p = Probe(label, hdir, res, patch, gates, ev, verified=bool(cmds), reads=reads)
         mark = "✓" if p.passed else "✗"
         self.log(f"  {mark} probe {label}: {gates.summary()}" + ("" if res.ok else f" [executor: {res.error[:120]}]"))
         return p
@@ -629,6 +643,10 @@ class Pipeline:
                     f"({', '.join(sorted(rest))}) — `lithify adopt {self.task_id}`"
                 )
 
+        # Per-task snapshots: the frozen start (what the rollouts saw) and the harness after this task.
+        copy_harness(start_h, self.runs_dir / "harness-start")
+        copy_harness(live, self.runs_dir / "harness-after")
+        after_hash = harness_hash(live)
         always_on = estimate_tokens(always_on_text(live))
         rec = TaskRecord(
             task_id=self.task_id,
@@ -643,6 +661,7 @@ class Pipeline:
             cost_usd=round(self.usage["cost"], 4),
             wall_s=round(time.time() - t0, 1),
             always_on_tokens=always_on,
+            harness_after_sha256=after_hash,
         )
         st = record_task(self.root, load_state(self.root), rec, cfg.schedule)
         rec.stability_after = st.history[-1]["stability_after"]
@@ -655,6 +674,8 @@ class Pipeline:
                 {
                     "task": self.task,
                     "start_harness_sha256": harness_hash(start_h),
+                    "harness_after_sha256": after_hash,
+                    "always_on_rules": sorted(always_on_rules(start_h)),
                     "k": k,
                     "reason": reason,
                     "selected": out.selected,
@@ -666,7 +687,7 @@ class Pipeline:
                     "proposal": str(out.proposal) if out.proposal else None,
                     "usage": self.usage,
                     "stability_after": rec.stability_after,
-                    "probes": {p.label: {"passed": p.passed, "gates": p.gates.summary()} for p in probes},
+                    "probes": {p.label: {"passed": p.passed, "gates": p.gates.summary(), "reads": p.reads} for p in probes},
                     "candidates": {c.label: {"valid": c.valid, "issues": c.issues[:5]} for c in cands},
                 },
                 indent=2,

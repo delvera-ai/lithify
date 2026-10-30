@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import time
 from collections.abc import Sequence
@@ -13,7 +14,17 @@ from typing import Any
 from . import prompts, worktree
 from .adapters import ADAPTERS, get_adapter, split_spec
 from .config import LITHIFY_DIR, Config, config_path, load_config, render_config
-from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, promote, render
+from .harness import (
+    always_on_text,
+    copy_harness,
+    diff,
+    drop_component,
+    estimate_tokens,
+    harness_dir,
+    harness_hash,
+    promote,
+    render,
+)
 from .library import ensure_library, library_dir
 from .state import State, choose_k, load_state, phase_for, save_state, stability
 from .validate import errors, validate
@@ -265,3 +276,28 @@ def report(start: Path) -> str:
     lines.append(f"tokens  {spark(toks, 0, max(toks) or 1)}  (max {max(toks)}, last {toks[-1]})")
     lines.append(f"k       {' '.join(str(r.k) for r in recs)}")
     return "\n".join(lines)
+
+
+def prepare_ablation(root: Path, task_id: str, component: str) -> tuple[str, Path, str]:
+    """Copy a past task's frozen start harness without one component (`rule:<id>` or `skill:<name>`).
+
+    Returns the task text, the ablated harness directory and the new task id. The live harness is not read.
+    """
+    run = root / LITHIFY_DIR / "runs" / task_id
+    if not (run / "outcome.json").exists():
+        raise ValueError(f"no run {task_id!r} under {run.parent}")
+    start = run / "harness-start"
+    if not start.is_dir():
+        raise ValueError(f"{task_id} predates harness snapshots and cannot be replayed")
+    data = json.loads((run / "outcome.json").read_text(encoding="utf-8"))
+    if harness_hash(start) != data.get("start_harness_sha256"):
+        raise ValueError(f"the snapshot of {task_id} does not match its recorded hash")
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", component).strip("-")
+    new_id = f"{task_id}-without-{slug}"
+    dst = root / LITHIFY_DIR / "runs" / new_id / "start-harness"
+    if dst.parent.exists():
+        raise ValueError(f"{new_id} already exists; remove {dst.parent} to replay it again")
+    dst.parent.mkdir(parents=True)
+    copy_harness(start, dst)
+    drop_component(dst, component)
+    return data["task"], dst, new_id

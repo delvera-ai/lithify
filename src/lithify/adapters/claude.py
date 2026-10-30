@@ -19,6 +19,16 @@ from typing import ClassVar
 from .base import Adapter, RunResult, clip, jsonl
 
 
+def read_target(block: dict) -> str:
+    """What a Read or Skill call opened: the file path for Read, `skill:<name>` for Skill, else ""."""
+    tool, inp = block.get("name"), block.get("input") or {}
+    if tool == "Read" and inp.get("file_path"):
+        return str(inp["file_path"])
+    if tool == "Skill" and inp.get("skill"):
+        return f"skill:{inp['skill']}"
+    return ""
+
+
 class ClaudeAdapter(Adapter):
     name = "claude"
     binary = "claude"
@@ -38,6 +48,7 @@ class ClaudeAdapter(Adapter):
         totals = dict.fromkeys(("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens"), 0)
         sessions: dict[str, dict] = {}
         turns = 0
+        reads: list[str] = []
         for ev in events:
             t = ev.get("type")
             if t == "result":
@@ -99,6 +110,8 @@ class ClaudeAdapter(Adapter):
                         lines.append(f"[{t}] {clip(block['text'], 1200)}")
                     elif bt == "tool_use":
                         lines.append(f"[tool_use {block.get('name')}] {clip(json.dumps(block.get('input')), 800)}")
+                        if target := read_target(block):
+                            reads.append(target)
                     elif bt == "tool_result":
                         content = block.get("content")
                         if isinstance(content, list):
@@ -138,6 +151,7 @@ class ClaudeAdapter(Adapter):
                 "model_usage": models,
                 "results": results,
                 "calls": list(calls.values()),
+                "reads": reads,
             },
             raw_stream=stdout,
         )

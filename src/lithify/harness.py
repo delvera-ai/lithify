@@ -21,6 +21,7 @@ import difflib
 import hashlib
 import re
 import shutil
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -198,6 +199,69 @@ def _sync_dirs(src_items: dict[str, Path], target: Path, file_name: str | None =
             m = _FRONTMATTER.match(body)  # frontmatter must stay first; marker goes after it
             cut = m.end() if m else 0
             dst.write_text(body[:cut] + _MD_MARKER + "\n" + body[cut:], encoding="utf-8")
+
+
+def _bullet_id(fname: str, line: str) -> str:
+    return f"{fname}#{hashlib.sha256(line.strip().encode('utf-8')).hexdigest()[:8]}"
+
+
+def always_on_rules(hdir: Path) -> dict[str, str]:
+    """Stable ids for the always-on bullets: `<file>#<hash of the bullet>` -> bullet text.
+
+    An id changes only when its bullet's text changes, so a rollout can name the rules it had.
+    """
+    rules: dict[str, str] = {}
+    for fname in ALWAYS_ON:
+        f = hdir / fname
+        if f.exists():
+            for line in f.read_text(encoding="utf-8").splitlines():
+                if line.lstrip().startswith("- "):
+                    rules[_bullet_id(fname, line)] = line.strip()
+    return rules
+
+
+def drop_component(hdir: Path, component: str) -> str:
+    """Remove one component from `hdir` in place. `rule:<id>` drops an always-on bullet, `skill:<name>` a skill.
+
+    Returns a description of what was removed.
+    """
+    kind, _, key = component.partition(":")
+    if kind == "rule":
+        for fname in ALWAYS_ON:
+            f = hdir / fname
+            if not f.exists():
+                continue
+            lines = f.read_text(encoding="utf-8").splitlines(keepends=True)
+            kept = [ln for ln in lines if not (ln.lstrip().startswith("- ") and _bullet_id(fname, ln) == key)]
+            if len(kept) != len(lines):
+                f.write_text("".join(kept), encoding="utf-8")
+                return f"rule {key} ({fname})"
+        raise ValueError(f"no always-on rule {key!r} in {hdir}")
+    if kind == "skill":
+        d = hdir / "skills" / key
+        if not d.is_dir():
+            raise ValueError(f"no skill {key!r} in {hdir}")
+        shutil.rmtree(d)
+        return f"skill {key}"
+    raise ValueError(f"component must be rule:<id> or skill:<name>, got {component!r}")
+
+
+def classify_read(target: str, wt: Path) -> str:
+    """Name what a rollout opened: `skill:<name>`, `instructions:<file>`, `subagent:<name>`, `lithify:<path>`
+    or `file:<path>`. `target` is a Read file path (absolute, inside the probe worktree) or a `skill:<name>`."""
+    if target.startswith("skill:"):
+        return target
+    rel = target
+    with suppress(ValueError):  # outside the worktree: keep the absolute path
+        rel = Path(target).resolve().relative_to(wt.resolve()).as_posix()
+    if rel in INSTRUCTION_FILES:
+        return f"instructions:{rel}"
+    for prefix, kind in ((".claude/skills/", "skill"), (".agents/skills/", "skill"), (".claude/agents/", "subagent")):
+        if rel.startswith(prefix):
+            return f"{kind}:{rel[len(prefix) :].split('/', 1)[0]}"
+    if rel.startswith(f"{LITHIFY_DIR}/"):
+        return f"lithify:{rel}"
+    return f"file:{rel}"
 
 
 def render(root: Path, hdir: Path | None = None) -> dict[str, int]:

@@ -76,6 +76,26 @@ def cmd_status(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ablate(a: argparse.Namespace) -> int:
+    root = worktree.repo_root(Path.cwd())
+    cfg = load_config(root)
+    try:
+        task, start, new_id = ops.prepare_ablation(root, a.task_id, a.without)
+    except ValueError as e:
+        _err(f"lithify ablate failed: {e}")
+        return 2
+    # Cruise (k=0) without escalation, as the baseline arms do: one execution, nothing promoted.
+    pipe = Pipeline(root, cfg, log=lambda m: print(m, flush=True), escalate=False)
+    try:
+        out = pipe.run_task(task, k_override=0, task_id=new_id, start_harness=start)
+    except Exception as e:
+        _err(f"lithify ablate failed: {e}")
+        return 1
+    print(f"{out.task_id}: without {a.without}; delivered={out.delivered} first_pass={out.first_pass}")
+    print(f"compare with {a.task_id}; live harness untouched")
+    return 0
+
+
 def cmd_run(a: argparse.Namespace) -> int:
     root = worktree.repo_root(Path.cwd())
     cfg = load_config(root)
@@ -363,6 +383,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--task-id", help=argparse.SUPPRESS)
     s.set_defaults(fn=cmd_run)
+
+    s = sub.add_parser("ablate", help="replay a past task from its frozen harness with one component removed")
+    s.add_argument("task_id", help="a run id from `lithify logs` or .lithify/runs/")
+    s.add_argument("--without", required=True, metavar="COMPONENT", help="rule:<id> (an always-on bullet) or skill:<name>")
+    s.set_defaults(fn=cmd_ablate)
 
     s = sub.add_parser("logs", help="show the log and outcome of the latest (or given) run")
     s.add_argument("id", nargs="?")
