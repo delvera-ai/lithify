@@ -35,7 +35,7 @@ from .adapters import get_adapter, split_spec
 from .adapters.base import LimitReached, RunResult, hit_limit
 from .config import CONFIG_FILE, LITHIFY_DIR, Config
 from .gates import GateResult, is_test_path, run_gates
-from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, promote, render
+from .harness import always_on_text, copy_harness, diff, estimate_tokens, harness_dir, harness_hash, promote, render
 from .library import Reflection, ensure_library, library_dir, parse_reflection, write_entry
 from .state import TaskRecord, choose_k, load_state, record_task
 from .validate import errors, validate
@@ -443,8 +443,19 @@ class Pipeline:
     # ------------------------------------------------------------------ the task
 
     def run_task(
-        self, task: str, k_override: int | None = None, mode: str | None = None, dry_run: bool = False, task_id: str | None = None
+        self,
+        task: str,
+        k_override: int | None = None,
+        mode: str | None = None,
+        dry_run: bool = False,
+        task_id: str | None = None,
+        start_harness: Path | None = None,
     ) -> Outcome:
+        """Run one task. `start_harness` starts it from a supplied harness directory instead of the live one.
+
+        The supplied directory is validated the same way as the live harness, frozen into the run, and its
+        content hash is written to outcome.json as `start_harness_sha256`. The live harness is not read.
+        """
         cfg = self.cfg
         st = load_state(self.root)
         k, reason = choose_k(st, cfg.schedule, cfg.max_k)
@@ -463,9 +474,10 @@ class Pipeline:
                 self.task_id, k, reason, False, False, False, message=f"would run k={k} ({reason}), mode={mode}: {per}"
             )
 
-        cur_h = harness_dir(self.root)
+        cur_h = start_harness or harness_dir(self.root)
         if not cur_h.is_dir():
-            raise RuntimeError("no harness found — run `lithify init` first")
+            hint = "" if start_harness else " — run `lithify init` first"
+            raise RuntimeError(f"no harness found at {cur_h}{hint}")
         hard = errors(validate(cur_h))
         if hard:
             raise RuntimeError("current harness fails validation:\n" + "\n".join(map(str, hard)))
@@ -642,6 +654,7 @@ class Pipeline:
             json.dumps(
                 {
                     "task": self.task,
+                    "start_harness_sha256": harness_hash(start_h),
                     "k": k,
                     "reason": reason,
                     "selected": out.selected,

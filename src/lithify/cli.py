@@ -89,12 +89,21 @@ def cmd_run(a: argparse.Namespace) -> int:
     if not task:
         _err('give a task: lithify run "add rate limiting to the API"')
         return 2
+    if a.harness_dir is not None:
+        a.harness_dir = a.harness_dir.resolve()  # a detached run starts in the repo root, not here
     if a.detach and not a.dry_run:
         return _detach(root, task, a)
     log = (lambda _m: None) if a.quiet else (lambda m: print(m, flush=True))
     pipe = Pipeline(root, cfg, log=log, keep_worktrees=a.keep, escalate=not a.no_escalate)
     try:
-        out = pipe.run_task(task, k_override=a.k, mode=a.mode, dry_run=a.dry_run, task_id=a.task_id)
+        out = pipe.run_task(
+            task,
+            k_override=a.k,
+            mode=a.mode,
+            dry_run=a.dry_run,
+            task_id=a.task_id,
+            start_harness=a.harness_dir,
+        )
     except Exception as e:
         _err(f"lithify run failed: {e}")
         return 1
@@ -141,6 +150,8 @@ def _detach(root: Path, task: str, a: argparse.Namespace) -> int:
         argv.append("--keep")
     if a.no_escalate:
         argv.append("--no-escalate")
+    if a.harness_dir is not None:
+        argv += ["--harness-dir", str(a.harness_dir)]
     with open(rdir / "run.log", "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(
             argv, cwd=root, stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True
@@ -345,6 +356,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--quiet", action="store_true")
     s.add_argument("--detach", action="store_true", help="run in the background; poll with `lithify logs`")
     s.add_argument("--no-escalate", action="store_true", help="k=0 failures stay failures (baseline arm for evals)")
+    s.add_argument(
+        "--harness-dir",
+        type=Path,
+        help="start from this harness directory instead of the live one; validated, and its hash goes in outcome.json",
+    )
     s.add_argument("--task-id", help=argparse.SUPPRESS)
     s.set_defaults(fn=cmd_run)
 
