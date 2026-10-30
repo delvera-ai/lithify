@@ -104,3 +104,25 @@ Entries are appended in the same commit as any later decision on #29 that affect
   12 "sometimes" horizon tasks, $8 DEV cap). Until then, spec tests may not be used to rank deliverables in any
   preregistered claim.
 - **Source:** `lithify-round2-prompt.md`, Phase 1 item 2.
+
+### 11. Ablation protocol (Phase 1 item 1, PR #33)
+
+- **Rule (candidate):** `lithify ablate` replays a task from its frozen start harness with one rule or skill
+  removed, at k=0 with no escalation, so nothing is promoted. The result is one execution per run, not a rate.
+  Any ablation claim needs replicates before it is interpreted, as in entry 2.
+- **Rationale:** the ablation must hold the executor, gates and start harness fixed, so the only change is the
+  removed component. Escalation would add executions and muddy the comparison. The same k=0, no-escalation
+  setting is used by the baseline arms.
+- **Source:** PR #33 (`lithify ablate`, `prepare_ablation` in `src/lithify/ops.py`).
+- **Status:** adopted for item 1. Phase 2 must decide whether ablation is used in any preregistered claim.
+
+### 12. Rule ids and read classification (Phase 1 item 1, PR #33)
+
+- **Rule:** an always-on rule id is `<file>#<sha256 of the bullet>[:8]`, so it changes only when the bullet's text
+  changes. A rollout's reads are classified as `skill:`, `instructions:`, `subagent:`, `lithify:` or `file:`, and
+  only `Read` and `Skill` tool calls are seen. Reads through `Bash` are not recorded.
+- **Rationale:** the Phase 0 report could not separate always-on effects from skill reads. The rule ids let a
+  rollout's reads be compared with the rules it had. The `Bash` gap means read logs cannot prove a rule was unused.
+- **Source:** PR #33; `tests/test_attribution.py`; `tests/fixtures/claude_2.1.310_read_skill.jsonl`.
+- **Status:** adopted for item 1. Phase 2 must not treat an absence of read logs as proof of non-use.
+
