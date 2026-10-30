@@ -178,6 +178,7 @@ def run_task(
     timeout: int,
     evidence: Path,
     extra_redact: dict[str, str],
+    harness_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Run one task through `lithify run` under a strategy; return the metrics for it.
 
@@ -188,6 +189,8 @@ def run_task(
         args += ["--k", "0", "--no-escalate"]
     elif strategy == "static":
         args += ["--k", "1"]
+    if harness_dir is not None:
+        args += ["--harness-dir", str(harness_dir.resolve())]  # arm harness; its hash is in outcome.json
     before = set((repo / ".lithify/runs").iterdir()) if (repo / ".lithify/runs").exists() else set()
     t0 = time.time()
     outer_timeout = False

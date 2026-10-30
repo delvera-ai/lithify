@@ -185,6 +185,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--product-commit", help="verified installed product commit (separate from tooling checkout)")
     ap.add_argument("--replicate", default="")
     ap.add_argument("--seed-label", type=int, default=0, help="session label, not an executor RNG seed")
+    ap.add_argument(
+        "--harness-dir",
+        type=Path,
+        help="start each task from this harness directory instead of the one `lithify init` writes (round-2 task-12 arms)",
+    )
     ap.add_argument("--arm", default="")
     ap.add_argument("--max-mean-cost", type=float, help="stop after a task if cumulative mean cost exceeds this")
     ap.add_argument("--max-median-wall", type=float, help="stop after a task if median wall_s exceeds this")
@@ -293,7 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         branches_before = git(clone, "branch", "--list").strip()
         print(f"[{label}] {pos}/{len(prs)} #{pr['number']} {pr['title'][:60]} …", flush=True)
         t0 = time.time()
-        m = run_task(clone, task_file, a.strategy, holdout, a.timeout * 6, ev, redactions)
+        m = run_task(clone, task_file, a.strategy, holdout, a.timeout * 6, ev, redactions, a.harness_dir)
         hit = limit_hit(ev)
         if hit:
             interrupted = out / "interruptions" / label / f"{pos:02d}-{time.time_ns()}"
